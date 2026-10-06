@@ -1,0 +1,112 @@
+from harness import *
+import random
+INV="""()=>{const S=__LIFE_SIM_TEST__.getState(),bad=[],today=S.clock.dateISO,now=today+'T'+String(S.clock.minute).padStart(4,'0');
+ const term=['Completed','Attended','Missed','Excused','Cancelled','Expired','Resolved','Superseded','No-show','Withdrew'];
+ const exOpen=e=>['Scheduled','Due','In progress'].includes(e.status);
+ for(const c of S.calendar){if(c.type==='exam'){const e=S.exams.find(x=>x.id===c.payload.examId);if(e&&!exOpen(e)&&!term.includes(c.status))bad.push('exam terminal but calendar '+c.status);if(e&&exOpen(e)&&term.includes(c.status))bad.push('exam open but calendar '+c.status)}
+   if(!term.includes(c.status)&&c.dateISO<today)bad.push('past calendar still '+c.status+' '+c.type+' '+c.dateISO);
+   if(c.status==='Attending'&&!(c.type==='schoolDay'&&c.dateISO===today&&S.clock.minute<900&&S.location==='School'))bad.push('dangling Attending '+c.type+' '+c.dateISO+' '+S.clock.minute+' '+S.location)}
+ for(const e of S.events)if(['friendInvite','schoolSocial','parentSchool'].includes(e.type)&&e.dateISO===today&&(e.minute<390||e.minute>=1290))bad.push('NPC event at night '+e.type+' '+e.minute);
+ for(const e of S.exams){if(e.status==='In progress')bad.push('exam stuck in progress');if(exOpen(e)&&e.dateISO<today)bad.push('open exam in the past')}
+ if(S.age>=6&&S.pendingDecisions.some(p=>p.type==='kindergarten'&&!p.resolved))bad.push('active kindergarten at '+S.age);
+ for(const e of S.events)if(e.status==='Open'&&e.expiresAt&&(e.expiresAt.dateISO+'T'+String(e.expiresAt.minute).padStart(4,'0'))<now)bad.push('open event past expiry '+e.type);
+ for(const n of S.notifications)if(n.sourceType==='exam'&&['Unread','Read'].includes(n.status)){const e=S.exams.find(x=>x.id===n.sourceId);if(!e||!exOpen(e))bad.push('active note for resolved exam')}
+ if(S.school&&S.school.subjects)for(const s of S.school.subjects){const h=s.homework;if(h&&h.status==='Late'){const d=(Date.parse(today)-Date.parse(h.dueDate))/864e5;if(d>4)bad.push('homework late forever')}}
+ const c=S.current;if(c.sourceType==='exam'){const e=S.exams.find(x=>x.id===c.sourceId);if(!e||!exOpen(e))bad.push('hero points at resolved exam')}
+ if(c.sourceType==='event'){const e=S.events.find(x=>x.id===c.sourceId);if(!e||e.status!=='Open')bad.push('hero points at closed event')}
+ if(S.school&&S.school.clubs)for(const cl of S.school.clubs){const live=S.calendar.filter(e=>e.type==='clubSession'&&e.payload.clubId===cl.id&&!term.includes(e.status));if(cl.status==='Active'&&live.length>1)bad.push('duplicate live club sessions');if(cl.status!=='Active'&&live.length)bad.push('session for inactive club')}
+ for(const pl of S.plans||[]){if(pl.status==='Accepted'){const ev=S.calendar.find(e=>e.type==='plan'&&e.payload.planId===pl.id);if(!ev)bad.push('accepted plan without calendar');if(pl.dateISO<today)bad.push('accepted plan in the past')}}
+ for(const el of S.elections||[])if(el.status==='Campaign'&&el.date<today)bad.push('election stuck in campaign');
+ for(const t of (S.school&&S.school.tryouts)||[])if(t.status==='Scheduled'&&t.dateISO<today)bad.push('tryout stuck scheduled');
+ const fn=S.npcs?S.npcs.map(n=>n.fullName.toLowerCase()):[];if(new Set(fn).size!==fn.length)bad.push('duplicate NPC full names');
+ if(S.farm&&S.farm.date===today)for(const [k,v] of Object.entries(S.farm.c||{}))if(typeof v==='number'&&v>3)bad.push('farm counter over cap '+k);
+ if(S.school&&S.school.subjects)for(const x of S.school.subjects)if(!(x.score>=0&&x.score<=100))bad.push('grade out of range '+x.name);
+ if(!(S.happiness>=0&&S.happiness<=100))bad.push('mood out of range');
+ for(const [cd,why] of Object.entries(S.closures||{}))if(S.calendar.some(e=>e.type==='schoolDay'&&e.dateISO===cd&&!['Cancelled','Expired'].includes(e.status)))bad.push('closure day has school '+cd);
+ if(S.weather&&!(S.weather.severity>=0&&S.weather.severity<=3))bad.push('weather severity invalid');
+ for(const [id,c] of Object.entries(S.chats||{}))if(c.msgs.length>60)bad.push('chat over cap '+id);
+ for(const p of S.people)if(p.battery!=null&&!(p.battery>=0&&p.battery<=100))bad.push('battery out of range');
+ if(S.trip&&S.trip.len>30)bad.push('trip too long');
+ if((S.businesses||[]).filter(b=>b.status!=='Retired').length>3)bad.push('too many businesses');
+ if(S.uniApps&&Object.keys(S.uniApps.applied||{}).length>10)bad.push('too many applications');
+ if(S.uniApps?.scholarship&&![0,25,50,75,100].includes(S.uniApps.scholarship.pct))bad.push('scholarship pct invalid');
+ if(S.ffSession&&S.ffSession.status==='running')bad.push('ff session stuck running');
+ if(window.__LIFE_SIM_TEST__){const T=window.__LIFE_SIM_TEST__.call,fam=['parent','grandparent','older sibling','younger sibling','aunt','uncle','sibling','relative'];
+  for(const p of S.people||[]){if(fam.includes(p.role))continue;const t=T('friendTier',p.id);if(t==='Friend'||t==='Good Friend')bad.push('legacy friend tier '+p.name);if(p.friendStatus&&!['Old Friend','Former Friend','Contact'].includes(p.friendStatus))bad.push('bad friend status');
+   for(const th of p.convThreads||[])if(!['open','ready','resolved','expired'].includes(th.status))bad.push('bad thread status');
+   const once=['acquaintances','casualFriends','closeFriends','bestFriends','official','firstDate'];for(const k of once)if((p.milestones||[]).filter(m=>m.type===k).length>1)bad.push('dup milestone '+k);
+   try{T('profileHtml',p.id)}catch(e){bad.push('profile render error '+p.name+': '+e.message)}}
+  if(new Set(S.personality).size!==S.personality.length||new Set(S.talents).size!==S.talents.length)bad.push('dup trait/talent');
+  if(S.dev){for(const t of S.personality)if(!S.dev.origin.trait[t])bad.push('trait without origin '+t);for(const t of S.talents)if(!S.dev.origin.talent[t])bad.push('talent without origin '+t)}}
+ {const ids=new Set();for(const p of S.people||[]){if(ids.has(p.id))bad.push('duplicate person id');ids.add(p.id);if((p.age??0)<0)bad.push('negative age '+p.name)}if(S.family&&S.family.expecting&&!S.family.expecting.due)bad.push('expecting without due date');if(S.age<18&&(!S.housing||S.housing.type==='parents')&&!S.people.some(p=>['parent','grandparent','aunt','uncle'].includes(p.role)&&(p.residence??'home')==='home'))bad.push('child with no caregiver at home')}
+ {const need=['invitation','friendInvite','birthdayInvite','promInvite','incomingCall','helpRequest','loveAdvice','schoolSocial','surpriseParty'];for(const e of S.events||[])if(e.status==='Open'&&need.includes(e.type)&&!(e.participants||[]).some(id=>S.people.some(p=>p.id===id)))bad.push('actorless interpersonal event '+e.type);for(const e of S.events||[])if(e.status==='Open'&&/Someone your age|Someone you know/.test(e.text||''))bad.push('anonymous invitation text')}
+ {const c=S.healthState&&S.healthState.condition;if(c&&!['mild','moderate','severe','emergency'].includes(c.severity))bad.push('invalid illness severity');if(c&&!(c.progress>=0&&c.progress<=100))bad.push('illness progress out of range');for(const i of S.inventoryItems||[])if(i.category==='Pharmacy'&&(i.remaining??100)<0)bad.push('negative medicine');const t=S.clock.dateISO;for(const e of S.calendar||[]){if(e.type==='schoolDay'&&e.dateISO<t&&e.nurse&&e.nurse.pass&&e.nurse.pass.status==='Active')bad.push('stale nurse pass '+e.dateISO);if(e.type==='medicalFollowUp'&&e.dateISO<t&&['Due','Scheduled'].includes(e.status))bad.push('stale follow-up '+e.dateISO)}}
+ {const c=S.healthState&&S.healthState.condition;if(c&&c.started&&(new Date(S.clock.dateISO)-new Date(c.started))/864e5>30)bad.push('illness too long');for(const e of S.calendar)if(e.type==='schoolDay'&&e.nurse&&e.nurse.pass&&e.nurse.pass.status==='Active'&&e.dateISO<S.clock.dateISO)bad.push('stale nurse pass');for(const i of S.inventoryItems||[])if(i.remaining<0)bad.push('negative remaining');const rp=S.schoolRep||S.rep;if(rp&&(rp.troublemaker<0||rp.troublemaker>100))bad.push('troublemaker out of range')}if(S.ffSession&&S.ffSession.status==='paused'&&!S.ffSession.target)bad.push('ff session lost its target');
+ if(window.__LIFE_SIM_TEST__){const T=window.__LIFE_SIM_TEST__.call;for(const e of S.calendar)if(e.type==='schoolDay'&&!['Cancelled','Expired','Excused'].includes(e.status)&&T('isSchoolBreak',e.dateISO))bad.push('school day during a break '+e.dateISO);if(S.housing&&S.housing.type!=='parents'&&S.age>=18)for(const c of Object.values(S.chats||{}))for(const m of c.msgs)if(m.kind==='parent'&&m.dateISO>=(S.housing.since||'9999'))bad.push('household command after moving out')}
+ {const inc=(o,g)=>o==='All genders'||(o==='Men'&&g==='Male')||(o==='Women'&&g==='Female')||o==='Not sure yet'||g==='Non-binary';for(const c of S.npcCouples||[]){if(c.status!=='dating')continue;const A=S.npcs.find(n=>n.id===c.a),B=S.npcs.find(n=>n.id===c.b);if(A&&B&&A.orientation&&B.orientation&&(!inc(A.orientation,B.gender)||!inc(B.orientation,A.gender)))bad.push('incompatible NPC couple')}}
+ if(S.housing&&!['parents','apartment','condo','dorm','withPartner'].includes(S.housing.type))bad.push('invalid housing');
+ if(S.age<18&&S.housing&&S.housing.type!=='parents')bad.push('minor moved out');
+ {const j=S.career&&S.career.job;if(j&&j.career&&!(j.level>=0&&j.level<=9))bad.push('career level out of range');if(!(j&&j.career)&&S.calendar.some(e=>e.type==='workDay'&&['Scheduled','Due'].includes(e.status)))bad.push('workday without a job');}
+ for(const b of S.businesses||[])if(b.stock<0)bad.push('negative stock '+b.name);
+ const yr=Number(today.slice(0,4));for(const c of S.npcCouples||[]){if(c.status!=='dating')continue;const A=S.npcs.find(n=>n.id===c.a),B=S.npcs.find(n=>n.id===c.b);if(!A||!B)continue;const x=yr-A.birthYear,y=yr-B.birthYear;const ok=(x>=18&&y>=18)||(x>=13&&y>=13&&x<18&&y<18&&Math.abs(x-y)<=2);if(!ok)bad.push('SAFETY: NPC couple age '+x+'/'+y)}
+ if(S.age<18)for(const p of S.people)if(p.love&&['livingTogether','engaged','married','family'].includes(p.love.stage))bad.push('SAFETY: adult love stage for a minor');
+ for(const r of S.programs||[])if(r.attended>r.total)bad.push('program over-attended '+r.name);
+ const pp=S.romance&&S.romance.partnerId&&S.people.find(x=>x.id===S.romance.partnerId);if(pp){const pa=pp.age;if(S.age<18&&(pa>=18||pa<13||Math.abs(pa-S.age)>2))bad.push('SAFETY: age-inappropriate partner');if(S.age>=18&&pa<18)bad.push('SAFETY: adult with minor partner')}
+ const pr=S.school&&S.school.prom;if(pr&&pr.status==='Season'&&pr.dateISO<today)bad.push('prom stuck in season');
+ if(S.age>=3&&!S.neighborhood)bad.push('neighborhood missing');
+ const ph=S.inventoryItems.find(i=>i.id===S.phone.activeItemId);if(ph&&Math.round(ph.condition)!==S.phone.condition)bad.push('phone desync '+ph.condition+' vs '+S.phone.condition);
+ const slots={};for(const i of S.inventoryItems){if(i.equipped){if(slots[i.slot])bad.push('two items in slot '+i.slot);slots[i.slot]=1}if(!(i.quantity>=1))bad.push('bad quantity');if(i.lifecycleType==='finite'&&i.remaining<=0.5)bad.push('used-up item lingers');if(i.lifecycleType==='container'&&(i.contents<0||i.contents>i.capacity))bad.push('container out of bounds');if(!i.lifecycleType)bad.push('item without lifecycle')}
+ return bad}"""
+SKIP=['menu-new','pause','export','menu-export','import-btn','menu-import','clear-log','close-menu']
+async def main():
+  random.seed(7); total_bad=[]; steps=0
+  async with async_playwright() as p:
+    b=await p.chromium.launch(executable_path=CHROME)
+    import sys
+    AGES=[int(x) for x in sys.argv[1:]] or [3,6,8,11,14,17]
+    for run,age in enumerate(AGES):
+        pg=await new_page(b,1366,768); pg.on('dialog',lambda d:asyncio.ensure_future(d.dismiss()))
+        await new_life(pg,dob=f'200{run}-0{run+2}-1{run}'); await T(pg,f"setAge({age})"); await T(pg,"setMoney(3000,0,0)")
+        for k in ['snackPack','waterBottle','book','toy','artSupplies','bicycle','sweater','raincoat','phone','laptop','sandwich','greetingCard']: await T(pg,f"call('addItem','{k}','QC grant')")
+        for i in range(140):
+            steps+=1
+            r=random.random()
+            modal=await pg.is_visible('#choice-overlay')
+            if modal:
+                mb=[x for x in await pg.query_selector_all('#choice-content button') if await x.is_visible()]
+                tgt=random.choice(mb) if mb and random.random()<0.85 else await pg.query_selector('#close-choice')
+                try: await tgt.click(timeout=1500)
+                except Exception: pass
+                continue
+            if r<0.06:
+                try: await pg.click('#next-day',timeout=1500)
+                except Exception: pass
+            elif r<0.08: await T(pg,"advanceMinutes(%d)"%random.choice([45,180,600]))
+            elif r<0.085 and age<16: await T(pg,"ageUp()")
+            elif r<0.10:
+                await pg.reload(); await pg.click('#load-last')
+                if await pg.evaluate("__LIFE_SIM_TEST__.getState()") is None:
+                    print('  NULL AFTER RELOAD at step',i,'errors:',pg.errs[-3:],'creator visible:',await pg.is_visible('#creator'),'saved bytes:',await pg.evaluate("(localStorage.getItem('lifeSim_v7_world')||'').length")); break
+            else:
+                if random.random()<0.3:
+                    await T(pg,"openTab('business')")
+                elif random.random()<0.25:
+                    tabs=await pg.query_selector_all('#tabs [data-tab]')
+                    try: await random.choice(tabs).click(timeout=1500)
+                    except Exception: pass
+                btns=[x for x in await pg.query_selector_all('#event-actions button, #panel-host button') if await x.is_visible() and await x.is_enabled()]
+                if btns:
+                    bt=random.choice(btns)
+                    try: await bt.click(timeout=1500)
+                    except Exception: pass
+            if await pg.evaluate("__LIFE_SIM_TEST__.getState()") is None:
+                print('  S NULL at step',i,'r=%.3f'%r,'url',pg.url,'creator:',await pg.is_visible('#creator'),'errs',pg.errs[-2:]); break
+            if i%10==9:
+                bad=await pg.evaluate(INV)
+                if bad: total_bad.append((age,i,bad[:3])); print('  invariant @age',age,'step',i,bad[:3])
+        s=await st(pg)
+        check(f'fuzz start-age {age}: no JS errors ({s["age"]} now)', not pg.errs, pg.errs[:3])
+        await pg.close()
+    check(f'fuzz: invariants held over {steps} random player steps', steps>0 and not total_bad, total_bad[:5] if total_bad else ('' if steps else 'no steps ran'))
+    await b.close()
+asyncio.run(main())
