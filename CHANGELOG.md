@@ -1,4 +1,23 @@
+# Phase 3B Complete — Romance, Dating & Reciprocal Social Life
+
+## 3B.5 Finalization
+- Phase 3B is now COMPLETE after final migration/regression/fuzz and 24/24 acceptance verification.
+- Repaired one Phase 3B → HOTFIX-P1 integration regression so People relationship badges fall back to canonical friendship tier instead of rendering blank when `friendStatus` has not yet been persisted.
+- Added final acceptance coverage for NPC-initiated matchmaking and commitment blocking (`qa/t_3b5_accept.py`).
+- Added fast in-browser romance/migration fuzz for ages 14, 17, and 25 (`qa/t_3b5_fuzz.py`): 600 randomized operations, 13/13 final checks PASS.
+- Updated legacy relationship-state regression expectations only where Phase 3B deliberately superseded old behavior (`qa/t_rst.py`), which now passes 44/44.
+- Phase 3B focused suites pass 76/76; H3 focused suites pass 50/50; HOTFIX-P1 passes 74/74 after the descriptor repair.
+- Existing Valentine/date-scene legacy failures and unrelated School/University baseline failures are documented, not hidden or scope-crept.
+- Phase 3C has not started.
+
 # Life Simulator Update Log
+
+## v7.3+ Phase 3B — checkpoint 3B.2
+- **Dates are plans, not instant stat buttons.** Asking someone out now chooses a supported activity and a genuinely shared free time; the NPC still decides whether they want the date. Accepted dates become calendar-backed plans and only enter the contextual date scene when attended.
+- **Romance is reciprocal.** Eligible NPCs can invite the Player on dates with Personality/schedule/attraction-aware frequency and per-person cooldowns; accept/decline/maybe responses create real consequences without invitation spam.
+- **H3 integrity is reused.** Concrete date proposals are remembered in the central Decision Ledger, so rejected proposals cannot be spam-rerolled and survive save/reload. NPC identity stays attached to the decision.
+- **Calendar integrity.** Romantic plans cannot overlap committed events; conflicts identify the existing commitment rather than overwriting it. Date locations vary from existing world locations and paid dates store contextual payment responsibility.
+- Focused 3B.2 QA: 17/17 pass; 3B.1 13/13, H3.1 15/15, H3.2 10/10, People 14/14, Profile 24/24, Friendship 17/17. Legacy romance: 47/49 with the same two pre-existing Valentine/date-scene failures documented before 3B.2.
 
 ## Hotfix P1 — COMPLETE (P1.3: Profile redesign)
 - **New Profile layout**: one header with the name, age and a pink relationship badge; **Personal details** as six small tiles; **Social & lifestyle** (right now, romantic status, interests, dislikes, personality); a **Life goals** strip with "Ask about their plans for the future"; a one-line **How you know them** ("Summer camp · met during swimming practice · introduced by … · known since age 12"); and **Relationship to you** as six compact measures. Works on narrow screens too.
@@ -886,3 +905,20 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Added orientation/age/availability/compatibility hooks and Profile knowledge-safe romantic status helpers.
 - Preserved friendship tiers, H3 decision integrity, existing partners, milestones, and save compatibility.
 - Phase 3B.2 date lifecycle/NPC initiation was not started.
+
+
+## Phase 3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes
+- Added contextual, age-gated, consent-aware romantic interactions and H3 Decision-Ledger reuse for repeated affection requests.
+- Added mutual official-relationship conversation, NPC commitment initiative, canonical relationship start date, partner interactions/conflict repair, breakup/ex persistence, delayed reconciliation, and non-explicit adult intimacy.
+- Added older-teen contextual nonsexual sneak-in/out romance hooks using existing house-rule/discovery consequences.
+- Fixed `formerPartner` historical state incorrectly forcing reconciled relationships back to Ex, plus stale `p.love` references around official/breakup date writes.
+- Added focused `qa/t_3b3.py`; Phase 3B remains incomplete and resumes at 3B.4.
+
+## Phase 3B.4 — Matchmaking / Blind Dates / Multiple Prospects
+- Added reciprocal matchmaking: eligible Close/Best Friends and suitable family connections can introduce the Player, and eligible NPCs may occasionally offer introductions themselves with realistic cooldowns.
+- Added compatibility-aware candidate selection, knowledge-gated candidate preview, remembered Decline/Maybe Later outcomes, and stable People records for introduced candidates.
+- Blind dates reuse the 3B.2 scheduler/calendar/date-scene lifecycle; accepting an introduction never auto-creates a relationship.
+- Added multiple pre-exclusive prospect support and commitment boundaries that pause other prospects once an official relationship begins.
+- Fixed seeded orientation compatibility to use the stable underlying NPC ID before/after People materialization.
+- Added focused `qa/t_3b4.py` (**23/23 PASS**); Phase 3B remains incomplete and resumes at 3B.5.
+

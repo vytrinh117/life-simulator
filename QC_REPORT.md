@@ -1,5 +1,31 @@
 # QC Report — Life Simulator v7.3 (complete: batches A → V2 on top of v7.2 phases 1–5b)
 
+
+## Phase 3B Final QA — 3B.5 COMPLETE
+
+Phase 3B finalization was run from the 3B.4 checkpoint with H3 already complete. The final pass covered focused 3B/H3 behavior, HOTFIX-P1/People/Profile/Friendship, directly relevant Phase 3A/2A/2B regressions, save/reload, migration idempotence, and randomized romance-state fuzz at teen/older-teen/adult stages.
+
+**Phase 3B focused:** 76/76 PASS (`t_3b1` 13/13, `t_3b2` 17/17, `t_3b3` 23/23, `t_3b4` 23/23).  
+**H3 focused:** 50/50 PASS.  
+**3B final acceptance supplement:** 5/5 PASS.  
+**3B final fuzz:** 13/13 PASS across 600 randomized in-browser operations (ages 14, 17, 25), including save/load and repeated-migration idempotence.  
+**HOTFIX-P1:** 74/74 PASS after one Phase-3B descriptor fallback regression was repaired.  
+**Phase 3A:** 13/13 PASS.  
+**People/Profile/Friendship:** 14/14, 24/24, 17/17 PASS.  
+**H2:** 22/22 PASS.  
+**Phase 2A direct coverage:** `t_2a6` 13/13, `t_health` 23/23, `t_med` 15/15 PASS.  
+**Phase 2B direct coverage:** `t_family2` 22/22, `t_family` 13/13 PASS in the final run.  
+**Save/reload + migration:** `t_commit` 26/26 and `t_regress` 16/16 PASS.  
+**Updated lifecycle regression:** `t_rst` 44/44 PASS.
+
+Final QA found one genuine Phase 3B regression in HOTFIX-P1 Profile integration: a valid People record could receive a blank relationship badge when no persistent `friendStatus` string was present yet. `src/modules/romance3b1.js` now falls back to the canonical friendship tier while preserving romantic-partner / Ex precedence. P1/P1.2/P1.3 all pass after the repair.
+
+The existing legacy `t_romance.py` remains **47/49**: the two failing Valentine/date-scene assertions are the same pre-existing failures documented from the 3B.2–3B.4 baseline. School/University suites (`t_sch`, `t_schoolyear`, `t_uni`) still expose unrelated pre-existing failures; their implicated modules were verified byte-identical to the H3 baseline and were not scope-crept into Phase 3B. Long Playwright suites `t_dev`, `t_hij`, `t_lmpq`, and the legacy UI round-trip `t_fuzz` exceed the available execution window under the portable compatibility setup; their test strength/loops were not reduced.
+
+Temporary browser/path compatibility changes used only to execute legacy QA were fully restored. The shipped `qa/harness.py` is unchanged from the 3B.4 baseline. Phase 3B final acceptance criteria are **24/24 verified**. Phase 3C was not started.
+
+Final build verification: `node --check game.js` PASS; two consecutive `tools/splice.py` builds produced byte-identical `game.js` SHA-256 `b643a7136214beddd9f9332e67c3a3b7175e33290c4a6581e222154c850cb7f6`; `style.css` remains the 3B.4 baseline SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+
 ## Method
 The v7.1 report marked features PASS when buttons were wired. Real play still exposed lifecycle bugs, so this QC was redone **from the player's perspective**. Every check drives the real game in headless Chromium (`index.html` + `game.js`) and follows the full lifecycle: **create → display → interact → resolve → leave the active UI → persist after reload → never reappear**.
 
@@ -205,3 +231,32 @@ Install Playwright with Chromium (`pip install playwright && playwright install 
 - Phase 3A, H2, Health, Family core, HOTFIX-P1, medicine and birthday/social regressions executed; required fuzz covered ages 3/6/8/11/14/17 and 840 random steps without reported invariant/JS failure.
 - Legacy browser navigation is blocked in this environment; a temporary non-shipped set_content harness was used. Reload/direct-file-navigation-only limitations are documented in H3_PROGRESS.md.
 - One `t_family.py` stochastic grandparent-residence assertion reproduces identically on H3.0 baseline and is not an H3 regression.
+
+## Phase 3B.2 Checkpoint QA
+- 3B.2 focused: **17/17 PASS**.
+- 3B.1 regression: **13/13 PASS**.
+- H3 decision regressions: H3.1 **15/15 PASS**, H3.2 **10/10 PASS**.
+- People/Profile/Friendship directly relevant regressions: **14/14**, **24/24**, **17/17 PASS**.
+- Existing romance suite: **47/49** under the portable harness. The two remaining Valentine/date-scene checks reproduce the pre-existing issue documented at 3B.1/H3 baseline; the old instant-partner ask-out expectation was updated to the approved 3B.2 planner behavior and passes.
+- 3B.2 does not implement 3B.3 commitment/physical-affection/breakup work or 3B.4 matchmaking.
+
+
+
+## Phase 3B.3 Checkpoint QA
+- 3B.3 focused: **23/23 PASS**.
+- 3B.1 regression: **13/13 PASS**; 3B.2 regression: **17/17 PASS**.
+- H3 decision integrity: H3.1 **15/15 PASS**, H3.2 **10/10 PASS**.
+- People/Profile/Friendship: **14/14**, **24/24**, **17/17 PASS** under the temporary portable harness; shipped `qa/harness.py` restored unchanged.
+- Existing romance suite: **47/49**. The two remaining Valentine/date-scene failures reproduce the already documented 3B.2 baseline issue; two old assertions superseded by approved 3B.3 behavior were updated (older-teen contextual nonsexual sneak-in, and no immediate reroll after declined adult intimacy).
+- 3B.3 does not implement 3B.4 matchmaking/blind dates/multiple prospects.
+
+## Phase 3B.4 Checkpoint QA
+- 3B.4 focused: **23/23 PASS** repeatedly after fixing stable-ID orientation compatibility.
+- 3B.1 regression: **13/13 PASS**; 3B.2: **17/17 PASS**; 3B.3: **23/23 PASS**.
+- H3 decision integrity: H3.1 **15/15 PASS**, H3.2 **10/10 PASS**.
+- People/Profile/Friendship: **14/14**, **24/24**, **17/17 PASS** under the temporary portable harness; shipped `qa/harness.py` restored byte-identically.
+- Existing romance suite: **47/49**. The two failures are the same previously documented Valentine/date-scene assertions from the 3B.2/3B.3 baseline; no new 3B.4 romance regression was observed.
+- `node --check game.js` PASS; final `tools/splice.py` deterministic rebuild verified before packaging. `style.css` remains unchanged from 3B.3.
+- `tools/theme.py` still reports a pre-existing unmapped `rgba(30,24,16,.42)` source token; 3B.4 is JS-only and does not alter CSS, so this build-tool mapping issue is documented rather than modified out of scope.
+- 3B.4 does not begin 3B.5 final full regression/fuzz.
+

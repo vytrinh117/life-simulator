@@ -25,7 +25,10 @@ function ensureLove(p){
  let stage=ROMANCE_CANONICAL_STAGES.has(old.stage)?old.stage:legacyStage;
  // Existing writers still set the legacy mirror. Preserve stronger established states
  // during the 3B transition instead of letting a stale canonical placeholder downgrade them.
- if(p.romanceStage==='ex'||p.formerPartner)stage='ex';
+ // formerPartner is historical identity, not the current romance state.  It may
+ // help migrate a truly legacy record with no canonical state, but must never
+ // force a reconciled/active relationship back to Ex.
+ if(p.romanceStage==='ex'||(p.formerPartner&&!ROMANCE_CANONICAL_STAGES.has(old.stage)&&!['crush','dating','partner'].includes(p.romanceStage)))stage='ex';
  else if(p.romanceStage==='partner'&&(!ROMANCE_CANONICAL_STAGES.has(old.stage)||LOVE_IDX[stage]<LOVE_IDX.official))stage='official';
  else if(p.romanceStage==='dating'&&(!ROMANCE_CANONICAL_STAGES.has(old.stage)||LOVE_IDX[stage]<LOVE_IDX.goingOut))stage='goingOut';
  // A legacy romanceStage="crush" alone is one-sided. Mutuality requires an
@@ -93,11 +96,11 @@ function ensureRomanceProfile(p){
  if(!p.boundaries){const t=p.traits||[],b=[];if(t.includes('Shy')||t.includes('Quiet'))b.push('noPublicAffection');if(t.includes('Generous')||dayHash(p.id+'giftBoundary')<20)b.push('noExpensiveGifts');if(dayHash(p.id+'timeBoundary')<25)b.push('needsTime');if(t.includes('Shy')||dayHash(p.id+'partyBoundary')<15)b.push('noParties');if(!p.romanceOpen)b.push('notReady');p.boundaries=[...new Set(b)]}
  if(first&&L.playerCrush)addPersonMilestone(p,'firstCrush','A crush began to develop.');return p
 }
-function relationshipDescriptor(p){if(!p)return '';if(S.romance?.partnerId===p.id){const st=ensureLove(p).stage;if(st==='married')return 'Spouse';if(st==='engaged')return 'Fiancé/Fiancée';const g=personIdentity(p).gender;return g==='Male'?'Boyfriend':g==='Female'?'Girlfriend':'Partner'}if(ensureLove(p).stage==='ex'||p.formerPartner)return 'Ex';const t=friendStatusLabel(p);return isFamilyPerson(p)?familyRelationLabel(p):(t==='Acquaintance'?'Acquaintance':t)}
+function relationshipDescriptor(p){if(!p)return '';if(S.romance?.partnerId===p.id){const st=ensureLove(p).stage;if(st==='married')return 'Spouse';if(st==='engaged')return 'Fiancé/Fiancée';const g=personIdentity(p).gender;return g==='Male'?'Boyfriend':g==='Female'?'Girlfriend':'Partner'}if(ensureLove(p).stage==='ex'||p.formerPartner)return 'Ex';if(isFamilyPerson(p))return familyRelationLabel(p);const status=friendStatusLabel(p),tier=friendTier(p);return status||tier||'Acquaintance'}
 function migrateRomance3B1(){
  if(!S)return;S.romance=Object.assign({status:'Single',partner:null,partnerId:null,history:[]},S.romance||{});S.romance.history=Array.isArray(S.romance.history)?S.romance.history:[];
  Object.assign(MILESTONE_TYPES,{firstCrush:'First crush',mutualAttraction:'Mutual attraction discovered',breakup:'Breakup'});
  if(!S.romance.partnerId&&S.romance.partner){const hit=(S.people||[]).find(p=>displayName(p,'formal')===S.romance.partner||p.name===S.romance.partner);if(hit)S.romance.partnerId=hit.id}
  for(const p of S.people||[]){const L=ensureLove(p);ensureRomanceProfile(p);if(S.romance.partnerId===p.id){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true;if(LOVE_IDX[L.stage]<LOVE_IDX.goingOut)L.stage=S.romance.status==='In a relationship'?'official':'goingOut'}if(L.stage==='ex')p.formerPartner=true}
- S.romance3B1Migrated=true;
+ S.romance3B1Migrated=true;if(typeof migrateRomance3B2==='function')migrateRomance3B2();
 }

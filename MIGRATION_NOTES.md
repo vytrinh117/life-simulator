@@ -1,5 +1,21 @@
 # Save Migration Notes
 
+
+## Phase 3B COMPLETE — final migration validation (3B.5)
+
+- Final 3B.5 does not add a new randomizing migration layer. It validates the existing deterministic 3B.1–3B.4 migration chain and fixes only a People/Profile descriptor fallback outside save semantics.
+- Save/reload and repeated migration preserve canonical `p.love` state, one-sided Player crush vs NPC attraction, mutual/official/ex history, relationship start/end dates, romance milestones, H3 Decision Ledger records, scheduled date plans, matchmaking offers, and stable introduced-candidate identities.
+- Repeated migration remains idempotent: no duplicate decision/matchmaking records, no randomly created attraction, no random partner creation/deletion, and no conversion of one-sided crushes into mutual romance.
+- Final representative fuzz covered ages 14, 17, and 25 with 600 randomized romance/migration/initiative operations and passed save/load + repeated-migration invariants.
+- Existing saves remain on the current `lifeSim_v7_world` storage architecture; Phase 3B finalization does not change the save key.
+
+## Phase 3B.2 — Scheduled Romance Dates
+
+- Adds deterministic `migrateRomance3B2()` normalization for date/invite history and any existing romantic plan records.
+- Existing saves are not given random dates, attraction, or relationship progression. Existing romantic plans keep their IDs/times/status and receive only missing safe metadata such as inviter/acceptance/activity/movement hook.
+- Per-person date/invite histories are bounded and migration is idempotent. H3 Decision Ledger records remain authoritative and are not rerolled during migration.
+- Existing `p.love` from 3B.1 remains canonical; 3B.2 adds history/cooldown fields to that record rather than introducing a parallel romance state.
+
 ## v6.x → v7
 
 The game first looks for the v7 autosave key and then checks legacy Life Simulator keys. A loaded legacy save is migrated in memory and saved back as v7.
@@ -208,3 +224,18 @@ The original legacy browser key is not silently deleted during migration. Restar
 - Added deterministic/idempotent `migrateRomance3B1()`. `p.love` is canonical; legacy `p.romanceStage` / `p.attraction` remain compatibility mirrors.
 - A legacy plain crush migrates as Player-side one-sided interest unless an explicit mutual or established relationship already exists.
 - Existing partner IDs/history are preserved; migration does not randomly create attraction or delete partners.
+
+
+## Phase 3B.3 migration
+- `migrateRomance3B3()` initializes bounded romance interaction-day/commitment-history state and recovers relationship start/end dates from existing canonical/global romance history where available.
+- Migration is deterministic and idempotent; it does not create affection, consent, commitment, breakups, reconciliations, or milestones via RNG.
+- `formerPartner` remains a historical flag. It no longer overrides a valid reconciled/current canonical romance stage; truly legacy ex records can still infer Ex when no active canonical state exists.
+- Existing partner IDs, friendship state, People records, milestones, memories, relationship history, and Decision Ledger records are preserved.
+
+## Phase 3B.4 migration
+- Added deterministic/idempotent `migrateRomance3B4()` chained after 3B.3 migration.
+- `S.romance.matchmaking` preserves bounded offer/history data, statuses, candidate/matchmaker IDs, reconsideration dates, and normal-date plan links across save/reload.
+- Duplicate offer IDs are removed deterministically and dangling `matchmakingOfferId` pointers are cleared; migration does not roll new candidates, attraction, or relationship outcomes.
+- Introduced candidates are stable People records. Clear rejection remains remembered; Maybe Later remains eligible only after its recorded reconsideration date.
+- NPC orientation compatibility now uses stable `npcId || personId`, preventing a wrapper-ID change during introduction from changing seeded compatibility.
+

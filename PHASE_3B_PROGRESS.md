@@ -1,6 +1,6 @@
 # PHASE 3B — ROMANCE, DATING & RECIPROCAL SOCIAL LIFE
 
-**Status: PHASE 3B INCOMPLETE — CHECKPOINT 3B.1 COMPLETE**
+**Status: PHASE 3B COMPLETE — CHECKPOINT 3B.5 COMPLETE**
 
 Prerequisite confirmed before recording Part A:
 
@@ -19,10 +19,10 @@ Do not begin implementation until Parts A–D have all been recorded and impleme
 - [x] Part C — Romantic Interactions / Relationship Progression / Exes — RECORDED ONLY
 - [x] Part D — Matchmaking / Multiple Prospects / Checkpoint Plan — RECORDED ONLY
 - [x] 3B.1 — Canonical Romance State + Reciprocity — COMPLETE
-- [ ] 3B.2 — Ask Out / NPC Initiation / Scheduling / Date Lifecycle
-- [ ] 3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes
-- [ ] 3B.4 — Matchmaking / Blind Dates / Multiple Prospects
-- [ ] 3B.5 — Final Migration / Regression / Fuzz
+- [x] 3B.2 — Ask Out / NPC Initiation / Scheduling / Date Lifecycle — COMPLETE
+- [x] 3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes — COMPLETE
+- [x] 3B.4 — Matchmaking / Blind Dates / Multiple Prospects — COMPLETE
+- [x] 3B.5 — Final Migration / Regression / Fuzz
 
 ---
 
@@ -912,20 +912,20 @@ Matchmaker intro
 
 Execute Phase 3B later in this exact checkpoint order:
 
-- [ ] **3B.1 — Canonical Romance State + Reciprocity**
-  - STOP after checkpoint.
+- [x] **3B.1 — Canonical Romance State + Reciprocity**
+  - COMPLETE. STOP observed.
 
-- [ ] **3B.2 — Ask Out / NPC Initiation / Scheduling / Date Lifecycle**
-  - STOP after checkpoint.
+- [x] **3B.2 — Ask Out / NPC Initiation / Scheduling / Date Lifecycle**
+  - COMPLETE. STOP after checkpoint.
 
-- [ ] **3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes**
-  - STOP after checkpoint.
+- [x] **3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes**
+  - COMPLETE. STOP after checkpoint.
 
-- [ ] **3B.4 — Matchmaking / Blind Dates / Multiple Prospects**
-  - STOP after checkpoint.
+- [x] **3B.4 — Matchmaking / Blind Dates / Multiple Prospects**
+  - COMPLETE. STOP after checkpoint.
 
-- [ ] **3B.5 — Final Migration / Regression / Fuzz**
-  - STOP after checkpoint.
+- [x] **3B.5 — Final Migration / Regression / Fuzz**
+  - COMPLETE. STOP after checkpoint.
 
 Never automatically begin the next checkpoint.
 
@@ -1071,3 +1071,330 @@ Parts A, B, C, and D requirements are fully recorded.
 Resume from checkpoint: **3B.2 — Ask Out / NPC Initiation / Scheduling / Date Lifecycle**.
 
 Do not begin 3B.2 automatically.
+
+---
+
+## Checkpoint Record — 3B.2 COMPLETE
+
+### Implementation
+
+- Added `src/modules/romance3b2.js` as the Phase 3B.2 orchestration layer. It reuses the existing Phase 3A/H3 foundations, the K scheduling helpers (`sharedSlots` / NPC availability), `S.plans`, calendar events, and the existing contextual date scene instead of creating parallel scheduler/date engines.
+- Player **Ask Out** no longer performs an instant relationship roll. It opens a date planner where the Player chooses a currently supported activity, day, and genuinely shared free slot. Finding a shared free slot is availability only; the NPC still makes a separate willingness decision.
+- Concrete date proposals use the H3 Decision Ledger (`romanceDateAsk`) with the NPC's stable person ID as `decisionMakerId`. The same proposal/context reuses the same decision across repeated clicks and save/reload. Legitimate reconsideration occurs only after the stored reconsideration window/context changes.
+- Date willingness may return **Accept / Reject / Counter-propose / Maybe later**. Reasons can reflect orientation incompatibility, another commitment, conflict, trust/readiness, workload, Personality, attraction/compatibility, and schedule without exposing internal formulas to the UI.
+- Accepted dates are real `S.plans` plus calendar `plan` events with person ID, date, start/end time, expected duration, location/activity, inviter, acceptance state, contextual payment expectation, and an existing-world movement hook.
+- Added strict overlap checking before a romantic plan is committed. An overlapping calendar commitment is reported with title/person context where present, date, time, and location; the existing event is never silently overwritten.
+- Added current-world date choices only: café, restaurant, park/picnic, mall, movie, walk, and casual meal. Recent date history deprioritizes the last-used activity/location when alternatives exist; repeats are not banned forever.
+- Payment expectation is contextual and stored on the plan (`player`, `npc`, `split`, or free) based on inviter/context/Personality using deterministic context selection. Payment is not presented as a negotiation popup on every date.
+- Added **NPC romantic initiative**. Eligible NPCs can invite the Player on a real scheduled date according to compatibility, attraction, Personality, schedule and cooldown. Shy/Busy traits alter frequency; per-person `nextInitiativeDate` and invite history prevent date-invitation spam.
+- NPC invitations create a pending romantic plan and normal invitation event. Player may accept, decline, say they are busy, or choose Maybe later. Acceptance schedules the plan; it does not instantly complete the date or create an official partner.
+- Fixed an integration issue found by the focused suite: because `ensureLove()` replaces the canonical `p.love` object, the initial NPC-invite code could write cooldown fields to a stale object reference after plan creation. The code now reacquires canonical `p.love` before recording invitation history/cooldown.
+- Added optional one-time **Get ready** preparation for accepted romantic plans. At the scheduled time, attending the plan enters the existing contextual date scene with the planned location/payment rather than awarding instant stats.
+- Completing a scheduled date records bounded per-person/global date history, narrative memory/thread outcome, a de-duplicated first-date milestone, reciprocal attraction evidence, and canonical `goingOut` progression where appropriate. It does **not** implement official/exclusive relationship formation; that is 3B.3.
+- Existing generic friend/parent NPC initiative remains available when no romantic initiative fires. No Phone/Messaging, Transportation, Prom, Matchmaking, breakup, exclusivity, or physical-affection overhaul was added.
+
+### Migration / Persistence
+
+- Added `migrateRomance3B2()` and chained it from the existing romance reconciliation path.
+- Migration deterministically initializes/bounds date and invite history and normalizes already-existing romantic plans with safe defaults for inviter, acceptance state, activity, and movement hook.
+- Migration does not RNG-create dates/attraction, duplicate history, overwrite existing plans, or force relationship progression.
+- Romantic plans, Decision Ledger records, per-person cooldowns/history, and global date history live in existing save state and therefore survive save/reload.
+
+### Actual Files Changed
+
+- `src/modules/romance3b2.js` — new 3B.2 reciprocal ask/date orchestration, scheduling, NPC initiative, payment/location/history/migration logic.
+- `src/modules/romance72.js` — routes existing Ask Out/date entry points into 3B.2 and lets the existing date scene report completion back to the scheduled plan.
+- `src/modules/plans72.js` — romantic-plan attendance enters the date scene; accepted dates expose one-time preparation.
+- `src/modules/core72.js` — romantic invitation choices route through the 3B.2 handler before generic invitation handling.
+- `src/modules/ui72.js` — date planner/counterproposal/preparation UI click routing.
+- `src/modules/romance3b1.js` — invokes deterministic 3B.2 migration after canonical romance reconciliation.
+- `tools/splice.py` — includes `romance3b2.js` and focused QA hooks.
+- `game.js` — regenerated from authoritative source modules.
+- `qa/t_3b2.py` — new focused 3B.2 behavioral suite.
+- `qa/t_h32.py` — updated H3 regression to test Decision-Ledger integrity at the new concrete scheduled-date proposal boundary. The anti-reroll/save-reload/decision-maker/cooldown assertions remain; only the superseded instant-ask boundary changed.
+- `qa/t_romance.py` — updates the legacy assertion that previously expected one Ask Out click to instantly create a partner; it now expects the approved 3B.2 planner. The existing Valentine-partner fixture remains a separate legacy regression.
+- `PHASE_3B_PROGRESS.md`, `CHANGELOG.md`, `MIGRATION_NOTES.md`, `QC_REPORT.md` — checkpoint documentation.
+
+### Tests / Validation
+
+- `qa/t_3b2.py`: **17/17 PASS** — current-world activities; same-proposal Decision Ledger reuse; free-time != consent; real plan/calendar creation; complete plan fields; overlap blocking; contextual payment; location variety; NPC initiative; anti-spam cooldown; invitation acceptance; scheduled attendance enters the real date scene; date history/progression/milestone; idempotent migration; under-Teen gate; no page errors.
+- `qa/t_3b1.py`: **13/13 PASS**.
+- `qa/t_h31.py`: **15/15 PASS**.
+- `qa/t_h32.py`: **10/10 PASS** after updating the test boundary to the approved 3B.2 concrete proposal. It still verifies same request does not reroll, stable `decisionMakerId`, save/reload persistence, legitimate cooldown reconsideration, and per-NPC isolation.
+- `qa/t_people.py`: **14/14 PASS** under a temporary portable QA harness.
+- `qa/t_profile.py`: **24/24 PASS** under a temporary portable QA harness.
+- `qa/t_friend.py`: **17/17 PASS** under a temporary portable QA harness.
+- `qa/t_romance.py`: **47/49 PASS** under the same portable harness. The newly superseded instant-partner assertion was updated and passes. The two remaining Valentine/date-scene assertions are the same pre-existing failures documented during 3B.1/H3-baseline comparison; they are not caused by 3B.2 and were not used to justify Holiday/Valentine scope creep.
+- `node --check game.js`: PASS.
+- `tools/splice.py` rebuild is deterministic; final checkpoint verification re-runs source build and byte comparison.
+- CSS was not changed by 3B.2; the retained/generated `style.css` hash matches the 3B.1 baseline.
+- The repository's shipped `qa/harness.py` remains unchanged. A temporary `set_content` + injected CSS/JS harness was used only because this execution environment blocks the project's historical hard-coded `file://` browser path; it was restored before packaging.
+
+### Known Limitations / Deliberate Scope Boundaries
+
+- 3B.2 does not create Boyfriend/Girlfriend/Partner status after one date. Official relationship conversation, physical affection/consent expansion, breakup/ex persistence, and reconciliation belong to 3B.3.
+- Matchmaking, blind dates, and multiple-prospect rules belong to 3B.4.
+- Transport is represented only by the existing-world movement hook; no Transportation system was implemented.
+- No full phone/contact exchange system was added; romantic invitations use currently legitimate in-game interaction/event channels.
+- The two legacy Valentine/date-scene assertions remain a documented pre-existing issue and are not treated as a 3B.2 regression.
+
+### Exact Resume Point
+
+**PHASE 3B INCOMPLETE**
+
+**3B.2 COMPLETE**
+
+Resume from checkpoint: **3B.3 — Romantic Interactions / Official Relationship / Breakup / Exes**.
+
+Do not begin 3B.3 automatically.
+
+
+
+---
+
+## Checkpoint Record — 3B.3 COMPLETE
+
+### Implementation
+
+- Added `src/modules/romance3b3.js` as the Phase 3B.3 layer on top of canonical `p.love`, 3B.2 scheduled dates, Phase 3A People/memory, and the H3 Decision Ledger. No matchmaking/blind-date/multiple-prospect work was added.
+- Added a contextual romance menu whose actions depend on age, current romance stage, mutuality, trust, milestones, date context, current partner status, and location/time. Teen options remain age-appropriate; adult-only intimacy is hidden from minors.
+- Added consent-aware affection flows for flirt, holding hands, hugs, cheek kiss, first kiss, repeat kisses, and goodbye kiss. Physical affection can be accepted, hesitated on, or declined; a past successful kiss does not create permanent consent.
+- Physical-affection decisions use the H3 Decision Ledger with the NPC's stable person ID. Repeating the same rejected/hesitant request in the same context reuses the decision instead of rerolling RNG. Legitimate reconsideration uses stored future dates/context.
+- Added bounded anti-farming for romance progression: a meaningful interaction key grants progression at most once per day and no more than three progression-producing romance interactions per person/day. First-only milestones are de-duplicated.
+- Added canonical first holding-hands / first cheek-kiss / first-kiss milestone support and made the special **First kiss** action disappear after it occurs.
+- Replaced the old one-click RNG `official` path with a mutual official-relationship conversation. Eligibility uses mutual attraction, compatibility, trust/closeness, shared romantic history, conflict, and current availability. Either Player or NPC may initiate the conversation.
+- Becoming official stores one canonical relationship start date on the person and `S.romance`; People/Profile continues to show Boyfriend / Girlfriend / Partner while friendship state remains separate.
+- Added NPC initiative for the official-relationship conversation with Personality-sensitive frequency and per-person cooldown. Accept / keep seeing each other / decline outcomes do not force commitment.
+- Added contextual official-partner interactions: emotional support, relationship talk, future discussion, and conflict resolution, with daily anti-farming rather than constant maintenance clicking.
+- Added adult-only consent-based private relationship development. It uses H3 decision integrity and remains explicitly non-graphic (`fade to black`).
+- Added a canonical breakup path that preserves the Person, friendship tier, relationship log/milestones/memory, official start date, breakup/end date, and global romance history. Exes remain in People with an Ex / Former Partner descriptor instead of being reset to Stranger.
+- Added reconciliation eligibility and request flow. Reconciliation requires time since breakup, recovered trust/closeness, manageable conflict, compatibility, and mutual willingness; it uses H3 decision integrity and resumes slowly at `goingOut` rather than instantly restoring an official relationship.
+- Added contextual older-teen rule-breaking hooks for sneaking out / sneaking a partner in only when late/home conditions allow. Existing discovery/house-rule consequences remain authoritative; the scene is nonsexual. Younger minors remain blocked from romantic sneak-in.
+- Integrated 3B.3 with 3B.2 date completion so meaningful date outcomes feed canonical romance progression without making every date automatically official.
+- Fixed a canonical-state bug found by focused QA: `formerPartner` is a historical flag, not the current romance state. It now only helps migrate truly legacy records and no longer forces a reconciled/active relationship back to `ex`.
+- Fixed stale canonical-object references in official-start-date and breakup-end-date writes by reacquiring `ensureLove(p)` after state transitions that normalize/replace `p.love`.
+
+### Migration / Persistence
+
+- Added `migrateRomance3B3()` and chained it after 3B.2 migration.
+- Migration initializes/bounds per-person romance interaction-day state and commitment history, recovers existing official relationship start dates where possible, and recovers ex relationship start/end dates from existing milestones/history where available.
+- Migration is deterministic/idempotent and does not RNG-create affection, commitment, breakup, reconciliation, or milestones.
+- Existing `formerPartner` history is preserved while allowing a genuinely reconciled active relationship to remain active.
+- Relationship start/end dates, breakup history, affection/official Decision Ledger records, and romance memories persist through the existing save architecture.
+
+### Actual Files Changed
+
+- `src/modules/romance3b3.js` — new 3B.3 interaction/consent/commitment/breakup/ex/reconciliation/migration layer.
+- `src/modules/romance3b1.js` — corrected canonical `formerPartner` migration inference so historical ex status cannot overwrite a current reconciled state.
+- `src/modules/romance3b2.js` — chains 3B.3 migration, NPC commitment initiative, event/click routing, and date-outcome progression hooks.
+- `src/modules/romance72.js` — routes legacy official/breakup/adult-intimacy entry points into 3B.3.
+- `src/modules/rst73.js` — routes the existing official step into the mutual 3B.3 official conversation.
+- `src/modules/world72.js` — permits contextual nonsexual romantic sneak-in only for older teens (16–17) while retaining existing discovery/family consequences and younger-minor blocking.
+- `tools/splice.py` — includes `romance3b3.js` in the generated build and exposes focused QA hooks.
+- `game.js` — regenerated from authoritative source.
+- `qa/t_3b3.py` — new focused 3B.3 behavioral suite.
+- `qa/t_romance.py` — updates two legacy expectations explicitly superseded by approved 3B.3 behavior: older-teen contextual/nonsexual sneak-in and H3-style reconsideration after an adult intimacy rejection.
+- `PHASE_3B_PROGRESS.md`, `CHANGELOG.md`, `MIGRATION_NOTES.md`, `QC_REPORT.md` — checkpoint documentation.
+
+### Tests / Validation
+
+- `qa/t_3b3.py`: **23/23 PASS** — contextual teen menu; adult-option age gate; first-kiss milestone/action transition; affection Decision Ledger reuse; anti-farming; current consent after prior success; official readiness/formation/start date; People descriptor; partner conflict repair; breakup persistence; Ex descriptor/history; delayed reconciliation; NPC official initiative; older-teen late/home sneak context; adult fade-to-black consent; idempotent migration; no page errors.
+- `qa/t_3b1.py`: **13/13 PASS**.
+- `qa/t_3b2.py`: **17/17 PASS**.
+- H3 decision regressions: `qa/t_h31.py` **15/15 PASS**, `qa/t_h32.py` **10/10 PASS**.
+- People/Profile/Friendship regressions under the temporary portable QA harness: `qa/t_people.py` **14/14 PASS**, `qa/t_profile.py` **24/24 PASS**, `qa/t_friend.py` **17/17 PASS**.
+- Existing `qa/t_romance.py`: **47/49 PASS** after updating only the two legacy assertions superseded by 3B.3. The two remaining Valentine/date-scene checks reproduce the pre-existing 3B.2 baseline issue and are outside 3B.3 scope.
+- The shipped `qa/harness.py` was restored unchanged after browser-environment compatibility testing.
+- `node --check game.js`: PASS.
+- Final authoritative rebuild is deterministic: `game.js` SHA-256 `1ab356a429c5f49ef0ebe3ed79ceaecac7e34d6a500dc54ed4d742d250d0feab` on two consecutive builds; `style.css` SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d` on both. `node --check game.js` PASS.
+
+### Known Limitations / Deliberate Scope Boundaries
+
+- 3B.3 does **not** implement matchmaking, blind dates, match offers, or multiple-prospect management; those remain 3B.4.
+- It does not implement the Phone/Exchange Number overhaul, Transportation expansion, Prom overhaul, Universal Occasion Engine, or later-phase systems.
+- The two legacy Valentine/date-scene assertions remain the same documented pre-existing failures from 3B.2 and were not scope-crept into this checkpoint.
+- Reconciliation currently returns to a cautious `goingOut` state; it does not automatically restore exclusivity/official status.
+
+### Exact Resume Point
+
+**PHASE 3B INCOMPLETE**
+
+**3B.3 COMPLETE**
+
+Resume from checkpoint: **3B.4 — Matchmaking / Blind Dates / Multiple Prospects**.
+
+Do not begin 3B.4 automatically.
+
+---
+
+## Checkpoint Record — 3B.4 COMPLETE
+
+### Implementation
+
+- Added `src/modules/romance3b4.js` as the Phase 3B.4 matchmaking / blind-date / multiple-prospect layer. It reuses the canonical 3B.1 romance state, the 3B.2 calendar-aware date lifecycle, the 3B.3 commitment boundary, Phase 3A People/history, and H3 decision-integrity foundations rather than creating a separate dating engine.
+- Replaced the visible legacy **“Set them up with someone”** action with **“Ask for an introduction”** for realistic eligible matchmakers. The older NPC-to-NPC coupling machinery remains available internally; it was not deleted or rewritten.
+- Matchmaker eligibility now requires an appropriate close relationship: Close Friend / Best Friend with sufficient trust, or a suitable sibling/relative. Ordinary acquaintances do not constantly arrange dates.
+- Added Player-requested introductions and low-frequency NPC-initiated matchmaking offers. NPC-initiated offers respect Player age, romance opt-out/commitment state, matchmaker eligibility, recent offers, and meaningful cooldowns.
+- Candidate selection validates age compatibility, Player preference, NPC orientation compatibility, and current romantic availability. Already-committed candidates are excluded from ordinary blind-date matching.
+- Fixed a compatibility-consistency bug found by repeated focused QA: `npcInterestedInPlayer()` now uses the stable underlying `npcId` when one exists. Previously an NPC with an uncertain/seeded orientation could pass pre-introduction compatibility using `npc.id` and then produce a different answer after becoming a People record because `person.id` was used. The same NPC now keeps the same compatibility result before and after materialization.
+- Match candidates become stable People records when introduced. Their People identity/history can persist; the candidate is not a disposable temporary name.
+- Candidate review exposes reasonable basic information: full name, age, gender, Looks, school/work/community context, how the matchmaker knows them, and a high-level compatibility statement. Love-interest/orientation remains **Unknown** unless Phase 3A knowledge rules legitimately reveal it.
+- Added persistent offer states for **Pending / Maybe / Declined / Accepted / Scheduled / Completed**. A clear rejection is remembered so the same candidate is not endlessly reoffered. **Maybe later** preserves the candidate but requires a real reconsideration date before it can return.
+- Matchmaker and NPC-offer cooldowns prevent invitation spam. An existing committed Player relationship disables ordinary matchmaking in both Player-requested and NPC-initiated directions.
+- Accepting an introduction does **not** auto-create attraction, a date, exclusivity, or a partner. It opens the normal 3B.2 date planner; the candidate still has their own willingness decision.
+- Blind dates reuse normal 3B.2 plans/calendar objects, overlap rules, payment/location handling, scheduled attendance, contextual scene outcomes, narrative memory, and romance progression. Matchmaking metadata links the normal date plan back to its offer; no separate low-quality blind-date engine was added.
+- Multiple `crushOne` / `crushMutual` / `goingOut` prospects can coexist before exclusivity. Becoming official through 3B.3 pauses other romantic prospects instead of treating pre-exclusive exploration as automatic cheating.
+- When the Player already has a different official partner, other romantic progression is blocked by the existing 3B.3 romance menu boundary and ordinary matchmaking is unavailable.
+- No Phone/Exchange Number, Smartwatch, Multi-School, Prom, Universal Occasion, Birthday Gift, Side Hustle, or Transportation expansion was implemented.
+
+### Migration / Persistence
+
+- Added `migrateRomance3B4()` and chained it after the 3B.3 romance migration.
+- `S.romance.matchmaking` stores bounded offer/history collections. Migration normalizes legacy/missing offer fields, removes duplicate offer IDs deterministically, and clears dangling per-person offer pointers without creating random matches.
+- Matchmaking state, previous Declines/Maybe Later outcomes, reconsideration dates, accepted/scheduled/completed offer links, stable candidate People records, and prospect states persist through the existing save architecture.
+- Migration is idempotent and does not randomly create attraction, turn an introduction into mutual romance, delete partners, or duplicate offers/history.
+
+### Actual Files Changed
+
+- `src/modules/romance3b4.js` — new matchmaking, candidate validation, offer history/cooldowns, blind-date bridge, multiple-prospect and migration logic.
+- `src/modules/romance3b2.js` — bridges normal date plans/outcomes to matchmaking metadata; adds NPC matchmaking initiative/event/click routing without changing the core date engine.
+- `src/modules/romance3b3.js` — chains 3B.4 migration, pauses other prospects on official commitment, and enforces the existing commitment boundary in the romance menu.
+- `src/modules/ident73.js` — uses stable `npcId || personId` for NPC-to-Player orientation compatibility so an introduced Person cannot change compatibility merely because their wrapper ID changed.
+- `tools/splice.py` — includes `romance3b4.js`, updates the visible People matchmaking action, and exposes focused QA hooks.
+- `game.js` — regenerated from authoritative source modules.
+- `qa/t_3b4.py` — new focused 3B.4 behavioral suite, including a deterministic sibling fixture for matchmaker-eligibility coverage.
+- `PHASE_3B_PROGRESS.md`, `CHANGELOG.md`, `MIGRATION_NOTES.md`, `QC_REPORT.md` — checkpoint documentation.
+- `style.css` — unchanged from the 3B.3 baseline.
+
+### Tests / Validation
+
+- `qa/t_3b4.py`: **23/23 PASS** repeatedly — close-friend/sibling matchmaker eligibility; acquaintance rejection; Player-requested offer; stable candidate People record; knowledge-safe candidate info; compatibility validation; same pending-offer reuse; Maybe Later cooldown/revisit; rejected-candidate suppression; later replacement candidate; no auto-relationship on acceptance; normal 3B.2 blind-date plan/calendar reuse; normal date outcome progression; multiple pre-exclusive prospects; official commitment pauses other prospects; committed relationship disables matchmaking; migration idempotence; friendship independence; no page errors.
+- `qa/t_3b1.py`: **13/13 PASS**.
+- `qa/t_3b2.py`: **17/17 PASS**.
+- `qa/t_3b3.py`: **23/23 PASS**.
+- H3 decision regressions: `qa/t_h31.py` **15/15 PASS**, `qa/t_h32.py` **10/10 PASS**.
+- People/Profile/Friendship under the temporary portable browser harness: `qa/t_people.py` **14/14 PASS**, `qa/t_profile.py` **24/24 PASS**, `qa/t_friend.py` **17/17 PASS**.
+- Existing `qa/t_romance.py`: **47/49** under the same portable harness. The only failures are the same two Valentine/date-scene assertions already documented on the 3B.2/3B.3 baseline; no new 3B.4 romance regression was observed.
+- Temporary browser-harness compatibility override was restored; shipped `qa/harness.py` matches the 3B.3 baseline byte-for-byte.
+- `node --check game.js`: PASS.
+- `tools/splice.py` authoritative rebuild is checked for deterministic byte identity before packaging.
+- `style.css` SHA-256 remains identical to the 3B.3 baseline. `tools/theme.py` currently reports the already-present unmapped `rgba(30,24,16,.42)` token when run from `src/style_before_theme.css`; 3B.4 does not modify CSS, so this unrelated build-tool mapping issue was documented rather than scope-crept.
+
+### Known Limitations / Deliberate Scope Boundaries
+
+- Matchmaking introductions currently use legitimate in-person/event channels; the full contact exchange / Phone / Messaging overhaul remains Phase 3C.
+- The old NPC-to-NPC matchmaking/couple logic remains internally available; 3B.4 changes the Player-facing matchmaking action rather than deleting a working NPC social system.
+- The two pre-existing Valentine/date-scene legacy assertions remain outside 3B.4 scope.
+- Phase 3B is not complete until 3B.5 final migration/regression/fuzz is performed.
+
+### Exact Resume Point
+
+**PHASE 3B INCOMPLETE**
+
+**3B.4 COMPLETE**
+
+Resume from checkpoint: **3B.5 — Final Migration / Regression / Fuzz**.
+
+Do not begin 3B.5 automatically.
+
+
+
+---
+
+## Checkpoint Record — 3B.5 COMPLETE / PHASE 3B COMPLETE
+
+### Final QA / Implementation
+
+- Performed the Phase 3B final migration, regression, save/reload, idempotence, acceptance, and representative-life-stage fuzz pass without beginning Phase 3C.
+- Fixed one real Phase 3B → HOTFIX-P1 profile regression discovered by final QA: `relationshipDescriptor()` in `src/modules/romance3b1.js` could return a blank badge when a valid friendship tier existed but no persistent `friendStatus` label had yet been stored. The descriptor now falls back to the canonical friendship tier (and finally `Acquaintance`) while preserving romantic partner / Ex priority. This restores the approved People/Profile behavior without merging romance and friendship state.
+- Updated `qa/t_rst.py` only where legacy assertions encoded behavior explicitly superseded by approved Phase 3B rules: asking out now enters the calendar-aware date planner instead of instantly creating a partner; official commitment uses the mutual 3B.3 conversation; breakup preserves Ex/history instead of resetting the Person to a pre-romance state. The strength of the regression test was not reduced.
+- Added `qa/t_3b5_accept.py` for final acceptance coverage of positive NPC-initiated matchmaking, compatibility/knowledge safety, save/reload + repeated migration persistence, and partner blocking of blind-date offers.
+- Added `qa/t_3b5_fuzz.py` for fast in-browser randomized Phase 3B state/migration/initiative fuzz at teen, older-teen, and adult stages. This complements the legacy UI click-fuzzer, which is too slow to complete inside the current execution window.
+- No new Phase 3C features were implemented.
+
+### Actual Files Changed in 3B.5
+
+- `src/modules/romance3b1.js` — Profile relationship-descriptor fallback regression repair.
+- `qa/t_rst.py` — legacy regression expectations updated only for behavior intentionally superseded by Phase 3B.
+- `qa/t_3b5_accept.py` — new final acceptance supplement.
+- `qa/t_3b5_fuzz.py` — new representative-life-stage Phase 3B fuzz suite.
+- `PHASE_3B_PROGRESS.md`, `QC_REPORT.md`, `CHANGELOG.md`, `MIGRATION_NOTES.md` — final Phase 3B documentation.
+- `game.js` — regenerated from authoritative source modules.
+- `style.css` — no gameplay/UI style change in 3B.5.
+
+### Final Build Verification
+
+- `node --check game.js`: PASS.
+- Two consecutive authoritative `python3 tools/splice.py` rebuilds produced byte-identical `game.js`: SHA-256 `b643a7136214beddd9f9332e67c3a3b7175e33290c4a6581e222154c850cb7f6`.
+- `style.css` remains byte-identical to the 3B.4 baseline: SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+- Shipped `qa/harness.py` matches the 3B.4 baseline byte-for-byte: SHA-256 `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`.
+
+### Focused / Direct Regression Results
+
+- Phase 3B focused: `t_3b1` **13/13**, `t_3b2` **17/17**, `t_3b3` **23/23**, `t_3b4` **23/23** → **76/76 PASS**.
+- H3 focused: `t_h30` **3/3**, `t_h31` **15/15**, `t_h32` **10/10**, `t_h33` **12/12**, `t_h34` **10/10** → **50/50 PASS**.
+- Final Phase 3B acceptance supplement: `t_3b5_accept` **5/5 PASS**.
+- Final Phase 3B representative fuzz: `t_3b5_fuzz` **13/13 PASS**, **600 randomized operations** total (200 each at ages 14, 17, and 25), including canonical-state invariants, browser-error checks, save/load, and repeated-migration idempotence.
+- HOTFIX-P1: `t_p1` **22/22**, `t_p12` **24/24**, `t_p13` **28/28** → **74/74 PASS** after the descriptor repair.
+- Phase 3A: `t_3a7` **13/13 PASS**.
+- People/Profile/Friendship: `t_people` **14/14**, `t_profile` **24/24**, `t_friend` **17/17**.
+- H2: `t_h2` **22/22 PASS**.
+- Phase 2A direct coverage: `t_2a6` **13/13**, `t_health` **23/23**, `t_med` **15/15**.
+- Phase 2B direct coverage: `t_family2` **22/22**, `t_family` **13/13** in the final run.
+- Save/reload + migration regression: `t_commit` **26/26**, `t_regress` **16/16**.
+- Additional representative regressions passed, including Birthday, Social, Events, Exams, Fast-forward, Growth, Holidays, Identity, Inventory, Jordan save migration/session, Business, Campus, Care, Context, Creator, Narrative, Nurse, Theme, UI, and Work suites.
+- Updated `t_rst` passes **44/44** with the approved Phase 3B lifecycle semantics.
+
+### Legacy / Environment-Limited Results (Not Hidden or Weakened)
+
+- Existing `t_romance.py` remains **47/49**. The only two failures are the already-documented Valentine/date-scene assertions present on the 3B.2–3B.4 baseline; final 3B QA found no new romance regression from these checks.
+- School / University legacy suites still expose unrelated pre-existing failures (`t_sch`, `t_schoolyear`, `t_uni`). The directly implicated school/university source modules (`sch73.js`, `uni73.js`, `academic73.js`, `ff73.js`) were verified byte-identical to the H3 baseline, so these were documented rather than scope-crept into Phase 3B.
+- `t_dev.py`, `t_hij.py`, `t_lmpq.py`, and the legacy Playwright round-trip `t_fuzz.py` cannot complete within the current execution window under the portable browser compatibility setup. Their loops/assertions were not reduced to manufacture a green result.
+- The shipped `qa/harness.py` was restored byte-for-byte after temporary environment-compatibility execution. No temporary browser/path workaround is shipped.
+
+### Core Acceptance — 24/24 Verified
+
+1. One-sided Player crush is separate from NPC attraction/mutual attraction.
+2. NPC can initiate romance/date appropriately.
+3. NPC can reject Player.
+4. Finding shared free time does not force willingness/acceptance.
+5. Same rejected ask uses H3 decision integrity and cannot be spam-rerolled.
+6. Dates are real plans/calendar objects rather than instant stat buttons.
+7. Date scenes produce contextual outcomes.
+8. Repeating the same location is discouraged without permanently banning it.
+9. Paid dates support contextual payment responsibility.
+10. Romantic physical affection requires reciprocal willingness.
+11. Minor romance remains age-appropriate.
+12. Adult intimacy remains non-explicit/fade-to-black.
+13. Official relationship formation is a mutual decision.
+14. Canonical relationship start date persists.
+15. Breakup preserves the NPC.
+16. Ex-partners remain in People/history with relationship dates/logs/milestones.
+17. Matchmaking works from Player request and NPC initiative where eligible.
+18. Candidate age/orientation/availability compatibility is validated.
+19. Clearly rejected match candidates are not endlessly reoffered.
+20. Official commitment blocks ordinary blind-date offers.
+21. Multiple pre-exclusive romantic prospects can coexist.
+22. Friendship tiers remain intact and independent of romance state.
+23. Profile romantic-availability knowledge gating remains intact.
+24. H3 Decision Ledger behavior remains intact.
+
+### Migration / Persistence
+
+- Existing 3B.1–3B.4 migrations remain deterministic and idempotent.
+- Final save/load and repeated-migration checks preserve one-sided crush state, NPC attraction, active/ex partner history, official start/end dates, Decision Ledger records, date plans, matchmaking offers, and candidate identities without random attraction/partner creation or duplicate records.
+- Phase 3B final fuzz also validates save/load + repeated migration at teen, older-teen, and adult states.
+
+### Known Scope Boundaries
+
+Phase 3B finalization does not implement the Phase 3C Phone/Messaging/Exchange Number/Smartwatch overhaul, Multi-School, Prom overhaul, Universal Occasion Engine, Birthday Gift overhaul, Side Hustle overhaul, or Transportation expansion.
+
+### Exact Resume Point
+
+**PHASE 3B COMPLETE**
+
+**3B.5 COMPLETE**
+
+Resume point: **Phase 3C — Contacts, Phone, Smartwatch & Communication**.
+
+**STOP — Phase 3C not started.**

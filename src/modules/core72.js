@@ -565,7 +565,7 @@ function runFollowUp(f){
 
 // ---------- Lifecycle event choices ----------
 function handleLifecycleEventChoice(e,id,label){
- const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
+ const rb=typeof romance3B2EventChoice==='function'&&romance3B2EventChoice(e,id,label);if(rb)return rb;const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
  if(e.type==='newPhone')return handlePhoneChoice(e,id);
  if(e.type==='invitation'&&e.payload?.planId)return handlePlanInvite(e,id);
  if(e.type==='electionLost')return handleElectionLost(e,id);

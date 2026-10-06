@@ -129,11 +129,11 @@ function giveInventoryItem(itemId,personId){
  advanceTime(10);closeChoiceModal();recordOutcome('Gift',`${gift.name} → ${displayName(p,'formal')}`,{love:'Loved it',like:'Liked it',effort:'Appreciated the effort',awkward:'Awkward',alreadyOwn:'Already had one',dislike:'Not their thing'}[r.tier],r.why);
  log(`Gave ${gift.name.toLowerCase()} to ${firstName(p)}`,`${r.why}${extra}`);toast(`Gift • ${firstName(p)}`)
 }
-// ===== Sneaking out / in (§82). Minors: friends & parties only — never romantic. =====
+// ===== Sneaking out / in (§82). Older teens may have contextual, nonsexual romantic rule-breaking; younger minors remain blocked. =====
 function canSneak(p){if(S.age<12||S.age>=18||!p||isFamilyPerson(p))return false;const m=currentMinute(),late=m>=Math.min(curfewMinute()||1439,bedtimeMinute())||m<300;return late}
 function sneakOut(personId,mode){
  const p=personById(personId);if(!canSneak(p)){toast('That is not something to sneak around for right now.');return}closeChoiceModal();
- if(p.id===S.romance?.partnerId&&S.age<18&&mode==='over'){toast('Not that — keep time with them to daytime plans.');return}
+ if(p.id===S.romance?.partnerId&&S.age<16&&mode==='over'){toast('Not that — keep time with them to daytime plans.');return}
  if(mode==='over'||mode==='meet'){const st=npcStatusAt(p,currentDate(),1000);const refuse=(p.traits||[]).includes('Studious')&&chance(50)||chance(25);if(refuse){log('They say no',`${firstName(p)} texts back: "${rand(["My parents will be home soon — no way.","I'd get in so much trouble. Not tonight.","It's too late, I have school tomorrow."])}"`);return}}
  const r=familyRules(),brk=S.family.ruleBreaks||0,sib=S.people.find(x=>/sibling/.test(x.role));let pCaught=clamp(18+r.strictness*.35+(currentMinute()<300?10:0)+brk*5+Math.random()*15-(S.luck-50)*.1,5,85);
  S.family.ruleBreaks=brk+1;advanceTime(mode==='over'?150:120,{silent:true});S.needs.fun=clamp(S.needs.fun+12);p.rel=clamp(p.rel+3);rememberPerson(p,mode==='over'?'You snuck them over late at night.':'You snuck out to meet them.',2);

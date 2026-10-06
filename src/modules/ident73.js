@@ -22,7 +22,7 @@ function familyGender(p){if(!p.relation&&isFamilyPerson(p))migrateRelations();if
 function personIdentity(p){if(!p)return {};const n=npcById(p.npcId);if(n){ensureIdentity(n,n.firstName,npcAge(n));return {gender:n.gender,orientation:n.orientation}}if(!p.gender){p.gender=familyGender(p)||nameGender(p.firstName||String(p.name).split(' ')[0])||(hashOf(p.id)%2?'Female':'Male')}if(!p.orientation)p.orientation=rollOrientation(p.gender,p.id,personAge(p));return {gender:p.gender,orientation:p.orientation}}
 function playerGender(){const g=String(S.gender||'');return /girl|woman|female/i.test(g)?'Female':/boy|\bman\b|male/i.test(g)?'Male':'Non-binary'}
 function orientationIncludes(orient,gender,seed){if(orient==='All genders')return true;if(orient==='Not interested in romance')return false;if(orient==='Not sure yet')return hashOf(seed+'ns')%2===0;if(gender==='Non-binary')return hashOf(seed+'nb')%3===0;return (orient==='Men'&&gender==='Male')||(orient==='Women'&&gender==='Female')}
-function npcInterestedInPlayer(p){const id=personIdentity(p);return orientationIncludes(id.orientation,playerGender(),p.id)}
+function npcInterestedInPlayer(p){const id=personIdentity(p);return orientationIncludes(id.orientation,playerGender(),p.npcId||p.id)}
 function npcsCompatible(a,b){ensureIdentity(a,a.firstName,npcAge(a));ensureIdentity(b,b.firstName,npcAge(b));return orientationIncludes(a.orientation,b.gender,a.id)&&orientationIncludes(b.orientation,a.gender,b.id)}
 function loveInterestVisible(p){return S.age>=13&&personAge(p)>=13&&!isFamilyPerson(p)}
 function loveInterestKnown(p){return loveInterestVisible(p)&&(p.loveKnown||p.rel>=60||p.id===S.romance?.partnerId)}
