@@ -1090,3 +1090,45 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Full 4D migration chain verified idempotent with stable IDs, Calendar refs and non-duplicating result history.
 - No production gameplay source changes were required in 4D.5.
 - Phase 4D is COMPLETE; next resume point is Phase 5A — Workbooks / Advanced Study.
+
+## Phase 5A.1 — Workbook Data / Store / Ownership Foundation
+- Added deterministic canonical subject/grade/Level I–III workbook definitions inside the existing `D.catalog` Shop architecture.
+- Added stable workbook item IDs, prerequisite metadata, current-grade Shop filtering, actual Inventory ownership and duplicate durable-workbook protection.
+- Hid the old generic all-subject workbook from new Shop purchases while preserving legacy copies/progress in existing saves.
+- Advanced Exercise now requires an owned current-grade Level I workbook for that subject; generic workbook ownership no longer grants universal Advanced Exercise access.
+- Added conservative/idempotent workbook migration and focused `qa/t_5a1.py` (**23/23 PASS**).
+- Phase 5A remains IN PROGRESS; resume at 5A.2.
+
+## Phase 5A.2 — Workbook Level Progression
+- Added persistent Player-level workbook progress/completion keyed by canonical workbook IDs.
+- Enforced Level I → II → III prerequisites without tying learned progress to physical Inventory copies.
+- Added future-grade lock, old-grade review-only state, completion history and Inventory/UI mirrors.
+- Added `qa/t_5a2.py`; focused 23/23 PASS.
+
+
+## Phase 5A.3 — Advanced Exercise Session Engine
+- Added a global once-per-game-day Advanced Study progression cap that cannot be bypassed by switching subjects.
+- Added deterministic Smart/context/level-based 1–5% workbook progress with 60/90/120-minute Level I/II/III study costs.
+- Added backend location, class-time and Calendar-conflict gating with no full cost on rejected attempts.
+- Persisted exact session results/narratives to prevent save/reload reroll exploits.
+- Routed legacy `extraExercise()` through the canonical workbook session engine while preserving modest compatibility academic effects.
+- Added `qa/t_5a3.py`; focused 23/23 PASS. Phase 5A remains IN PROGRESS; resume at 5A.4.
+
+
+## Phase 5A.4 — School / Exam / Competition / UI Integration
+- Learned workbook progress, not ownership alone, now provides small subject-matched exam support and bounded academic-competition result support.
+- Academic workbook support does not mutate contest `prep`, `prepDaily`, or bypass H3's 10/6/3 three-session preparation integrity.
+- Successful voluntary Advanced Study contributes gradual Phase 3A trait/talent evidence without instant recognition.
+- Added contextual teacher recommendations that never auto-own a workbook and caregiver support routed through existing parent/guardian authority/economy.
+- Replaced scattered per-subject Advanced Exercise controls with a compact Advanced Study subject selector showing canonical Level I/II/III ownership/progress/lock/completion state.
+- 5A.4 focused QA: 24/24 PASS. Primary fresh focused/acceptance matrix: 304/304 PASS; directly affected 4D.3 focused: 23/23 PASS.
+- Exact next resume point: 5A.5 — Migration / Regression / Fuzz / Final QA.
+
+## Phase 5A.5 — Final migration / regression / fuzz / QA
+
+- Closed Phase 5A with 24/24 final acceptance and 10/10 dedicated fuzz (200 randomized workbook operations).
+- No production gameplay source change was required after validated 5A.4.
+- Verified 47/47 Phase 5A acceptance criteria, full migration fixed point, save/reload integrity, prior-phase regressions and reproducible build.
+- Added `qa/t_5a5_accept.py` and `qa/t_5a5_fuzz.py`.
+- Phase 5B has not started.
+

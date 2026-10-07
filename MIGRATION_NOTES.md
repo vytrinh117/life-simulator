@@ -364,3 +364,32 @@ No historical attendance, absence, timetable, or homework records are fabricated
 ## Phase 4D final migration closeout
 
 The complete 4D migration chain (4D.1 canonical event identity, 4D.2 discovery/registration, 4D.3 participation/results and 4D.4 calendar/notification lifecycle) reaches a stable fixed point. Repeated migration does not duplicate canonical events, annual instances, Calendar references or result history and does not fabricate legacy event outcomes.
+
+## Phase 5A.1 — Workbook migration foundation
+
+- Canonical workbook definitions are deterministic catalog data and are not copied wholesale into saves.
+- Ownership remains `S.inventoryItems`; no parallel workbook-ownership boolean system is created.
+- Existing generic `workbook` items are preserved as legacy items, including any old generic progress, but are not guessed into a subject/grade/level workbook.
+- Unknown legacy Inventory records are mapped only when their visible name exactly matches one canonical workbook definition.
+- Repeated 5A.1 migration enriches metadata and collapses accidental duplicate physical copies of the same canonical durable workbook without fabricating completion/progress.
+- Existing academic stats and prior Advanced Exercise gains are preserved; future Advanced Exercise access follows canonical ownership rules.
+
+## Phase 5A.2 workbook learning migration
+`migrateWorkbooks5A2()` preserves explicit canonical workbook progress/completion, keeps learning history independent of physical copies, deduplicates completion history by stable workbook ID, and does not fabricate progress/completion from the legacy generic workbook. Repeated migration is idempotent.
+
+
+## Phase 5A.3 workbook session migration
+`migrateWorkbooks5A3()` adds only canonical per-game-date Advanced Study session state. It preserves 5A.1 ownership and 5A.2 learning records, does not infer historical sessions from legacy exercise counters, does not fabricate progress/results, and normalizes only explicit valid canonical workbook session records. Repeated migration is idempotent and preserves the saved daily-limit date/result.
+
+
+## Phase 5A.4 workbook integration migration
+`migrateWorkbooks5A4()` initializes only integration metadata for teacher recommendations and subject-study evidence. It does not fabricate recommendations, ownership, purchases, exam/competition bonuses, historical sessions, traits or talents. 5A.1 ownership, 5A.2 learning progress/completion and 5A.3 session history remain authoritative and unchanged. Repeated 5A.4 migration is idempotent.
+
+## Phase 5A.5 final workbook migration verification
+
+- Full migration chain `5A.1 → 5A.2 → 5A.3 → 5A.4` reaches a stable fixed point.
+- Legacy generic workbook items/progress are preserved without invented subject/grade/level ownership or completion.
+- Repeated migration does not duplicate Inventory workbooks, completion history, daily sessions, or recommendations.
+- Selling/removing a physical canonical workbook does not erase learned progress/completion.
+- No historical session, recommendation, exam support, competition support, trait, or talent evidence is fabricated.
+

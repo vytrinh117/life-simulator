@@ -583,3 +583,47 @@ Final reproducible build:
 - H3: 50/50 PASS
 - Reproducible build: byte-identical game.js/style.css
 - Phase 4D COMPLETE; Phase 5A not started
+
+## Phase 5A.1 checkpoint QA
+
+- Focused workbook foundation: **23/23 PASS**.
+- Phase 4D focused/final acceptance: **110/110 PASS**; 4D fuzz **21/21 PASS / 200 ops**.
+- Phase 4C final acceptance **28/28**, Phase 4B final acceptance **23/23**, Phase 4A **32/32**, Phase 3C **29/29**, Phase 3B **5/5**, H3 **50/50**.
+- Clean rebuild byte-identical; `game.js` SHA-256 `f0181cc400131743c7aacb5dfd8e37b0508d867a1d5873e8f280949ef72e846b`.
+- Legacy `t_growth.py` contains a now-superseded assumption that Advanced Exercise can be clicked without owning a subject/grade workbook; test left unchanged.
+
+## Phase 5A.2 QC
+Focused progression/prerequisite suite: 23/23 PASS. 5A.1 regression: 23/23 PASS. Fresh prerequisite matrix (4D.5, 4C.5, 4B.5, 4A.5, 3C.5, 3B.5, H3) remained green; explicit validated total including 5A.1/5A.2: 257/257 PASS. Clean rebuild reproduced identical `game.js` / `style.css` / shipped harness hashes.
+
+
+## Phase 5A.3 QC
+- 5A.3 focused: **23/23 PASS**.
+- 5A.1 regression: **23/23 PASS**; 5A.2 regression: **23/23 PASS**.
+- Phase 4D.5 acceptance/fuzz **44/44**, Phase 4C.5 **28/28**, Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Explicit validated focused/acceptance matrix including 5A.1–5A.3: **280/280 PASS**.
+- Clean rebuild byte-identical; `game.js` SHA-256 `1fc0c653918c7ea01f1422aaf2e1600dfe68b31a182bbfe23b19f2567b1da3f4`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- Exact next resume point: **5A.4 — School / Exam / Skill Integration + UI**.
+
+
+## Phase 5A.4 QC
+- 5A.4 focused: **24/24 PASS**.
+- 5A.1 / 5A.2 / 5A.3 regression: **69/69 PASS**.
+- Phase 4D.5 acceptance/fuzz: **44/44 PASS / 200 randomized operations**; directly affected 4D.3 focused: **23/23 PASS**.
+- Phase 4C.5 **28/28**, Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Primary fresh focused/acceptance matrix including 5A.1–5A.4: **304/304 PASS**.
+- Reproducible build is byte-identical; `game.js` SHA-256 `a9151c7c791d47114f6078cef092c647c60a6122b6984d794141e09221d9d7df`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- Legacy People/Profile scripts still depend on the obsolete repository browser/file-navigation path in this sandbox; current Phase 4A acceptance including Profile knowledge/provenance remains **32/32 PASS**.
+- Exact next resume point: **5A.5 — Migration / Regression / Fuzz / Final QA**.
+
+## Phase 5A final QA closeout
+
+- Phase 5A focused/acceptance: **117/117 PASS**.
+- Phase 5A.5 dedicated fuzz: **10/10 PASS / 200 randomized operations**.
+- Formal Phase 5A acceptance criteria: **47/47 verified**.
+- Current 4D/4C/4B/4A/3C/3B/H3 regression suites remain green; prerequisite fuzz suites also remain green.
+- HOTFIX-P1 and Phase 3A were rechecked with QA-only portable browser harnesses; shipped `qa/harness.py` was restored byte-for-byte.
+- Clean authoritative rebuild is byte-identical; no production source change was required in 5A.5.
+- Known legacy exceptions are documented in `PHASE_5A_PROGRESS.md` and are not 5A.5 production regressions.
+
