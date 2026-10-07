@@ -332,3 +332,15 @@ Focused save/reload and repeated-migration checks are covered by `qa/t_3c4.py`; 
 - NPC migration does not create fake years of history or huge school rosters.
 - Meeting school provenance remains historical and is not overwritten by later Player/NPC transfers.
 - 4A.5 adds no new migration schema or production mutation; it validates the 4A.1–4A.4 migration stack.
+
+
+## Phase 4B.5 — Final migration validation
+
+- The complete 4B migration chain (`migrateSchoolOrganizations4B1`, `migrateSchoolElections4B2`, `migrateClubLeadership4B3`, `migrateSchoolRecognition4B4`) reaches a stable fixed point across elementary, middle, high and adult-with-history saves.
+- Repeated migration does not duplicate organizations, structured role definitions, current holders, role history, canonical elections, club/team leadership selections, Ambassador considerations or role-memory keys.
+- Decided election/leadership/Ambassador results remain locked and are never rerolled on load or repeated migration.
+- Unique-role conflicts remain deterministic; valid established legacy Player roles are preserved when supported, and ambiguous legacy text does not fabricate an election/appointment history.
+- Transfer and school-age exit/graduation close incompatible current school offices while preserving historical role records.
+- Class-specific roles retain correct school + grade + class ownership; school-wide roles never migrate across school IDs.
+- Save/reload followed by repeated full migration is idempotent in all 4B.5 acceptance and fuzz scenarios.
+- 4B.5 adds no new production migration schema; it validates the cumulative 4B.1–4B.4 migration stack.

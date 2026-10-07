@@ -1,3 +1,15 @@
+# Phase 4B — COMPLETE (4B.5 finalization)
+
+- Closed School Organizations / Roles / Elections after checkpoints 4B.1–4B.5.
+- Final Phase 4B focused/acceptance runtime: **136/136 PASS**.
+- Final Phase 4B fuzz: **720 randomized operations / 17/17 checks PASS** across elementary, middle, high and adult-with-history scenarios.
+- Verified all **46/46 formal Phase 4B acceptance criteria**.
+- Fresh regression remained green for Phase 4A **114/114**, Phase 3C **131/131**, Phase 3B **94/94**, H3 **50/50**, HOTFIX-P1 **74/74**, Phase 3A **13/13**, and People/Profile/Friendship **55/55**.
+- 4B.5 made no production-source change; it added final acceptance/fuzz coverage and closeout documentation only.
+- Repeated authoritative rebuild is byte-identical; final `game.js` SHA-256 is `e37ebe47ff68f119226af9d4c23a7bcbdb1955594b898190842dee9cb2fa5cb2`.
+- Historical stale-suite assumptions are documented in `PHASE_4B_PROGRESS.md`; no gameplay rule or assertion was weakened to manufacture a pass.
+- Phase 4C has not started. Exact next resume point: **Phase 4C — Daily School Realism**.
+
 # Phase 4A — COMPLETE (4A.5 finalization)
 
 - Closed the Multi-School World Foundation after 4A.1–4A.5.

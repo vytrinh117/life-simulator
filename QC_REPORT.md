@@ -500,3 +500,46 @@ Final build:
 - production `src/` and `tools/` are unchanged from validated 4A.4 during 4A.5.
 
 Exact next resume point: **Phase 4B — School Organizations / Roles / Elections**.
+
+
+## Phase 4B.5 — Final Migration / Regression / Fuzz / QA — COMPLETE
+
+Status: **PHASE 4B COMPLETE**.
+
+Final Phase 4B results:
+- 4B.1: 23/23 PASS
+- 4B.2: 27/27 PASS
+- 4B.3: 33/33 PASS
+- 4B.4: 30/30 PASS
+- 4B.5 acceptance: 23/23 PASS
+- Phase 4B focused/acceptance subtotal: **136/136 PASS**
+- Phase 4B fuzz: **720 randomized operations / 17/17 checks PASS**
+- formal Phase 4B acceptance criteria: **46/46 verified**
+
+Fresh required cross-phase results:
+- Phase 4A: **114/114 PASS**, plus 600-op fuzz / 17/17
+- Phase 3C: **131/131 PASS** including 600-op fuzz
+- Phase 3B: **94/94 PASS** including 600-op fuzz
+- H3: **50/50 PASS**
+- HOTFIX-P1: **74/74 PASS**
+- Phase 3A: **13/13 PASS**
+- People/Profile/Friendship: **55/55 PASS**
+- save/reload + legacy migration (`t_commit`, `t_regress`, `t_rst`): **86/86 PASS**
+- completed School/existing-system set (`t_exam`, `t_campus`, `t_context`, `t_events`): **100/100 PASS**
+
+Final migration/fuzz validation confirms stable organization IDs, valid school/class ownership, one-holder unique offices, persistent real NPC opponents/incumbents, locked election/selection results, role-history preservation, transfer/graduation cleanup and repeated 4B.1→4B.4 migration idempotence.
+
+Historical-suite notes are recorded in `PHASE_4B_PROGRESS.md`: `t_sch.py`, `t_schoolyear.py` and the club-election tail of `t_social.py` contain assumptions superseded by the current academic/4B architecture and are not counted as fresh passes. No production rule or assertion was weakened to force these old suites green. The old generic fuzz completed age 3 (140 random steps) and the age-6 invocation exceeded the execution window; dedicated 4B/4A/3B/3C fuzz completed **2,520 randomized operations** total.
+
+4B.5 made **no production source or build-tool changes** from the validated 4B.4 checkpoint. `src/` and `tools/` diff cleanly against the 4B.4 input.
+
+Final reproducible build:
+- `game.js`: `e37ebe47ff68f119226af9d4c23a7bcbdb1955594b898190842dee9cb2fa5cb2`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488` (restored original)
+- repeated authoritative rebuild: byte-identical
+- Node syntax checks for generated game and all 4B source modules: PASS
+
+**PHASE 4B COMPLETE — Ready for final audit before Phase 4C.**
+
+Exact next resume point: **Phase 4C — Daily School Realism**.
