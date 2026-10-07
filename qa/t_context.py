@@ -58,6 +58,10 @@ async def main():
     check('1A (fuzz finding): a household message queued before moving out arrives as a social message instead', 'parent' not in qk and 'parentSocial' in qk, qk)
     s=await st(pg); check('1A: after moving out, household = own place', not await C(pg,'livesWithParents') and await C(pg,'currentHouseholdId')=='own' and s['housing']['type']=='apartment')
     await M(pg,"S.chats={}")
+    # Phase 3C.2 intentionally remembers recent communication even if the UI/chat
+    # history is cleared. Verify moved-out family contact at the next legitimate
+    # communication window rather than defeating the anti-spam cooldown.
+    s=await st(pg); nd=(dt.date.fromisoformat(s['clock']['dateISO'])+dt.timedelta(days=6)).isoformat(); await T(pg,f"setClock('{nd}',{s['clock']['minute']})")
     for i in range(25):
         await M(pg,"S.followUps=S.followUps.filter(f=>f.type!=='incomingMsg')"); await C(pg,'scheduleMessages')
         await M(pg,"S.followUps.filter(f=>f.type==='incomingMsg').forEach(f=>{f.dateISO=S.clock.dateISO;f.minute=0;if(f.at){f.at.dateISO=S.clock.dateISO;f.at.minute=0}})"); await T(pg,"advanceMinutes(2)")

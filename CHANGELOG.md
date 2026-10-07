@@ -1,3 +1,23 @@
+# Phase 3C — checkpoint 3C.3
+
+- Expanded the existing kids smartwatch into a real limited communication path: Messages + Calls with approved contacts, without unlocking the smartphone app ecosystem.
+- Added parent/guardian-approved non-family smartwatch contacts using the H3 Decision Ledger; ordinary older siblings remain caregivers/contacts but not legal approval authorities.
+- Added structured parent/guardian location-awareness, curfew/bedtime communication context, family logistics/check-ins, and moved-out household-context protection.
+- Communication eligibility now respects stored/unavailable watch state end-to-end.
+- Fixed build precedence so the canonical 3C communication `phonePanel()` is the only generated panel; the superseded legacy base panel no longer overrides Smartwatch/Phone UI.
+- Added `qa/t_3c3.py`; updated only prior 3C regression setup superseded/contextualized by the approved Smartwatch/house-rule behavior (3C.1 limited-app expectations and 3C.2 away-from-home call-schema isolation).
+- Directly relevant verification: **202/202 PASS** across 3C.3, 3C.1/3C.2, Phase 3B, H3, People and Profile regressions.
+
+# Phase 3C — checkpoint 3C.1
+
+- Added canonical communication/contact state keyed by stable `personId`, extending the existing inventory-backed phone system instead of creating a parallel phone model.
+- Smartphone communication now requires a usable phone; kids smartwatch has only limited family communication capability hooks and does not unlock full smartphone apps.
+- Non-family People NPCs are no longer automatically valid phone contacts. Contact exchange can be accepted, declined or deferred and uses the H3 Decision Ledger so repeat declines cannot be spam-rerolled.
+- Immediate family contacts initialize only when a compatible communication device exists; no pre-device message backlog is fabricated.
+- Existing Messages/Calls entry points and NPC communication generation now respect canonical device/contact eligibility.
+- Focused 3C.1 QA: 22/22 PASS; Phase 3B 76/76, H3 decision integrity 25/25, People 14/14, Profile 24/24.
+- Phase 3C remains INCOMPLETE; next checkpoint is 3C.2.
+
 # Phase 3B Complete — Romance, Dating & Reciprocal Social Life
 
 ## 3B.5 Finalization
@@ -922,3 +942,31 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Fixed seeded orientation compatibility to use the stable underlying NPC ID before/after People materialization.
 - Added focused `qa/t_3b4.py` (**23/23 PASS**); Phase 3B remains incomplete and resumes at 3B.5.
 
+
+
+## Phase 3C.2 — Messages / Calls / Video Calls / Notifications
+- Canonicalized existing direct chats in-place with stable sender/receiver IDs, real game timestamps, read/unread state and date+time display.
+- Added separate missed-call history/badges with explicit call direction/type/outcome/duration; Calls app now opens actual call history and eligible call/video actions.
+- Added schedule/time-aware outgoing call availability, video-call channel enforcement, communication cooldowns and contextual plan/illness message hooks.
+- Preserved kids-watch limitations, 3C.1 contact/device gating and no-pre-device-history behavior.
+- Added focused `qa/t_3c2.py` (**21/21 PASS**). Phase 3C remains incomplete and resumes at 3C.3.
+
+## Phase 3C.4 — Group Chats / Relationship Communication / Frequency & Memory Polish
+- Added real Friend Group chat threads keyed by stable `groupId` and member `personId` values, with timestamps and separate unread state.
+- Replaced the old fake group-chat log branch with canonical group communication using current Friend Groups and contact/device eligibility.
+- Added contextual group-message cooldown/frequency logic and prevented pre-device/pre-contact group history fabrication.
+- Added functional block, unblock and remove-contact actions that gate backend communication without deleting People, relationship history or old communication history.
+- Integrated Phase 3B relationship state with contextual date-confirmation, partner/goodnight and real call/video-call communication hooks without creating constant partner spam.
+- Added meaningful communication memory hooks while keeping trivial chatter out of permanent relationship history.
+- Added deterministic/idempotent 3C.4 migration and focused `qa/t_3c4.py` coverage.
+- Directly relevant 3C.1–3C.4 / Phase 3B / H3 / People / Profile / Friendship / HOTFIX-P1 regression: **319/319 PASS**.
+- Phase 3C remains incomplete; next checkpoint is 3C.5 final migration/regression/fuzz/QA.
+
+
+## Phase 3C.5 — Final Migration / Regression / Fuzz / QA — COMPLETE
+- Closed Phase 3C after final acceptance, save/reload, migration, regression and representative-age fuzz validation.
+- Fixed committed incoming-message follow-ups being re-gated/dropped at delivery; a queued parent household message now still delivers and converts to `parentSocial` if the Player moved out before delivery.
+- Added `qa/t_3c5_accept.py` (29/29 PASS) and `qa/t_3c5_fuzz.py` (13/13 PASS, 600 randomized operations across child smartwatch / teen smartphone / adult smartphone).
+- Phase 3C focused 3C.1–3C.4 remains 89/89 PASS; Phase 3B 76/76 and H3 50/50 focused regressions remain green.
+- Updated legacy communication/context tests only where their old assumptions were explicitly superseded by approved Phase 3C contact eligibility/frequency semantics; no test was weakened merely to hide a regression.
+- Phase 3C is COMPLETE. Phase 4A has not started.

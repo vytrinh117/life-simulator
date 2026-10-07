@@ -1,3 +1,21 @@
+# Phase 3C — checkpoint 3C.1 QC
+
+Status: **3C.1 COMPLETE / Phase 3C INCOMPLETE**
+
+Focused and directly relevant regression results:
+
+- `qa/t_3c1.py`: **22/22 PASS**
+- Phase 3B focused (`t_3b1`–`t_3b4`): **76/76 PASS**
+- H3 decision integrity (`t_h31`, `t_h32`): **25/25 PASS**
+- `qa/t_people.py`: **14/14 PASS**
+- `qa/t_profile.py`: **24/24 PASS**
+- directly relevant total: **161/161 PASS**
+- `node --check game.js`: PASS
+
+The legacy People/Profile suites were run through a temporary local compatibility harness because the shipped harness contains environment-specific paths. The original `qa/harness.py` was restored afterward and is not modified by 3C.1.
+
+3C.1 intentionally does not claim completion of the 3C.2 inbox/call/video notification overhaul, 3C.3 smartwatch gameplay, 3C.4 group chats, or 3C.5 full regression/fuzz.
+
 # QC Report — Life Simulator v7.3 (complete: batches A → V2 on top of v7.2 phases 1–5b)
 
 
@@ -260,3 +278,98 @@ Install Playwright with Chromium (`pip install playwright && playwright install 
 - `tools/theme.py` still reports a pre-existing unmapped `rgba(30,24,16,.42)` source token; 3B.4 is JS-only and does not alter CSS, so this build-tool mapping issue is documented rather than modified out of scope.
 - 3B.4 does not begin 3B.5 final full regression/fuzz.
 
+
+
+## Phase 3C.2 Checkpoint QA
+- 3C.2 focused: **21/21 PASS**.
+- 3C.1 regression: **22/22 PASS**.
+- Phase 3B focused regressions: **76/76 PASS**.
+- H3 decision integrity: **25/25 PASS**.
+- People/Profile: **14/14**, **24/24 PASS** under a temporary portable harness; shipped `qa/harness.py` restored byte-identically.
+- Directly relevant checkpoint total: **182/182 PASS**.
+- `node --check game.js` PASS; final deterministic rebuild verified before packaging. `style.css` is unchanged from 3C.1.
+- 3C.2 intentionally does not start kids-smartwatch expansion (3C.3), group chat (3C.4), or final full-project fuzz/regression (3C.5).
+
+# Phase 3C.3 checkpoint QA
+
+Status: **PASS for authorized 3C.3 scope**.
+
+Focused / directly relevant totals:
+
+- `qa/t_3c3.py`: **20/20 PASS**
+- `qa/t_3c1.py`: **22/22 PASS**
+- `qa/t_3c2.py`: **21/21 PASS** (repeated 3 times after 3C.3 integration; the call-schema setup explicitly avoids the separate late-at-home house-rule gate)
+- Phase 3B focused (`t_3b1`–`t_3b4`): **76/76 PASS**
+- H3 decision integrity (`t_h31`, `t_h32`): **25/25 PASS**
+- People: **14/14 PASS**
+- Profile: **24/24 PASS**
+- directly relevant total: **202/202 PASS**
+
+3C.3 additionally caught and fixed a real build-precedence issue: generated runtime had two `phonePanel()` definitions, allowing the legacy base panel to override the canonical 3C panel. The authoritative build now removes the superseded base function; final generated runtime contains one canonical `phonePanel()`.
+
+A temporary portable Playwright harness was used only to execute People/Profile regression in this environment because the shipped harness keeps historical hard-coded browser/file paths. The original `qa/harness.py` was restored before packaging; no compatibility workaround is shipped.
+
+Final checkpoint build verification is recorded in `PHASE_3C_PROGRESS.md`. Full cross-project regression/fuzz remains intentionally deferred to 3C.5.
+
+Final 3C.3 build verification: `game.js` rebuilt twice byte-identically (`ad2d2f82db4744dfb26e88e90eea51ed49ab4531baa9ca69c6a73f1444116f96`), `node --check` passed, `style.css` remained unchanged from 3C.2, and generated runtime contains exactly one canonical `phonePanel()`.
+
+# Phase 3C.4 checkpoint QA
+
+Status: **PASS for authorized 3C.4 scope**.
+
+Focused / directly relevant totals:
+
+- `qa/t_3c4.py`: **26/26 PASS**
+- `qa/t_3c1.py`: **22/22 PASS**
+- `qa/t_3c2.py`: **21/21 PASS**
+- `qa/t_3c3.py`: **20/20 PASS**
+- Phase 3B focused (`t_3b1`–`t_3b4`): **76/76 PASS**
+- H3 decision integrity (`t_h31`, `t_h32`): **25/25 PASS**
+- People: **14/14 PASS**
+- Profile: **24/24 PASS**
+- Friendship: **17/17 PASS**
+- HOTFIX-P1: **74/74 PASS** (`P1.1 22/22`, `P1.2 24/24`, `P1.3 28/28`)
+- directly relevant total: **319/319 PASS**
+
+3C.4 verifies real group threads/unread state, contact/channel eligibility, contextual cooldown, block/remove/unblock behavior, relationship communication, knowledge provenance, save/reload and idempotent migration.
+
+Legacy HOTFIX-P1 tests contain historical absolute Chromium/project/fixture paths. A temporary portable harness and temporary path mappings were used only to execute those unchanged assertions in this environment. The shipped `qa/harness.py` was restored byte-identically and compatibility paths were removed before packaging.
+
+Full cross-project regression, final migration matrix and required age-targeted fuzz remain intentionally deferred to 3C.5.
+
+Final 3C.4 build verification: `game.js` rebuilt twice byte-identically (`d1ca073540146829fd19c5057cdfbabb041aff3afb6aae08e7f25bbd6d6664d8`), `node --check` passed, `style.css` remained at `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`, generated runtime contains one canonical `phonePanel()` and one 3C.4 module, and the shipped `qa/harness.py` is byte-identical to 3C.3. Final `qa/t_3c4.py` rerun: **26/26 PASS**.
+
+3C.4 stability follow-up: a final repeated run exposed a test-only display-name mismatch (raw fixture `name` vs the game's canonical `firstName(p)` rule). The assertion was corrected without changing production code; `qa/t_3c4.py` subsequently passed **26/26 on 5 consecutive runs**.
+
+
+## Phase 3C.5 Final QA — Phase 3C COMPLETE
+
+Final Phase 3C focused/acceptance/fuzz results:
+
+- 3C.1: 22/22 PASS
+- 3C.2: 21/21 PASS
+- 3C.3: 20/20 PASS
+- 3C.4: 26/26 PASS
+- Phase 3C focused subtotal: 89/89 PASS
+- 3C.5 acceptance supplement: 29/29 PASS
+- 3C.5 representative-age fuzz: 13/13 PASS, 600 randomized operations
+- Phase 3B focused regression: 76/76 PASS
+- H3 full focused regression: 50/50 PASS
+- HOTFIX-P1 final rerun: P1.1/P1.2/P1.3 PASS
+- Phase 3A.7: 13/13 PASS
+- save/reload + legacy migration (`t_commit`, `t_regress`): PASS
+- final `t_context`, `t_knx`, `t_o`: PASS under approved Phase 3C contact/cooldown rules
+
+Acceptance: all 30 Phase 3C criteria verified.
+
+In-scope regression found/fixed during 3C.5: committed incoming-message follow-ups were incorrectly subject to a second frequency roll at delivery. They are now frequency-gated when scheduled, then delivered as committed follow-ups while still re-evaluating residence context (including parent → parentSocial after moving out).
+
+Broad legacy-matrix notes: `t_holidays.py` retains a non-3C Holiday hero assertion failure with the Holiday module byte-identical to the 3C.4 input. Very long legacy browser suites can exceed this environment's command runtime and the final direct-file navigation segment of `t_theme.py` can be blocked by browser policy; no workloads/assertion thresholds were reduced to manufacture a pass. The dedicated 3C.5 fuzz covers the required child-smartwatch / teen-smartphone / adult-smartphone communication state space without weakening old tests.
+
+
+### Phase 3C final build integrity
+- `game.js` authoritative rebuild is byte-identical across two consecutive builds: `70f6941106dbe7901b2d1b119155a8ddca4699a6cb219c3dd2f5c7ee7b6cfa63`.
+- `style.css` remains baseline-identical: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+- `node --check game.js`: PASS.
+- Shipped `qa/harness.py` is restored byte-identical to 3C.4 (`9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`).
+- 3C.2 focused call tests passed 21/21 on five consecutive deterministic-fixture runs; production availability behavior was not weakened.

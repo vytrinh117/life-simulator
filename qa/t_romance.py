@@ -50,8 +50,13 @@ async def main():
     check('SAFETY: a minor date ends without kiss/invite-in choices', 'Kiss' not in txt and 'come in' not in txt.lower(), txt[:200])
     await play_scene(pg,0)
     await T(pg,f"setClock('{s['clock']['dateISO']}',1400)")
+    # 3B.3 approved behavior: older teens may contextually sneak a partner in, but the
+    # scene stays nonsexual and still uses the house-rule/discovery system.
+    await pg.evaluate("()=>{window.__r=Math.random;Math.random=()=>0.99}")
     await pg.evaluate("(id)=>{const b=document.createElement('button');b.dataset.sneak='over';b.dataset.personId=id;document.getElementById('panel-host').appendChild(b);b.click()}",f['id'])
-    s=await st(pg); check('SAFETY: a minor cannot sneak a romantic partner over', not any('snuck them over' in (h.get('text') or '') for x in s['people'] for h in x.get('history',[])))
+    await pg.evaluate("()=>{Math.random=window.__r}")
+    s=await st(pg); sneak_hist=[h.get('text','') for x in s['people'] for h in x.get('history',[]) if 'snuck them over' in h.get('text','').lower()]
+    check('SAFETY/3B.3: older-teen sneak-in can occur but stays nonsexual', bool(sneak_hist) and all('sex' not in x.lower() and 'intimate' not in x.lower() for x in sneak_hist), sneak_hist)
     check('safety: no JS errors', not pg.errs, pg.errs[:3]); await pg.close()
     # adult consent
     pg=await new_page(b); await new_life(pg); await T(pg,"setAge(24)")
@@ -60,8 +65,12 @@ async def main():
     s0=await st(pg); t0=[x for x in s0['people'] if x['id']=='part1'][0]
     await C(pg,'romanceAction','part1','intimate'); s=await st(pg); t1=[x for x in s['people'] if x['id']=='part1'][0]
     check('81: adults can be asked; a "no" is respected (trust up, no penalty)', t1['trust']>=t0['trust'] and t1['rel']>=t0['rel'] and 'not tonight' in s['log'][0]['text'].lower(), s['log'][0]['text'][:120])
+    # 3B.3/H3 decision integrity: a declined physical-affection/intimacy request cannot
+    # be spam-rerolled. Change the context legitimately by waiting past reconsideration.
+    s=await st(pg); later=(dt.date.fromisoformat(s['clock']['dateISO'])+dt.timedelta(days=6)).isoformat(); await T(pg,f"setClock('{later}',1000)")
     await M(pg,"const p=S.people.find(x=>x.id==='part1');p.attraction=100;p.trust=100;p.rel=100;p.boundaries=[];S.stress=0")
-    await C(pg,'romanceAction','part1','intimate'); s=await st(pg)
+    await pg.evaluate("()=>{window.__r=Math.random;Math.random=()=>0.5}")
+    await C(pg,'romanceAction','part1','intimate'); await pg.evaluate("()=>{Math.random=window.__r}"); s=await st(pg)
     check('81: mutual yes fades to black (no explicit content)', 'fade to black' in s['log'][0]['text'] and len(s['log'][0]['text'])<260, s['log'][0]['text'])
     await pg.close()
     # ======== §119 PROM ========
@@ -114,7 +123,13 @@ async def main():
     f=[x for x in s['people'] if x['role']=='friend'][0]
     await M(pg,f"const p=S.people.find(x=>x.id==='{f['id']}');p.age=17;p.rel=100;p.trust=100;p.conflict=0;p.romanceInit=true;p.attraction=100;p.romanceOpen=true;p.boundaries=[];p.datingNpc=null;p.romanceStage='none';const n=S.npcs.find(x=>x.id===p.npcId);if(n){{n.birthYear=new Date(S.clock.dateISO).getUTCFullYear()-17;n.orientation='All genders'}};p.orientation='All genders'")
     await C(pg,'romanceAction',f['id'],'askOut'); s=await st(pg)
-    check('64/83: asking out a willing peer works with a story', s['romance'].get('partnerId')==f['id'], s['log'][0]['text'][:80])
+    modal=await pg.inner_text('#choice-content')
+    check('64/83 (updated 3B.2): asking out opens date planning instead of instantly creating a partner', 'date' in modal.lower() and s['romance'].get('partnerId')!=f['id'], modal[:120])
+    # Valentine remains an existing-partner regression. 3B.2 intentionally no longer
+    # makes one accepted ask instantly official; establish the legacy partner fixture
+    # explicitly so this test remains independent from future 3B.3 commitment logic.
+    await M(pg,f"const p=S.people.find(x=>x.id==='{f['id']}');S.romance.partnerId=p.id;S.romance.partner=p.fullName;p.romanceStage='partner';p.love=p.love||{{}};p.love.stage='official';p.love.playerCrush=true;p.love.npcInterest='reciprocates';p.love.mutual=true")
+    await pg.evaluate("__LIFE_SIM_TEST__.call('closeChoiceModal')")
     await T(pg,"setClock('2021-02-14',1000)"); await C(pg,'holidaysOn','2021-02-14')
     await pg.evaluate("__LIFE_SIM_TEST__.call('closeChoiceModal')")
     await C(pg,'doHolidayActivity','valentines:coupleDate'); s=await st(pg)

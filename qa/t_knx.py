@@ -106,6 +106,10 @@ async def main():
     # player birthday extras
     await C(pg,'addItem','phone','QC')
     await M(pg,"S.people.filter(p=>p.role==='friend').forEach(p=>p.rel=80);S.chats={}")
+    # Phase 3C: friendship alone is not a phone contact. Birthday texts require a
+    # legitimate exchanged/known communication path.
+    for fp in [x for x in (await st(pg))['people'] if x['role']=='friend']:
+        await C(pg,'addContact3C1',fp['id'],{'source':'exchange','initiatedBy':'test'})
     n0=len((await st(pg))['inventoryItems']); await C(pg,'playerBirthdayExtras'); s=await st(pg)
     check('N47: friends give you birthday gifts', len(s['inventoryItems'])>n0 or any(l['title'].startswith('🎁') for l in s['log'][:6]))
     check('N47: friends text happy birthday', any(m['kind']=='bdayWish' for c in s.get('chats',{}).values() for m in c['msgs']))
@@ -117,7 +121,7 @@ async def main():
     check('birthdays: no JS errors', not pg.errs, pg.errs[:3]); await pg.close()
     # ---------- X: phone ----------
     pg=await life(b,14); await C(pg,'addItem','phone','QC'); await M(pg,"S.people.filter(p=>p.role==='friend').forEach(p=>p.rel=70);S.chats={};S.permissions.dailyAccess={dateISO:S.clock.dateISO,phone:true,tv:false,sharedDevice:false,stove:false}")
-    fid=await friend(pg,80); await C(pg,'incomingMessage',fid,'advice'); s=await st(pg)
+    fid=await friend(pg,80); await C(pg,'addContact3C1',fid,{'source':'exchange','initiatedBy':'test'}); await C(pg,'incomingMessage',fid,'advice'); s=await st(pg)
     msg=[m for m in s['chats'][fid]['msgs'] if m['from']=='them'][-1]
     check('X: incoming message lands in a per-person thread', msg['kind']=='advice' and not msg['read'])
     await T(pg,"openTab('phone')"); await pg.click("#panel-host button:has-text('Messages')"); await pg.click(f"[data-chat-open='{fid}']")
@@ -128,8 +132,10 @@ async def main():
     check('X: an advice talk continues into a second turn', any(m.get('turn')==2 for m in th))
     await pg.fill('#chat-text','Of course! Saturday?'); await pg.click("#choice-content [data-chat-custom='agree']"); s=await st(pg)
     check('X: custom text is sent as written, intent decides the effect', any(m['from']=='me' and m['text']=='Of course! Saturday?' for m in s['chats'][fid]['msgs']))
-    # left on read
-    await C(pg,'incomingMessage',fid,'chitchat'); await T(pg,"call('closeChoiceModal')"); await pg.click("#panel-host button:has-text('Messages')"); await pg.click(f"[data-chat-open='{fid}']"); await T(pg,"call('closeChoiceModal')")
+    # left on read — Phase 3C communication frequency is persistent even when
+    # a prior thread is complete, so test this at the next valid contact window.
+    s=await st(pg); nd=(dt.date.fromisoformat(s['clock']['dateISO'])+dt.timedelta(days=6)).isoformat(); await T(pg,f"setClock('{nd}',{s['clock']['minute']})")
+    await C(pg,'incomingMessage',fid,'chitchat'); await T(pg,"call('closeChoiceModal')"); await T(pg,"openTab('phone')"); await pg.click("#panel-host button:has-text('Messages')"); await pg.click(f"[data-chat-open='{fid}']"); await T(pg,"call('closeChoiceModal')")
     await M(pg,f"S.people.find(x=>x.id==='{fid}').rel=80"); await T(pg,"advanceMinutes(2000)"); s=await st(pg)
     check('X: leaving a close friend on read costs a little', [x for x in s['people'] if x['id']==fid][0]['rel']<80, [x for x in s['people'] if x['id']==fid][0]['rel'])
     # calls
@@ -138,18 +144,23 @@ async def main():
     check('X: incoming call with Answer / Decline / Call you later', ev and {c['id'] for c in ev[0]['choices']}=={'answer','decline','later'})
     r0=[x for x in s['people'] if x['id']==fid][0]['rel']; await T(pg,f"eventChoice('{ev[0]['id']}','answer')"); s=await st(pg)
     check('X: answering a friend in distress matters', [x for x in s['people'] if x['id']==fid][0]['rel']>=r0+4)
+    # Calls have their own anti-spam cooldown; verify a later ordinary call rather
+    # than expecting another incoming call immediately after a distress call.
+    nd=(dt.date.fromisoformat(s['clock']['dateISO'])+dt.timedelta(days=6)).isoformat(); await T(pg,f"setClock('{nd}',1140)"); await M(pg,"S.events.forEach(e=>{if(e.status==='Open')e.status='Resolved'})")
     await C(pg,'incomingCall',fid,'chat'); s=await st(pg); ev=[e for e in s['events'] if e['type']=='incomingCall' and e['status']=='Open']
     await T(pg,f"eventChoice('{ev[0]['id']}','decline')"); s=await st(pg)
-    check('X: declining → missed call with voicemail in the call log', s.get('callLog') and s['callLog'][0]['missed'] and s['callLog'][0].get('voicemail'))
+    # Phase 3C.2 separates declined calls from genuinely missed calls.
+    check('X: declining is recorded as Declined, not as a missed-call notification', s.get('callLog') and s['callLog'][0].get('outcome')=='declined' and not s['callLog'][0].get('missed'))
     # curfew call
     await M(pg,"S.flags.curfewCall=null;S.location='Mall'"); cf=await pg.evaluate("(()=>{return 0})()")
     await M(pg,"S.family.rules.strictness=90"); cfm=await C(pg,'curfewMinute')
     await T(pg,"setClock('"+(await st(pg))['clock']['dateISO']+f"',{cfm+16})"); await M(pg,"S.location='Mall';S.flags.curfewCall=null"); await T(pg,"advanceMinutes(5)"); s=await st(pg)
     check('X: out past curfew → a parent calls', any(e['type']=='incomingCall' and e['payload'].get('why')=='parentLate' for e in s['events']), s['location'])
-    # outgoing calls: asleep → no answer
-    await M(pg,"S.events.forEach(e=>{if(e.status==='Open')e.status='Resolved'});S.location='Home';S.family.rules.strictness=50"); await T(pg,"setClock('"+(await st(pg))['clock']['dateISO']+"',1420)")
+    # outgoing calls: at 2 AM an adult caller reaches the NPC availability gate
+    # directly (teen house rules are tested separately above).
+    await T(pg,"setAge(18)"); await M(pg,"S.events.forEach(e=>{if(e.status==='Open')e.status='Resolved'});S.location='Home';S.family.rules.strictness=50"); await T(pg,"setClock('"+(await st(pg))['clock']['dateISO']+"',120)")
     await M(pg,"S.permissions.dailyAccess={dateISO:S.clock.dateISO,phone:true,tv:false,sharedDevice:false,stove:false}")
-    await C(pg,'personAction',fid,'call'); s=await st(pg); check('X: calling someone asleep → no answer, voicemail', 'No answer' in s['log'][0]['title'] or 'late call' in s['log'][0]['title'].lower(), s['log'][0]['title'])
+    await C(pg,'personAction',fid,'call'); s=await st(pg); check('X: calling someone asleep → unavailable call recorded', s.get('callLog') and s['callLog'][0].get('outcome')=='unavailable', s.get('callLog',[{}])[0].get('outcome'))
     check('phone: no JS errors', not pg.errs, pg.errs[:3]); await pg.close()
     # class confiscation
     pg=await life(b,14); await C(pg,'addItem','phone','QC'); fid=await friend(pg,70); s=await st(pg); d=s['clock']['dateISO']

@@ -34,65 +34,61 @@ async def state(p):
 async def call(p,name,*args):
     return await p.evaluate("([n,a])=>__LIFE_SIM_TEST__.call(n,...a)",[name,list(args)])
 
+async def add_peer(p,pid,name):
+    await p.evaluate("([id,n])=>__LIFE_SIM_TEST__.mutate(`S.people.push({id:'${id}',name:'${n}',firstName:'${n.split(' ')[0]}',fullName:'${n}',role:'friend',relation:'friend',age:15,gender:'Female',orientation:'Not interested in romance',rel:60,trust:60,fun:55,respect:55,reliability:55,conflict:0,history:[],romanceInit:true,romanceOpen:true,romanceStage:'crush',orientationMismatch:false,attraction:70,boundaries:[]})`)",[pid,name])
+
 async def main():
   async with async_playwright() as pw:
     b=await pw.chromium.launch(executable_path=CHROME,args=['--no-sandbox'])
     p=await page(b); await new_life(p)
-
-    # Deterministic eligible peer who will reject: no RNG can turn this first answer into yes.
-    await p.evaluate("""__LIFE_SIM_TEST__.mutate(`S.people.push({id:'romH32',name:'Taylor Reed',firstName:'Taylor',fullName:'Taylor Reed',role:'friend',relation:'friend',age:15,gender:'Female',orientation:'All genders',rel:60,trust:60,fun:55,respect:55,reliability:55,conflict:0,history:[],romanceInit:true,romanceOpen:false,romanceStage:'none',orientationMismatch:false,attraction:70,boundaries:[]})`)""")
+    await add_peer(p,'romH32','Taylor Reed')
     eligible=await call(p,'eligibleRomance','romH32')
-    check('1 Existing ask-out target is romance-eligible',eligible is True,eligible)
+    check('1 Existing ask-out target is romance-age-eligible',eligible is True,eligible)
 
-    await call(p,'romanceAction','romH32','askOut')
+    s0=await state(p); day=s0['clock']['dateISO']; start=1020
+    # 3B.2 supersedes the old instant askOut roll: H3 integrity now protects the
+    # concrete date proposal decision, which is where willingness is decided.
+    r1=await call(p,'romanceDateResponse','romH32','cafe',day,start)
     s1=await state(p)
-    recs1=[x for x in s1.get('decisionLedger',[]) if x.get('requestType')=='romanceAsk' and x.get('targetKey')=='romH32']
-    peer1=next(x for x in s1['people'] if x['id']=='romH32')
-    check('2 First existing ask creates central romance decision',len(recs1)==1,recs1)
+    recs1=[x for x in s1.get('decisionLedger',[]) if x.get('requestType')=='romanceDateAsk' and x.get('targetKey')=='romH32']
+    check('2 First concrete date proposal creates central romance decision',len(recs1)==1,recs1)
     rec1=recs1[0]
-    check('3 Rejection stores NPC as decisionMakerId',rec1.get('outcome')=='No' and rec1.get('decisionMakerId')=='romH32',rec1)
-    asks1=peer1.get('romanceAsks',0); rel1=peer1.get('rel'); ledger_n=len(s1.get('decisionLedger',[]))
+    check('3 Rejection stores NPC as decisionMakerId',r1['kind']=='no' and rec1.get('outcome')=='No' and rec1.get('decisionMakerId')=='romH32',(r1,rec1))
+    ledger_n=len(s1.get('decisionLedger',[]))
 
-    # Immediate repeat must replay memory: no second record and no repeat relationship penalty / ask count.
-    await call(p,'romanceAction','romH32','askOut')
+    r2=await call(p,'romanceDateResponse','romH32','cafe',day,start)
     s2=await state(p)
-    recs2=[x for x in s2.get('decisionLedger',[]) if x.get('requestType')=='romanceAsk' and x.get('targetKey')=='romH32']
-    peer2=next(x for x in s2['people'] if x['id']=='romH32')
-    check('4 Immediate same proposal does not reroll',len(recs2)==1 and len(s2['decisionLedger'])==ledger_n and recs2[0]['id']==rec1['id'] and recs2[0]['outcome']=='No',recs2)
-    check('5 Replay does not count as a fresh romance ask',peer2.get('romanceAsks',0)==asks1,(asks1,peer2.get('romanceAsks',0)))
-    check('6 Replay does not stack rejection relationship penalty',peer2.get('rel')==rel1,(rel1,peer2.get('rel')))
+    recs2=[x for x in s2.get('decisionLedger',[]) if x.get('requestType')=='romanceDateAsk' and x.get('targetKey')=='romH32']
+    check('4 Immediate same proposal does not reroll',r2['kind']=='no' and r2['why']==r1['why'] and len(recs2)==1 and len(s2['decisionLedger'])==ledger_n and recs2[0]['id']==rec1['id'],recs2)
+    check('5 Replay keeps the exact decision maker identity',recs2[0].get('decisionMakerId')=='romH32',recs2[0])
 
-    # Save/reload keeps the exact decision and still blocks reroll.
     saved=s2
     await p.evaluate('s=>__LIFE_SIM_TEST__.loadState(s)',saved)
-    await call(p,'romanceAction','romH32','askOut')
+    r3=await call(p,'romanceDateResponse','romH32','cafe',day,start)
     s3=await state(p)
-    recs3=[x for x in s3.get('decisionLedger',[]) if x.get('requestType')=='romanceAsk' and x.get('targetKey')=='romH32']
-    check('7 Save/reload preserves romance ask integrity',len(recs3)==1 and recs3[0]['id']==rec1['id'] and recs3[0]['decisionMakerId']=='romH32',recs3)
+    recs3=[x for x in s3.get('decisionLedger',[]) if x.get('requestType')=='romanceDateAsk' and x.get('targetKey')=='romH32']
+    check('6 Save/reload preserves romance ask integrity',r3['kind']=='no' and len(recs3)==1 and recs3[0]['id']==rec1['id'] and recs3[0]['decisionMakerId']=='romH32',recs3)
 
-    # A real cooldown expiry permits a new decision. 14 days is the closed-to-romance cooldown here.
-    await p.evaluate('__LIFE_SIM_TEST__.advanceDays(15,true)')
-    await call(p,'romanceAction','romH32','askOut')
+    # The rejected proposal uses a 10-day reconsideration window unless a stronger
+    # boundary requires longer. Expiry is a legitimate future context change.
+    await p.evaluate('__LIFE_SIM_TEST__.advanceDays(11,true)')
+    r4=await call(p,'romanceDateResponse','romH32','cafe',day,start)
     s4=await state(p)
-    recs4=[x for x in s4.get('decisionLedger',[]) if x.get('requestType')=='romanceAsk' and x.get('targetKey')=='romH32']
-    check('8 Cooldown expiry allows legitimate reconsideration',len(recs4)==2 and recs4[-1]['id']!=rec1['id'],[(x['id'],x.get('reconsiderAfter')) for x in recs4])
+    recs4=[x for x in s4.get('decisionLedger',[]) if x.get('requestType')=='romanceDateAsk' and x.get('targetKey')=='romH32']
+    check('7 Cooldown expiry allows legitimate reconsideration',len(recs4)==2 and recs4[-1]['id']!=rec1['id'],[(x['id'],x.get('reconsiderAfter')) for x in recs4])
 
-    # Decisions are isolated by NPC identity, not globally shared.
-    await p.evaluate("""__LIFE_SIM_TEST__.mutate(`S.people.push({id:'romH32b',name:'Jordan Lee',firstName:'Jordan',fullName:'Jordan Lee',role:'friend',relation:'friend',age:15,gender:'Male',orientation:'All genders',rel:60,trust:60,fun:55,respect:55,reliability:55,conflict:0,history:[],romanceInit:true,romanceOpen:false,romanceStage:'none',orientationMismatch:false,attraction:70,boundaries:[]})`)""")
-    await call(p,'romanceAction','romH32b','askOut')
+    await add_peer(p,'romH32b','Jordan Lee')
+    r5=await call(p,'romanceDateResponse','romH32b','cafe',day,start)
     s5=await state(p)
-    other=[x for x in s5.get('decisionLedger',[]) if x.get('requestType')=='romanceAsk' and x.get('targetKey')=='romH32b']
-    check('9 Different NPC gets a separate decision identity',len(other)==1 and other[0].get('decisionMakerId')=='romH32b',other)
+    other=[x for x in s5.get('decisionLedger',[]) if x.get('requestType')=='romanceDateAsk' and x.get('targetKey')=='romH32b']
+    check('8 Different NPC gets a separate decision identity',r5['kind']=='no' and len(other)==1 and other[0].get('decisionMakerId')=='romH32b',other)
 
-    # Scope guard: no Phase 3B system flags/state introduced by H3.2 test path.
-    forbidden=['matchmakingQueue','blindDates','exclusiveNegotiation','datePaymentNegotiation','sneakOutRomance']
-    check('10 H3.2 does not introduce Phase 3B state',all(k not in s5 for k in forbidden),[k for k in forbidden if k in s5])
+    check('9 H3 ledger remains canonical for 3B.2 romance willingness',all(x.get('requestType')!='romanceAsk' for x in s5.get('decisionLedger',[])),[x.get('requestType') for x in s5.get('decisionLedger',[])])
     check('H3.2 runtime has no page errors',not p.errs,p.errs)
-
     await p.close(); await b.close()
 
   failed=[x for x in R if not x[1]]
-  print(f'H3.2 focused: {len(R)-len(failed)}/{len(R)} passed')
+  print(f'H3.2 regression: {len(R)-len(failed)}/{len(R)} passed')
   raise SystemExit(1 if failed else 0)
 
 asyncio.run(main())

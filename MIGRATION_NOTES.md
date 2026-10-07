@@ -1,3 +1,13 @@
+# Phase 3C.1 migration — Communication contacts/device access
+
+- Adds `S.communication` with versioned `contacts`, `firstDeviceAt`, and NPC contact-offer cooldown state.
+- Contact keys are existing stable `personId`; migration never creates duplicate People/NPC identities.
+- No RNG is used by migration.
+- Immediate family contacts are initialized only when a compatible device path exists.
+- Existing legacy chat/message evidence is preserved as a contact only when the save already has a valid communication device; migration does not invent old conversations, missed calls, or unread counts.
+- A dormant/pre-device chat does not become a contact merely because the Player later receives a phone.
+- Repeated migration normalizes records in place and does not duplicate contacts or H3 decision records.
+
 # Save Migration Notes
 
 
@@ -239,3 +249,45 @@ The original legacy browser key is not silently deleted during migration. Restar
 - Introduced candidates are stable People records. Clear rejection remains remembered; Maybe Later remains eligible only after its recorded reconsideration date.
 - NPC orientation compatibility now uses stable `npcId || personId`, preventing a wrapper-ID change during introduction from changing seeded compatibility.
 
+
+
+## Phase 3C.2
+- `S.chats` remains the canonical direct-message store. Existing message rows are normalized in place with stable `personId`, `senderId`, `receiverId`, game datetime/timestamp, type/kind and read state. No parallel inbox is created.
+- `S.callLog` remains the canonical call-history store and is normalized in place with stable person ID, direction, voice/video type, completed/missed/declined/unavailable outcome, duration, datetime and reviewed state.
+- Migration is deterministic/idempotent and does not create fake messages, calls, missed-call badges or unread counts. Legacy call evidence may preserve a contact only when a compatible device/history path already existed.
+- Dormant pre-device message/call records stay outside current visible communication history after a later device purchase.
+
+## Phase 3C.3 — Kids Smartwatch / family communication migration
+
+- `migrateCommunication3C3()` extends the existing canonical `S.communication` state; it does not create a parallel device/contact store.
+- Watch metadata is normalized deterministically and idempotently. No random old locations, messages, calls or unread counts are generated.
+- Legitimate family watch contacts retain stable `personId` identity and are initialized only with a usable kids smartwatch path.
+- Non-family smartwatch approval remains an H3 Decision Ledger request; repeated migration preserves the same decision/contact identity and does not duplicate records.
+- A watch that is stored/broken/unavailable does not become usable merely because an inventory ownership flag exists.
+- Historical communication is not backfilled for ages before a valid device/channel existed.
+- Existing family/relationship/romance state is not rerolled or rewritten by 3C.3 migration.
+
+
+## Phase 3C.4 — Group communication state
+
+3C.4 extends the existing `S.communication` state rather than creating a parallel communication store.
+
+Migration behavior:
+
+- normalizes `S.communication.groupChats` keyed by stable existing Friend Group IDs
+- stores/normalizes stable member Person IDs and canonical group-message timestamp/read metadata
+- derives valid group communication cutoffs from real group/device/contact state rather than fabricating older chat history
+- creates no random historical group messages, unread counts, blocked contacts, removed contacts or romantic calls/messages
+- preserves `S.chats`, `S.callLog`, People IDs, friendship state, Phase 3B romance state and historical relationship logs
+- repeated migration is idempotent and does not duplicate group messages/threads or communication-memory keys
+- block/remove status changes communication eligibility only; they do not delete the Person or historical relationship/communication data
+
+Focused save/reload and repeated-migration checks are covered by `qa/t_3c4.py`; the cross-project migration matrix remains reserved for 3C.5.
+
+
+## Phase 3C.5 — Final migration validation
+- No new random migration data is introduced at Phase 3C closeout.
+- Repeated `migrateCommunication3C1/2/3/4` remains idempotent across elementary smartwatch, teen smartphone and adult smartphone saves.
+- Save/reload preserves stable contact Person IDs, canonical direct-message metadata/read state, call history/missed state, group IDs/member Person IDs, block/remove state, Phase 3B partner state and H3 Decision Ledger records.
+- Migration does not synthesize pre-device message/call/group history, fake exchanged contacts, fake unread counts or fake missed calls.
+- 3C.5's committed-message delivery fix changes runtime delivery semantics only; it does not create or reroll migration data.

@@ -14,6 +14,8 @@ async def main():
     await T(pg,"openTab('home')"); html=await pg.inner_text('body'); check('O: the details are visible on screen (From / What / Where / When / Answer by)', all(k in html.upper() for k in ['FROM','WHAT','WHERE','WHEN','ANSWER BY']))
     await M(pg,"S.events.forEach(e=>{if(e.status==='Open')e.status='Resolved'})")
     await M(pg,f"S.people.find(x=>x.id==='{f['id']}').rel=85")
+    # Phase 3C: an incoming phone call needs a real device and exchanged contact.
+    await C(pg,'addItem','phone','QC'); await C(pg,'addContact3C1',f['id'],{'source':'exchange','initiatedBy':'test'})
     await pg.evaluate("id=>__LIFE_SIM_TEST__.call('incomingCall',id,'chat')",f['id']); e=await newest(pg,'incomingCall'); m=await C(pg,'inviteMeta',e['id'])
     check('O: an incoming call says it is happening right now, on your phone', m and m['when'].startswith('Right now') and m['where']=='Your phone', m)
     await M(pg,"S.events.forEach(e=>{if(e.status==='Open')e.status='Resolved'});S.neighborhood.cooldown=null")
