@@ -543,3 +543,29 @@ Final reproducible build:
 **PHASE 4B COMPLETE — Ready for final audit before Phase 4C.**
 
 Exact next resume point: **Phase 4C — Daily School Realism**.
+
+## Phase 4C.5 final QA
+
+Status: **PHASE 4C COMPLETE**.
+
+- 4C.1: 20/20 PASS
+- 4C.2: 21/21 PASS
+- 4C.3: 20/20 PASS
+- 4C.4: 22/22 PASS
+- 4C.5 acceptance: 28/28 PASS
+- Phase 4C focused/acceptance subtotal: **111/111 PASS**
+- Phase 4C fuzz: **21/21 PASS / 800 randomized operations**
+- Phase 4C formal acceptance criteria: **50/50 verified**
+
+Final fuzz discovered and fixed a real teacher-session integrity edge case in `schoolclasses4c2.js`; all affected 4C.2 and final acceptance tests remain green after the fix.
+
+Fresh prior-phase results include Phase 4B 136/136 + fuzz 17/17, Phase 4A 114/114 + fuzz 17/17, Phase 3C 118/118 + fuzz 13/13, Phase 3B 81/81 + fuzz 13/13, H3 50/50, HOTFIX-P1 74/74 and Phase 3A final validation 13/13.
+
+Additional required system regression completed cleanly for Health (83 checks), Family (35), Calendar/Holidays (57), Needs/balance (1), and current School/system suites `t_campus` (21), `t_context` (28), `t_events` (22).
+
+Legacy-suite exceptions are documented in `PHASE_4C_PROGRESS.md`; notably old `t_exam` assumes Home→exam auto-check-in/teleport behavior that Phase 4C explicitly removes, while several other historical suites depend on superseded academic timelines or browser navigation/reload behavior unavailable to the sandbox QA compatibility harness. Production behavior/tests were not weakened to force those suites green.
+
+Final reproducible build:
+- game.js SHA-256 `7a0afa3f27ddfc5228dd16c2d5a3b34301abca8e5f92d8823e759214fe161686`
+- style.css SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- qa/harness.py SHA-256 `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`

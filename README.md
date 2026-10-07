@@ -61,3 +61,6 @@ All v7.3 items are implemented: creator fixes, real school years with semesters 
 
 ## Source layout
 `game.js` and `style.css` are generated. The sources are in `src/` (`src/base/game.js` + `src/modules/*.js` + `src/style_before_theme.css`) and the build tools in `tools/`; see `BUILD.md` to rebuild. Phase progress files (`PHASE_2A_PROGRESS.md`, `PHASE_2B_PROGRESS.md`, `PHASE_3A_PROGRESS.md`) refer to module files under `src/modules/`.
+
+## Phase 4C — Daily School Realism
+Phase 4C is complete. Daily school behavior now uses canonical physical location + game time + school calendar: real campus hours and travel, class/teacher/attendance context, lunch/facilities/needs and school-aware device rules, realistic homework pacing, after-school scheduling/conflict rules, campus closing, Go Home and family-dinner timing hooks. See `PHASE_4C_PROGRESS.md` for the final 4C.5 migration/regression/fuzz report. Exact next development point: **Phase 4D — Competitions / School Events**.

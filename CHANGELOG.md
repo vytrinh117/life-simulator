@@ -1,3 +1,33 @@
+
+## Phase 4D.3 — Preparation / Participation / Results / Consequences
+- Added category-specific preparation actions with Phase 4C location/time gating while preserving H3's exact 10/6/3 daily progression cap and 75-minute / Energy -7 / Stress +2 session cost.
+- Added stable lightweight opponent fields and multi-factor persistent placement/result records.
+- Added real event-day venue gating, genuine registered-event Missed handling, top-result school history/milestones, and a narrow weekend special-event campus-access hook.
+- Added `qa/t_4d3.py` (23/23 focused PASS); 4D.1/4D.2, Phase 4C, Phase 4B/4A/3C/3B and H3 regression remained green.
+
+## Phase 4D.2 — Discovery / Registration / Decline / Withdrawal
+- Added canonical event discovery/announcement metadata and Find Event dedupe/reuse.
+- Added registration-window and Phase 4B-aware eligibility enforcement.
+- Added canonical Register, explicit Decline, registration-missed, Withdraw and Out foundations.
+- Added caregiver-pending registration reuse for minors and school-specific event filtering.
+- Hardened 4D.1 compatibility so explicit participating state survives legacy Registered status.
+- Added `qa/t_4d2.py` (22/22 focused PASS).
+# Phase 4D — checkpoint 4D.1
+
+- Added a canonical School Event / Competition lifecycle foundation on top of the existing `S.school.contests` + Calendar architecture; no disconnected event store was introduced.
+- Added stable annual `eventId` values scoped by school and academic year, explicit event type/category, lifecycle/player status, seasonal metadata, and Calendar cross-references.
+- Added deterministic same-year duplicate-event merging while preserving legacy IDs, preparation, results and Calendar/pending-decision compatibility.
+- Added `qa/t_4d1.py`: **21/21 PASS**. Fresh Phase 4C/4B/4A/3C/3B/H3 acceptance regression remained green on clean reruns.
+- 4D.2 discovery/registration/decline/withdrawal gameplay has not started.
+
+
+## Phase 4C.3 — Lunch / Breaks / Needs / Campus Facilities
+
+- Added lunch-window cafeteria and real inventory-backed packed lunches.
+- Added school restroom, wash-hands, short-rest and vending context using canonical needs/items.
+- Added same-school social filtering and contextual Phase 3C phone/smartwatch restrictions.
+- Added focused 4C.3 QA; checkpoint stops before 4C.4.
+
 # Phase 4B — COMPLETE (4B.5 finalization)
 
 - Closed School Organizations / Roles / Elections after checkpoints 4B.1–4B.5.
@@ -1028,3 +1058,18 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Added stable `introducedById` compatibility for matchmaker/friend-of-friends introductions.
 - Added school-owned event provenance hooks using stable `eventId + schoolId`.
 - Preserved friendships across school transfers and prevented false current same-class claims.
+
+## Phase 4C.4 — Homework / After-School / Going Home / School Break Logic
+- Added instruction-day-aware homework pacing with first-day suppression, lighter early-term load and staggered school-day due dates.
+- Added backend homework location rules for Home and legitimate after-school study contexts.
+- Added after-school activity time/location/conflict enforcement and campus-close reconciliation.
+- Added a lightweight family-dinner timing/missed-dinner/leftovers hook using existing family and communication systems.
+- Preserved school attendance consequences across Next Day/time advancement.
+- Added focused `qa/t_4c4.py` coverage; checkpoint closes at 22/22 PASS.
+
+## Phase 4C.5 — Final Migration / Regression / Fuzz / QA — COMPLETE
+- Closed Phase 4C after final representative acceptance, migration fixed-point, save/reload, cross-phase regression and 800-operation 4C fuzz validation.
+- Fuzz found and fixed one real backend edge case: in-class teacher availability could be reported from physical School location without an active school-day attendance session, allowing `askTeacher4C2()` to dereference a missing session. Teacher help now requires legitimate attendance context and has a defensive class-session guard.
+- Added `qa/t_4c5_accept.py` (**28/28 PASS**) and `qa/t_4c5_fuzz.py` (**21/21 PASS, 800 randomized operations**).
+- Phase 4C focused/acceptance total: **111/111 PASS**; formal acceptance criteria: **50/50 verified**.
+- Final generated build is reproducible from source. Phase 4D has not started.

@@ -344,3 +344,9 @@ Focused save/reload and repeated-migration checks are covered by `qa/t_3c4.py`; 
 - Class-specific roles retain correct school + grade + class ownership; school-wide roles never migrate across school IDs.
 - Save/reload followed by repeated full migration is idempotent in all 4B.5 acceptance and fuzz scenarios.
 - 4B.5 adds no new production migration schema; it validates the cumulative 4B.1–4B.4 migration stack.
+
+## Phase 4C final migration validation
+
+Phase 4C migrations remain conservative and current-state focused. Final 4C.5 validation repeatedly ran `migrateSchoolDay4C1`, `migrateSchoolClasses4C2`, `migrateSchoolFacilities4C3`, and `migrateSchoolAfter4C4` and confirmed an idempotent fixed point.
+
+No historical attendance, absence, timetable, or homework records are fabricated. Existing current homework may receive only safe missing metadata already authorized by 4C.4. Save/reload preserves semantic daily-school state; volatile reconciliation timestamps/transitions may refresh on load without changing gameplay state.
