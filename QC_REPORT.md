@@ -569,3 +569,17 @@ Final reproducible build:
 - game.js SHA-256 `7a0afa3f27ddfc5228dd16c2d5a3b34301abca8e5f92d8823e759214fe161686`
 - style.css SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
 - qa/harness.py SHA-256 `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`
+
+
+## Phase 4D final QA
+
+- 4D.1–4D.5 focused/acceptance: 110/110 PASS
+- 4D.5 fuzz: 21/21 PASS / 200 randomized lifecycle operations
+- Phase 4C regression: 111/111 PASS
+- Phase 4B final acceptance/fuzz: 40/40 PASS
+- Phase 4A final acceptance: 32/32 PASS
+- Phase 3C final acceptance: 29/29 PASS
+- Phase 3B final acceptance: 5/5 PASS
+- H3: 50/50 PASS
+- Reproducible build: byte-identical game.js/style.css
+- Phase 4D COMPLETE; Phase 5A not started

@@ -1,4 +1,11 @@
 
+## Phase 4D.4 — Calendar / Seasonal / Notification Lifecycle
+- Added lifecycle-aware registration/event countdowns and active-vs-history event rendering.
+- Added annual school-event recreation by school year with stable per-year event IDs and no same-year duplication.
+- Added automatic announcement/notification cleanup integration: Decline/Register/Withdraw resolve nags, genuine Missed gets brief retention then archives, stale Math Assessment-style notices expire.
+- Hardened registration-notification source handling and prevented annual event creation from mutating state merely on save load/migration.
+- Added `qa/t_4d4.py` (**21/21 PASS**); Phase 4D focused subtotal through 4D.4 is **87/87 PASS**.
+
 ## Phase 4D.3 — Preparation / Participation / Results / Consequences
 - Added category-specific preparation actions with Phase 4C location/time gating while preserving H3's exact 10/6/3 daily progression cap and 75-minute / Energy -7 / Stress +2 session cost.
 - Added stable lightweight opponent fields and multi-factor persistent placement/result records.
@@ -1073,3 +1080,13 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Added `qa/t_4c5_accept.py` (**28/28 PASS**) and `qa/t_4c5_fuzz.py` (**21/21 PASS, 800 randomized operations**).
 - Phase 4C focused/acceptance total: **111/111 PASS**; formal acceptance criteria: **50/50 verified**.
 - Final generated build is reproducible from source. Phase 4D has not started.
+
+
+## Phase 4D.5 — Final QA closeout
+
+- Phase 4D final acceptance: 23/23 PASS.
+- Phase 4D fuzz: 21/21 PASS across 200 randomized lifecycle operations.
+- Full Phase 4D focused/acceptance total: 110/110 PASS.
+- Full 4D migration chain verified idempotent with stable IDs, Calendar refs and non-duplicating result history.
+- No production gameplay source changes were required in 4D.5.
+- Phase 4D is COMPLETE; next resume point is Phase 5A — Workbooks / Advanced Study.

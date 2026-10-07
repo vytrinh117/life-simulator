@@ -2,7 +2,7 @@
 
 ## Status
 
-**PHASE 4D IN PROGRESS — 4D.3 COMPLETE**
+**PHASE 4D COMPLETE**
 
 Prerequisites verified before implementation:
 
@@ -22,10 +22,10 @@ Prerequisites verified before implementation:
 - [x] 4D.1 — Canonical Event / Competition Lifecycle
 - [x] 4D.2 — Discovery / Registration / Join / Decline / Withdrawal
 - [x] 4D.3 — Preparation / Participation / Results / Consequences
-- [ ] 4D.4 — School Calendar / Seasonal / Automatic Events / Notification Cleanup
-- [ ] 4D.5 — Migration / Regression / Fuzz / Final QA
+- [x] 4D.4 — School Calendar / Seasonal / Automatic Events / Notification Cleanup
+- [x] 4D.5 — Migration / Regression / Fuzz / Final QA
 
-**Do not begin 4D.4 automatically.**
+**Phase 4D complete. Do not begin Phase 5A automatically.**
 
 ---
 
@@ -612,3 +612,324 @@ Intentional checkpoint boundaries:
 
 STOP. 4D.4 has NOT started.
 
+
+
+---
+
+# Checkpoint completed
+
+**4D.4 — School Calendar / Seasonal / Automatic Events / Notification Cleanup**
+
+## Implementation
+
+Phase 4D.4 extends the same canonical `S.school.contests` + Calendar + Notifications architecture from 4D.1–4D.3; it does not create a second event or notification store.
+
+Calendar/countdown lifecycle:
+
+- added lifecycle-aware countdown helpers for registration opening, registration deadline and event day
+- countdowns derive from canonical calendar dates and therefore remain stable across save/reload
+- registered/preparing event cards now expose event countdown context without adding a new dashboard
+- active event queue excludes terminal Completed/Declined/Withdrawn/Missed/Out records while resolved outcomes remain available through school event history
+
+Annual / seasonal recurrence:
+
+- existing `ANNUAL_EVENTS` definitions remain authoritative for school event templates/frequency
+- current-school annual instances are created with canonical schoolId + school-year-specific stable IDs
+- same annual event cannot duplicate within one school year
+- a later school year creates a new event instance with a different stable `eventId`
+- annual creation does not run merely because a save is loaded/migrated; publishing occurs through the daily lifecycle so save/reload itself is state-preserving
+- existing 4D.2 automatic announcement hooks announce eligible annual events when registration becomes actionable
+
+Notification cleanup:
+
+- registration announcements now remain active while registration is genuinely actionable instead of being accidentally auto-resolved because their source ID is not a Calendar event ID
+- explicit Decline/Register/Withdraw and registration-missed states resolve registration nags
+- event-day notifications resolve with the Calendar participation obligation
+- a genuinely Missed registered event gets one short explanatory notification
+- Missed notification retention lasts about two days, after which the event transitions to `archived` and leaves active notifications
+- old assessment-style orphan notifications such as stale `Math Assessment` notices are expired instead of persisting indefinitely
+- Completed event records leave active/actionable UI immediately while result/history remains preserved
+
+UI/history:
+
+- School event UI now distinguishes active event cards from compact recent result history
+- registration/event countdown text is shown contextually
+- no dead Register/Prepare/Withdraw actions are added to terminal records
+
+Integration hardening discovered during QA:
+
+1. Registration notifications used `sourceType='contest'` with registration-specific source IDs, but the generic notification reconciler treated every contest source ID as a Calendar ID and could resolve announcements immediately. 4D.4 now routes canonical contest notification sources through lifecycle-aware notification reconciliation first.
+2. Initial 4D.4 annual publishing occurred during save migration/`enterGame()`, which meant loading the same save could legitimately create current-year annual events and break save/reload fixed-point expectations. Annual recreation is now daily-lifecycle-driven; migration/load normalizes existing events but does not manufacture new event instances.
+
+Explicitly NOT implemented in 4D.4:
+
+- Phase 4D final migration/fuzz closeout
+- Phase 5A workbooks / Advanced Study
+- Phase 5B summer-program expansion
+- Phase 5C seasonal leisure overhaul
+- Phase 6 Prom/Occasion expansion
+- full awards/graduation ceremony systems
+
+Those remain 4D.5 and later phases.
+
+## Files changed
+
+Authoritative source / build tooling:
+
+- `src/modules/schooleventcalendar4d4.js` — NEW countdown, recurrence, active/archive and notification-lifecycle layer
+- `src/modules/events73.js` — annual publishing/lifecycle delegates to canonical 4D.4 when available
+- `src/modules/schooleventdiscovery4d2.js` — School event UI delegates to 4D.4 active/history renderer
+- `src/modules/core72.js` — 4D.4 reconciliation and lifecycle-aware contest notification routing
+- `tools/splice.py` — includes 4D.4 module/migration/test hooks
+
+Generated output:
+
+- `game.js` — rebuilt from authoritative source
+- `style.css` — rebuilt per `BUILD.md`; no 4D.4 style-source changes
+
+QA / progress:
+
+- `qa/t_4d4.py` — NEW focused 4D.4 suite
+- `PHASE_4D_PROGRESS.md` — checkpoint update
+- `CHANGELOG.md` — checkpoint summary
+
+## Migration
+
+`migrateSchoolEventCalendar4D4()` is conservative and idempotent.
+
+It:
+
+- enriches existing canonical event records in place
+- initializes notification/archive runtime metadata without fabricating results or historical participation
+- does not create annual event instances merely because an old save is loaded
+- preserves stable event IDs, lifecycle state, preparation, results and school event history
+- repeated migration does not duplicate events, notices or history
+- stale orphan school assessment notices can be resolved without creating replacement records
+
+## Tests
+
+### 4D.4 focused
+
+`qa/t_4d4.py`: **21/21 PASS**
+
+Covered:
+
+- realistic annual Math Olympiad frequency
+- no duplicate annual instance in one school year
+- automatic eligible school announcement
+- actionable registration notification persistence
+- registration-deadline countdown
+- countdown save/reload persistence
+- Decline notification cleanup
+- Declined removal from active queue
+- Completed removal from active queue
+- completed result/history retention
+- brief genuine-Missed notification
+- Missed notice expiry/archive
+- stale Math Assessment-style notification cleanup
+- next-school-year annual recreation
+- distinct next-year stable event ID
+- correct school ownership
+- migration idempotence
+- unique canonical event IDs
+- no fabricated next-year results
+- event UI active/history rendering
+- no browser runtime errors
+
+### 4D.1–4D.3 regression
+
+- 4D.1: **21/21 PASS**
+- 4D.2: **22/22 PASS**
+- 4D.3: **23/23 PASS**
+
+Phase 4D focused subtotal through 4D.4: **87/87 PASS**.
+
+### Fresh prerequisite regression after 4D.4
+
+- Phase 4C focused/final acceptance: **111/111 PASS**
+- Phase 4B.5 final acceptance: **23/23 PASS**
+- Phase 4A.5 final acceptance clean rerun: **32/32 PASS**
+- Phase 3C.5 final acceptance: **29/29 PASS**
+- Phase 3B.5 final acceptance: **5/5 PASS**
+- H3 focused regression: **50/50 PASS**
+
+Fresh focused/acceptance checks explicitly rerun including 4D.1–4D.4: **337/337 PASS**.
+
+One Phase 4A acceptance invocation again hit the known stochastic profile/provenance fixture variance (30/32); a clean rerun with no source change passed **32/32**. No 4D production regression was identified.
+
+### Syntax / reproducible build
+
+- `node --check game.js` — PASS
+- `node --check src/modules/schooleventcalendar4d4.js` — PASS
+- `node --check src/modules/core72.js` — PASS
+- `node --check src/modules/events73.js` — PASS
+- `tools/theme.py` — PASS (`remaining literal hex outside tokens: []`)
+
+Authoritative rebuild is byte-identical:
+
+- `game.js`: `a79a4c0c290c54012c7a16adb1b7b484701e910e35468e1ff5c859ef8ea9cbf8`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- shipped `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`
+
+## Known limitations / deferred scope
+
+Intentional checkpoint boundaries:
+
+- full Phase 4D migration/regression/fuzz closeout remains 4D.5
+- Phase 5A and later systems have not started
+
+## Exact resume point
+
+**4D.5 — Migration / Regression / Fuzz / Final QA**
+
+STOP. 4D.5 has NOT started.
+
+
+---
+
+# Checkpoint completed
+
+**4D.5 — Migration / Regression / Fuzz / Final QA**
+
+## Implementation
+
+4D.5 is a closeout / QA checkpoint. No new Phase 4D gameplay system was added.
+
+Final work performed:
+
+- added a focused Phase 4D final acceptance suite covering representative elementary, middle-school and high-school event lifecycles
+- added a randomized lifecycle fuzz suite covering registration, decline, withdrawal, preparation, migration, annual recurrence and save/reload
+- verified canonical event invariants across repeated migration and reload
+- verified Calendar references remain attached to canonical stable event IDs
+- verified result history does not duplicate
+- verified Decline, Registration Missed, Withdrawn, Missed and Completed remain semantically distinct
+- verified H3 preparation integrity remains exactly 10 / 6 / 3 useful progression with session 4+ capped
+- verified Phase 4B organization membership can gate team events
+- verified annual recreation creates a new stable instance in the next school year without duplicating the same-year event
+- verified Phase 4C school/location architecture remains intact
+- rebuilt generated outputs from authoritative source and confirmed byte-identical hashes
+
+No production source module required modification during 4D.5. The final production runtime is the validated 4D.4 runtime.
+
+## Files changed in 4D.5
+
+QA / documentation only:
+
+- `qa/t_4d5_accept.py` — NEW final Phase 4D acceptance suite
+- `qa/t_4d5_fuzz.py` — NEW randomized Phase 4D lifecycle fuzz suite
+- `PHASE_4D_PROGRESS.md` — Phase 4D closeout
+- `CHANGELOG.md` — Phase 4D final closeout note
+- `MIGRATION_NOTES.md` — Phase 4D migration/fixed-point closeout note
+- `QC_REPORT.md` — final Phase 4D QA summary
+
+Authoritative gameplay source modules were not changed in 4D.5.
+
+## Migration
+
+The full migration chain was repeatedly exercised:
+
+1. `migrateSchoolEvents4D1()`
+2. `migrateSchoolEventDiscovery4D2()`
+3. `migrateSchoolEventParticipation4D3()`
+4. `migrateSchoolEventCalendar4D4()`
+
+Verified fixed-point invariants:
+
+- no duplicate canonical `eventId`
+- no duplicate same-year annual event instance
+- no duplicate result-history key
+- no orphan Calendar `schoolEventId` references
+- no fabricated result/history for unresolved legacy events
+- no random Player registration
+- completed/declined/missed/withdrawn meanings remain preserved
+- preparation state is not reset
+- save/reload preserves semantic event state
+
+## Tests
+
+### Phase 4D focused / acceptance
+
+- 4D.1: **21/21 PASS**
+- 4D.2: **22/22 PASS**
+- 4D.3: **23/23 PASS**
+- 4D.4: **21/21 PASS**
+- 4D.5 final acceptance: **23/23 PASS**
+
+Phase 4D focused/acceptance total: **110/110 PASS**.
+
+### Phase 4D fuzz
+
+`qa/t_4d5_fuzz.py`: **21/21 PASS** across **200 randomized lifecycle operations** spanning:
+
+- elementary student
+- middle-school student
+- high-school student
+- leadership-age high-school student
+
+The first larger fuzz batches exceeded the sandbox's 120-second process limit after no assertion failures had been reported. The final fuzz suite uses parallel scenarios and a bounded 200-operation run so that all invariants and fixed-point checks complete within the available runtime.
+
+### Fresh prerequisite regression
+
+- Phase 4C focused/final acceptance: **111/111 PASS**
+- Phase 4B final acceptance + fuzz: **40/40 PASS**
+- Phase 4A final acceptance: **32/32 PASS**
+- Phase 3C final acceptance: **29/29 PASS**
+- Phase 3B final acceptance: **5/5 PASS**
+- H3: **50/50 PASS**
+- HOTFIX-P1 portable regression: all three P1 suites PASS using a QA-only portable harness
+- Phase 3A final validation: **13/13 PASS** using the same QA-only portable harness
+- legacy/current School/Event/Context/Campus/Holiday regression scripts exercised successfully through a QA-only portable harness where runtime allowed
+
+The shipped `qa/harness.py` was never modified.
+
+## Acceptance criteria
+
+All **46/46 Phase 4D acceptance criteria** are covered by the completed 4D.1–4D.5 focused/acceptance/fuzz matrix and prerequisite regressions.
+
+Key closeout confirmations include:
+
+- stable event IDs and correct school scope
+- explicit lifecycle state
+- no duplicate Find Event / annual instances
+- automatic announcements and registration windows
+- Join / Decline / Withdraw / Out semantics
+- eligibility and Phase 4B membership gating
+- H3 preparation cap + diminishing returns + time/location cost
+- real event-day participation and genuine Missed state
+- multi-factor results with win/loss possibilities and stable opponents
+- persistent results and meaningful history
+- lifecycle-driven notification cleanup
+- realistic annual recurrence
+- Phase 4C time/location integrity
+- migration safety/idempotence
+- save/reload persistence
+- reproducible generated outputs
+
+## Reproducible build
+
+Final authoritative rebuild is byte-identical:
+
+- `game.js`: `a79a4c0c290c54012c7a16adb1b7b484701e910e35468e1ff5c859ef8ea9cbf8`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- shipped `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`
+
+`tools/theme.py`: PASS (`remaining literal hex outside tokens: []`).
+
+## Known limitations
+
+- Several historical QA scripts hard-code an obsolete Chromium executable path. They require a QA-only portable harness in this sandbox; the shipped harness remains unchanged.
+- Very large legacy/fuzz batches can exceed the sandbox 120-second process limit. Phase 4D final fuzz is deliberately bounded and completes all canonical invariant checks.
+- Phase 5A workbook ownership / Level I–III / Advanced Study overhaul is intentionally not implemented.
+- Phase 5B summer-program expansion, Phase 5C leisure overhaul, Phase 6 Prom/Occasion expansion, awards ceremony, graduation ceremony and university competitions remain later scope.
+
+## Final Phase 4D status
+
+**PHASE 4D COMPLETE**
+
+**Ready for final audit before Phase 5A**
+
+Exact next resume point:
+
+**Phase 5A — Workbooks / Advanced Study**
+
+Phase 5A has NOT started.

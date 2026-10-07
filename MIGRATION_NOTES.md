@@ -1,3 +1,12 @@
+
+## Phase 4D.4 event calendar migration
+
+- Existing school-event records are enriched in place with 4D.4 notification/archive runtime metadata.
+- Migration does **not** publish new annual event instances merely because a save is loaded. Annual recurrence is driven by the daily school-event lifecycle.
+- Existing stable event IDs, preparation, results, lifecycle state and event history are preserved.
+- Repeated migration does not duplicate event instances, result history or missed-event notices.
+- Orphaned stale school assessment notifications may be expired conservatively; no replacement assessment/event history is fabricated.
+
 # Phase 3C.1 migration — Communication contacts/device access
 
 - Adds `S.communication` with versioned `contacts`, `firstDeviceAt`, and NPC contact-offer cooldown state.
@@ -350,3 +359,8 @@ Focused save/reload and repeated-migration checks are covered by `qa/t_3c4.py`; 
 Phase 4C migrations remain conservative and current-state focused. Final 4C.5 validation repeatedly ran `migrateSchoolDay4C1`, `migrateSchoolClasses4C2`, `migrateSchoolFacilities4C3`, and `migrateSchoolAfter4C4` and confirmed an idempotent fixed point.
 
 No historical attendance, absence, timetable, or homework records are fabricated. Existing current homework may receive only safe missing metadata already authorized by 4C.4. Save/reload preserves semantic daily-school state; volatile reconciliation timestamps/transitions may refresh on load without changing gameplay state.
+
+
+## Phase 4D final migration closeout
+
+The complete 4D migration chain (4D.1 canonical event identity, 4D.2 discovery/registration, 4D.3 participation/results and 4D.4 calendar/notification lifecycle) reaches a stable fixed point. Repeated migration does not duplicate canonical events, annual instances, Calendar references or result history and does not fabricate legacy event outcomes.
