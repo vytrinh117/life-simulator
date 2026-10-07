@@ -49,6 +49,7 @@ function addItem(key,source='purchase',condition=null,{quantity=1}={}){
  else{it=makeItemInstance(key,source,condition);if(d.stackable)it.quantity=quantity;S.inventoryItems.push(it);if(!d.stackable)for(let i=1;i<quantity;i++)S.inventoryItems.push(makeItemInstance(key,source,condition))}
  if(d.phone)onPhoneAcquired(it);
  syncLegacyInventory();S.purchaseHistory.unshift({dateISO:currentDate(),minute:currentMinute(),key,source,quantity,price:source==='own money'?d.price*quantity:0});if(S.purchaseHistory.length>200)S.purchaseHistory.length=200;
+ if((d.phone||key==='kidsWatch')&&typeof migrateCommunication3C1==='function')migrateCommunication3C1();
  return it
 }
 function openOne(it){if((it.quantity||1)>1&&!it.opened){it.quantity--;const n=Object.assign(JSON.parse(JSON.stringify(it)),{id:uid('item'),quantity:1,opened:true});S.inventoryItems.push(n);return n}it.opened=true;return it}

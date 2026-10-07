@@ -373,3 +373,7 @@ Broad legacy-matrix notes: `t_holidays.py` retains a non-3C Holiday hero asserti
 - `node --check game.js`: PASS.
 - Shipped `qa/harness.py` is restored byte-identical to 3C.4 (`9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`).
 - 3C.2 focused call tests passed 21/21 on five consecutive deterministic-fixture runs; production availability behavior was not weakened.
+
+### Phase 3C.5 re-execution note
+
+A fresh closeout run from `3C.4-complete-current` reconfirmed the final Phase 3C focused/acceptance/fuzz matrix and the directly relevant cross-phase regressions. In this rerun `t_biz.py` and `t_holidays.py` both passed; the older Holiday-hero failure noted above did not reproduce. `t_health.py` exceeded the environment's per-command Playwright window before final summary and is therefore recorded as a timeout for this rerun, not as a fresh pass or failure. No workload was shortened to manufacture a green result.

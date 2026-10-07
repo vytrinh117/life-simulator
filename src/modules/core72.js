@@ -565,7 +565,7 @@ function runFollowUp(f){
 
 // ---------- Lifecycle event choices ----------
 function handleLifecycleEventChoice(e,id,label){
- const rb=typeof romance3B2EventChoice==='function'&&romance3B2EventChoice(e,id,label);if(rb)return rb;const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
+ const c3=typeof communication3C3EventChoice==='function'&&communication3C3EventChoice(e,id,label);if(c3)return c3;const cm=typeof communication3C1EventChoice==='function'&&communication3C1EventChoice(e,id,label);if(cm)return cm;const rb=typeof romance3B2EventChoice==='function'&&romance3B2EventChoice(e,id,label);if(rb)return rb;const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
  if(e.type==='newPhone')return handlePhoneChoice(e,id);
  if(e.type==='invitation'&&e.payload?.planId)return handlePlanInvite(e,id);
  if(e.type==='electionLost')return handleElectionLost(e,id);
@@ -662,7 +662,7 @@ function todayAgenda(dateISO=currentDate()){
 // ---------- Reconciliation ----------
 function reconcileState(reason='tick'){
  if(!S)return;ensureLifecycleContainers();
- reconcileSchoolStage();reconcileEducationHistory();socialReconcile();
+ reconcileSchoolStage();reconcileEducationHistory();socialReconcile();if(typeof migrateCommunication3C1==='function')migrateCommunication3C1();if(typeof migrateCommunication3C3==='function')migrateCommunication3C3();if(typeof migrateCommunication3C4==='function')migrateCommunication3C4();
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  reconcileExams();reconcileCalendar();expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()

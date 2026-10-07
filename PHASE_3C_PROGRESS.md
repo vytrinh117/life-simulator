@@ -1823,3 +1823,25 @@ Resume point: **Phase 4A — School Year / Location / Obligation Engine**.
 - temporary QA compatibility mappings were removed before packaging
 - final authoritative-build reruns: 3C.1 **22/22**, 3C.2 **21/21**, 3C.3 **20/20**, 3C.4 **26/26**, 3C.5 acceptance **29/29**, 3C.5 fuzz **13/13**
 - 3C.2 call fixture was made deterministic for its own availability assertions (neutralized random NPC study/vacation schedule only inside the test); it then passed **21/21 on 5 consecutive runs**. No production call/availability rule was changed for this test stabilization.
+
+### Re-execution verification from `3C.4-complete-current`
+
+The 3C.5 closeout was re-executed from the current 3C.4 checkpoint rather than relying only on the earlier completed artifact. Fresh reruns on this branch confirmed:
+
+- Phase 3C focused: **89/89 PASS**
+- 3C.5 acceptance supplement: **29/29 PASS**
+- 3C.5 required fuzz: **13/13 PASS**, 600 randomized communication operations
+- Phase 3B focused: **76/76 PASS**
+- H3 full focused: **50/50 PASS**
+- HOTFIX-P1: **74/74 PASS**
+- Phase 3A.7: **13/13 PASS**
+- H2: **22/22 PASS**
+- Phase 2A.6: **13/13 PASS**
+- Medicine: **15/15 PASS**
+- Phase 2B Family: **35/35 PASS** (`t_family2` 22/22 + `t_family` 13/13)
+- People/Profile/Friendship: **55/55 PASS**
+- `t_commit`, `t_regress`, `t_rst`: PASS
+- `t_context`, `t_knx`, `t_o`: PASS under canonical 3C contact/cooldown semantics
+- `t_biz` and `t_holidays`: PASS in this re-execution
+
+`qa/t_health.py` was also attempted in this environment but exceeded the per-command Playwright execution window before emitting its final summary. Its workload was not reduced. The final production source and QA set (after restoring the harness) are byte-identical to the previously validated Phase 3C COMPLETE reference, apart from this appended documentation note.

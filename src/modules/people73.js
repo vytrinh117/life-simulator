@@ -19,7 +19,7 @@ function peopleCardCompact(p){const fam=isFamilyPerson(p),av=availabilityNow(p);
  return `<section class="person-card compact"><div class="pc-head">${personIdentityHead(p)}<span class="pc-mood" title="${esc(p.mood||'')}">${moodEmoji(p.mood)}</span></div>
  <p class="pc-line">${esc(personGenderLove(p))}</p><p class="pc-line muted-text">${esc(personContextLine(p))}</p>
  <p class="pc-line">Closeness: <b>${closenessLabel(p.rel)}</b>${av?` <span class="avail">· Right now: ${esc(av)}</span>`:''}</p>
- <div class="inline-actions"><button class="small primary" data-person-open="${p.id}">Interact</button>${S.age>=6&&!['parent','grandparent'].includes(p.role)?`<button class="small" data-plan-open="${p.id}">Plans</button>`:''}<button class="small ghost" data-profile-open="${p.id}">Profile</button>${!fam&&friendStatusLabel(p)?`<button class="small" data-reconnect="${p.id}">Reconnect</button>`:''}</div></section>`}
+ <div class="inline-actions"><button class="small primary" data-person-open="${p.id}">Interact</button>${S.age>=6&&!['parent','grandparent'].includes(p.role)?`<button class="small" data-plan-open="${p.id}">Plans</button>`:''}<button class="small ghost" data-profile-open="${p.id}">Profile</button>${typeof contactActionHtml3C1==='function'?contactActionHtml3C1(p):''}${!fam&&friendStatusLabel(p)?`<button class="small" data-reconnect="${p.id}">Reconnect</button>`:''}</div></section>`}
 function peopleOrder(){const fam=S.people.filter(isFamilyPerson),rest=S.people.filter(p=>!isFamilyPerson(p)).sort((a,b)=>b.rel-a.rel);return [...fam,...rest]}
 function knowsWell(p,lvl){return isFamilyPerson(p)||p.rel>=lvl}
 function zodiacOf(p){if(!p.bday)return null;try{return zodiacFromDate(`2000-${p.bday}`)}catch(e){return null}}
