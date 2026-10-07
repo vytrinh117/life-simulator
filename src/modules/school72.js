@@ -4,19 +4,20 @@
 // Checking in records attendance; time then runs period by period and
 // the player chooses what to do in each one.
 // =====================================================================
-const SCHOOL_NAMES={primary:['Riverside Primary School','Maple Grove Elementary','Sunrise Primary School','Westside Elementary','Lakeview Primary School'],middle:['Riverside Middle School','Central Middle School','Sunrise Junior High','Westside Middle School'],high:['Riverside High School','Central International High School','Sunrise Secondary School','Westside High School']};
+const SCHOOL_NAMES={primary:schoolNamesForStage('primary'),middle:schoolNamesForStage('middle'),high:schoolNamesForStage('high')};
 const STAGE_LABEL={kindergarten:'kindergarten',primary:'primary school',middle:'middle school',high:'high school'};
 function stageForAge(age){return age<=5?'kindergarten':age<=11?'primary':age<=14?'middle':'high'}
 function stageOfSchool(sc){if(!sc)return null;if(sc.grade==='Kindergarten')return 'kindergarten';if(/Middle/.test(sc.grade))return 'middle';if(/High/.test(sc.grade))return 'high';return 'primary'}
 function nameMatchesStage(name,stage){if(stage==='primary')return !/Secondary|High|Middle|Junior/i.test(name);if(stage==='middle')return /Middle|Junior/i.test(name);if(stage==='high')return /High|Secondary/i.test(name);return true}
 function schoolNameFor(stage,prev=null){const base=prev?String(prev).split(' ')[0]:null,pool=SCHOOL_NAMES[stage]||SCHOOL_NAMES.primary;return pool.find(n=>base&&n.startsWith(base))||rand(pool)}
 function buildSchool(age,carry=null){
- if(age>=3&&age<=5&&S.development.kindergarten.enrolled)return {name:carry?.grade==='Kindergarten'?carry.name:rand(['Little Steps Kindergarten','Sunflower Early Learning','Neighborhood Kindergarten']),grade:'Kindergarten',className:carry?.className||rand(['Sun','Moon','Rainbow','Bears']),attendance:carry?.attendance??96,behavior:72,gpa:null,rank:null,subjects:[makeSubject('Language & stories',0),makeSubject('Numbers & patterns',1),makeSubject('Movement',2),makeSubject('Social skills',3)],clubs:[],activityOffers:[],contests:[],friends:[],rivals:[],yearStarted:currentDate(),startedDate:carry?.startedDate||currentDate()};
+ if(age>=3&&age<=5&&S.development.kindergarten.enrolled){const sc={name:carry?.grade==='Kindergarten'?carry.name:rand(schoolNamesForStage('kindergarten')),grade:'Kindergarten',className:carry?.className||rand(['Sun','Moon','Rainbow','Bears']),attendance:carry?.attendance??96,behavior:72,gpa:null,rank:null,subjects:[makeSubject('Language & stories',0),makeSubject('Numbers & patterns',1),makeSubject('Movement',2),makeSubject('Social skills',3)],clubs:[],activityOffers:[],contests:[],friends:[],rivals:[],yearStarted:currentDate(),startedDate:carry?.startedDate||currentDate(),stage:'kindergarten'};return typeof attachPlayerSchoolIdentity4A2==='function'?attachPlayerSchoolIdentity4A2(sc,'kindergarten',carry):sc}
  if(age<6||age>17)return null;
  const stage=stageForAge(age),same=!!carry&&stageOfSchool(carry)===stage;
- return {name:same?carry.name:schoolNameFor(stage,carry&&carry.grade!=='Kindergarten'?carry.name:null),grade:gradeLabel(age),className:`${Math.max(1,age-5)}-${String.fromCharCode(65+Math.floor(Math.random()*4))}`,attendance:carry?.attendance??96,behavior:carry?.behavior??70,gpa:age>=12?(carry?.gpa??3.1):null,rank:age>=12?(carry?.rank??Math.floor(8+Math.random()*22)):null,
+ const sc={name:same?carry.name:schoolNameFor(stage,carry&&carry.grade!=='Kindergarten'?carry.name:null),grade:gradeLabel(age),className:`${Math.max(1,age-5)}-${String.fromCharCode(65+Math.floor(Math.random()*4))}`,attendance:carry?.attendance??96,behavior:carry?.behavior??70,gpa:age>=12?(carry?.gpa??3.1):null,rank:age>=12?(carry?.rank??Math.floor(8+Math.random()*22)):null,
   subjects:subjectNames(age).map((n,i)=>{const old=carry?.subjects?.find(s=>s.name===n);if(!old)return makeSubject(n,i);const s=Object.assign(makeSubject(n,i),old,{prep:0,homework:{status:'None',progress:0,dueDate:null}});if(!same)s.teacher={name:teacherName(n),rel:50+Math.floor(Math.random()*15)};return s}),
-  clubs:same?(carry?.clubs||[]).filter(c=>c.status==='Active'):[],activityOffers:[],contests:[],friends:carry?.friends||[],rivals:carry?.rivals||[],yearStarted:currentDate(),startedDate:same?(carry.startedDate||currentDate()):currentDate(),stage}
+  clubs:same?(carry?.clubs||[]).filter(c=>c.status==='Active'):[],activityOffers:[],contests:[],friends:carry?.friends||[],rivals:carry?.rivals||[],yearStarted:currentDate(),startedDate:same?(carry.startedDate||currentDate()):currentDate(),stage};
+ return typeof attachPlayerSchoolIdentity4A2==='function'?attachPlayerSchoolIdentity4A2(sc,stage,carry):sc
 }
 function recordGraduation(stage,schoolName,{year=null,silent=false}={}){
  S.education=S.education||{graduations:[]};if(S.education.graduations.some(g=>g.stage===stage))return;
@@ -29,7 +30,7 @@ function reconcileEducationHistory(){
  S.education=Object.assign({graduations:[]},S.education||{});
  const k=S.development?.kindergarten;
  if(S.age>=6&&k?.enrolled&&!S.education.graduations.some(g=>g.stage==='kindergarten')){const y=parseISO(sixthBirthday()).getUTCFullYear();recordGraduation('kindergarten',k.schoolName||'kindergarten',{year:y,silent:true})}
- if(S.school&&S.school.grade!=='Kindergarten'){const st=stageForAge(gradeNumber()+5);S.school.stage=st;if(!nameMatchesStage(S.school.name,st)){const old=S.school.name;S.school.name=schoolNameFor(st,old);for(const e of S.calendar)if(e.type==='schoolDay'&&!isTerminal(e.status))e.title=`School • ${S.school.name}`}}
+ if(S.school&&S.school.grade!=='Kindergarten'){const st=stageForAge(gradeNumber()+5);S.school.stage=st;const sid=S.school.currentSchoolId||null,ent=sid&&typeof schoolById==='function'?schoolById(sid):null;if(ent&&canonicalSchoolStage4A1(ent.educationLevel)===st){S.school.name=ent.name}else if(!sid&&!nameMatchesStage(S.school.name,st)){const old=S.school.name;S.school.name=schoolNameFor(st,old);if(typeof attachPlayerSchoolIdentity4A2==='function')attachPlayerSchoolIdentity4A2(S.school,st,null);for(const e of S.calendar)if(e.type==='schoolDay'&&!isTerminal(e.status))e.title=`School • ${S.school.name}`}}
 }
 
 // ---------- Timetable ----------

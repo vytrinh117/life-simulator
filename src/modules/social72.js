@@ -25,7 +25,7 @@ function generateName({surname=null,key=poolKey(),avoid=null}={}){
 }
 function npcGoals(traits,age){const g=[];if(traits.includes('Sporty')||chance(25))g.push('makeTeam');if(traits.includes('Studious')||chance(25))g.push('goodGrades');if(traits.includes('Ambitious')&&age>=10)g.push('classPresident');if(traits.includes('Artsy'))g.push(chance(50)?'musician':'artist');if(traits.includes('Outgoing')||traits.includes('Shy'))g.push('moreFriends');if(age>=15&&chance(35))g.push('university');if(age>=13&&chance(25))g.push('saveMoney');return [...new Set(g)].slice(0,3)}
 const GOAL_LABEL={makeTeam:'make a sports team',goodGrades:'get good grades',classPresident:'become class president',musician:'become a musician',artist:'get into art seriously',moreFriends:'make more friends',university:'get into university',saveMoney:'save up for something',partner:'find a partner'};
-function generateHousehold({kids=1,childAge=S.age,key=poolKey()}={}){
+function generateHousehold({kids=1,childAge=S.age,key=poolKey(),schoolId=null,schoolGrade=null,schoolClass=null}={}){
  const used=nameRegistry(),pool=NAME_POOLS[key]||NAME_POOLS.EN,famSurname=rand(pool.last);
  const style=['VN','KR','CN'].includes(key)?'parentsKeepOwn':chance(70)?'shared':chance(50)?'hyphenated':'separate';
  const motherSurname=style==='shared'?famSurname:rand(pool.last.filter(x=>x!==famSurname));
@@ -33,7 +33,7 @@ function generateHousehold({kids=1,childAge=S.age,key=poolKey()}={}){
  const hh={id:uid('hh'),surname:famSurname,style,members:[]};S.households=S.households||[];S.households.push(hh);
  const year=parseISO(currentDate()).getUTCFullYear(),out=[];
  for(let i=0;i<kids;i++){const age=Math.max(1,childAge+(i===0?0:rand([-2,-1,1,2,3]))),traits=[rand(NPC_TRAITS),rand(NPC_TRAITS)].filter((v,j,a)=>a.indexOf(v)===j),nm=generateName({surname:kidSurname,key,avoid:used});
-  const npc=Object.assign({id:uid('npc'),householdId:hh.id,birthYear:year-age,traits,goals:npcGoals(traits,age),clubDay:1+Math.floor(Math.random()*5),interest:rand(['Football','Basketball','Art Club','Drama','Music','Science Club','Debate','Coding Club','Student Council','Chess Club','Swimming']),reputation:20+Math.floor(Math.random()*40)},nm);S.npcs.push(npc);hh.members.push(npc.id);out.push(npc)}
+  const npc=Object.assign({id:uid('npc'),householdId:hh.id,birthYear:year-age,traits,goals:npcGoals(traits,age),clubDay:1+Math.floor(Math.random()*5),interest:rand(['Football','Basketball','Art Club','Drama','Music','Science Club','Debate','Coding Club','Student Council','Chess Club','Swimming']),reputation:20+Math.floor(Math.random()*40)},nm);S.npcs.push(npc);if(typeof initializeNpcSchool4A3==='function')initializeNpcSchool4A3(npc,{schoolId,grade:schoolGrade,className:schoolClass,reason:'NPC created'});hh.members.push(npc.id);out.push(npc)}
  hh.parents=[generateName({surname:famSurname,key,avoid:used}),generateName({surname:motherSurname,key,avoid:used})].map(n=>n.fullName);
  return out
 }
@@ -44,7 +44,7 @@ function ensureRoster(){
  let guard=0;while(peers.length<28&&guard++<40){const made=generateHousehold({kids:chance(30)?2:1});peers.push(...made.filter(n=>Math.abs(npcAge(n)-S.age)<=1))}
 }
 function npcById(id){return (S.npcs||[]).find(n=>n.id===id)||null}
-function personFromNpc(npc,role,roleLabel){const p=makePerson(npc.fullName,role,npcAge(npc),S.age);Object.assign(p,{metDate:currentDate(),metVia:roleLabel,metAt:/^met /.test(roleLabel||'')?roleLabel.replace(/^met /,''):undefined,respect:50,npcId:npc.id,firstName:npc.firstName,surname:npc.surname,fullName:npc.fullName,nickname:npc.nickname,name:npc.fullName,roleLabel,traits:npc.traits,goals:npc.goals});return p}
+function personFromNpc(npc,role,roleLabel){if(typeof ensureNpcSchoolForRole4A3==='function')ensureNpcSchoolForRole4A3(npc,roleLabel);const p=makePerson(npc.fullName,role,npcAge(npc),S.age);Object.assign(p,{metDate:currentDate(),metVia:roleLabel,metAt:/^met /.test(roleLabel||'')?roleLabel.replace(/^met /,''):undefined,respect:50,npcId:npc.id,firstName:npc.firstName,surname:npc.surname,fullName:npc.fullName,nickname:npc.nickname,name:npc.fullName,roleLabel,traits:npc.traits,goals:npc.goals});if(typeof recordMeetingProvenance4A4==='function'){const low=String(roleLabel||'').toLowerCase();if(/classmate/.test(low))recordCurrentSchoolMeeting4A4(p,'sameClass');else if(/school friend|same school/.test(low))recordCurrentSchoolMeeting4A4(p,'sameSchool');else recordMeetingProvenance4A4(p,{metAt:p.metAt,metVia:p.metVia})}return p}
 function firstName(p){if(!p)return '';if(p.role==='parent'||p.role==='grandparent')return p.name;return p.nickname||p.firstName||String(p.name||'').split(' • ')[0].split(' ')[0]}
 function displayName(p,ctx='casual'){if(!p)return '';if(['parent','grandparent'].includes(p.role))return p.name;if(ctx==='formal')return p.fullName||p.name;return p.rel>=60?(p.nickname||p.firstName||p.name):(p.fullName||p.name)}
 function familySurname(){S.familyName=S.familyName||(String(S.name||'').trim().split(/\s+/).length>1?String(S.name).trim().split(/\s+/).pop():rand((NAME_POOLS[poolKey()]||NAME_POOLS.EN).last));return S.familyName}
@@ -56,7 +56,7 @@ function migratePeopleNames(){
   const parts=String(p.name).split(' • '),given=parts[0].trim(),label=parts[1]||p.role,first=given;let nm,full;for(let i=0;i<40;i++){nm=generateName({key,avoid:new Set()});full=composeName(first,nm.surname,key);if(!used.has(full.toLowerCase()))break}
   used.add(full.toLowerCase());Object.assign(p,{firstName:first,surname:nm.surname,fullName:full,nickname:NICKNAMES[first]||null,roleLabel:label,name:full});
   if(!p.goals)p.goals=npcGoals(p.traits||[],p.age||S.age);
-  const npc={id:uid('npc'),firstName:first,surname:nm.surname,fullName:full,nickname:p.nickname,birthYear:parseISO(currentDate()).getUTCFullYear()-(p.age||S.age),traits:p.traits||[],goals:p.goals,clubDay:1+Math.floor(Math.random()*5),interest:rand(['Football','Art Club','Drama','Music','Science Club']),reputation:30};S.npcs.push(npc);p.npcId=npc.id;
+  const npc={id:uid('npc'),firstName:first,surname:nm.surname,fullName:full,nickname:p.nickname,birthYear:parseISO(currentDate()).getUTCFullYear()-(p.age||S.age),traits:p.traits||[],goals:p.goals,clubDay:1+Math.floor(Math.random()*5),interest:rand(['Football','Art Club','Drama','Music','Science Club']),reputation:30};S.npcs.push(npc);if(typeof initializeNpcSchool4A3==='function')initializeNpcSchool4A3(npc,{reason:'Migrated People identity'});p.npcId=npc.id;
   S.flags[`stage-${label.replace(/\s+/g,'')}`]=true
  }
 }

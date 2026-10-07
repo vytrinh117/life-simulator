@@ -56,17 +56,13 @@ function askFuture(id){const p=personById(id);if(!p)return;if(goalsKnown(p)){toa
  p.goalsKnown=true;p.rel=clamp(p.rel+1);(p.history=p.history||[]).unshift({dateISO:currentDate(),age:S.age,text:`They told you about their dreams: ${goalsText(p)}.`,importance:2});log(`Talking with ${firstName(p)}`,`${firstName(p)} opens up: they want to ${goalsText(p)}.`)}
 // --- right-now availability (schedule) — different from the "Busy" personality trait ---
 function availabilityNow(p){if(isFamilyPerson(p))return null;const a=npcStatusAt(p);return a.free?'Free now':a.atSchool?'At school':'Occupied right now'}
-function howYouKnowThem(p){/* HOTFIX P1.3 — one readable summary composed from the stored meeting data (metAt, metVia, introducedBy, knownSince); unknown parts are omitted, nothing is flattened */
- if(isFamilyPerson(p))return personContextLine(p);const parts=[];const role=String(p.roleLabel||p.role||'');
- let place=p.metAt?String(p.metAt).replace(/^(at|in|on|during)\s+(a |an |the )?/i,''):/classmate/i.test(role)?'school':/neighbor/i.test(role)?'neighborhood':/(club|team)/i.test(role)?role.replace(/^.*?((?:\w+\s)?(?:club|team)).*$/i,'$1'):null;if(place)parts.push(cap(place));
- const esc_re=x=>String(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),via=p.metVia&&!/^(classmate|neighbor|friend)$/i.test(p.metVia)&&(!place||!new RegExp(esc_re(place),'i').test(p.metVia))?String(p.metVia):null;/* metVia is shown unless it only repeats the place (e.g. 'met at a party' when the place is 'party') */if(via)parts.push(via);
- const intro=p.introducedBy&&personById(p.introducedBy);if(intro)parts.push(`introduced by ${intro.fullName||intro.name}`);parts.push(`known since age ${p.knownSince??S.age}`);return parts.join(' · ')}
+function howYouKnowThem(p){return typeof howYouKnowThem4A4==='function'?howYouKnowThem4A4(p):personContextLine(p)}
 function profileHtml(p){/* HOTFIX P1.3 — Profile in the selected A2 layout: one header with a relationship badge, Personal details (3×2 tiles), Social & lifestyle, Life goals strip, How you know them strip, Relationship to you (3×2 metric tiles) */
  const n=npcById(p.npcId)||p,ints=personInterests(p),U='Unknown',fam=isFamilyPerson(p);ensureNpcTraits(n);
  const bday=p.bday&&knowsWell(p,40)?formatDate(`${currentDate().slice(0,4)}-${p.bday}`).replace(/, \d{4}$/,''):U;
  const parents=p.npcId&&parentsKnown(p)?npcParentsLine(p):null,traits=knownTraits(p),hidden=(p.traits||[]).length>traits.length,avail=availabilityNow(p);
  const tile=(ic,label,val,cls='')=>`<div class="pf-tile ${cls}">${icon(ic)}<div><small>${label}</small><b>${val}</b></div></div>`;
- const social=[avail?tile('clock','Right now',esc(avail)):'',!fam?tile('heart','Romantic status',esc(relStatusKnown(p)?npcRelStatus(p):U)):'',tile('target','Interests',esc(knowsWell(p,40)?ints.interests.join(', '):U)),tile('thumbs-down','Dislikes',esc(knowsWell(p,60)?ints.dislikes.join(', '):U))].filter(Boolean);
+ const social=[avail?tile('clock','Right now',esc(avail)):'',!fam?tile('heart','Romantic status',esc(relStatusKnown(p)?npcRelStatus(p):U)):'',typeof schoolProfileTile4A4==='function'?schoolProfileTile4A4(p,tile):'',tile('target','Interests',esc(knowsWell(p,40)?ints.interests.join(', '):U)),tile('thumbs-down','Dislikes',esc(knowsWell(p,60)?ints.dislikes.join(', '):U))].filter(Boolean);
  const goal=goalsKnown(p)&&goalsText(p)?esc(goalsText(p)):U,canAsk=!fam&&!goalsKnown(p)&&tierRank(p)>=2;
  const metric=(ic,label,v,cls)=>`<div class="pf-metric ${cls}">${icon(ic)}<div class="pf-metric-body"><small>${label}</small><div class="pf-metric-row"><b>${Math.round(v)}</b><i class="pf-bar"><em style="width:${clamp(v)}%"></em></i></div></div></div>`;
  return `<div class="profile pf">

@@ -291,3 +291,44 @@ Focused save/reload and repeated-migration checks are covered by `qa/t_3c4.py`; 
 - Save/reload preserves stable contact Person IDs, canonical direct-message metadata/read state, call history/missed state, group IDs/member Person IDs, block/remove state, Phase 3B partner state and H3 Decision Ledger records.
 - Migration does not synthesize pre-device message/call/group history, fake exchanged contacts, fake unread counts or fake missed calls.
 - 3C.5's committed-message delivery fix changes runtime delivery semantics only; it does not create or reroll migration data.
+
+
+## Phase 4A.1 — School world migration foundation
+- `migrateSchoolWorld4A1()` creates deterministic/idempotent `S.schoolWorld` registry metadata (`schemaVersion`, `registryVersion`, canonical `schoolIds`, custom-school hook, school-owned-event capability).
+- Canonical school definitions remain source data and are not copied into every save/person record.
+- Existing active `S.school` gameplay data is preserved exactly at this checkpoint; no `currentSchoolId` is assigned to Player/NPCs yet.
+- Recognized legacy school-name strings on school-owned calendar events can be mapped to stable IDs while retaining the visible legacy name.
+- Unknown legacy school names are preserved and never silently substituted with an unrelated canonical school.
+- Repeated migration replaces the registry-ID list deterministically and cannot duplicate schools or invent enrollment history.
+
+## Phase 4A.2
+- Player current school now migrates to `S.school.currentSchoolId`.
+- Known names map to canonical 4A.1 IDs; unknown active names create deterministic minimal custom entities and keep the visible legacy name unchanged.
+- `S.education.schoolEnrollments` is initialized conservatively from the current enrollment only; no years of fake historical schooling are fabricated.
+- Repeated migration is idempotent: no duplicate enrollment periods, grade entries, or custom schools.
+- Existing `S.schoolHistory` remains the legacy yearly attendance/report archive.
+
+
+## Phase 4A.3 — NPC school migration
+- Canonical NPC school identity now lives on `S.npcs[*].currentSchoolId`; People references remain via stable `npcId`.
+- Existing school-age NPCs receive one current enrollment only. No fake historical years are synthesized.
+- Known legacy school names map to canonical IDs; unknown names use the existing deterministic custom-school identity mechanism.
+- Repeated migration preserves the same school assignment and one active history period; it does not duplicate grade/history entries.
+- Stage changes close the prior NPC enrollment and open a stage-compatible current school. A stale legacy display name is not reused after a canonical stage transition.
+- Adults aging out of K–12 retain closed school history but no impossible current K–12 school.
+
+## Phase 4A.4
+- Existing People meeting fields are conservatively normalized into `schoolSocial.meeting`.
+- Legacy `introducedBy` is promoted to `introducedById` only when it resolves to a real Person; the legacy field remains compatible.
+- Existing historical meeting `schoolId` is preserved across later Player/NPC school transfers.
+- School-at-meeting is inferred only when enrollment/current-class evidence supports it; inconsistent legacy `classmate` labels remain school-unknown rather than being guessed.
+- Repeated 4A.4 migration is idempotent and does not change friendship tier/status.
+
+
+## Phase 4A.5 — Final migration validation
+- Repeated 4A.1–4A.4 migration is idempotent across elementary, middle, high and adult-with-history saves.
+- Player current-school identity/history, NPC current-school identity/history, school-owned event IDs, and structured meeting provenance survive save/reload without duplication or reroll.
+- Unknown legacy Player school names keep their visible legacy name and deterministic custom ID; migration does not silently replace them with an unrelated canonical school.
+- NPC migration does not create fake years of history or huge school rosters.
+- Meeting school provenance remains historical and is not overwritten by later Player/NPC transfers.
+- 4A.5 adds no new migration schema or production mutation; it validates the 4A.1–4A.4 migration stack.

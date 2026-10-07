@@ -377,3 +377,126 @@ Broad legacy-matrix notes: `t_holidays.py` retains a non-3C Holiday hero asserti
 ### Phase 3C.5 re-execution note
 
 A fresh closeout run from `3C.4-complete-current` reconfirmed the final Phase 3C focused/acceptance/fuzz matrix and the directly relevant cross-phase regressions. In this rerun `t_biz.py` and `t_holidays.py` both passed; the older Holiday-hero failure noted above did not reproduce. `t_health.py` exceeded the environment's per-command Playwright window before final summary and is therefore recorded as a timeout for this rerun, not as a fresh pass or failure. No workload was shortened to manufacture a green result.
+
+
+## Phase 4A.1 checkpoint QA
+
+Status: **PASS for authorized 4A.1 scope**.
+
+Fresh directly executed results:
+- `qa/t_4a1.py`: **13/13 PASS**
+- `qa/t_4a1_regress.py`: **14/14 PASS**
+- `qa/t_3c1.py`: **22/22 PASS**
+- `qa/t_3c4.py`: **26/26 PASS**
+- directly executed subtotal: **75/75 PASS**
+
+The focused suite verifies unique IDs, valid centralized lookups, multiple differentiated schools, registry stability, save/reload, idempotent migration and school-owned event identity. The school compatibility suite verifies current primary/middle/high state, School UI, exams/calendar and non-destructive migration. Phase 3C communication regressions remain green.
+
+Legacy `t_sch.py`, `t_schoolyear.py` and `t_exam.py` retain historical absolute/file navigation assumptions that are blocked by this environment before assertions. They are not counted as passes. The shipped `qa/harness.py` is preserved unchanged.
+
+Final reproducible-build hash is appended after the authoritative packaging rebuild.
+
+Final 4A.1 build verification:
+- `game.js` rebuilt twice byte-identically: `4abeb0921ab52a43814ac21c4fd1d6e0dd899d1aa7d8d34bd04166219f98bc4b`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d` (unchanged from input)
+- `node --check game.js`: PASS
+- shipped `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488` (unchanged)
+- final 4A.1 focused + school compatibility rerun: 27/27 PASS
+
+## Phase 4A.2 QC
+- Focused Player school identity/progression: 19/19 PASS.
+- 4A.1 registry: 13/13 PASS.
+- School compatibility regression: 14/14 PASS.
+- Phase 3C contact/device regression: 22/22 PASS.
+- Phase 3C group/relationship communication regression: 26/26 PASS.
+- Directly executed total: 94/94 PASS.
+- Legacy file-navigation QA remains environment-blocked and is not counted as pass.
+- Final authoritative `game.js` hash: `5c13bcfa0c1ec1ccc785ad09cacb05c7920f49e428e93d742f6ff547f3b9f7d8` (two identical rebuilds).
+- Final packaged-build 4A.2 + School compatibility rerun: 33/33 PASS.
+
+
+## Phase 4A.3 checkpoint QA
+
+Status: **PASS for authorized 4A.3 scope**.
+
+Directly relevant results:
+- 4A.3 focused: **18/18 PASS**
+- 4A.1 registry: **13/13 PASS**
+- 4A.2 Player assignment/progression: **19/19 PASS**
+- School compatibility: **14/14 PASS**
+- Phase 3C device/contact: **22/22 PASS**
+- Phase 3C group/relationship communication: **26/26 PASS**
+- Phase 3B focused: **76/76 PASS**
+- People: **14/14 PASS**
+- Profile: **24/24 PASS**
+- Friendship: **17/17 PASS**
+- directly relevant total: **243/243 PASS**
+
+The 4A.3 focused suite verifies one current school per school-age NPC, deterministic persistence, multiple schools in the world, classmate/same-school/different-school distinctions, one active enrollment, save/reload and idempotent migration, stage transition history, new-NPC integration, student lookup, and K–12 aging-out behavior.
+
+A temporary QA-only portable Playwright harness was used for People/Profile/Friendship because this environment blocks the shipped harness's historical `file://` navigation and Chromium path. Real `style.css`, `data.js` and generated `game.js` were injected. The shipped harness was restored unchanged before packaging.
+
+Final reproducible-build hash and packaged-build rerun are appended after authoritative rebuild.
+
+
+Final 4A.3 build verification:
+- `game.js` rebuilt twice byte-identically: `dc8db6cdd7bb914a9115efbf476e43c439290946f30663a835c595bec6ee13cd`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d` (unchanged)
+- `node --check game.js`: PASS
+- shipped `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488` (unchanged/restored)
+- final generated-build checkpoint rerun: **112/112 PASS**
+- directly relevant checkpoint total: **243/243 PASS**
+
+## Phase 4A.4 QC
+- Focused cross-school provenance: 18/18 PASS.
+- 4A.1–4A.3 + School compatibility: 64/64 PASS.
+- Phase 3C directly relevant communication: 48/48 PASS.
+- Phase 3B romance: 76/76 PASS.
+- People/Profile/Friendship: 55/55 PASS.
+- HOTFIX-P1.2/P1.3: 52/52 PASS.
+- Directly relevant total: **313/313 PASS**.
+- Temporary portable Playwright harness/path mappings were QA-only and were removed; shipped harness restored byte-for-byte.
+- Full project migration/regression/fuzz is intentionally deferred to checkpoint 4A.5.
+
+### 4A.4 final packaged-build verification
+- `game.js` reproducible SHA-256: `67a2fa39ad6ff730d14c11a4afd8c4b399d59737b5f01673511aa8266f58f5f7`
+- `style.css` unchanged SHA-256: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- shipped `qa/harness.py` unchanged SHA-256: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`
+- final generated-build focused rerun: **82/82 PASS**.
+
+
+## Phase 4A.5 — Final QA / Phase 4A closeout
+
+Status: **PHASE 4A COMPLETE**.
+
+Final Phase 4A results:
+- 4A.1: 13/13 PASS
+- 4A.2: 19/19 PASS
+- 4A.3: 18/18 PASS
+- 4A.4: 18/18 PASS
+- School compatibility: 14/14 PASS
+- 4A.5 acceptance runtime: 32/32 PASS
+- focused/acceptance subtotal: **114/114 PASS**
+- Phase 4A fuzz: **600 randomized operations**, **20/20 scenario checks PASS**
+- all **32/32 formal Phase 4A acceptance criteria verified** (build/source criterion verified by deterministic rebuild)
+
+Fresh required prior-phase results:
+- Phase 3C: **131/131 PASS** including its 600-op fuzz
+- Phase 3B: **94/94 PASS** including its 600-op fuzz
+- H3: **50/50 PASS**
+- HOTFIX-P1: **74/74 PASS**
+- People/Profile/Friendship: **55/55 PASS**
+- Save/reload and legacy migration suites `t_commit`, `t_regress`, `t_rst`: PASS
+- Existing school scholarship/exam suites `t_sch`, `t_exam`: PASS
+
+Additional legacy/full-regression suites that completed were green; long-running or direct-navigation suites that could not complete are documented in `PHASE_4A_PROGRESS.md` and are not counted as passes.
+
+Final build:
+- `game.js`: `67a2fa39ad6ff730d14c11a4afd8c4b399d59737b5f01673511aa8266f58f5f7`
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`
+- `qa/harness.py`: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488` (restored original)
+- repeated authoritative rebuild: byte-identical
+- `node --check game.js`: PASS
+- production `src/` and `tools/` are unchanged from validated 4A.4 during 4A.5.
+
+Exact next resume point: **Phase 4B — School Organizations / Roles / Elections**.

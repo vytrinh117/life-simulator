@@ -41,7 +41,7 @@ function matchHowKnown3B4(matchmaker,candidate){
 }
 function matchCandidateContext3B4(candidate){if(candidate.work)return candidate.roleLabel||'Work contact';if(personAge(candidate)<18)return 'Student';return candidate.roleLabel&&/work|college|university|campus/i.test(candidate.roleLabel)?candidate.roleLabel:'Local community contact'}
 function materializeMatchCandidate3B4(n,matchmaker){
- let p=(S.people||[]).find(x=>x.npcId===n.id);if(!p){p=personFromNpc(n,'friend',`introduced by ${displayName(matchmaker,'formal')}`);p.rel=30;p.trust=35;p.respect=50;p.introducedBy=matchmaker.id;p.metVia='matchmaker introduction';p.roleLabel='matchmaker introduction';S.people.push(p)}
+ let p=(S.people||[]).find(x=>x.npcId===n.id);if(!p){p=personFromNpc(n,'friend',`introduced by ${displayName(matchmaker,'formal')}`);p.rel=30;p.trust=35;p.respect=50;p.introducedBy=matchmaker.id;p.introducedById=matchmaker.id;p.metVia='matchmaker introduction';if(typeof recordMeetingProvenance4A4==='function')recordMeetingProvenance4A4(p,{sourceType:'mutualFriend',introducedById:matchmaker.id,metVia:'matchmaker introduction'});p.roleLabel='matchmaker introduction';S.people.push(p)}
  ensureRomanceProfile(p);ensureNpcTraits(n);ensureInterests(n);return p
 }
 function matchCandidatePool3B4(matchmaker){

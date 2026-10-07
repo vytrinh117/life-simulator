@@ -1,3 +1,14 @@
+# Phase 4A — COMPLETE (4A.5 finalization)
+
+- Closed the Multi-School World Foundation after 4A.1–4A.5.
+- Final acceptance: **32/32 criteria verified**.
+- Final Phase 4A fuzz: **600 randomized operations** across elementary, middle, high and adult-with-history scenarios; **20/20 fuzz checks PASS**.
+- Core Phase 4A focused/acceptance subtotal: **114/114 PASS**.
+- Fresh prior-phase regression: Phase 3C **131/131**, Phase 3B **94/94**, H3 **50/50**, HOTFIX-P1 **74/74**, People/Profile/Friendship **55/55**.
+- 4A.5 made no production-source behavior change; it added final acceptance/fuzz coverage and closeout documentation only.
+- `game.js` and `style.css` rebuild reproducibly; final game hash `67a2fa39ad6ff730d14c11a4afd8c4b399d59737b5f01673511aa8266f58f5f7`.
+- Phase 4B has not started.
+
 # Phase 3C — checkpoint 3C.3
 
 - Expanded the existing kids smartwatch into a real limited communication path: Messages + Calls with approved contacts, without unlocking the smartphone app ecosystem.
@@ -970,3 +981,38 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Phase 3C focused 3C.1–3C.4 remains 89/89 PASS; Phase 3B 76/76 and H3 50/50 focused regressions remain green.
 - Updated legacy communication/context tests only where their old assumptions were explicitly superseded by approved Phase 3C contact eligibility/frequency semantics; no test was weakened merely to hide a regression.
 - Phase 3C is COMPLETE. Phase 4A has not started.
+
+
+## Phase 4A.1 — School World Model
+- Added canonical multi-school registry with stable IDs for current kindergarten/primary/middle/high school pools.
+- Existing school-name generation now derives from the registry instead of a parallel hard-coded source.
+- Added differentiated school world metadata, centralized lookup helpers, lightweight persistent registry state, and school-owned event `schoolId` hooks.
+- Unknown legacy school names remain preserved; Player/NPC canonical assignment is intentionally deferred to 4A.2/4A.3.
+- Added `qa/t_4a1.py` (13/13 PASS) and `qa/t_4a1_regress.py` (14/14 PASS); 3C.1 and 3C.4 regressions remain green.
+- Phase 4A remains incomplete; resume at 4A.2.
+
+## Phase 4A.2 — Player School Assignment / Progression
+- Added canonical Player `currentSchoolId` backed by the Phase 4A.1 school registry.
+- Added continuous Player enrollment periods under `S.education.schoolEnrollments` without repurposing yearly attendance history.
+- Added conservative legacy-school migration, including deterministic minimal custom identity for unknown active legacy school names.
+- Added stage-transition and same-stage transfer foundations while preserving grade/class/current school systems.
+- Added School UI school type/stage identity and canonical Education History periods.
+- Fixed legacy school-name heuristic so canonical/custom legacy names are no longer overwritten during reconciliation.
+
+
+## Phase 4A.3 — NPC School Identity / History
+- Added persistent NPC `currentSchoolId` on canonical `S.npcs` records without duplicating school objects onto People entries.
+- Added conservative NPC school-history periods, stage/grade/class state, education-stage transition handling, and K–12 aging-out closure.
+- Added stable same-school / same-grade / same-class and student-lookup helpers.
+- New NPC generation now receives coherent school state once; classmate/school-friend introductions reconcile school context before the Person record is materialized.
+- Existing NPCs migrate deterministically without school rerolls or fabricated years of history.
+- Added focused `qa/t_4a3.py` (**18/18 PASS**); directly relevant checkpoint regression is **243/243 PASS**.
+- Phase 4A remains incomplete and resumes at 4A.4.
+
+## Phase 4A.4 — Cross-School Social Provenance
+- Added structured school-aware meeting provenance without duplicating canonical NPC school state.
+- Added knowledge-gated current-school display to People Profile.
+- Updated How You Know Them to preserve historical school, event, and stable introducer provenance.
+- Added stable `introducedById` compatibility for matchmaker/friend-of-friends introductions.
+- Added school-owned event provenance hooks using stable `eventId + schoolId`.
+- Preserved friendships across school transfers and prevented false current same-class claims.

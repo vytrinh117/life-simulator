@@ -62,6 +62,7 @@ function normalizeCalendarEvent(ev){
  ev.category=ev.category||d.category;ev.required=ev.required??d.required;ev.importance=ev.importance??d.importance;ev.location=ev.location??d.location;
  ev.participants=Array.isArray(ev.participants)?ev.participants:[];ev.sourceId=ev.sourceId||ev.payload.examId||ev.payload.clubId||ev.payload.contestId||null;
  ev.attendanceStatus=ev.attendanceStatus||null;ev.history=Array.isArray(ev.history)?ev.history:[];
+ if(typeof normalizeSchoolEventIdentity4A1==='function')normalizeSchoolEventIdentity4A1(ev);
  return ev
 }
 function createCalendarEvent(ev){
@@ -497,7 +498,7 @@ function resolveKindergartenDecision(p){
  const pref=p.payload?.preference;const r=familyRules(),careNeed=(S.home==='Busy but loving'||['Struggling','Modest'].includes(S.wealth))?15:0,score=(pref===true?r.respect*.35:pref===false?-r.respect*.18:0)+careNeed+(55-r.strictness)*.18+50;
  const enrolled=score>=50||(pref===false&&r.strictness>75);S.development.kindergarten.enrolled=enrolled;S.development.kindergarten.preference=pref??null;S.development.kindergarten.decision=enrolled?'Enrolled':'Alternative care / home';
  resolvePendingDecision(p,enrolled?'Enrolled':'Alternative care',pref==null?'Family decided without a preference':'Family decided',{title:'Kindergarten decision',important:true,text:enrolled?`Your caregivers decide you will attend.${pref==null?' You never really answered, so they went with what worked for the family.':' Your preference mattered, but schedules, money and parenting style mattered too.'}`:'Your family chooses home, relative care or another arrangement for now.'});
- S.school=buildSchool(S.age,S.school)
+ S.school=buildSchool(S.age,S.school);if(typeof syncPlayerSchoolEnrollment4A2==='function'&&S.school)syncPlayerSchoolEnrollment4A2({reason:'Kindergarten enrollment'})
 }
 function setKindergartenPreference(pref){
  if(S.age>5){toast('Primary school has already begun.');return}
@@ -662,7 +663,7 @@ function todayAgenda(dateISO=currentDate()){
 // ---------- Reconciliation ----------
 function reconcileState(reason='tick'){
  if(!S)return;ensureLifecycleContainers();
- reconcileSchoolStage();reconcileEducationHistory();socialReconcile();if(typeof migrateCommunication3C1==='function')migrateCommunication3C1();if(typeof migrateCommunication3C3==='function')migrateCommunication3C3();if(typeof migrateCommunication3C4==='function')migrateCommunication3C4();
+ reconcileSchoolStage();reconcileEducationHistory();if(typeof migratePlayerSchool4A2==='function')migratePlayerSchool4A2();socialReconcile();if(typeof migrateNpcSchools4A3==='function')migrateNpcSchools4A3();if(typeof migrateCommunication3C1==='function')migrateCommunication3C1();if(typeof migrateCommunication3C3==='function')migrateCommunication3C3();if(typeof migrateCommunication3C4==='function')migrateCommunication3C4();
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  reconcileExams();reconcileCalendar();expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
@@ -674,7 +675,7 @@ function closeSchoolYear(old,{leaving=false}={}){
  S.archive.exams.unshift(...(S.exams||[]).map(compactExam));if(S.archive.exams.length>150)S.archive.exams.length=150;S.exams=[];
  for(const ev of S.calendar)if(['schoolDay'].includes(ev.type)&&!isTerminal(ev.status)&&ev.dateISO>currentDate())setCalendarStatus(ev,'Cancelled','School year ended');
  if(old.grade==='Kindergarten'&&S.development?.kindergarten)S.development.kindergarten.schoolName=old.name;
- if(rec||old.grade==='Kindergarten')S.schoolHistory.unshift({grade:old.grade,school:old.name,endedDate:currentDate(),average:Math.round(old.subjects?.reduce((a,s)=>a+safeNum(s.score,0),0)/Math.max(1,old.subjects?.length||1)),attendance:Math.round(old.attendance||0),record:rec});
+ if(rec||old.grade==='Kindergarten')S.schoolHistory.unshift({grade:old.grade,school:old.name,schoolId:old.currentSchoolId||schoolIdFromLegacyName(old.name)||null,endedDate:currentDate(),average:Math.round(old.subjects?.reduce((a,s)=>a+safeNum(s.score,0),0)/Math.max(1,old.subjects?.length||1)),attendance:Math.round(old.attendance||0),record:rec});
  if(S.schoolHistory.length>20)S.schoolHistory.length=20
 }
 function reconcileExams(){

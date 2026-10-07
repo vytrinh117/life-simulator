@@ -67,9 +67,10 @@ function renderLog(){
  const dr=$('log-drawer');if(dr&&dr.open!==!!UI.logOpen)dr.open=!!UI.logOpen
 }
 function educationHistoryHtml(){
- const g=(S.education?.graduations||[]).slice().sort((a,b)=>a.year-b.year);const h=S.schoolHistory||[];
- const now=S.school?`<div class="timeline-entry"><span>Now</span><b>${esc(S.school.grade)} • ${esc(S.school.name)}</b></div>`:'';
- return `${now}${g.map(x=>`<div class="timeline-entry"><span>${x.year} • age ${x.age}</span><b>🎓 Finished ${esc(STAGE_LABEL[x.stage]||x.stage)}</b><p>${esc(x.school)}</p></div>`).join('')}${h.filter(x=>x.grade!=='Kindergarten').slice(0,6).map(x=>`<div class="timeline-entry"><span>${formatDate(x.endedDate)}</span><b>${esc(x.grade)} • ${esc(x.school)}</b><p>Average ${x.average}% • attendance ${x.attendance}%${x.record?` • ${x.record.absences} absences`:''}</p></div>`).join('')}`||'<p class="muted-text">Education history appears as you move through school.</p>'
+ const g=(S.education?.graduations||[]).slice().sort((a,b)=>a.year-b.year),en=(S.education?.schoolEnrollments||[]).slice();
+ const now=S.school?`<div class="timeline-entry"><span>Now</span><b>${esc(S.school.grade)} • ${esc(schoolDisplayName(S.school.currentSchoolId)||S.school.name)}</b></div>`:'';
+ const periods=en.slice().reverse().map(x=>{const nm=schoolDisplayName(x.schoolId)||x.school||'Unknown school',span=x.endDate?`${formatDate(x.startDate)}–${formatDate(x.endDate)}`:`Since ${formatDate(x.startDate)}`,grades=(x.gradesAttended||[]).join(', ');return `<div class="timeline-entry"><span>${esc(span)}</span><b>${esc(nm)}</b><p>${esc(STAGE_LABEL[x.stage]||x.stage||'School')}${grades?` • ${esc(grades)}`:''}${x.reason?` • ${esc(x.reason)}`:''}</p></div>`}).join('');
+ return `${now}${periods}${g.map(x=>`<div class="timeline-entry"><span>${x.year} • age ${x.age}</span><b>🎓 Finished ${esc(STAGE_LABEL[x.stage]||x.stage)}</b><p>${esc(x.school)}</p></div>`).join('')}`||'<p class="muted-text">Education history appears as you move through school.</p>'
 }
 function worldPanel(){
  const t=travelMode();const weather=S.weather.forecast?.length?S.weather.forecast.map(x=>`<div class="forecast"><span>${weatherIcon(x.type)}</span><b>${esc(x.type)}</b><small>${x.temp}°C<br>${formatDate(x.dateISO)}</small></div>`).join(''):'';
