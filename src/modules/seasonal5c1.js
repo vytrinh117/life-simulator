@@ -53,12 +53,12 @@ function seasonalScheduleConflict5C1(dateISO,start,end,ignoreId=null){
  const committed=new Set(['schoolDay','exam','clubSession','schoolEvent','tryout','plan','workDay','program','wedding','prom','trip','election','leadershipSelection','conference']);
  return (S.calendar||[]).find(ev=>ev&&ev.id!==ignoreId&&ev.dateISO===dateISO&&!isTerminal(ev.status)&&Number.isFinite(Number(ev.startMinute))&&Number.isFinite(Number(ev.endMinute))&&(ev.required!==false||committed.has(ev.type))&&start<Number(ev.endMinute)&&Number(ev.startMinute)<end)||null
 }
-function seasonalActivityEligibility5C1(activityId,{dateISO=currentDate(),location=S.location,checkLocation=true,startMinute=null}={}){
+function seasonalActivityEligibility5C1(activityId,{dateISO=currentDate(),location=S.location,checkLocation=true,startMinute=null,ignoreCalendarId=null}={}){
  const def=seasonalActivityDefinition5C1(activityId);if(!def)return {ok:false,reason:'unknown_activity'};
  if(S.age<Number(def.minAge||0)||def.maxAge!=null&&S.age>Number(def.maxAge))return {ok:false,reason:'age',detail:`${def.name} is not appropriate at this age.`,activity:def};
  const sg=seasonalSeasonGate5C1(def,dateISO);if(!sg.ok)return {ok:false,reason:'season',detail:sg.reason,activity:def,season:sg.season};
  if(checkLocation){const lg=seasonalLocationGate5C1(def,location,dateISO);if(!lg.ok)return {ok:false,reason:'location',detail:lg.reason,activity:def,season:sg.season};}
- const start=startMinute==null?currentMinute():Number(startMinute),end=Math.min(1439,start+Number(def.duration||60)),conf=seasonalScheduleConflict5C1(dateISO,start,end);
+ const start=startMinute==null?currentMinute():Number(startMinute),end=Math.min(1439,start+Number(def.duration||60)),conf=seasonalScheduleConflict5C1(dateISO,start,end,ignoreCalendarId);
  if(conf)return {ok:false,reason:'conflict',detail:`Schedule conflict with ${conf.title}.`,conflictId:conf.id,activity:def};
  return {ok:true,activity:def,season:sg.season,travelOverride:!!sg.travelOverride,startMinute:start,endMinute:end}
 }

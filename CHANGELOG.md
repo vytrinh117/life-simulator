@@ -1,3 +1,9 @@
+## Phase 5C.5.2 — Cross-System Integration QA (2026-10-08)
+- Fixed genuine calendar self-conflict on accepted 5C.2 beach/snow/ski/scuba plans: eligibility now ignores only their own plan event on execution; unrelated obligations still block.
+- Enforced H3 parental decisions on direct/planned minor 5C.2 activity execution (especially teen scuba); denied actions consume no time/cash/gear or history and repeated H3 denials remain persistent.
+- Corrected direct and planned 5C.2 cost accounting: exactly one base price for all ages and separate existing rental price, with upfront affordability and no second plan charge. Provider/rental never becomes owned equipment.
+- Added 23-case `qa/t_5c5_2.py` production browser cross-system suite and strengthened 5C.2 minor scuba QA; 399/399 selected focused/regression checks PASS (20 suites). Full regression/fuzz intentionally reserved for later 5C.5 checkpoints.
+
 ## Phase 5C.4 COMPLETE — checkpoint 5C.4.6 final acceptance (2026-10-08)
 - Closed functional seasonal Store after completed checkpoints 5C.4.1–5C.4.5: stable catalog and Inventory model, 20 seasonal SKUs, accurate real purchases, sunscreen supply, durable wear, rental/repair/replacement, H3 permissions, gear integration and conservative migration.
 - Added independent final 5C.4 acceptance (24/24), seeded 200-operation Store fuzz (25/25), Pages/source release check (10/10). Full 37-suite Phase 5C/upstream matrix 686/686 accepted checks PASS; 38 suites / 696/696 including static release QA. Two-pass generated JS/CSS byte-identical, JS syntax and CSS token audit PASS.
@@ -1271,3 +1277,29 @@ Added 5C.4.3 reusable finite-supply helper (preserving five-use sunscreen and op
 - Retained the established 5C.4.3 wear, 5C.4.4 rental/repair/guardian flows, stable IDs and save compatibility.
 - Added conservative, idempotent 5C.4.5 migration integration.
 - Focused and selected regression suites executed; 5C.4.6 not started.
+
+## Phase 5C.5.1 — Migration / Architecture Audit (2026-10-08)
+
+- Audited actual Phase 5C.1–5C.4 state and migration order. `S.plans`, Calendar, People stable IDs, H3, Shop, Inventory, Weather and existing rental state remain authoritative.
+- Fixed a proven old/malformed-save crash in `migrateOutdoorSocial5C33()`: when an explicitly saved outdoor plan has a non-array `participantIds`, normalize its roster to `[]` instead of calling `.filter()` on a string/object. Valid stable Person IDs and declined RSVP outcomes are retained, duplicate/invalid references are dropped without guessing attendees.
+- Added production-browser `qa/t_5c5_1.py` focused migration suite; checked legacy/latest reload, idempotence, accepted camping overnight holds, H3 decisions, consumable condition, durable item IDs, actual temporary ski rental lifecycle, financial records and zero phantom activities/purchases.
+- No new items, permissions, history, rental ownership, UI redesign, or Phase 5C.5.2+ work.
+
+
+### 5C.5.4 — Fuzz / Edge Cases / Browser QA (2026-10-08)
+
+Added 275 seeded production-browser operations and targeted seasonal/Calendar/H3/gear/consumable tests; 41/41 focused, 238/238 selected regression checks. No gameplay source changes. Only 5C.5.4 is signed off; 5C.5.3 and 5C.5.5 remain pending.
+
+## Phase 5C.5.3 — Full Regression (2026-10-08)
+- Fresh 73-suite, 1,476-check regression across Phase 5C, 5A–5B, 4A–4D, 3B–3C and H3. Accepted runs all exit 0; original failing/retried test logs retained under `qa/results_5c53/`.
+- Corrected the existing Shop workbook ownership label (`Owned` rather than the generic `Owned / limit reached`) in authoritative `src/modules/invui72.js`. No payment, ownership, permission or durability logic changed.
+- Disclosed an intermittent 4A NPC-school acceptance failure that passed 32/32 on an independent unchanged-source rerun; the earlier failed log is retained.
+- Byte-identical two-pass rebuild. Next checkpoint: 5C.5.5 final release audit only. No Phase 5C release sign-off yet.
+
+
+## 2026-10-08 — Phase 5C.5.5 Final Release Audit — PHASE 5C COMPLETE
+
+- Signed off all Phase 5C seasonal, outdoor, Store/gear and migration/fuzz checkpoints after fresh 73-suite full regression **1,476/1,476 PASS** (all exit 0) and new release/browser/static audit **24/24 PASS**. Combined **74 suites / 1,500 checks PASS**.
+- Verified all source prerequisites; once-only migration order, stable catalog/ownership/rental separation, GitHub Pages relative paths and standard workflow. No new gameplay or migration schema code, no unrelated systems rewritten.
+- Two source builds byte-identical, JS syntax and CSS token audit clean. Tested real production JS/CSS through isolated Chromium; hosted GitHub Pages URL and direct HTTP navigation remain unverified because browser navigation is blocked by this execution environment.
+- Prior legacy `t_items.py` and intermittent 4A/5B cases are disclosed in QC Report; no claim that they were fixed in this checkpoint. Phase 6 not started.
