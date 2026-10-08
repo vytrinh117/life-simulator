@@ -105,12 +105,15 @@ function migrateSchoolDay4C1(){
  if(!['Home','School'].includes(S.location||'Home')&&typeof S.location!=='string')S.location='Home';
  reconcileSchoolDay4C1('migration');r.schemaVersion=SCHOOL_DAY_SCHEMA_4C1;return {schemaVersion:r.schemaVersion,location:S.location,locationSchoolId:r.locationSchoolId}
 }
-function schoolDayContextHtml4C1(){
+function schoolDayContextHtml4C1({embedded=false}={}){
  if(!S.school||!needsFormalSchool())return '';
  const x=schoolDayState4C1(),closed=!x.isSchoolDay?x.closedReason:x.phase==='before_open'?`Campus opens ${timeLabel(x.hours.campusOpen)}`:x.phase==='closed_after_hours'?`Campus closed ${timeLabel(x.hours.campusClose)}`:null;
  const current=x.classesRunning?'Classes in session':x.afterSchoolWindow?'After-school window':x.phase==='arrival'?'Arrival window':closed||'School day';
  const action=x.atSchool?`<button class="small primary" data-school-home4c1="1">Go Home</button>`:x.isSchoolDay&&['arrival','classes','after_school'].includes(x.phase)?`<button class="small primary" data-school-go4c1="1">Go to School</button>`:'';
- return `<div class="session-card school-context-4c1"><div class="session-head"><div><b>${esc(x.schoolName||'School')} • ${esc(x.grade||'')}</b><small>${esc(x.classId||'')} • Location: ${esc(x.location)} • ${timeLabel(x.minute)}</small></div><span class="tag ${x.campusOpen?'ok':''}">${esc(current)}</span></div><div class="mini-meta"><span>Campus ${timeLabel(x.hours.campusOpen)}–${timeLabel(x.hours.campusClose)}</span><span>Classes ${timeLabel(x.hours.classStart)}–${timeLabel(x.hours.classEnd)}</span>${closed?`<span>${esc(closed)}</span>`:''}</div>${action?`<div class="session-actions">${action}</div>`:''}</div>`
+ const heading=`<div class="session-head"><div><b>${esc(x.schoolName||'School')} • ${esc(x.grade||'')}</b><small>${esc(x.classId||'')} • Location: ${esc(x.location)} • ${timeLabel(x.minute)}</small></div><span class="tag ${x.campusOpen?'ok':''}">${esc(current)}</span></div>`;
+ const hours=`<div class="mini-meta"><span>Campus ${timeLabel(x.hours.campusOpen)}–${timeLabel(x.hours.campusClose)}</span><span>Classes ${timeLabel(x.hours.classStart)}–${timeLabel(x.hours.classEnd)}</span>${closed?`<span>${esc(closed)}</span>`:''}</div>`;
+ if(embedded)return `<div class="school-today-head school-context-4c1">${heading}${hours}${action?`<div class="school-today-travel">${action}</div>`:''}</div>`;
+ return `<div class="session-card school-context-4c1">${heading}${hours}${action?`<div class="session-actions">${action}</div>`:''}</div>`
 }
 function schoolDayClick4C1(b){
  if(b.dataset.schoolGo4c1){goToSchool4C1();save();render();return true}

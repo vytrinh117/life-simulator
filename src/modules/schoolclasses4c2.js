@@ -88,14 +88,17 @@ function classBehaviorAction4C2(kind,sub,t,minutes){
  if(kind==='daydream'){sessionGain(sub,minutes,{focus:.18});S.needs.fun=clamp(S.needs.fun+4);if(chance(t.style==='Strict'?30:15)){t.rel=clamp(t.rel-2);S.school.behavior=clamp(S.school.behavior-1);addRep('troublemaker',.5);return `${t.name} calls your name after noticing you staring out the window. You missed most of the explanation.`}return `Your attention drifts for most of ${sub.name}. The bell feels surprisingly early.`}
  return null
 }
-function schoolClassContextHtml4C2(){
+function schoolClassContextHtml4C2({embedded=false}={}){
  if(!S.school||!needsFormalSchool())return '';const c=schoolClassSession4C2(),att=attendanceState4C2();let cur='No active class';
  if(!c.isSchoolDay)cur='No regular classes today';else if(c.period?.kind==='class')cur=`${c.subject} • ${c.teacher}`;else if(c.period?.kind==='lunch')cur='Lunch period';else if(c.minute<schoolHours4C1().classStart)cur='Before classes';else if(c.minute>=schoolHours4C1().classEnd)cur='Classes finished';
  const next=c.nextPeriod?(c.nextPeriod.kind==='lunch'?`Lunch at ${timeLabel(c.nextPeriod.start)}`:`${c.nextPeriod.subject} at ${timeLabel(c.nextPeriod.start)}`):'No more scheduled classes today';
  const checks=(S.school.subjects||[]).map(s=>({s:s.name,a:teacherAvailability4C2(s.name)})),help=checks.filter(x=>x.a.ok&&x.a.mode!=='class').slice(0,2);
  const unavailable=!c.isSchoolDay?'Teacher help unavailable — school is closed.':!c.atSchool?'Teacher help unavailable — you are at home.':c.period?.kind==='class'?'Ask your current teacher during class.':help.length?'':'Teacher help unavailable at this time.';
- const sick=!c.atSchool&&c.isSchoolDay&&!isTerminal(schoolDayEvent()?.status)&&genuineSchoolIllness4C2()?'<button class="small ghost" data-school-sick-4c2="1">Call in sick</button>':'';
- return `<div class="mini-meta school-class-context-4c2"><span><b>Current:</b> ${esc(cur)}</span><span><b>Next:</b> ${esc(next)}</span><span><b>Attendance:</b> ${esc(att.status||att.state)}</span>${unavailable?`<span>${esc(unavailable)}</span>`:''}${help.map(x=>`<button class="small ghost" data-ask-teacher-4c2="${esc(x.s)}">Ask ${esc(x.a.teacher)} for help</button>`).join('')}${sick}</div>`
+ const sick=!c.atSchool&&c.isSchoolDay&&!isTerminal(schoolDayEvent()?.status)&&genuineSchoolIllness4C2()?'<button class="small ghost" data-school-sick4c2="1">Call in sick</button>':'';
+ const summary=`<span><b>Current:</b> ${esc(cur)}</span><span><b>Next:</b> ${esc(next)}</span><span><b>Attendance:</b> ${esc(att.status||att.state)}</span>`;
+ const buttons=help.map(x=>`<button class="small ghost" data-ask-teacher4c2="${esc(x.s)}">Ask ${esc(x.a.teacher)} for help</button>`).join('')+sick;
+ if(embedded)return `<div class="school-today-summary school-class-context-4c2">${summary}</div><div class="school-today-action-group"><h4>Teacher & attendance</h4><div class="school-today-buttons">${buttons||`<span class="muted-text">${esc(unavailable||'No teacher action available right now.')}</span>`}</div></div>`;
+ return `<div class="mini-meta school-class-context-4c2">${summary}${unavailable?`<span>${esc(unavailable)}</span>`:''}${buttons}</div>`
 }
 function schoolClassesClick4C2(b){
  if(b.dataset.askTeacher4c2){askTeacher4C2(b.dataset.askTeacher4c2);save();render();return true}
