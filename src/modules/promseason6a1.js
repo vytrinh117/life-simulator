@@ -28,6 +28,9 @@ function archiveProm6A1(pr){
   yearKey:pr.year,grade:pr.foundation6A1.grade,dateISO:pr.dateISO,venue:pr.venue,
   registrationStatus:pr.foundation6A1.registrationStatus,registrationDecisionDate:pr.foundation6A1.registrationDecisionDate||null,
   eventStatus:pr.status,plan:pr.plan||null,
+  // H2: retain recorded price/payment provenance without fabricating legacy spending.
+  ticket:pr.ticket,ticketBought:!!pr.ticketBought,
+  ...(pr.ticketPaymentH2?{ticketPaymentH2:{...pr.ticketPaymentH2}}:{}),
   ...(pr.date6A3?.eventId===pr.foundation6A1.eventId?{date6A3:{...pr.date6A3,changes:(pr.date6A3.changes||[]).map(r=>({...r}))},asked:(pr.asked||[]).map(r=>({...r})),received:(pr.received||[]).map(r=>({...r}))}:{}),
   ...(pr.night6B1?.eventId===pr.foundation6A1.eventId?{night6B1:JSON.parse(JSON.stringify(pr.night6B1))}:{}),
   ...(pr.court6A4?.eventId===pr.foundation6A1.eventId?{court6A4:JSON.parse(JSON.stringify(pr.court6A4))}:{}),

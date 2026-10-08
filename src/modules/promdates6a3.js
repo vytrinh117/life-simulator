@@ -9,7 +9,13 @@ function promDateStudent6A3(p){
  const n=p.npcId&&npcById(p.npcId);if(n&&(n.movedAway||npcEffectiveGradeNumber4A3(n)<8||npcEffectiveGradeNumber4A3(n)>12))return false;
  return true;
 }
-function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&(!partnerBoundaryH1(p,'noParties'))&&(isEstablishedPartner(p)||(ensureRomanceProfile(p).romanceOpen&&!partnerBoundaryH1(p,'notReady'))));}
+function promRomancePossible6A3(p){
+ if(!promDateStudent6A3(p)||partnerBoundaryH1(p,'noParties'))return false;
+ // H1 established partners keep their real relationship even when legacy preliminary
+ // romanceOpen/notReady/orientation gates are stale. The Prom age/guest gate is separate.
+ if(isEstablishedPartner(p))return true;
+ return !!(eligibleRomance(p)&&romanceCompatibility(p).eligible&&ensureRomanceProfile(p).romanceOpen&&!partnerBoundaryH1(p,'notReady'));
+}
 function promDateBusyReason6A3(p,pr=S.school?.prom){
  if(!promDateStudent6A3(p))return 'Not an eligible school-age guest';
  const other=personPromWith(p);
@@ -75,8 +81,8 @@ function promDateCommit6A3(pr,p,mode,source){
  if(!promDateWindow6A3(pr)||pr.partnerId||!promDateStudent6A3(p)||promDateBusyReason6A3(p,pr))return {ok:false,reason:'date_no_longer_available'};
  pr.partnerId=p.id;pr.plan='date';pr.asFriends=mode==='friends';setPromWithPerson(p,S.name);
  // One confirmed date: any competing outstanding requests lose their actionable status.
- for(const r of pr.asked)if(r.result==='Pending'&&r.personId!==p.id){r.result='Withdrawn';r.reason='You confirmed another date';}
- for(const r of pr.received)if(r.status==='Pending'&&r.personId!==p.id){r.status='Declined';r.reason='You already confirmed another date';const ev=(S.events||[]).find(e=>e.id===r.eventResponseId&&e.status==='Open');if(ev)supersedeEvent(ev,'Already accepted a different date');}
+ for(const r of pr.asked)if(r.result==='Pending'){if(r.personId===p.id){r.result=mode==='friends'?'Accepted as friends':'Accepted';r.reason='Confirmed Prom companion';}else{r.result='Withdrawn';r.reason='You confirmed another date';}}
+ for(const r of pr.received)if(r.status==='Pending'){if(r.personId===p.id){r.status=mode==='friends'?'Accepted as friends':'Accepted';r.reason='Confirmed Prom companion';}else{r.status='Declined';r.reason='You already confirmed another date';}const ev=(S.events||[]).find(e=>e.id===r.eventResponseId&&e.status==='Open');if(ev)supersedeEvent(ev,r.personId===p.id?'Accepted Prom invitation through another confirmed decision':'Already accepted a different date');}
  d.partnerId=p.id;d.mode=mode;d.lastDecisionDate=currentDate();
  d.changes.push({dateISO:currentDate(),action:'accepted',personId:p.id,mode,source});
  p.rel=clamp((p.rel||0)+(mode==='friends'?2:4));
@@ -113,6 +119,7 @@ function promDateAskTarget6A3(personId){
 }
 function promDateCanAsk6A3(p,pr=S.school?.prom){
  if(!promDateWindow6A3(pr))return {ok:false,reason:'Prom registration or invitation window is closed'};
+ if(pr.plan==='skip')return {ok:false,reason:'Change your decision to skip Prom before inviting someone'};
  if(!promDateStudent6A3(p))return {ok:false,reason:'Ineligible person'};
  if(pr.partnerId)return {ok:false,reason:'You already have a date; change plans first'};
  if(pr.asked.some(a=>a.personId===p.id))return {ok:false,reason:'Already asked this student for this Prom'};
@@ -143,7 +150,7 @@ function promDateAsk6A3(personId,approach){
   const bonus=approach==='private'&&traits.includes('Shy')?10:approach==='public'&&traits.includes('Outgoing')?8:approach==='promposal'?5:0;
   const score=(p.rel||0)*.43+(p.trust??50)*.2+(romance?(c.score||0)*.28:10)+bonus-(p.conflict||0)*.3;
   const roll=hashOf(`${id}:${p.id}:${approach}:answer`)%27;
-  if(romance&&S.romance?.partnerId===p.id){result='Accepted';reason='Already together';mode='date'}
+  if(romance&&isEstablishedPartner(p)&&score+roll>=64){result='Accepted';reason='They are happy to attend together';mode='date'}
   else if(romance&&score+roll>=77){result='Accepted';reason='Mutual interest and availability';mode='date'}
   else if((p.rel||0)>=50&&score+roll>=51){result='Accepted as friends';reason=romance?'Would rather go as friends':'Happy to attend as friends';mode='friends'}
   else if(traits.includes('Shy')||p.boundaries?.includes('needsTime')){result='Pending';reason='Needs time to decide'}
