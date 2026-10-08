@@ -247,3 +247,82 @@ body.planner-open .planner-close{display:inline-flex}
 .school-today-timetable{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
 .school-today-timetable .timetable{margin:0}
 @media(max-width:700px){.school-today-summary{grid-template-columns:1fr}.school-today-head .session-head{flex-wrap:wrap}}
+
+/* Phase 5D.6: compact embedded small-business workspace. No new top-level navigation. */
+.micro-session{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;display:grid;gap:10px;min-width:0}
+.micro-line{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.88rem;min-width:0}
+.micro-stats{display:flex;flex-wrap:wrap;gap:7px}
+.micro-stats span{border-radius:8px;background:var(--surface2,transparent);padding:5px 8px;font-size:.81rem}
+.micro-form{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+.micro-form label{display:grid;gap:3px;flex:1 1 115px;min-width:90px;font-size:.82rem}
+.micro-form select,.micro-form input,.micro-line input{max-width:100%;min-width:0;padding:7px 8px;box-sizing:border-box}
+.micro-form button{align-self:end}
+.micro-encounter{border-left:3px solid var(--accent);padding:10px;display:grid;gap:8px;background:var(--surface2,transparent);border-radius:7px}
+.micro-session .inline-actions{display:flex;flex-wrap:wrap;gap:6px}
+.micro-note,.micro-history{display:grid;gap:6px;margin-top:10px}
+.micro-note small,.micro-encounter small{display:block;color:var(--muted)}
+.micro-feedback{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:.88rem}
+@media(max-width:540px){.micro-session{padding:9px}.micro-form>*{flex:1 1 100%}.micro-line{align-items:start}}
+
+/* Phase 6A.6: Prom inside Education/Home/Calendar; reuse current theme tokens. */
+.prom-ui-head-6a6{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;background:var(--surface2,transparent);min-width:0}
+.prom-ui-topline{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.prom-ui-topline strong{display:block;font-size:1.05rem}
+.prom-ui-topline small{display:block;margin-top:4px;color:var(--muted);overflow-wrap:anywhere}
+.prom-ui-countdown{border:1px solid var(--line);border-radius:8px;padding:5px 9px;white-space:nowrap;font-size:.8rem;font-weight:700}
+.prom-ui-status-6a6{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.prom-ui-status-item{padding:9px;border-radius:8px;border:1px solid var(--line);min-width:0}
+.prom-ui-status-item small{display:block;color:var(--muted);font-size:.73rem}
+.prom-ui-status-item b{font-size:.83rem;display:block;margin-top:4px;overflow-wrap:anywhere}
+.prom-ui-deadlines-6a6{font-size:.83rem;margin:0;color:var(--muted)}
+.prom-ui-actions-6a6{min-width:0;margin-top:12px}
+.prom-ui-actions-6a6>.prom-card{margin:0;max-width:100%}
+.prom-ui-actions-6a6 .holiday-acts,.prom-ui-actions-6a6 .inline-actions{display:flex;flex-wrap:wrap;gap:7px}
+.prom-ui-actions-6a6 button{white-space:normal;text-align:center;min-height:32px;max-width:100%}
+.prom-ui-actions-6a6 .prom-registration-6a1,.prom-ui-actions-6a6 .prom-committee-6a2,.prom-ui-actions-6a6 .prom-court-6a4,.prom-ui-actions-6a6 .prom-social-6a5,.prom-ui-actions-6a6 .prom-date-6a3{padding:11px 0;border-top:1px solid var(--line);margin-top:10px;min-width:0}
+.prom-ui-actions-6a6 .prom-prep{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:6px 0}
+.prom-ui-actions-6a6 details{max-width:100%;overflow-wrap:anywhere}
+.prom-ui-calendar-dates{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:10px 0}
+.prom-ui-calendar-dates>div{border:1px solid var(--line);padding:8px;border-radius:9px}
+.prom-ui-calendar-dates b,.prom-ui-calendar-dates small{display:block}
+.prom-ui-calendar-dates small{color:var(--muted);font-size:.76rem;margin-top:3px}
+@media(max-width:750px){.prom-ui-status-6a6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:410px){.prom-ui-topline{display:grid}.prom-ui-status-6a6{grid-template-columns:1fr}}
+
+/* Phase 6B.2: home preparation, using the existing theme tokens and responsive controls. */
+.prom-ready-6b2{border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;background:var(--surface2,transparent);min-width:0;overflow-wrap:anywhere}
+.prom-ready-6b2 h4{margin:0 0 6px}
+.prom-ready-6b2 .prom-ready-options-6b2{display:grid;gap:9px;min-width:0}
+.prom-ready-6b2 .inline-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.prom-ready-6b2 button{white-space:normal;max-width:100%;min-height:34px}
+@media(max-width:520px){.prom-ready-6b2{padding:9px}.prom-ready-6b2 .inline-actions>*{flex:1 1 100%}}
+/* 6B.3 — restrained Prom Hall arrival roster, inherited design tokens. */
+.prom-arrival-6b3{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px}
+.prom-arrival-6b3 h4{margin:0 0 6px}
+.prom-arrival-people-6b3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:7px;margin:10px 0}
+.prom-arrival-person-6b3{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:9px;border:1px solid var(--line);border-radius:9px;min-width:0}
+.prom-arrival-person-6b3 span{min-width:0;overflow-wrap:anywhere}
+.prom-arrival-person-6b3 .small{white-space:normal}
+
+/* Phase 6B.4 — grounded dance/lounging controls */
+.prom-moments-6b4 { margin-top: 1rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.prom-moment-actions-6b4,.prom-moment-person-6b4 .inline-actions { display:flex; flex-wrap:wrap; gap:.45rem; }
+.prom-moment-people-6b4 {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:.6rem;margin:.8rem 0;}
+.prom-moment-person-6b4 {display:flex;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.65rem;border:1px solid var(--border);border-radius: .7rem;min-width:0;}
+.prom-moment-person-6b4 span {overflow-wrap:anywhere;}
+.prom-moment-history-6b4 {padding:.35rem .7rem;border-left:2px solid var(--accent);}
+@media(max-width:560px){.prom-moment-actions-6b4 button {flex:1 1 46%;}}
+
+/* Phase 6B.5 — School Hall Court presentation and factual photographs. */
+.prom-ceremony-6b5{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:11px;min-width:0;overflow-wrap:anywhere}
+.prom-ceremony-6b5 h4{margin:0 0 7px}
+.prom-ceremony-outcome-6b5{padding:9px;border-left:3px solid var(--accent);background:var(--surface2,transparent);line-height:1.45}
+.prom-ceremony-photos-6b5{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.prom-ceremony-photos-6b5 button{white-space:normal;text-align:center;min-width:0;max-width:100%;min-height:32px}
+@media(max-width:560px){.prom-ceremony-6b5{padding:9px}.prom-ceremony-photos-6b5 button{flex:1 1 100%}}
+
+/* Phase 6B.6 — event-bound farewells and real at-home debrief. */
+.prom-after-6b6{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:11px;min-width:0;overflow-wrap:anywhere}
+.prom-after-6b6 h4{margin:0 0 7px}.prom-after-actions-6b6{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0}
+.prom-after-actions-6b6 button{white-space:normal;max-width:100%;min-width:0}
+@media(max-width:560px){.prom-after-6b6{padding:9px}.prom-after-actions-6b6 button{flex:1 1 100%}}
