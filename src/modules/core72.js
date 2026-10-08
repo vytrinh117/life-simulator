@@ -81,6 +81,7 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
   // An overnight reservation is a multi-day schedule hold, not an attendable
   // obligation. It is resolved when its owning outdoor plan is settled.
   if(ev.type==='outdoorReservation'){
@@ -92,6 +93,7 @@ function processCalendar(){tierTick();curfewCallCheck();
   if(now<stamp(ev.dateISO,ev.startMinute))continue;
   if(SIM.skipping){simulateObligation(ev);continue}
   if(ev.type==='schoolEvent'&&ev.status==='Scheduled'&&isSchoolDay(ev.dateISO)&&ev.startMinute===600&&now<stamp(ev.dateISO,ev.graceMinute)){Object.assign(ev,contestSlot(ev.dateISO));ev.minute=ev.startMinute;continue}
+  if(ev.type==='prom'&&typeof reconcilePromNight6B1==='function'){reconcilePromNight6B1(S.school?.prom);if(ev.status==='Attending')continue;}
   if(ev.status==='Attending'){if(ev.type==='schoolDay'&&now>=stamp(ev.dateISO,ev.endMinute))finishSchoolDay(ev);continue}
   if(now>stamp(ev.dateISO,ev.graceMinute)){missObligation(ev);continue}
   if(ev.status==='Scheduled'){setCalendarStatus(ev,'Due','Window opened');onObligationDue(ev)}
@@ -109,7 +111,7 @@ function onObligationDue(ev){
  if(ev.type==='medicalFollowUp'){notify('Doctor follow-up','Today at '+timeLabel(ev.startMinute),{sourceType:'calendar',sourceId:ev.id,tab:'health'});return}
  if(ev.type==='workDay'){offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:`Work • ${ev.location}`,text:'9:00–5:00. On time until 9:15.',expiresAt:{dateISO:ev.dateISO,minute:660}});return}
  if(ev.type==='program'){notify(ev.title,`${timeLabel(ev.startMinute)} • ${ev.location}`,{sourceType:'program',sourceId:ev.id,tab:'places'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:4,title:ev.title,text:`Starts at ${timeLabel(ev.startMinute)}.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}});return}
- if(ev.type==='prom'){if(S.school?.prom?.plan!=='skip'){notify('Prom tonight',`${ev.location} • 7:00 PM`,{sourceType:'prom',sourceId:ev.id,tab:'home'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:'Prom tonight',text:`${ev.location}. Doors at 7:00 PM.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}})}return}
+ if(ev.type==='prom'){if(promRegistered6A1(S.school?.prom)&&S.school?.prom?.plan!=='skip'){notify('Prom tonight',`${ev.location} • 7:00 PM`,{sourceType:'prom',sourceId:ev.id,tab:'home'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:'Prom tonight',text:`${ev.location}. Doors at 7:00 PM.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}})}return}
  if(ev.type==='party'){const host=ev.payload?.hostId||ev.payload?.personId||(S.plans||[]).find(x=>x.id===ev.payload?.planId)?.personId;queueEvent({type:'party',title:ev.title,text:ev.text||'A social event you were expecting has arrived.',participants:host&&personById(host)?[host]:[],payload:{...(ev.payload||{}),hostId:host||null},choices:[{id:'go',label:'Go'},{id:'skip',label:'Skip'}]});setCalendarStatus(ev,'Resolved','Converted to invitation');return}
  if(ev.type!=='schoolDay')setCalendarStatus(ev,'Resolved','Reached')
 }
@@ -148,7 +150,7 @@ function simulateObligation(ev){
  if(ev.type==='schoolEvent'){const c=contestById(ev.payload?.contestId);if(!c||c.status!=='Registered'){setCalendarStatus(ev,'Cancelled','Not registered');return}if(attend&&!sick){resolveContest(c,{simulated:true});setCalendarStatus(ev,'Attended','Simulated attendance')}else resolveContestAttendance(ev,sick?'Withdrew':'No-show',{simulated:true});return}
  if(ev.type==='leadershipSelection'){if(typeof simulateLeadershipSelection4B3==='function')simulateLeadershipSelection4B3(ev);else setCalendarStatus(ev,'Completed','Simulated');return}
  if(ev.type==='tryout'){const t=S.school?.tryouts?.find(x=>x.id===ev.payload?.tryoutId);if(t&&t.status==='Scheduled'&&attend){t.prep=Math.max(t.prep,25+Math.random()*30);evaluateTryout(t,{simulated:true});setCalendarStatus(ev,'Attended','Simulated')}else tryoutMissed(ev);return}
- if(ev.type==='prom'){const pr=S.school?.prom;if(!pr||pr.plan==='skip'||!attend){promMissed(ev);return}pr.status='Done';setCalendarStatus(ev,'Attended','Simulated');const pp=pr.partnerId?personById(pr.partnerId):null;if(pp)pp.rel=clamp(pp.rel+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'💃 Prom',text:pp?`You went to prom with ${displayName(pp,'formal')}.`:'You went to prom with friends.'});if(SIM.summary)SIM.summary.notable.push('Went to prom');return}
+ if(ev.type==='prom'){if(typeof missPromNight6B1==='function'){missPromNight6B1(ev,'simulated_no_checkin');return}const pr=S.school?.prom;if(!promRegistered6A1(pr)||pr.plan==='skip'||!attend){promMissed(ev);return}pr.status='Done';setCalendarStatus(ev,'Attended','Simulated');const pp=pr.partnerId?personById(pr.partnerId):null;if(pp)pp.rel=clamp(pp.rel+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'💃 Prom',text:pp?`You went to prom with ${displayName(pp,'formal')}.`:'You went to prom with friends.'});if(SIM.summary)SIM.summary.notable.push('Went to prom');return}
  if(ev.type==='plan'){const plan=S.plans?.find(x=>x.id===ev.payload?.planId);if(plan&&attend){plan.status='Attended';const p=personById(plan.personId);if(p)p.rel=clamp(p.rel+3);setCalendarStatus(ev,'Attended','Simulated')}else planNoShow(ev);return}
  if(ev.type==='election'){const el=S.elections?.find(x=>x.id===ev.payload?.electionId);if(el)decideElection(el);setCalendarStatus(ev,'Completed','Simulated');return}
  setCalendarStatus(ev,'Expired','Skipped ahead')
@@ -685,11 +687,11 @@ function reconcileState(reason='tick'){
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  if(typeof reconcileSchoolDay4C1==='function')reconcileSchoolDay4C1(reason);if(typeof reconcileSchoolClasses4C2==='function')reconcileSchoolClasses4C2(reason);if(typeof reconcileSchoolFacilities4C3==='function')reconcileSchoolFacilities4C3(reason);if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4(reason);
- reconcileExams();reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
+ reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
 }
 function compactExam(e){return {id:e.id,subject:e.subject,type:e.type,dateISO:e.dateISO,minute:e.minute,status:e.status,score:e.score,reason:e.reason||null,makeupOf:e.makeupOf||null,makeupId:e.makeupId||null,replacedBy:e.replacedBy||null}}
 function closeSchoolYear(old,{leaving=false}={}){
- if(!old)return;awardsCeremony(old);const rec=old.record||null;
+ if(!old)return;if(typeof archiveProm6A1==='function'&&old.prom)archiveProm6A1(old.prom);awardsCeremony(old);const rec=old.record||null;
  for(const exam of S.exams||[]){if(examIsOpen(exam)){exam.status='Cancelled';exam.reason=leaving?'Left school':'School year ended';for(const ev of examCalendarEvents(exam))setCalendarStatus(ev,'Cancelled',exam.reason)}}
  S.archive.exams.unshift(...(S.exams||[]).map(compactExam));if(S.archive.exams.length>150)S.archive.exams.length=150;S.exams=[];
  for(const ev of S.calendar)if(['schoolDay'].includes(ev.type)&&!isTerminal(ev.status)&&ev.dateISO>currentDate())setCalendarStatus(ev,'Cancelled','School year ended');

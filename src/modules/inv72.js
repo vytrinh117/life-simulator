@@ -44,7 +44,7 @@ function makeItemInstance(key,source='purchase',cond=null){
 }
 function addItem(key,source='purchase',condition=null,{quantity=1}={}){
  const d=catalogItem(key);if(!d)return null;quantity=Math.max(1,Math.round(quantity)||1);if(d.workbook5A){const owned=S.inventoryItems.find(i=>i.key===key);if(owned)return owned;quantity=1}let it=null;
- if(d.stackable&&condition==null){const fresh=lifecycleOf(d)==='perishable'?addDays(currentDate(),d.freshnessDays||3):null;it=S.inventoryItems.find(x=>x.key===key&&!x.opened&&!x.stored&&(!fresh||x.freshUntil===fresh))}
+ if(d.stackable&&condition==null){const fresh=lifecycleOf(d)==='perishable'?addDays(currentDate(),d.freshnessDays||3):null;it=S.inventoryItems.find(x=>x.key===key&&!x.opened&&!x.stored&&!x.microbusinessBatchReturn5D2&&(!fresh||x.freshUntil===fresh))}
  if(it)it.quantity=(it.quantity||1)+quantity;
  else{it=makeItemInstance(key,source,condition);if(d.stackable)it.quantity=quantity;S.inventoryItems.push(it);if(!d.stackable)for(let i=1;i<quantity;i++)S.inventoryItems.push(makeItemInstance(key,source,condition))}
  if(d.phone)onPhoneAcquired(it);
@@ -231,7 +231,7 @@ function normalizeInventory(){
   delete it.currentValue
  }
  // merge legacy duplicates of stackable, unopened items into one stack
- const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored)return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
+ const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored||it.microbusinessBatchReturn5D2)return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
  // one equipped item per slot
  const used=new Set();for(const it of S.inventoryItems)if(it.equipped){if(!it.slot||used.has(it.slot))it.equipped=false;else used.add(it.slot)}
  if(S.phone.activeItemId&&!phoneItems().some(i=>i.id===S.phone.activeItemId))S.phone.activeItemId=null;

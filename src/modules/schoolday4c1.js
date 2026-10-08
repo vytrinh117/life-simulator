@@ -71,6 +71,7 @@ function goToSchool4C1(opts={}){
  return true
 }
 function goHomeFromSchool4C1({quiet=false}={}){
+ if(typeof promNightRecord6B1==='function'&&promNightRecord6B1()?.status==='attending')return leavePromNight6B1('left_early').ok;
  if(!playerAtSchool4C1()){toast('You are not at school.');return false}
  const hours=schoolHours4C1(),ev=schoolDayEvent(),leaveMinute=currentMinute(),early=!!ev&&ev.status==='Attending'&&leaveMinute<hours.classEnd;
  if(ev&&ev.status==='Attending')finishSchoolDay(ev,{early,quiet:true,stayAtSchool:false});
@@ -97,7 +98,8 @@ function reconcileSchoolDay4C1(reason='tick'){
  else if(!x.isSchoolDay&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why=x.closedReason||'School closed';
  else if(x.phase==='before_open'&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why='Campus not open yet';
  else if(x.phase==='closed_after_hours'&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why='Campus closed for the day';
- if(why)setPlayerLocation4C1('Home',{reason:`${why}; normalized school location`,quiet:true});
+ if(why){const night=typeof promNightRecord6B1==='function'?promNightRecord6B1():null;const promAccess=night?.status==='attending'&&S.location==='School'&&night.schoolId===sid&&currentDate()===night.dateISO&&currentMinute()<night.endMinute;
+  if(!promAccess)setPlayerLocation4C1('Home',{reason:`${why}; normalized school location`,quiet:true});}
  return schoolDayState4C1()
 }
 function migrateSchoolDay4C1(){

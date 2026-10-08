@@ -46,8 +46,8 @@ function romanceAction(p,kind){
  if(!story)return;rememberPerson(p,story.slice(0,90),2);advanceTime(30);log(`${firstName(p)}`,story)
 }
 // ---------- Scene runner (dates, prom night) ----------
-function startScene(kind,data){S.scene={id:uid('scene'),kind,step:0,score:50,lines:[],data};renderScene()}
-function sceneDef(){return S.scene?.kind==='date'?DATE_SCENE:S.scene?.kind==='prom'?PROM_SCENE:null}
+function startScene(kind,data){if(kind==='prom'&&typeof promNightEntryGate6B1==='function'){toast('Prom Night scenes will open in later checkpoints.');return}S.scene={id:uid('scene'),kind,step:0,score:50,lines:[],data};renderScene()}
+function sceneDef(){return S.scene?.kind==='date'?DATE_SCENE:S.scene?.kind==='prom'&&typeof promNightEntryGate6B1!=='function'?PROM_SCENE:null}
 function renderScene(){const sc=S.scene,def=sceneDef();if(!sc||!def){S.scene=null;return}const st=def.steps[sc.step];if(!st){finishScene();return}const view=st.view(sc);openModal(view.title,`${sc.lines.length?`<div class="scene-lines">${sc.lines.slice(-3).map(l=>`<p>${esc(l)}</p>`).join('')}</div>`:''}<p class="scene-text">${esc(view.text)}</p><div class="modal-action-grid">${view.choices.map(c=>`<button class="${c.primary?'primary':''}" data-scene-choice="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div>`)}
 function sceneChoice(id){const sc=S.scene,def=sceneDef();if(!sc||!def)return;const st=def.steps[sc.step];const r=st.choose(sc,id)||{};if(r.line)sc.lines.push(r.line);if(r.score)sc.score=clamp(sc.score+r.score);if(r.minutes)advanceTime(r.minutes,{silent:true});if(r.end){finishScene(r);return}sc.step=r.goto??sc.step+1;save();renderScene()}
 function finishScene(r={}){const sc=S.scene,def=sceneDef();S.scene=null;closeChoiceModal();if(def)def.finish(sc,r);save();render()}
