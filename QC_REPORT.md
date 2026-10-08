@@ -627,3 +627,101 @@ Focused progression/prerequisite suite: 23/23 PASS. 5A.1 regression: 23/23 PASS.
 - Clean authoritative rebuild is byte-identical; no production source change was required in 5A.5.
 - Known legacy exceptions are documented in `PHASE_5A_PROGRESS.md` and are not 5A.5 production regressions.
 
+
+## Phase 5B.1 QC
+
+- 5B.1 focused: **17/17 PASS**.
+- Phase 5A focused **93/93**, 5A.5 acceptance **24/24**, 5A.5 fuzz **10/10 / 200 ops**.
+- Phase 4D.5 acceptance/fuzz **44/44 / 200 ops**, Phase 4C.5 **28/28**, Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Clean authoritative rebuild is byte-identical; `game.js` SHA-256 `00ab504f29d254ab7d8a4cbac9c339eb2d7eb6785e521ed785a2bddc578e1c9d`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- 5B.1 deliberately does not implement the 5B.2 instructor/attendance/10-absence system or the 5B.4 summer-job overhaul.
+- Exact next resume point: **5B.2 — Formal Programs / Coaches / Attendance / Skills**.
+
+
+## Phase 5B.2 QC
+- 5B.2 focused: **19/19 PASS**; 5B.1 regression: **17/17 PASS**.
+- Phase 5A focused/final acceptance **117/117** + fuzz **10/10 / 200 ops**.
+- Phase 4D focused/final acceptance **110/110** + fuzz **21/21 / 200 ops**.
+- Phase 4C focused/final acceptance **111/111**; Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Explicit focused/acceptance matrix: **513/513 PASS**; dedicated prior-phase fuzz rerun: **31/31 / 400 ops**.
+- Clean authoritative rebuild is byte-identical; `game.js` SHA-256 `8ad65e8775df95f8e1829888ad86570bb110a951391cb9964a3ff003ff815cb6`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- Exact next resume point: **5B.3 — Tutoring / Summer Academics / Social Integration**.
+
+
+## Phase 5B.3 QC
+- 5B.3 focused: **20/20 PASS**; 5B.1 regression **17/17**, 5B.2 regression **19/19**.
+- Phase 5A focused/final acceptance **117/117** + fuzz **10/10 / 200 ops**.
+- Phase 4D.5 acceptance **23/23** + fuzz **21/21 / 200 ops**.
+- Phase 4C.5 **28/28**, Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Primary fresh focused/acceptance matrix: **363/363 PASS**; dedicated prior-phase fuzz rerun: **31/31 / 400 ops**.
+- Focused QA found and fixed one real 5B.3 schedule-definition mismatch that incorrectly marked an on-time 1:1 tutoring session late.
+- Clean authoritative rebuild is byte-identical; `game.js` SHA-256 `02f3148896dd9d452ce26d80c8e478a3b41f39a9872887894d53e464bf6ba28c`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- Exact next resume point: **5B.4 — Summer Jobs / Shifts / Pay / Work-School Compatibility**.
+
+
+## Phase 5B.4 QC
+
+- 5B.4 focused: **21/21 PASS**; 5B.1–5B.3 regression: **56/56 PASS**.
+- Phase 5A.5 acceptance **24/24** + fuzz **10/10 / 200 ops**.
+- Phase 4D.5 acceptance **23/23** + fuzz **21/21 / 200 ops**.
+- Phase 4C.5 **28/28**, Phase 4B.5 **23/23**, Phase 4A.5 **32/32**, Phase 3C.5 **29/29**, Phase 3B.5 **5/5**, H3 **50/50**.
+- Focused QA found and fixed one real late-shift terminal-state bug (`Late` Calendar status could later be reprocessed as Missed); final behavior uses terminal `Attended` + `attendanceStatus=Late`.
+- Clean authoritative rebuild is byte-identical; `game.js` SHA-256 `f763317b8c2fc573f789b3c5aaf7d21789cc4c92cd7abbd0cf3c9205cd065a20`.
+- `style.css` and shipped `qa/harness.py` hashes remain unchanged.
+- Exact next resume point: **5B.5 — Migration / Regression / Fuzz / Final QA**.
+
+## Phase 5B.5 final QA closeout
+
+- 5B.1 focused: 17/17 PASS
+- 5B.2 focused: 19/19 PASS
+- 5B.3 focused: 20/20 PASS
+- 5B.4 focused: 21/21 PASS
+- 5B.5 acceptance: 26/26 PASS
+- Phase 5B focused/acceptance total: 103/103 PASS
+- 5B.5 fuzz: 17/17 PASS, 200 randomized operations
+- Full fresh modern/prerequisite focused+acceptance matrix including HOTFIX-P1/3A: 1027/1027 PASS
+- Modern fuzz stack: 129/129 checks PASS across 3,920 randomized operations
+- All 50/50 Phase 5B acceptance criteria verified
+- `node --check game.js`: PASS
+- clean source rebuild: byte-identical
+- shipped `qa/harness.py`: unchanged
+
+One production integration defect was found and fixed in 5B.5: Calendar `program` obligations were missing from Fast Forward's hard-obligation list. Formal program sessions, tutoring and paid summer-job shifts now pause Fast Forward for explicit resolution.
+
+Legacy/domain QA was also sampled through a temporary QA-only portable browser harness because the historical repository harness hard-codes a retired Chromium path. The shipped harness was restored byte-for-byte. Remaining old failures are documented stale/environment-specific expectations (old Phone UI text, holiday hero precedence, an old 390px School overflow assertion, and raw-page-reload behavior unavailable to set-content harnesses), not Phase 5B production regressions.
+
+## Phase 5C.1 QC
+
+- 5C.1 focused: **18/18 PASS**.
+- Phase 5B.1–5B.4: **77/77 PASS**.
+- Phase 5B.5: **26/26 acceptance + 17/17 fuzz / 200 ops PASS**. One first acceptance run paused Fast Forward on an unrelated stochastic soft event before the paid-shift target; clean rerun without source changes passed 26/26.
+- Phase 5A: **117/117 focused+acceptance + 10/10 fuzz / 200 ops PASS**.
+- Phase 4D final: **23/23 acceptance + 21/21 fuzz / 200 ops PASS**.
+- Phase 4C final: **28/28 acceptance + 21/21 fuzz / 800 ops PASS**.
+- Phase 4B final acceptance: **23/23 PASS**.
+- Phase 4A final acceptance: **32/32 PASS**.
+- Phase 3C final: **29/29 acceptance + 13/13 fuzz / 600 ops PASS**.
+- Phase 3B final: **5/5 acceptance + 13/13 fuzz / 600 ops PASS**.
+- H3: **50/50 PASS**.
+- `node --check game.js` and `node --check src/modules/seasonal5c1.js`: PASS.
+- `tools/theme.py`: PASS, no remaining literal hex outside tokens.
+- Clean source rebuild: byte-identical.
+- `game.js` SHA-256: `0221236f24426af8129f390a82a7ae65c7efa80cb4b2d506e05dd81ed546a981`.
+- `style.css`: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+- shipped `qa/harness.py`: unchanged `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`.
+- Exact next resume point: **5C.2 — Summer / Winter Activities**.
+
+## Phase 5C.2 QC
+- `qa/t_5c2.py`: 20/20 PASS.
+- `qa/t_5c1.py`: 18/18 PASS after the 5C.2 overrides.
+- Phase 5B final acceptance/fuzz: 43/43 PASS (200 randomized operations in 5B fuzz).
+- Phase 5A final acceptance: 24/24 PASS.
+- Phase 4D final acceptance: 23/23 PASS.
+- Phase 4C final acceptance: 28/28 PASS.
+- Phase 3C final acceptance: 29/29 PASS.
+- Phase 3B final acceptance: 5/5 PASS.
+- H3: 50/50 PASS.
+- Clean rebuild is byte-identical; `node --check game.js` passes and theme reports no literal-hex drift.

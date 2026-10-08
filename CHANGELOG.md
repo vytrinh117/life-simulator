@@ -1132,3 +1132,65 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Added `qa/t_5a5_accept.py` and `qa/t_5a5_fuzz.py`.
 - Phase 5B has not started.
 
+
+## Phase 5B.1 — Summer / After-School Program Foundation
+- Upgraded the existing `PROGRAMS` / `S.programs` / Calendar architecture into canonical formal-program offerings instead of creating a parallel program scheduler.
+- Added stable program offering IDs, category/provider/location/format metadata, summer-vs-after-school scope, stable discovery and explicit enrollment lifecycle.
+- Routed minor formal-program permission through the H3 Central Decision Ledger so unchanged declined requests cannot be spam-rerolled and only legal parent/guardian authorities decide.
+- Added realistic fee/family-contribution handling using existing money/economy state, full-schedule overlap validation, deterministic Calendar session IDs, conservative legacy migration and duplicate-enrollment cleanup.
+- Preserved flexible `CASUAL` practice as a distinct no-enrollment path and preserved legacy summer jobs for the dedicated 5B.4 overhaul.
+- Added `qa/t_5b1.py`: **17/17 PASS**. Phase 5B remains IN PROGRESS; resume at 5B.2.
+
+
+## Phase 5B.2 — Formal Programs / Coaches / Attendance / Skills
+- Added stable lightweight instructors for canonical formal program enrollments.
+- Added explicit Attended/Late/Excused/Absent/Cancelled session records and replaced the legacy 3-miss drop with the required 10-consecutive-unexcused-absence removal rule.
+- Formal sessions now use format/instructor/attendance context for relevant skill progression and gradual Phase 3A evidence while remaining distinct from casual practice.
+- Added occasional stable program peers with canonical program meeting provenance rather than disposable per-session NPCs.
+- Added competitive-program tryout hooks/UI for Basketball/Soccer; selection uses real factors and may succeed or fail before enrollment/payment.
+- Added persistent/idempotent program completion records and `qa/t_5b2.py` (19/19 PASS).
+
+
+## Phase 5B.3 — Tutoring / Summer Academics / Social Integration
+- Added subject-specific Summer classes and school-year tutoring on the existing canonical program/Calendar architecture.
+- Added a maximum of three concurrent formal summer academic subjects while keeping Phase 5A workbook self-study separate.
+- Added distinct 1:1 vs group tutoring costs/schedules/progression and subject-targeted academic gains.
+- Added optional remedial/enrichment recommendations without forcing summer academics.
+- Added stable group-tutoring peer provenance while preserving Phase 3B romance and Phase 3C contact-exchange gates.
+- Fixed an on-time 1:1 tutoring session being misclassified as Late by making canonical program definitions and Calendar offerings share the same subject-specific schedule source.
+- Added `qa/t_5b3.py`: **20/20 PASS**. Phase 5B remains IN PROGRESS; resume at 5B.4.
+
+
+## Phase 5B.4 — Summer jobs / shifts / pay
+
+- Replaced the legacy child-accessible summer employee flow with four canonical age-16+ summer job options while preserving old legacy records.
+- Added real application/employment state, deterministic Calendar shifts, schedule-conflict validation, completed-shift pay, late/missed consequences, modest work-skill progression, stable manager/coworker hooks, wage de-duplication and end-of-summer completion.
+- Summer jobs reuse `S.programs` + Calendar and do not alter the adult career engine.
+- Fixed late-shift Calendar semantics so a completed late shift is terminal `Attended` with `attendanceStatus=Late` and cannot later become a no-show.
+- Added `qa/t_5b4.py` — 21/21 focused PASS.
+
+## Phase 5B.5 — Final Migration / Regression / Fuzz / QA
+- Closed Phase 5B with 26/26 final acceptance and 17/17 dedicated fuzz checks across 200 randomized program/tutoring/employment operations.
+- Fixed Fast Forward so required Calendar `program` obligations (formal programs, tutoring and summer-job shifts) hard-interrupt instead of being silently skipped.
+- Confirmed active Make Plans during school breaks uses real selectable day/time availability rather than a hard-coded after-school default.
+- Verified the cumulative 5B migration chain is idempotent and does not duplicate enrollments, Calendar sessions, participants, instructors, paid shifts or fabricated history.
+- Verified all 50/50 Phase 5B acceptance criteria and a 1027/1027 fresh focused/acceptance regression matrix; modern fuzz stack passed 129/129 checks across 3,920 randomized operations.
+- Added `qa/t_5b5_accept.py` and `qa/t_5b5_fuzz.py`.
+- Phase 5B is COMPLETE. Exact next development point: Phase 5C — Seasonal Activities / Functional Store.
+
+## Phase 5C.1 — Seasonal Activity Foundation
+- Added canonical seasonal activity definitions with stable activity IDs, season/date eligibility, legitimate location contexts, real duration/cost metadata and reusable social/permission fields.
+- Reused existing `S.plans` + Calendar `plan` architecture for accepted seasonal outings instead of adding a parallel planner/calendar.
+- Added persistent deterministic seasonal RSVP state so repeated identical invitations cannot reroll a decline.
+- Added Phase 3B-backed partner eligibility without creating a second romance system or auto-romancing friend outings.
+- Added H3 Decision Ledger-backed minor seasonal permission using real parent/guardian authority.
+- Added narrow existing-trip seasonal-context hooks; travel does not globally bypass local-season restrictions.
+- Added conservative/idempotent 5C.1 migration that does not fabricate outings, romance memories, permission history or gear ownership.
+- Added `qa/t_5c1.py`; focused result 18/18 PASS.
+
+## Phase 5C.2 — Summer / Winter Activities
+- Added concrete 5C.2 outcomes for skiing, snowman, beach, casual swimming, tanning/sun exposure, sunscreen and scuba while preserving the canonical 5C.1 plan/calendar path.
+- Added temporary rental/provider equipment access for skiing/scuba without granting permanent Inventory ownership.
+- Added functional multi-use sunscreen and bounded sunburn risk reduction.
+- Added Teen+ scuba age gating, minor supervision requirement, H3 authority reuse, and Phase 3B-only romantic context.
+- Added focused `qa/t_5c2.py` (20/20 PASS).

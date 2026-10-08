@@ -393,3 +393,43 @@ The complete 4D migration chain (4D.1 canonical event identity, 4D.2 discovery/r
 - Selling/removing a physical canonical workbook does not erase learned progress/completion.
 - No historical session, recommendation, exam support, competition support, trait, or talent evidence is fabricated.
 
+
+## Phase 5B.1 program migration foundation
+
+`migratePrograms5B1()` enriches the existing `S.programs` records in place. Existing explicit program template, dates, attendance/miss counts, teammates, coach state and lifecycle status are preserved. Stable `programId` values are derived only from explicit legacy template/start/scope evidence. Migration does not invent historical enrollment, instructors, certificates, job history, attendance or skill progress. Existing Calendar `program` events are linked by their current `recId`/program identity rather than recreated as fake history. Accidental duplicate live enrollment for the same canonical offering is marked `Superseded`; repeated migration is idempotent and does not duplicate enrollment or Calendar sessions.
+
+
+## Phase 5B.2 formal-program attendance migration
+
+`migratePrograms5B2()` enriches existing canonical 5B.1 enrollments in place. It preserves explicit attendance/miss totals and maps the legacy consecutive miss streak without fabricating old session records. Stable lightweight instructor IDs are deterministic from an existing `programId`; existing teammate/participant IDs are preserved and deduplicated. Migration does not invent historical attendance, tryout results, participants, skill gains, completion results or certificates. Repeated migration is idempotent and does not reset the 10-absence streak or duplicate instructor/participant state.
+
+
+## Phase 5B.3 tutoring / summer-academic migration
+
+`migratePrograms5B3()` enriches only explicit subject-specific 5B.3 academic program records already present in `S.programs`. Subject, format, provider and location metadata are reconstructed from stable academic program IDs. Existing 5B.1/5B.2 enrollment, Calendar, attendance, instructor, completion and participant state is preserved. Migration does not fabricate summer-school/tutoring enrollment, academic gains, peers, Phone contacts, romance history or subject assignments for legacy generic `summerSchool` records. Repeated migration is idempotent.
+
+
+## Phase 5B.4 summer-employment migration
+
+`migratePrograms5B4()` only normalizes explicit canonical 5B.4 employment records and tags legacy summer-job program records conservatively. It preserves paid-shift IDs, attendance, performance, manager/coworker lightweight identity, dates and Calendar links. It does not fabricate applications, jobs, shifts, wages or workplace history, does not repay completed shifts, and does not rewrite younger legacy side-hustle history into standard age-16 employment. Summer-end completion is intentionally handled by the real daily lifecycle rather than migration, so loading a save cannot itself fabricate an employment ending. Repeated migration is idempotent.
+
+## Phase 5B final migration closeout
+
+The cumulative Phase 5B migration chain (`migratePrograms5B1`, `migratePrograms5B2`, `migratePrograms5B3`, `migratePrograms5B4`) reaches a semantic fixed point across elementary, middle-school, Summer-academic teen and working-teen saves.
+
+Repeated migration does not duplicate canonical enrollments, Calendar sessions/shifts, instructors, participants, completion records or paid-shift IDs; it does not reset attendance/consecutive absences, repay wages, reroll resolved eligibility/permission/tryout/employment results, or fabricate program/job/social history. Useful legacy activity and skill state remains preserved conservatively. Daily lifecycle transitions such as end-of-summer employment closure remain owned by the real game-day tick rather than migration/load.
+
+5B.5 adds no new migration schema; it validates the 5B.1–5B.4 migration stack after the final Fast Forward integration fix.
+
+## Phase 5C.1 — Seasonal Activity Foundation
+
+`migrateSeasonalActivities5C1()` initializes and normalizes only explicit Phase 5C seasonal state.
+
+Migration does not infer ordinary legacy outings into canonical seasonal activity history. It does not fabricate old invitations, RSVP results, parent permission outcomes, romantic memories, equipment ownership or activity skill history.
+
+Existing `S.plans`, Calendar events, People relationships, Inventory and family-trip state remain authoritative. Plans are only marked as Phase 5C seasonal plans when they already contain a valid explicit `seasonalActivityId`.
+
+Repeated migration deduplicates explicit RSVP/history records deterministically and reaches a fixed point.
+
+## Phase 5C.2 migration
+`migrateSeasonalActivities5C2()` initializes only explicit 5C.2 runtime state (`rentals`, `sunLog`) and registers the canonical sunscreen catalog entry. It does not fabricate prior outings, sunburns, rentals, skills, permission outcomes, romantic memories, or permanent equipment ownership. Repeated migration deduplicates temporary rental records and reaches a fixed point.

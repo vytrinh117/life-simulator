@@ -64,3 +64,19 @@ All v7.3 items are implemented: creator fixes, real school years with semesters 
 
 ## Phase 4C — Daily School Realism
 Phase 4C is complete. Daily school behavior now uses canonical physical location + game time + school calendar: real campus hours and travel, class/teacher/attendance context, lunch/facilities/needs and school-aware device rules, realistic homework pacing, after-school scheduling/conflict rules, campus closing, Go Home and family-dinner timing hooks. See `PHASE_4C_PROGRESS.md` for the final 4C.5 migration/regression/fuzz report. Exact next development point: **Phase 4D — Competitions / School Events**.
+
+## Phase 5B — Summer Programs / Tutoring / Summer Jobs
+Phase 5B is in progress. Checkpoint 5B.1 is complete: the existing summer-program system now has canonical stable program offerings, formal-vs-casual separation, age/season discovery, H3 parent/guardian enrollment decisions, fees, full-schedule conflict checks, real Calendar sessions and conservative save migration. See `PHASE_5B_PROGRESS.md`. Exact next development point: **5B.2 — Formal Programs / Coaches / Attendance / Skills**.
+
+### Phase 5B checkpoint status
+Phase 5B.2 is complete. Formal programs now have stable instructors, explicit attendance states, 10-consecutive-absence removal, relevant skill/talent progression, persistent participant provenance, tryout hooks, and completion records. Exact resume point: **5B.3 — Tutoring / Summer Academics / Social Integration**.
+
+## Phase 5B checkpoint status
+
+Phase 5B.4 — Summer Jobs / Shifts / Pay / Work-School Compatibility is complete. Standard summer employment now starts at age 16, uses four canonical job options, real Calendar shifts, completed-shift pay, late/missed consequences, stable workplace hooks, schedule conflict validation, save-safe wage de-duplication and end-of-summer completion. See `PHASE_5B_PROGRESS.md` for details. Exact next checkpoint: **5B.5 — Migration / Regression / Fuzz / Final QA**.
+
+## Phase 5B — COMPLETE
+Phase 5B is complete. Summer/after-school programs now use canonical scheduled enrollment, instructor/attendance/progression and social provenance; Summer academics/tutoring use subject-specific real schedules with a three-subject formal Summer cap; standard Summer employment begins at age 16 with four canonical job options, real shifts and pay-by-completed-shift; Fast Forward respects required program/tutoring/job obligations. Final 5B.5 acceptance is 26/26 and dedicated fuzz is 17/17 across 200 randomized operations. See `PHASE_5B_PROGRESS.md` for the full 50/50 acceptance closeout. Exact next development point: **Phase 5C — Seasonal Activities / Functional Store**.
+
+## Phase 5C — Seasonal Activities / Functional Store
+Phase 5C is in progress. Checkpoint **5C.1 — Seasonal Activity Foundation** is complete: seasonal activities now have canonical stable IDs, real date/season and location eligibility, time/cost metadata, persistent non-rerolling RSVP hooks, H3 parent/guardian permission, Phase 3B partner eligibility, existing Plans/Calendar integration and conservative migration. Detailed Summer/Winter activity gameplay remains intentionally deferred to 5C.2. See `PHASE_5C_PROGRESS.md`. Exact next checkpoint: **5C.2 — Summer / Winter Activities**.
