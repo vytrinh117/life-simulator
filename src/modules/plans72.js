@@ -49,9 +49,10 @@ function createPlan(p,type,slot,{defy=false,endBy=null}={}){
  else if(plan.status==='Maybe'){plan.answerBy={dateISO:currentDate(),minute:Math.min(1290,currentMinute()+180)};threadStep(th,'Waiting for an answer',r.why);scheduleFollowUp('npcAnswer',{planId:plan.id},plan.answerBy);log(`${displayName(p)} might come`,r.why)}
  else{threadStep(th,'Declined',r.why,{resolve:true});recordOutcome('Plan',plan.title,'Declined',r.why);log(`${displayName(p)} can't make it`,r.why)}
 }
-function schedulePlanCalendar(plan){notifyParents(plan);const p=personById(plan.personId);createCalendarEvent({id:`plan-${plan.id}`,type:'plan',title:plan.title,dateISO:plan.dateISO,startMinute:plan.startMinute,endMinute:plan.endMinute,graceMinute:Math.min(1439,plan.startMinute+30),payload:{planId:plan.id},location:plan.location,participants:p?[displayName(p)]:[],required:true,source:'social'})}
+function schedulePlanCalendar(plan){if(plan.seasonalActivityId==='camping_weekend'&&plan.endDateISO&&plan.endDateISO>plan.dateISO&&!S.calendar?.some(x=>x.id==='outdoor-overnight-'+plan.id)){createCalendarEvent({id:'outdoor-overnight-'+plan.id,type:'outdoorReservation',title:plan.title+' (overnight)',dateISO:plan.endDateISO,startMinute:0,endMinute:plan.endMinute,payload:{overnightPlanId:plan.id},location:plan.location,required:true,source:'seasonal'});}notifyParents(plan);const p=personById(plan.personId);createCalendarEvent({id:`plan-${plan.id}`,type:'plan',title:plan.title,dateISO:plan.dateISO,startMinute:plan.startMinute,endMinute:plan.endDateISO&&plan.endDateISO!==plan.dateISO?1439:plan.endMinute,graceMinute:Math.min(1439,plan.startMinute+30),payload:{planId:plan.id},location:plan.location,participants:p?[displayName(p)]:[],required:true,source:'social'})}
 function planEvent(plan){return S.calendar.find(e=>e.type==='plan'&&e.payload?.planId===plan.id)}
 function attendPlan(planId){
+ if(typeof seasonalPlanById5C1==='function'&&seasonalPlanById5C1(planId))return attendSeasonalPlan5C1(planId);
  const plan=S.plans.find(x=>x.id===planId),p=plan&&personById(plan.personId);if(plan?.romantic&&typeof beginRomanceDateScene3B2==='function')return beginRomanceDateScene3B2(plan);if(!plan||plan.status!=='Accepted'){toast('That plan is not active.');return}recordTraitEvidence('Responsible',{source:'kept a plan',system:'plans',eventId:'plan-'+plan.id,context:plan.type||'plan'});recordTraitEvidence('Social',{source:'spent time with someone',system:'plans',eventId:'plan-'+plan.id,context:plan.type||'plan'});
  const ev=planEvent(plan);if(!ev||isTerminal(ev.status)){toast('That plan already happened.');return}
  if(plan.dateISO>currentDate()){toast(`That is on ${formatDate(plan.dateISO)}.`);return}
@@ -78,7 +79,16 @@ function attendPlan(planId){
  log(`${t.label} with ${firstName(p)}`,story)
 }
 function cancelPlan(planId){
- const plan=S.plans.find(x=>x.id===planId),p=plan&&personById(plan.personId);if(!plan||!['Accepted','Maybe'].includes(plan.status))return;if(p)adjustReliability(p,minutesUntil(plan.dateISO,plan.startMinute)<240?-5:-1);
+ const plan=S.plans.find(x=>x.id===planId),p=plan&&personById(plan.personId);if(!plan||!['Accepted','Maybe'].includes(plan.status))return;
+ // Canonical seasonal outings are player-hosted (or explicitly accepted invitations).
+ // Cancelling them must settle their Calendar holds without inventing an NPC response.
+ if(plan.seasonal5C1){
+  plan.status='Cancelled by you';const ev=planEvent(plan);
+  if(ev)setCalendarStatus(ev,'Cancelled','Seasonal outing cancelled by player');
+  if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);
+  resolveNotificationsFor(plan.id);log('Outing cancelled',`${plan.title} was cancelled.`);return;
+ }
+ if(p)adjustReliability(p,minutesUntil(plan.dateISO,plan.startMinute)<240?-5:-1);
  const ev=planEvent(plan),mins=minutesUntil(plan.dateISO,plan.startMinute),late=mins<180;
  plan.status='Cancelled by you';if(ev)setCalendarStatus(ev,'Cancelled',late?'Cancelled last minute':'Cancelled in advance');resolveNotificationsFor(plan.id);
  if(p){p.rel=clamp(p.rel-(late?3:1));p.trust=clamp(p.trust-(late?2:0));rememberPerson(p,late?'You cancelled on them at the last minute.':'You cancelled a plan, but told them early.')}
@@ -115,7 +125,7 @@ function plansTick(){
  const now=nowStamp();
  for(const plan of S.plans){
   if(plan.status==='Maybe'&&plan.playerMaybe&&plan.answerBy&&now>stampOf(plan.answerBy)){plan.status='Expired';const p=personById(plan.personId);if(p){p.rel=clamp(p.rel-1);rememberPerson(p,'You never gave a real answer about plans.')}resolveNotificationsFor(plan.id);if(!SIM.skipping)log('Never answered',`${firstName(p)} takes your silence as a no and makes other plans.`)}
-  if(plan.status==='Accepted'&&plan.dateISO>currentDate()&&!plan.npcCancelChecked){plan.npcCancelChecked=true;if(chance(6)){const p=personById(plan.personId);plan.status='Cancelled by them';const ev=planEvent(plan);if(ev)setCalendarStatus(ev,'Cancelled','They cancelled');const why=rand(['a family thing came up','they are sick','they forgot they had a test to study for']);if(!SIM.skipping){log(`${firstName(p)} cancelled`,`"I'm so sorry — ${why}. Rain check?"`);notify('Plans cancelled',`${firstName(p)} cancelled: ${why}.`,{sourceType:'plan',sourceId:plan.id})}}}
+  if(plan.status==='Accepted'&&!plan.seasonal5C1&&plan.dateISO>currentDate()&&!plan.npcCancelChecked){plan.npcCancelChecked=true;if(chance(6)){const p=personById(plan.personId);plan.status='Cancelled by them';const ev=planEvent(plan);if(ev)setCalendarStatus(ev,'Cancelled','They cancelled');const why=rand(['a family thing came up','they are sick','they forgot they had a test to study for']);if(!SIM.skipping){log(`${firstName(p)} cancelled`,`"I'm so sorry — ${why}. Rain check?"`);notify('Plans cancelled',`${firstName(p)} cancelled: ${why}.`,{sourceType:'plan',sourceId:plan.id})}}}
  }
  S.plans=S.plans.filter(x=>['Accepted','Maybe','Pending'].includes(x.status)||x.dateISO>=addDays(currentDate(),-30))
 }

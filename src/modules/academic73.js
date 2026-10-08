@@ -52,7 +52,7 @@ function scheduleSemesterExams(sem){
 function scheduleExams(){const a=academicInfo();if(a.semester){scheduleSemesterExams(a.semester);if(S.school){S.school.semExams=S.school.semExams||{};S.school.semExams[a.semester]=true}}}
 // ---------- Year rollover, report cards, graduation ----------
 function graduateHighSchool(){graduationHonors();
- const old=S.school;if(!old)return;closeSchoolYear(old,{leaving:true});recordGraduation('high',old.name);if(typeof closePlayerSchoolEnrollment4A2==='function')closePlayerSchoolEnrollment4A2('Graduated high school');S.education.highSchoolDone=true;S.school=null;
+ const old=S.school;if(!old)return;closeSchoolYear(old,{leaving:true});recordGraduation('high',old.name);if(typeof closePlayerSchoolEnrollment4A2==='function')closePlayerSchoolEnrollment4A2('Graduated high school');S.education.highSchoolDone=true;S.school=null;if(typeof reconcileSchoolRoles4B1==='function')reconcileSchoolRoles4B1('Graduated high school');
  if(!SIM.skipping){const p=S.people.find(x=>x.role==='parent');log('🎓 High school graduation',`Caps in the air. ${p?`${firstName(p)} cries a little and denies it.`:''} Twelve years of school, done.`,true)}
 }
 function reportCard(sem){
@@ -66,7 +66,7 @@ function ensureSchoolForDate(){
  ensureLifecycleContainers();S.education=Object.assign({graduations:[]},S.education||{});
  if(S.age===3&&!S.development.kindergarten.asked){S.development.kindergarten.asked=true;createPending({type:'kindergarten',title:'Kindergarten decision',resolveDate:null,status:'Waiting for your preference',payload:{preference:null},autoDecideDate:addDays(currentDate(),14),detail:'Your caregivers want to hear whether you want to attend before they decide. If you do not answer, they will decide within two weeks.'});log('Kindergarten becomes a question','Your family starts discussing preschool/kindergarten, childcare, money, schedules and your preferences.')}
  if(S.age<3){S.school=null;return}
- if(S.education.highSchoolDone){if(S.school){closeSchoolYear(S.school,{leaving:true});if(typeof closePlayerSchoolEnrollment4A2==='function')closePlayerSchoolEnrollment4A2('High school completed');S.school=null}return}
+ if(S.education.highSchoolDone){if(S.school){closeSchoolYear(S.school,{leaving:true});if(typeof closePlayerSchoolEnrollment4A2==='function')closePlayerSchoolEnrollment4A2('High school completed');S.school=null;if(typeof reconcileSchoolRoles4B1==='function')reconcileSchoolRoles4B1('High school completed')}return}
  const a=academicInfo(),carry=S.school;
  if(carry&&carry.yearKey==null){carry.yearKey=a.key;carry.yearStarted=a.start;if(carry.grade!=='Kindergarten'&&S.education.gradeOffset==null)S.education.gradeOffset=gradeNumber()-baseGradeFor(a.key);if(typeof syncPlayerSchoolEnrollment4A2==='function')syncPlayerSchoolEnrollment4A2({reason:'Existing enrollment'});return}
  if(carry&&carry.yearKey>=a.key)return;
@@ -75,7 +75,7 @@ function ensureSchoolForDate(){
  if(g>=1){
   closeSchoolYear(carry);const fromStage=stageOfSchool(carry),toStage=stageForAge(g+5);if(carry&&fromStage&&fromStage!==toStage)recordGraduation(fromStage,carry.name);
   S.school=buildSchool(g+5,carry);if(typeof syncPlayerSchoolEnrollment4A2==='function')syncPlayerSchoolEnrollment4A2({reason:carry&&stageOfSchool(carry)!==stageOfSchool(S.school)?'Education stage transition':'New school year'});if(g===1)maybeGradeOneWatch();S.school.yearKey=a.key;S.school.yearStarted=a.start;S.school.record=freshSchoolRecord();S.school.reports={};S.school.semExams={};
-  S.school.clubs.forEach(c=>{ensureClub(c);if(!clubSessionEvent(c))scheduleClubSession(c,nextSchoolDay(addDays(currentDate(),3)))});
+  if(typeof reconcileSchoolRoles4B1==='function')reconcileSchoolRoles4B1('School-year transition');if(typeof ensureCurrentSchoolOrganizations4B1==='function')ensureCurrentSchoolOrganizations4B1();S.school.clubs.forEach(c=>{ensureClub(c);if(!clubSessionEvent(c))scheduleClubSession(c,nextSchoolDay(addDays(currentDate(),3)))});
   if(a.semester){scheduleExams();if(a.semester===2)S.school.semExams[1]=true}generateHomework(true);ensureProm();
   if(carry&&!SIM.skipping)log(`🎒 New school year • ${S.school.grade}`,`${S.school.name}. ${a.phase==='summer'||a.phase==='semBreak'?'':`Semester ${a.semester||1} starts now.`} New class, new timetable${carry.name!==S.school.name?', new building':''}.`,true);
   meetNewClassmates(chance(60)?2:1,{silent:SIM.skipping});return

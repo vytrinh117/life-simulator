@@ -6,7 +6,7 @@
 // (invitations, minor social moments) offer Respond / Decline & continue / Let your character decide.
 // BACKGROUND things never stop the clock; they go into the summary. Routine preferences shape the skipped days.
 // =====================================================================
-const HARD_CAL=['exam','schoolEvent','tryout','prom','wedding','election','plan'];
+const HARD_CAL=['exam','schoolEvent','tryout','prom','wedding','election','plan','program'];
 const HARD_EVENTS=['medicalEmergency','vacationProposal','vacationAgain','promInvite','expulsionTalk','meetingAftermath','gradSpeech','triangle','absenceTalk','sneakTalk','counselor'];
 const DEFAULT_ROUTINE={study:'normal',exercise:'normal',social:'normal',spending:'balanced',bedtime:'normal',free:'mixed'};
 function routine(){S.routine=Object.assign({},DEFAULT_ROUTINE,S.routine||{});return S.routine}

@@ -66,7 +66,7 @@ function studySubject(name,minutes=60,mode='solo'){if(mode==='teacher'&&!require
  const key='study:'+sub.name;if(farmLeft(key)<=0){toast(`You already studied ${sub.name} 3 times today. Your brain needs a break.`);return}
  minutes=[30,60,180].includes(Number(minutes))?Number(minutes):60;if(S.energy<10){toast('You are too tired to study.');return}
  const g=farmGuard(key),b=traitBoost(['subject:'+sub.name,'study']),conc=concentration(),items=[];
- let itemMult=1;if(findUsable('deskLamp')){itemMult+=.2;items.push('desk lamp')}if(findUsable('workbook')){itemMult+=.15;items.push('workbook')}const nb=findUsable('notebook');if(nb){itemMult+=.1;items.push('notebook');const u=openOne(nb);u.remaining=clamp(u.remaining-1.25);if(u.remaining<=.5)removeItem(u.id)}
+ let itemMult=1;if(findUsable('deskLamp')){itemMult+=.2;items.push('desk lamp')}if(typeof advancedExerciseWorkbook5A1==='function'&&advancedExerciseWorkbook5A1(sub.name)){itemMult+=.15;items.push('subject workbook')}const nb=findUsable('notebook');if(nb){itemMult+=.1;items.push('notebook');const u=openOne(nb);u.remaining=clamp(u.remaining-1.25);if(u.remaining<=.5)removeItem(u.id)}
  const methodMult=mode==='friend'?1.1:mode==='teacher'?1.25:1,m=g.mult*b.mult*conc*itemMult*methodMult;
  const prep=Math.round((minutes===30?4:minutes===60?8:15)*m),skill=Math.round(Math.min(5,Math.max(1,(minutes===30?1.4:minutes===60?2.6:4.3)*m))*10)/10,grade=Math.round(Math.min(2,(minutes===30?.4:minutes===60?.8:1.6)*m)*10)/10;
  sub.prep=clamp(sub.prep+prep);sub.skill=clamp(sub.skill+skill);sub.score=Math.round(clamp(sub.score+grade)*10)/10;sub.lastStudyDate=currentDate();
@@ -77,7 +77,7 @@ function studySubject(name,minutes=60,mode='solo'){if(mode==='teacher'&&!require
  feedback(`Studied ${sub.name} • ${minutes===180?'3 hours':minutes===60?'1 hour':'30 min'}${mode==='friend'?' with a friend':mode==='teacher'?' with the teacher':''}`,`Grade +${grade.toFixed(1)} • Skill +${skill.toFixed(1)} • Prep +${prep}${notes.length?` (${notes.join('; ')})`:''}. ${farmLeft(key)} study session${farmLeft(key)===1?'':'s'} left for ${sub.name} today.`,minutes)
 }
 function extraExercise(name){
- const sub=S.school?.subjects?.find(x=>x.name===name);if(!sub)return;if(atSchool()){toast('After class.');return}
+ const sub=S.school?.subjects?.find(x=>x.name===name);if(!sub)return;if(typeof advancedExerciseWorkbook5A1==='function'&&!advancedExerciseWorkbook5A1(sub.name)){toast(workbookOwnershipReason5A1(sub.name));return}if(atSchool()){toast('After class.');return}
  const key='extra:'+sub.name,c=dayCounts();if(c[key]){toast(`You already did extra ${sub.name} exercises today.`);return}if(S.energy<15){toast('Too tired for hard exercises.');return}c[key]=1;
  const b=traitBoost(['subject:'+sub.name,'study']),conc=concentration(),success=chance(clamp(25+sub.skill*.6+(b.mult-1)*60+(conc-.9)*80,10,92));
  const grade=Math.round((success?1.2+Math.random()*.8:.3+Math.random()*.4)*b.mult*10)/10,skill=Math.round((success?3:1.5)*b.mult*10)/10,prep=success?8:4;

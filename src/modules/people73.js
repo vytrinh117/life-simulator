@@ -62,7 +62,7 @@ function profileHtml(p){/* HOTFIX P1.3 — Profile in the selected A2 layout: on
  const bday=p.bday&&knowsWell(p,40)?formatDate(`${currentDate().slice(0,4)}-${p.bday}`).replace(/, \d{4}$/,''):U;
  const parents=p.npcId&&parentsKnown(p)?npcParentsLine(p):null,traits=knownTraits(p),hidden=(p.traits||[]).length>traits.length,avail=availabilityNow(p);
  const tile=(ic,label,val,cls='')=>`<div class="pf-tile ${cls}">${icon(ic)}<div><small>${label}</small><b>${val}</b></div></div>`;
- const social=[avail?tile('clock','Right now',esc(avail)):'',!fam?tile('heart','Romantic status',esc(relStatusKnown(p)?npcRelStatus(p):U)):'',typeof schoolProfileTile4A4==='function'?schoolProfileTile4A4(p,tile):'',tile('target','Interests',esc(knowsWell(p,40)?ints.interests.join(', '):U)),tile('thumbs-down','Dislikes',esc(knowsWell(p,60)?ints.dislikes.join(', '):U))].filter(Boolean);
+ const social=[avail?tile('clock','Right now',esc(avail)):'',!fam?tile('heart','Romantic status',esc(relStatusKnown(p)?npcRelStatus(p):U)):'',typeof schoolProfileTile4A4==='function'?schoolProfileTile4A4(p,tile):'',typeof schoolLeadershipProfileTile4B4==='function'?schoolLeadershipProfileTile4B4(p,tile):'',tile('target','Interests',esc(knowsWell(p,40)?ints.interests.join(', '):U)),tile('thumbs-down','Dislikes',esc(knowsWell(p,60)?ints.dislikes.join(', '):U))].filter(Boolean);
  const goal=goalsKnown(p)&&goalsText(p)?esc(goalsText(p)):U,canAsk=!fam&&!goalsKnown(p)&&tierRank(p)>=2;
  const metric=(ic,label,v,cls)=>`<div class="pf-metric ${cls}">${icon(ic)}<div class="pf-metric-body"><small>${label}</small><div class="pf-metric-row"><b>${Math.round(v)}</b><i class="pf-bar"><em style="width:${clamp(v)}%"></em></i></div></div></div>`;
  return `<div class="profile pf">

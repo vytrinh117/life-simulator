@@ -81,6 +81,14 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  // An overnight reservation is a multi-day schedule hold, not an attendable
+  // obligation. It is resolved when its owning outdoor plan is settled.
+  if(ev.type==='outdoorReservation'){
+   const plan=(S.plans||[]).find(p=>p.id===ev.payload?.overnightPlanId);
+   if(!plan)setCalendarStatus(ev,'Cancelled','Orphan outdoor reservation');
+   else if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);
+   continue;
+  }
   if(now<stamp(ev.dateISO,ev.startMinute))continue;
   if(SIM.skipping){simulateObligation(ev);continue}
   if(ev.type==='schoolEvent'&&ev.status==='Scheduled'&&isSchoolDay(ev.dateISO)&&ev.startMinute===600&&now<stamp(ev.dateISO,ev.graceMinute)){Object.assign(ev,contestSlot(ev.dateISO));ev.minute=ev.startMinute;continue}
@@ -95,6 +103,7 @@ function onObligationDue(ev){
  if(ev.type==='exam'){const exam=S.exams.find(x=>x.id===ev.payload?.examId);if(!examIsOpen(exam)){setCalendarStatus(ev,calStatusForExam(exam)||'Cancelled','Reconciled');return}exam.status='Due';notify('Assessment today',`${exam.subject} ${exam.type.toLowerCase()} • ${timeLabel(exam.minute)}. Late sitting closes at ${timeLabel(exam.graceMinute)}.`,{sourceType:'exam',sourceId:exam.id,tab:'school'});offerContext(examContext(exam));return}
  if(ev.type==='clubSession'){const c=clubById(ev.payload?.clubId);if(!c||c.status!=='Active'){setCalendarStatus(ev,'Cancelled','Club inactive');return}notify('Club session now',`${c.name} started at ${timeLabel(ev.startMinute)}.`,{sourceType:'club',sourceId:ev.id,tab:'school'});offerContext(calendarContext(ev));return}
  if(ev.type==='schoolEvent'){const c=contestById(ev.payload?.contestId);if(!c||c.status!=='Registered'){setCalendarStatus(ev,'Cancelled','Not registered');return}notify('Event today',`${c.name} • arrive by ${timeLabel(ev.graceMinute)}.`,{sourceType:'contest',sourceId:ev.id,tab:'school'});offerContext(calendarContext(ev));return}
+ if(ev.type==='leadershipSelection'){if(typeof leadershipSelectionDue4B3==='function')leadershipSelectionDue4B3(ev);return}
  if(['tryout','plan'].includes(ev.type)){notify(ev.type==='tryout'?'Tryout now':'Plans now',`${ev.title} • ${timeLabel(ev.startMinute)}.`,{sourceType:ev.type,sourceId:ev.id,tab:ev.type==='tryout'?'school':'people'});offerContext(calendarContext(ev));return}
  if(ev.type==='election'||ev.type==='conference'||ev.type==='trip'||ev.type==='wedding')return;
  if(ev.type==='medicalFollowUp'){notify('Doctor follow-up','Today at '+timeLabel(ev.startMinute),{sourceType:'calendar',sourceId:ev.id,tab:'health'});return}
@@ -111,6 +120,7 @@ function missObligation(ev){
  if(ev.type==='clubSession'){resolveClubSession(ev,excuse?'Excused':'Missed',excuse||'No-show');return}
  if(ev.type==='schoolEvent'){resolveContestAttendance(ev,excuse?'Withdrew':'No-show');return}
  if(ev.type==='tryout'){tryoutMissed(ev);return}
+ if(ev.type==='leadershipSelection'){if(typeof leadershipSelectionMissed4B3==='function')leadershipSelectionMissed4B3(ev);else setCalendarStatus(ev,'Expired','Missed leadership selection');return}
  if(ev.type==='conference'||ev.type==='trip'||ev.type==='wedding')return;
  if(ev.type==='program'){programMissed(ev);return}
  if(ev.type==='medicalFollowUp'){setCalendarStatus(ev,'Missed','Missed the follow-up');return}
@@ -121,7 +131,7 @@ function missObligation(ev){
  setCalendarStatus(ev,'Expired','Time passed')
 }
 function attendTendency(type){
- const base={schoolDay:96,exam:95,clubSession:80,schoolEvent:90}[type]??85;
+ const base={schoolDay:96,exam:95,clubSession:80,schoolEvent:90,leadershipSelection:90}[type]??85;
  const resp=(S.family?.responsibility||0)*.06,stress=Math.max(0,S.stress-50)*.15,health=S.health<50?8:0;
  const pers=(S.personality.includes('Responsible')?3:0)-(S.personality.includes('Stubborn')||S.personality.includes('Bold')?2:0);
  return clamp(base+resp-stress-health+pers-(S.age>=15&&S.age<=17?2:0),50,99.5)
@@ -136,6 +146,7 @@ function simulateObligation(ev){
  if(ev.type==='schoolDay'){if(SIM.excuse)markSchoolAbsence(ev,{excused:true,reason:SIM.excuse,simulated:true});else if(sick)markSchoolAbsence(ev,{excused:true,reason:'Sick day',simulated:true});else if(attend)markSchoolAttendance(ev,{tardy:chance(4),simulated:true});else markSchoolAbsence(ev,{simulated:true});return}
  if(ev.type==='clubSession'){const c=clubById(ev.payload?.clubId);if(!c||c.status!=='Active'){setCalendarStatus(ev,'Cancelled','Club inactive');return}if(attend&&!sick)clubSessionAttended(ev,{simulated:true});else resolveClubSession(ev,sick?'Excused':'Missed',sick?'Sick':'Skipped',{simulated:true});return}
  if(ev.type==='schoolEvent'){const c=contestById(ev.payload?.contestId);if(!c||c.status!=='Registered'){setCalendarStatus(ev,'Cancelled','Not registered');return}if(attend&&!sick){resolveContest(c,{simulated:true});setCalendarStatus(ev,'Attended','Simulated attendance')}else resolveContestAttendance(ev,sick?'Withdrew':'No-show',{simulated:true});return}
+ if(ev.type==='leadershipSelection'){if(typeof simulateLeadershipSelection4B3==='function')simulateLeadershipSelection4B3(ev);else setCalendarStatus(ev,'Completed','Simulated');return}
  if(ev.type==='tryout'){const t=S.school?.tryouts?.find(x=>x.id===ev.payload?.tryoutId);if(t&&t.status==='Scheduled'&&attend){t.prep=Math.max(t.prep,25+Math.random()*30);evaluateTryout(t,{simulated:true});setCalendarStatus(ev,'Attended','Simulated')}else tryoutMissed(ev);return}
  if(ev.type==='prom'){const pr=S.school?.prom;if(!pr||pr.plan==='skip'||!attend){promMissed(ev);return}pr.status='Done';setCalendarStatus(ev,'Attended','Simulated');const pp=pr.partnerId?personById(pr.partnerId):null;if(pp)pp.rel=clamp(pp.rel+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'💃 Prom',text:pp?`You went to prom with ${displayName(pp,'formal')}.`:'You went to prom with friends.'});if(SIM.summary)SIM.summary.notable.push('Went to prom');return}
  if(ev.type==='plan'){const plan=S.plans?.find(x=>x.id===ev.payload?.planId);if(plan&&attend){plan.status='Attended';const p=personById(plan.personId);if(p)p.rel=clamp(p.rel+3);setCalendarStatus(ev,'Attended','Simulated')}else planNoShow(ev);return}
@@ -189,12 +200,12 @@ function syncExamCalendar(){
  }
 }
 function examScore(exam,{late=0,cheat=false,simulated=false}={}){
- const sub=examSubject(exam);if(!sub)return 60;
- if(simulated){const prep=clamp(Math.max(sub.prep,45+(S.family?.responsibility||0)*.3+Math.random()*20-Math.max(0,S.stress-55)*.3));return clamp(Math.round(sub.skill*.4+sub.score*.45+prep*.15+(S.luck-50)*.08+(Math.random()*14-7)))}
+ const sub=examSubject(exam);if(!sub)return 60;const wb=typeof workbookExamSupport5A4==='function'?workbookExamSupport5A4(sub.name):{bonus:0};
+ if(simulated){const prep=clamp(Math.max(sub.prep,45+(S.family?.responsibility||0)*.3+Math.random()*20-Math.max(0,S.stress-55)*.3));return clamp(Math.round(sub.skill*.4+sub.score*.45+prep*.15+(S.luck-50)*.08+(Math.random()*14-7)+(wb.bonus||0)))}
  const prep=sub.prep;
  const talent=(traitBoost(['subject:'+sub.name,'exam']).mult-1)*12,mood=simulated?0:(S.happiness-55)*.12,hungry=simulated?0:Math.max(0,S.needs.hunger-70)*.15;
  const sleep=simulated?0:(S.needs.sleep-50)*.08+talent+mood-hungry,stress=simulated?0:Math.max(0,S.stress-45)*.12,luck=(S.luck-50)*.08,latePenalty=late>0?Math.min(18,late/4):0;
- return clamp(Math.round(sub.skill*.42+prep*.35+sub.score*.23+sleep-stress+luck+(Math.random()*14-7)+(cheat?10:0)-latePenalty))
+ return clamp(Math.round(sub.skill*.42+prep*.35+sub.score*.23+sleep-stress+luck+(Math.random()*14-7)+(cheat?10:0)-latePenalty+(wb.bonus||0)))
 }
 function examStory(exam,score,late){
  const sub=examSubject(exam),t=ensureTeacher(sub)?.name||'The teacher',prep=sub?.prep||0,tired=S.needs.sleep<40,nervous=S.stress>60;
@@ -213,6 +224,7 @@ function performExam(exam,{cheat=false,simulated=false,lateMinutes=0}={}){
   const caught=chance(28+(S.stress/5)-(S.luck-50)*.1);
   if(caught){const t=ensureTeacher(sub);if(t)t.rel=clamp(t.rel-20);S.school.behavior=clamp(S.school.behavior-18);S.family.tension=clamp(S.family.tension+8);setEmotion('Embarrassed','You were caught cheating.',75);advanceTime(60,{silent:true});finalizeExam(exam.id,{status:'Completed',score:0,reason:'Caught cheating',narrative:`${t?.name||'The teacher'} quietly takes your paper halfway through. The score is a zero, and a note goes home.`});if(S.age<18)scheduleFollowUp('cheatingParent',{examId:exam.id},{minute:1080});return exam}
  }
+ exam.workbookSupport5A4=typeof workbookExamSupport5A4==='function'?workbookExamSupport5A4(exam.subject):{bonus:0};
  const score=examScore(exam,{late:lateMinutes,cheat,simulated});
  if(!simulated){S.stress=clamp(S.stress+5);S.happiness=clamp(S.happiness+(score>=75?5:score<55?-5:0));advanceTime(Math.max(30,(exam.endMinute-exam.minute)-lateMinutes),{silent:true})}
  finalizeExam(exam.id,{status:'Completed',score,reason:lateMinutes?'Completed late':'Completed',narrative:simulated?'':examStory(exam,score,lateMinutes),simulated});
@@ -316,11 +328,11 @@ function homeworkLabel(hw){
 }
 function archiveHomework(sub){const hw=sub.homework;if(hw&&hw.status&&hw.status!=='None'){sub.homeworkHistory=sub.homeworkHistory||[];sub.homeworkHistory.unshift({...hw,subject:sub.name});if(sub.homeworkHistory.length>8)sub.homeworkHistory.length=8}}
 function generateHomework(force=false){
- if(!needsFormalSchool())return;let active=S.school.subjects.filter(s=>HW_OPEN.includes(s.homework?.status)).length;
- for(const sub of [...S.school.subjects].sort(()=>Math.random()-.5)){
-  if(active>=3)break;const hw=sub.homework||{status:'None'};
-  const free=hw.status==='None'||(!HW_OPEN.includes(hw.status)&&(hw.resolvedDate||'0000')<currentDate());
-  if(!free)continue;if(force?chance(45):chance(28)){archiveHomework(sub);sub.homework={id:uid('hw'),status:'Assigned',progress:0,assignedDate:currentDate(),dueDate:nextSchoolDay(addDays(currentDate(),2+Math.floor(Math.random()*3)))};active++}
+ if(!needsFormalSchool())return;const policy=typeof homeworkLoadPolicy4C4==='function'?homeworkLoadPolicy4C4():{allowed:isSchoolDay(),maxActive:3,chance:28};if(!policy.allowed)return;
+ let active=S.school.subjects.filter(s=>HW_OPEN.includes(s.homework?.status)).length,used=new Set(S.school.subjects.map(s=>s.homework?.dueDate).filter(Boolean));
+ for(const [idx,sub] of [...S.school.subjects].sort(()=>Math.random()-.5).entries()){
+  if(active>=policy.maxActive)break;const hw=sub.homework||{status:'None'},free=hw.status==='None'||(!HW_OPEN.includes(hw.status)&&(hw.resolvedDate||'0000')<currentDate());
+  if(!free)continue;const pct=force?100:policy.chance;if(!chance(pct))continue;archiveHomework(sub);const due=typeof nextHomeworkDue4C4==='function'?nextHomeworkDue4C4(idx+active,used):nextSchoolDay(addDays(currentDate(),2+Math.floor(Math.random()*3)));used.add(due);sub.homework={id:uid('hw'),status:'Assigned',progress:0,assignedDate:currentDate(),dueDate:due,estimatedMinutes:typeof homeworkEstimate4C4==='function'?homeworkEstimate4C4(sub,idx):60};active++
  }
 }
 function simulateHomework(sub){
@@ -345,14 +357,15 @@ function escalateHomework(){
 }
 function doHomework(name){
  const sub=S.school?.subjects?.find(x=>x.name===name),hw=sub?.homework;
- if(!sub||!hw||!HW_OPEN.includes(hw.status)){toast('There is no active homework for that subject.');return}
+ if(!sub||!hw||!HW_OPEN.includes(hw.status)){toast('There is no active homework for that subject.');return false}
+ if(typeof homeworkStudyContext4C4==='function'){const c=homeworkStudyContext4C4();if(!c.ok){toast(c.reason);return false}}
  const nb=findUsable('notebook'),gain=Math.min(100-(hw.progress||0),nb?60:50);if(nb){const u=openOne(nb);u.remaining=clamp(u.remaining-1.25);if(u.remaining<=0.5)removeItem(u.id)}hw.progress=(hw.progress||0)+gain;advanceTime(60);S.energy=clamp(S.energy-5);
  const t=ensureTeacher(sub),rec=ensureSchoolRecord();
  if(hw.progress>=100){
   const late=hw.status==='Late';hw.status=late?'Submitted late':'Submitted';recordTraitEvidence('Responsible',{source:late?'homework (late)':'homework on time',system:'school',eventId:'hw-'+sub.name+'-'+(hw.dueDate||hw.assignedDate||currentDate()),context:sub.name,quality:late?.5:1});hw.submittedDate=currentDate();hw.resolvedDate=currentDate();
   if(late){sub.score=clamp(sub.score+.5);rec.lateHomework=rec.lateHomework;feedback(`${sub.name} homework submitted late`,rand([`${t.name} accepts it with a short note about deadlines. Partial credit.`,`It is late, but it is done. ${t.name} takes it without much comment.`]),60)}
   else{sub.score=clamp(sub.score+2);t.rel=clamp(t.rel+2);rec.submittedHomework++;feedback(`${sub.name} homework submitted`,rand([`You finish the last question and put it in your bag. One less thing to worry about.`,`It took longer than expected, but the work is solid.`,`Done before the deadline — ${t.name} will notice.`]),60)}
- }else feedback(`${sub.name} homework`,`Progress ${hw.progress}% • ${homeworkLabel(hw)}`,60)
+ }else feedback(`${sub.name} homework`,`Progress ${hw.progress}% • ${homeworkLabel(hw)}`,60);return true
 }
 
 // ---------- Clubs as commitments ----------
@@ -364,18 +377,19 @@ function clubSessionEvent(c){return S.calendar.filter(e=>e.type==='clubSession'&
 function clubAttendanceRate(c){const t=(c.attended||0)+(c.missedSessions||0);return t?Math.round(100*(c.attended||0)/t):100}
 function activateClub(o){
  o.status='Joined';const club=ensureClub({id:uid('club'),name:o.name,status:'Active',joinedDate:currentDate(),skill:12,sessions:0,members:[rand(D.names),rand(D.names)]});
- S.school.clubs.push(club);scheduleClubSession(club,nextSchoolDay(addDays(currentDate(),2)));
+ S.school.clubs.push(club);if(typeof syncClubOrganization4B3==='function')syncClubOrganization4B3(club);scheduleClubSession(club,nextSchoolDay(addDays(currentDate(),2)));
  log('Joined '+club.name,`It is a real commitment now: sessions every week at ${timeLabel(930)}, led by ${club.leader}. Showing up matters.`,true)
 }
 function attendClubSession(clubId){
- const c=clubById(clubId);if(!c||c.status!=='Active')return;ensureClub(c);const ev=clubSessionEvent(c);
- if(!ev){toast('No session is scheduled.');return}
+ const c=clubById(clubId);if(!c||c.status!=='Active')return false;ensureClub(c);const ev=clubSessionEvent(c);
+ if(!ev){toast('No session is scheduled.');return false}
  if(ev.dateISO>currentDate()){toast(`Next session ${formatDate(ev.dateISO)} at ${timeLabel(ev.startMinute)}.`);return}
- if(currentMinute()>ev.graceMinute){processCalendar();toast('The session already started without you.');return}
+ if(currentMinute()>ev.graceMinute){processCalendar();toast('The session already started without you.');return false}
+ if(typeof afterSchoolActivityGate4C4==='function'){const g=afterSchoolActivityGate4C4(ev);if(!g.ok){toast(g.reason);return false}}
  const sd=schoolDayEvent();if(sd&&sd.status==='Scheduled'||sd&&sd.status==='Due'){toast('School comes first — club starts after classes.');return}
  if(currentMinute()<ev.startMinute){if(ev.startMinute-currentMinute()>180){toast(`The session starts at ${timeLabel(ev.startMinute)}.`);return}advanceTime(ev.startMinute-currentMinute(),{silent:true})}
  if(isTerminal(ev.status))return;setCalendarStatus(ev,'Attending','Arrived');const late=Math.max(0,currentMinute()-ev.startMinute);
- advanceTime(Math.max(30,ev.endMinute-currentMinute()),{silent:true});clubSessionAttended(ev,{late})
+ advanceTime(Math.max(30,ev.endMinute-currentMinute()),{silent:true});clubSessionAttended(ev,{late});return true
 }
 function clubSessionStory(c,late){
  const m=rand(c.members||[])||'another member',L=c.leader;
@@ -420,12 +434,13 @@ function skipClubSession(clubId){const c=clubById(clubId),ev=c&&clubSessionEvent
 function excuseClubSession(clubId){const c=clubById(clubId),ev=c&&clubSessionEvent(c);if(!ev){toast('No session scheduled.');return}if(ev.dateISO===currentDate()&&currentMinute()>=ev.startMinute){toast('It already started — telling them now is not "beforehand".');return}resolveClubSession(ev,'Excused','Told the leader beforehand')}
 
 // ---------- Contests require attendance ----------
-function contestById(id){return S.school?.contests?.find(x=>x.id===id)||null}
+function contestById(id){return S.school?.contests?.find(x=>x.id===id||x.eventId===id)||null}
 function contestSlot(dateISO){return isSchoolDay(dateISO)?{startMinute:780,endMinute:900,graceMinute:810,location:'School hall (during school)'}:{startMinute:600,endMinute:780,graceMinute:690,location:'School hall'}}
-function contestCalendar(c){return createCalendarEvent(Object.assign({id:`contest-${c.id}`,type:'schoolEvent',title:c.name,dateISO:c.eventDate,payload:{contestId:c.id},source:'school'},contestSlot(c.eventDate)))}
-function registerContest(c){c.status='Registered';const ev=contestCalendar(c);log('Registered • '+c.name,`The event is ${formatDate(c.eventDate)} at ${timeLabel(ev.startMinute)}${isSchoolDay(c.eventDate)?' in the school hall, during the school day — you will miss class to go':''}. You need to actually show up — preparation now matters.`)}
+function contestCalendar(c){if(typeof normalizeSchoolEvent4D1==='function')normalizeSchoolEvent4D1(c);return createCalendarEvent(Object.assign({id:`contest-${c.id}`,type:'schoolEvent',title:c.name,dateISO:c.eventDate,payload:{contestId:c.id,schoolEventId:c.eventId||null},schoolId:c.schoolId||null,source:'school'},contestSlot(c.eventDate)))}
+function registerContest(c){c.status='Registered';if(typeof normalizeSchoolEvent4D1==='function')normalizeSchoolEvent4D1(c);const ev=contestCalendar(c);if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1('register');log('Registered • '+c.name,`The event is ${formatDate(c.eventDate)} at ${timeLabel(ev.startMinute)}${isSchoolDay(c.eventDate)?' in the school hall, during the school day — you will miss class to go':''}. You need to actually show up — preparation now matters.`)}
 function contestEvent(c){return S.calendar.find(e=>e.type==='schoolEvent'&&e.payload?.contestId===c.id&&!isTerminal(e.status))||null}
 function attendContest(contestId){
+ if(typeof attendSchoolEvent4D3==='function')return attendSchoolEvent4D3(contestId);
  const c=contestById(contestId);if(!c||c.status!=='Registered')return;const ev=contestEvent(c)||contestCalendar(c);
  if(ev.dateISO===currentDate()&&isSchoolDay(ev.dateISO)&&ev.startMinute<SCHOOL_DAY.end){const sd=schoolDayEvent();if(sd&&isTerminal(sd.status)&&sd.status!=='Attended'){toast('You are absent from school today, so you cannot take part.');return}if(sd&&sd.status!=='Attending'&&sd.status!=='Attended'){if(currentMinute()>SCHOOL_DAY.cutoff){toast('Too late to check in at school.');return}checkInToSchool()}}
  if(ev.dateISO>currentDate()){toast(`${c.name} is on ${formatDate(ev.dateISO)}.`);return}
@@ -435,17 +450,19 @@ function attendContest(contestId){
  setCalendarStatus(ev,'Attending','Checked in');const late=Math.max(0,currentMinute()-ev.startMinute);advanceTime(Math.max(45,ev.endMinute-currentMinute()),{silent:true});resolveContest(c,{late});setCalendarStatus(ev,'Attended',late?'Arrived late':'Attended')
 }
 function resolveContest(c,{late=0,simulated=false}={}){
+ if(typeof resolveSchoolEventResult4D3==='function')return resolveSchoolEventResult4D3(c,{late,simulated});
  if(c.status==='Completed')return;
  const avg=schoolAverage(),club=Math.max(0,...(S.school?.clubs||[]).filter(x=>x.status==='Active').map(x=>x.skill||0)),score=clamp(avg*.38+c.prep*.35+club*.1+S.luck*.12+(Math.random()*18-9)-Math.min(10,late/4));
- c.status='Completed';c.result=score>=82?'Winner / top result':score>=68?'Strong result / finalist':'Participated';devContestResult(c,score);if(score>=68)addRep(/art|music|drama|show/i.test(c.name)?'creative':/sport|race|run/i.test(c.name)?'athletic':'academic',score>=82?6:3);S.happiness=clamp(S.happiness+(score>=82?10:score>=68?6:2));
+ c.status='Completed';c.result=score>=82?'Winner / top result':score>=68?'Strong result / finalist':'Participated';if(typeof normalizeSchoolEvent4D1==='function')normalizeSchoolEvent4D1(c);devContestResult(c,score);if(score>=68)addRep(/art|music|drama|show/i.test(c.name)?'creative':/sport|race|run/i.test(c.name)?'athletic':'academic',score>=82?6:3);S.happiness=clamp(S.happiness+(score>=82?10:score>=68?6:2));
  if(SIM.summary)SIM.summary.contests.push({name:c.name,result:c.result});
  if(simulated)return;
  const story=score>=82?rand([`When they read the results, your name comes first. For a second you think you misheard.`,`Your entry draws a small crowd. By the end of the day, you have a certificate and a story.`]):score>=68?rand([`You make the final round and hold your own against people who clearly practiced for weeks.`,`A judge stops to ask about your work. You do not win, but you place well.`]):rand([`It is not your day — others were more prepared — but you saw what the top entries looked like.`,`You get through it. The experience is worth more than the ribbon you do not get.`]);
  log(score>=82?'🏆 '+c.name:score>=68?'⭐ '+c.name:'🎖️ '+c.name,`${late>5?'You arrive late and rush to set up. ':''}${story} (${c.result})`,score>=82)
 }
 function resolveContestAttendance(ev,status,{simulated=false}={}){
+ if(typeof resolveSchoolEventAttendance4D3==='function')return resolveSchoolEventAttendance4D3(ev,status,{simulated});
  const c=contestById(ev.payload?.contestId);setCalendarStatus(ev,status,status==='No-show'?'Did not check in':'Withdrew');if(!c)return;
- c.status=status;c.result=status==='No-show'?'Did not attend':'Withdrew';
+ c.status=status;c.result=status==='No-show'?'Did not attend':'Withdrew';if(typeof normalizeSchoolEvent4D1==='function')normalizeSchoolEvent4D1(c);
  if(SIM.summary)SIM.summary.contests.push({name:c.name,result:c.result});
  if(status==='No-show'&&sessionEvent()){S.stress=clamp(S.stress+1);if(!simulated)log(`Missed • ${c.name}`,`You stay in class while ${c.name} goes on in the hall without you. The organizers cross your name off.`);return}
  if(status==='No-show'){S.social.reputation=clamp(S.social.reputation-2);S.stress=clamp(S.stress+3);if(S.age<13)S.family.tension=clamp(S.family.tension+2);if(!simulated)log(`No-show • ${c.name}`,`Your name is called at check-in and nobody answers. The organizers move on, and ${S.age<13?'your caregiver, who signed the form, is not thrilled':'a teacher mentions it the next day'}.`)}
@@ -566,6 +583,7 @@ function runFollowUp(f){
 
 // ---------- Lifecycle event choices ----------
 function handleLifecycleEventChoice(e,id,label){
+ const s5=typeof seasonalActivityEventChoice5C1==='function'&&seasonalActivityEventChoice5C1(e,id,label);if(s5)return s5;
  const c3=typeof communication3C3EventChoice==='function'&&communication3C3EventChoice(e,id,label);if(c3)return c3;const cm=typeof communication3C1EventChoice==='function'&&communication3C1EventChoice(e,id,label);if(cm)return cm;const rb=typeof romance3B2EventChoice==='function'&&romance3B2EventChoice(e,id,label);if(rb)return rb;const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
  if(e.type==='newPhone')return handlePhoneChoice(e,id);
  if(e.type==='invitation'&&e.payload?.planId)return handlePlanInvite(e,id);
@@ -666,7 +684,8 @@ function reconcileState(reason='tick'){
  reconcileSchoolStage();reconcileEducationHistory();if(typeof migratePlayerSchool4A2==='function')migratePlayerSchool4A2();socialReconcile();if(typeof migrateNpcSchools4A3==='function')migrateNpcSchools4A3();if(typeof migrateCommunication3C1==='function')migrateCommunication3C1();if(typeof migrateCommunication3C3==='function')migrateCommunication3C3();if(typeof migrateCommunication3C4==='function')migrateCommunication3C4();
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
- reconcileExams();reconcileCalendar();expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
+ if(typeof reconcileSchoolDay4C1==='function')reconcileSchoolDay4C1(reason);if(typeof reconcileSchoolClasses4C2==='function')reconcileSchoolClasses4C2(reason);if(typeof reconcileSchoolFacilities4C3==='function')reconcileSchoolFacilities4C3(reason);if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4(reason);
+ reconcileExams();reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
 }
 function compactExam(e){return {id:e.id,subject:e.subject,type:e.type,dateISO:e.dateISO,minute:e.minute,status:e.status,score:e.score,reason:e.reason||null,makeupOf:e.makeupOf||null,makeupId:e.makeupId||null,replacedBy:e.replacedBy||null}}
 function closeSchoolYear(old,{leaving=false}={}){
@@ -714,6 +733,7 @@ function reconcileNotifications(){
   if(n.dateISO&&daysBetween(n.dateISO,currentDate())>10){n.status='Expired';continue}
   if(!n.sourceId&&/Exam today|Club session|Assessment today/.test(n.title)&&n.dateISO<currentDate()){n.status='Expired';continue}
   if(n.sourceType==='exam'){const e=S.exams.find(x=>x.id===n.sourceId);if(!examIsOpen(e))n.status='Resolved'}
+  if(n.sourceType==='contest'&&typeof schoolEventNotificationStatus4D4==='function'&&schoolEventNotificationStatus4D4(n))continue;
   if(['club','contest'].includes(n.sourceType)){const e=S.calendar.find(x=>x.id===n.sourceId);if(!e||isTerminal(e.status))n.status='Resolved'}
  }
 }

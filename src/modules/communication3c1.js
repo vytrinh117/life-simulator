@@ -75,6 +75,7 @@ function migrateCommunication3C1(){
 }
 function contactChannelKnown3C1(p,channel){const r=contactRecord3C1(p);return !!r&&r.status==='active'&&!r.blocked&&!r.removed&&(r.channels||[]).includes(channel)}
 function communicationEligibility3C1(pOrId,channel='message'){
+ const schoolGate=typeof schoolDeviceUseGate4C3==='function'?schoolDeviceUseGate4C3(channel):{ok:true};if(!schoolGate.ok)return {ok:false,reason:schoolGate.reason};
  const p=typeof pOrId==='string'?personById(pOrId):pOrId;if(!p)return {ok:false,reason:'That person is no longer available.'};migrateCommunication3C1();const r=contactRecord3C1(p);if(!r||r.status!=='active'||r.blocked||r.removed)return {ok:false,reason:isFamilyPerson(p)?'A communication contact is not available on your current device.':'You have not exchanged contact details with them yet.'};if(!(r.channels||[]).includes(channel))return {ok:false,reason:`That contact is not available for ${channel}.`};const a=communicationDeviceAccess3C1();
  if(a.smartphone)return {ok:true,device:'smartphone',itemId:a.smartphone.itemId,contact:r};
  if(a.kidsWatch&&r.approvedForWatch&&['message','call'].includes(channel))return {ok:true,device:'kidsWatch',itemId:a.kidsWatch.itemId,contact:r};

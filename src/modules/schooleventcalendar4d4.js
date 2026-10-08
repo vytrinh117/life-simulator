@@ -1,0 +1,60 @@
+// =====================================================================
+// PHASE 4D.4 — SCHOOL EVENT CALENDAR / SEASONAL / NOTIFICATION LIFECYCLE
+// Extends the canonical S.school.contests records from 4D.1–4D.3.
+// No new event store is introduced here.
+// =====================================================================
+const SCHOOL_EVENT_SCHEMA_4D4=1;
+const SCHOOL_EVENT_MISSED_NOTICE_DAYS_4D4=2;
+const SCHOOL_EVENT_HISTORY_RETENTION_DAYS_4D4=14;
+function schoolEventMomentLabel4D4(dateISO,{noun='Event'}={}){
+ const d=daysBetween(currentDate(),dateISO);if(d<0)return `${noun} passed`;if(d===0)return `${noun} today`;if(d===1)return `${noun} tomorrow`;return `${noun} in ${d} days`
+}
+function schoolEventCountdown4D4(idOrEvent){
+ const c=typeof idOrEvent==='object'?idOrEvent:schoolEventById4D1(idOrEvent);if(!c)return {label:'Event unavailable',days:null,kind:'missing'};normalizeSchoolEventDiscovery4D2(c);const st=c.lifecycleState,w=registrationWindow4D2(c);
+ if(st==='announced'&&w.state==='upcoming'){const d=daysBetween(currentDate(),c.registrationOpenAt.dateISO);return {kind:'registration_open',days:d,label:d===0?'Registration opens today':d===1?'Registration opens tomorrow':`Registration opens in ${d} days`}}
+ if(st==='registration_open'||st==='registration_pending'){const d=daysBetween(currentDate(),c.registrationDeadline.dateISO);return {kind:'registration_deadline',days:d,label:d===0?'Registration closes today':d===1?'Registration closes tomorrow':d>1?`Registration closes in ${d} days`:'Registration closed'}}
+ const d=daysBetween(currentDate(),c.eventDate);return {kind:'event',days:d,label:d===0?'Event today':d===1?'Event tomorrow':d>1?`Event in ${d} days`:'Event date passed'}
+}
+function annualSchoolEventDefinition4D4(c){const key=String(c?.repeat?.templateKey||eventSlug4D1(c?.name));return (typeof ANNUAL_EVENTS!=='undefined'?ANNUAL_EVENTS:[]).find(e=>eventSlug4D1(e.name)===key)||null}
+function makeAnnualSchoolEvent4D4(def,yearKey){
+ const sid=playerCurrentSchoolId4A2?.()||S.school?.currentSchoolId||null,a=academicYear(Number(yearKey)),eventDate=annualEventDate(def,a),openDate=addDays(eventDate,-21),deadline=addDays(eventDate,-7),c={id:uid('contest'),name:def.name,templateKey:def.name,annual:true,status:currentDate()<openDate?'Upcoming':'Open',createdDate:currentDate(),openDate,decisionDate:deadline,eventDate,prep:0,result:null,schoolId:sid,scope:'school',eligibility:{minGrade:def.minGrade||null},discovery:{discovered:false,source:'school_calendar',discoveredAt:null,announcementSent:false},repeat:{frequency:'annual',schoolYearKey:String(yearKey),season:eventSeason4D1(eventDate),templateKey:eventSlug4D1(def.name),schoolId:sid}};
+ normalizeSchoolEventDiscovery4D2(c,{legacyKnown:false});normalizeSchoolEventParticipation4D3(c);c.schemaVersion4D4=SCHOOL_EVENT_SCHEMA_4D4;c.calendarLifecycle={createdForSchoolYear:String(yearKey),lastReconciled:null,archivedAt:null,archiveReason:null,missedNoticeUntil:null};return c
+}
+function publishAnnualSchoolEvents4D4(){
+ if(!needsFormalSchool()||!S.school?.yearKey)return {created:0};const yearKey=String(S.school.yearKey??academicInfo().key),sid=playerCurrentSchoolId4A2?.()||S.school.currentSchoolId||null,g=gradeNumber(),defs=typeof ANNUAL_EVENTS!=='undefined'?ANNUAL_EVENTS:[],existing=new Set((S.school.contests||[]).map(c=>{normalizeSchoolEvent4D1(c);return c.annualKey}).filter(Boolean));let created=0;
+ S.school.annual=S.school.annual||{};
+ for(const def of defs){if(g<Number(def.minGrade||0))continue;const date=annualEventDate(def,academicYear(Number(yearKey))),deadline=addDays(date,-7),annualKey=`${eventSlug4D1(def.name)}:${yearKey}:${sid}`;if(existing.has(annualKey)){S.school.annual[`${yearKey}:${def.name}`]=true;continue}if(date<currentDate()||deadline<currentDate())continue;const c=makeAnnualSchoolEvent4D4(def,yearKey);S.school.contests.unshift(c);existing.add(c.annualKey);S.school.annual[`${yearKey}:${def.name}`]=true;created++}
+ if(created)reconcileSchoolEvents4D1('4d4-annual-publish');return {created,schoolYearKey:yearKey}
+}
+function eventNoticeMeta4D4(c){c.noticeMeta4D4=Object.assign({missedNoticeSent:false,missedNoticeUntil:null,lastCleanupDate:null},c.noticeMeta4D4||{});return c.noticeMeta4D4}
+function missedNoticeSource4D4(c){return `event-missed-${c.eventId}`}
+function ensureMissedNotice4D4(c,{silent=false}={}){
+ const meta=eventNoticeMeta4D4(c);if(c.lifecycleState!=='missed')return null;const resolvedDate=c.resolvedAt?.dateISO||c.resultRecord?.resolvedAt?.dateISO||currentDate();meta.missedNoticeUntil=meta.missedNoticeUntil||addDays(resolvedDate,SCHOOL_EVENT_MISSED_NOTICE_DAYS_4D4);if(!meta.missedNoticeSent){meta.missedNoticeSent=true;if(!silent&&!SIM.skipping)notify(`Missed event: ${c.name}`,'You were registered but did not attend. This notice will clear after a short reminder period.',{sourceType:'contest',sourceId:missedNoticeSource4D4(c),tab:'school'})}return meta
+}
+function resolveSchoolEventNotices4D4(c){if(!c)return;resolveRegistrationNotifications4D2(c);const cal=eventCalendarFor4D1(c);if(cal&&SCHOOL_EVENT_TERMINAL_4D1.has(c.lifecycleState))resolveNotificationsFor(cal.id);if(c.lifecycleState!=='missed')resolveNotificationsFor(missedNoticeSource4D4(c))}
+function schoolEventNotificationStatus4D4(n){
+ if(!n||n.sourceType!=='contest'||!n.sourceId)return false;const source=String(n.sourceId);let c=null;
+ if(source.startsWith('event-reg-'))c=schoolEventById4D1(source.slice('event-reg-'.length));else if(source.startsWith('reg-'))c=schoolEventById4D1(source.slice(4));else if(source.startsWith('closed-'))c=schoolEventById4D1(source.slice(7));else if(source.startsWith('event-missed-'))c=schoolEventById4D1(source.slice('event-missed-'.length));else{const ev=(S.calendar||[]).find(x=>x.id===source);if(ev?.type==='schoolEvent')c=contestById(ev.payload?.schoolEventId||ev.payload?.contestId);if(ev&&isTerminal(ev.status)){n.status='Resolved';n.read=true;n.resolvedDate=n.resolvedDate||currentDate();return true}}
+ if(!c){n.status='Resolved';n.read=true;n.resolvedDate=n.resolvedDate||currentDate();return true}normalizeSchoolEventDiscovery4D2(c);
+ if(source.startsWith('event-missed-')){const meta=eventNoticeMeta4D4(c),until=meta.missedNoticeUntil||addDays(c.resolvedAt?.dateISO||currentDate(),SCHOOL_EVENT_MISSED_NOTICE_DAYS_4D4);if(c.lifecycleState!=='missed'||currentDate()>until){n.status='Resolved';n.read=true;n.resolvedDate=n.resolvedDate||currentDate()}return true}
+ if(source.startsWith('event-reg-')||source.startsWith('reg-')||source.startsWith('closed-')){if(!['announced','registration_open','registration_pending'].includes(c.lifecycleState)||registrationWindow4D2(c).state==='event_passed'){n.status='Resolved';n.read=true;n.resolvedDate=n.resolvedDate||currentDate()}return true}
+ return false
+}
+function cleanupLegacySchoolNotices4D4(){
+ for(const n of S.notifications||[]){if(!['Unread','Read'].includes(n.status))continue;if(n.sourceType==='contest'){schoolEventNotificationStatus4D4(n);continue}if(n.sourceType==='exam')continue;const old=n.dateISO&&n.dateISO<currentDate(),looksStale=/(math\s+assessment|assessment\s+today|exam\s+today)/i.test(`${n.title||''} ${n.text||''}`);if(old&&looksStale){n.status='Expired';n.read=true;n.resolvedDate=currentDate()}}
+}
+function archiveSchoolEvent4D4(c,reason){if(!c||c.lifecycleState==='archived')return false;const from=c.lifecycleState,tr=transitionSchoolEvent4D1(c,'archived',{reason});if(!tr.ok)return false;c.archiveMeta4D4={from,archivedAt:{dateISO:currentDate(),minute:currentMinute()},reason};eventNoticeMeta4D4(c).lastCleanupDate=currentDate();resolveSchoolEventNotices4D4(c);return true}
+function cleanupSchoolEventLifecycle4D4(c,{silent=false}={}){
+ normalizeSchoolEventParticipation4D3(c);c.schemaVersion4D4=SCHOOL_EVENT_SCHEMA_4D4;c.calendarLifecycle=Object.assign({createdForSchoolYear:String(c.repeat?.schoolYearKey||eventSchoolYearKey4D1(c.eventDate)),lastReconciled:null,archivedAt:null,archiveReason:null,missedNoticeUntil:null},c.calendarLifecycle||{});c.calendarLifecycle.lastReconciled={dateISO:currentDate(),minute:currentMinute()};
+ const st=c.lifecycleState;if(st==='missed'){const meta=ensureMissedNotice4D4(c,{silent}),until=meta?.missedNoticeUntil;if(until&&currentDate()>until){archiveSchoolEvent4D4(c,'Missed notice retention ended');c.calendarLifecycle.archivedAt={dateISO:currentDate(),minute:currentMinute()};c.calendarLifecycle.archiveReason='missed_notice_expired';return 'archived'}}
+ if(['completed','declined','registration_missed','withdrawn','eliminated','disqualified','cancelled'].includes(st))resolveSchoolEventNotices4D4(c);return c.lifecycleState
+}
+function activeSchoolEvents4D4({schoolId=null}={}){const sid=schoolId||playerCurrentSchoolId4A2?.()||S.school?.currentSchoolId||null;return (S.school?.contests||[]).filter(c=>(!sid||c.schoolId===sid)&&c.discovery?.discovered&&!SCHOOL_EVENT_TERMINAL_4D1.has(c.lifecycleState)).sort((a,b)=>String(a.eventDate).localeCompare(String(b.eventDate)))}
+function recentSchoolEventOutcomes4D4({schoolId=null,limit=4}={}){const sid=schoolId||playerCurrentSchoolId4A2?.()||S.school?.currentSchoolId||null;return (S.school?.eventHistory||[]).filter(h=>!sid||!h.schoolId||h.schoolId===sid).slice(0,limit)}
+function reconcileSchoolEventCalendar4D4(reason='tick'){
+ if(!S.school)return {count:0,created:0};const pub=reason==='daily'?publishAnnualSchoolEvents4D4():{created:0};reconcileSchoolEventDiscovery4D2(reason);reconcileSchoolEventParticipation4D3(reason);let archived=0;for(const c of S.school.contests||[]){const before=c.lifecycleState;cleanupSchoolEventLifecycle4D4(c,{silent:reason==='migrate'||reason==='render'||SIM.skipping});if(before!=='archived'&&c.lifecycleState==='archived')archived++}cleanupLegacySchoolNotices4D4();return {count:S.school.contests.length,created:pub.created||0,archived,reason}
+}
+function migrateSchoolEventCalendar4D4(){if(!S.school)return {count:0};for(const c of S.school.contests||[])normalizeSchoolEventParticipation4D3(c);return reconcileSchoolEventCalendar4D4('migrate')}
+function schoolEventsHtml4D4(){
+ if(!S.school)return '<p class="muted-text">No current event opportunities.</p>';reconcileSchoolEventCalendar4D4('render');const activeEvents=activeSchoolEvents4D4(),cards=activeEvents.slice(0,10).map(c=>{const st=c.lifecycleState,w=registrationWindow4D2(c),elig=eventEligibility4D2(c),count=schoolEventCountdown4D4(c),label=schoolEventStatusLabel4D2(c),why=!elig.eligible?elig.labels.join(' • '):'';if(st==='registration_open')return `<div class="opportunity-row"><div><b>${esc(c.name)}</b><small>${why||`${esc(count.label)} • event ${formatDate(c.eventDate)}`}</small></div><div class="inline-actions"><button class="small" data-contest-enter="${c.id}" ${!elig.eligible?'disabled':''}>${S.age<13?'Ask to enter':'Register'}</button><button class="small ghost" data-contest-decline="${c.id}">Not participating</button></div></div>`;if(st==='announced')return `<div class="opportunity-row"><div><b>${esc(c.name)}</b><small>${esc(count.label)} • event ${formatDate(c.eventDate)}</small></div>${statusTag(label)}</div>`;if(st==='registration_pending')return `<div class="opportunity-row"><div><b>${esc(c.name)}</b><small>${esc(count.label)} • waiting for caregiver approval</small></div>${statusTag('Waiting')}</div>`;if(['registered','preparing'].includes(st)){const html=schoolEventActiveCard4D3(c);return html.replace('</small>',` • ${esc(count.label)}</small>`)}return `<div class="opportunity-row"><div><b>${esc(c.name)}</b><small>${esc(count.label)}</small></div>${statusTag(label)}</div>`}).join('');const recent=recentSchoolEventOutcomes4D4({limit:3}),history=recent.length?`<div class="subsection"><h4>Recent event history</h4>${recent.map(h=>`<div class="opportunity-row"><div><b>${esc(h.name)}</b><small>${esc(h.result||h.status||'Resolved')} • ${formatDate(h.dateISO)}</small></div></div>`).join('')}</div>`:'';return cards||history?`${cards||'<p class="muted-text">No active event opportunities.</p>'}${history}`:'<p class="muted-text">No current event opportunities.</p>'
+}

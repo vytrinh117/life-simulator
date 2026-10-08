@@ -1,3 +1,20 @@
+## Phase 5C.4 COMPLETE — checkpoint 5C.4.6 final acceptance (2026-10-08)
+- Closed functional seasonal Store after completed checkpoints 5C.4.1–5C.4.5: stable catalog and Inventory model, 20 seasonal SKUs, accurate real purchases, sunscreen supply, durable wear, rental/repair/replacement, H3 permissions, gear integration and conservative migration.
+- Added independent final 5C.4 acceptance (24/24), seeded 200-operation Store fuzz (25/25), Pages/source release check (10/10). Full 37-suite Phase 5C/upstream matrix 686/686 accepted checks PASS; 38 suites / 696/696 including static release QA. Two-pass generated JS/CSS byte-identical, JS syntax and CSS token audit PASS.
+- No new production changes or save schema at final acceptance. Historical flaky 5B Fast Forward soft-event test first failed twice (25/26) then passed (26/26) on an independent rerun with no source edits; both outcomes retained. Existing `t_items.py` assumptions not claimed passing.
+- Phase 5C.5 global final audit **not** implemented; stop and resume only on a new request. See `PHASE_5C_PROGRESS.md` and `qa/results_5c46/`.
+
+## Phase 5C.3 — COMPLETE / 5C.3.6 final acceptance (2026-10-08)
+
+- Completed camping/hiking eligibility, supervised pre-teen and H3 teen permission, real multi-day outing/Calendar scheduling, equipment/rental, weather, friends/family/group RSVP, NPC invitations, outdoor stories/memories and conservative integration UI/migration from checkpoints 5C.3.1–5C.3.5.
+- Final save/load fuzz uncovered a legacy `plansTick()` 6% NPC-cancellation roll on *player-hosted seasonal plans*. Prevented that unsolicited cancellation for seasonal5C1 plans; ordinary older-style social plans remain unchanged. Updated canonical cancel lifecycle to settle overnight holds, including conservative migration cleanup for old cancellation status variants.
+- Removed obsolete 5C.3.1 deferred-execution metadata; 5C.3.2 is the active execution authority.
+- Added `qa/t_5c36_accept.py` and `qa/t_5c36_fuzz.py`: **42/42 PASS** with 200 5C.3 randomized operations. Full fresh 30-suite focused/regression/fuzz matrix **513/513 PASS**. Two-pass reproducible build, JS check and CSS audit PASS.
+- Full Phase 5C remains in progress; 5C.4 Store and 5C.5 global audit **not started**.
+
+## Phase 5C.3.2 checkpoint (2026-10-08)
+Camping/hiking now use canonical seasonal plans, multi-day calendar reservation, severe-weather gates, legitimate gear/provider/rental access and real time/cost. Group RSVP and outdoor stories deferred.
+
 
 ## Phase 4D.4 — Calendar / Seasonal / Notification Lifecycle
 - Added lifecycle-aware registration/event countdowns and active-vs-history event rendering.
@@ -1194,3 +1211,63 @@ Previous v6.x functionality is migrated where compatible rather than intentional
 - Added functional multi-use sunscreen and bounded sunburn risk reduction.
 - Added Teen+ scuba age gating, minor supervision requirement, H3 authority reuse, and Phase 3B-only romantic context.
 - Added focused `qa/t_5c2.py` (20/20 PASS).
+
+## Phase 5C.3.1 — Recovery / Eligibility / Supervision / Permission
+- Recovered from the confirmed 5C.2 baseline; no persisted 5C.3 implementation artifact was present in the supplied source.
+- Added the 5C.3 outdoor eligibility foundation without creating a parallel planner, decision ledger, People store, group store or calendar.
+- Preserved canonical `camping_weekend` and `autumn_hike` definitions from 5C.1.
+- Added legitimate pre-teen camping supervision validation using stable People IDs; another child cannot count as an adult supervisor.
+- Teen overnight camping continues to use the H3 parent/guardian Decision Ledger and identical requests reuse the original decision.
+- Adults remain independent of parental approval; ordinary day hiking retains its own canonical age/permission metadata and does not inherit camping-only overnight rules.
+- Full camping/hiking execution is explicitly deferred to 5C.3.2 so 5C.3.1 cannot accidentally ship equipment/weather-free outdoor execution.
+- Added `qa/t_5c31.py`: **10/10 PASS**; fresh regression matrix: **295/295 PASS**.
+
+
+## Phase 5C.3.3 — 2026-10-08
+
+5C.3.3: Individual group RSVP through canonical S.groups/seasonal state, NPC invitation cooldown, social plan attendance validation and family supervisor attendance requirements.
+
+
+## Phase 5C.3.4 checkpoint
+Outdoor activity execution now records bounded attendee-specific scenes, memories and deduplicated first-outing milestones without forced romance. Focused 12/12 and selected regression 175/175 PASS. UI and migration final integration reserved for 5C.3.5.
+
+### Phase 5C.3.5 — Outdoor migration / UI integration (2026-10-08)
+
+- Conservative explicit-plan migration and cross-day Calendar reservation repair, with terminal hold settlement and no fabricated historical outcomes.
+- Integrated Autumn outdoors planning and attendance into existing Daily Life, maintaining canonical Plans, People, RSVP, H3 approval and Inventory.
+- Added focused browser QA and selected cross-phase regressions; 5C.3.6 final acceptance remains pending.
+
+## 2026-10-08 — Phase 5C.4.1 (Audit / Canonical Item Model)
+
+- Audited authoritative `data.js`, `src/modules/inv72.js`, `src/modules/invui72.js`, `src/modules/decision73.js`, and seasonal equipment access implementations. Preserved existing Store/Inventory/H3 behavior and stable product IDs.
+- Added `src/modules/seasonal5c4_1.js`: existing-catalog-only seasonal item metadata (`seasonalEquipment5C4`), read-only item and activity-requirement query interfaces, conservative fixed-point item-field normalization for already-owned seasonal goods.
+- Kept missing seasonal gear IDs `skiGear`, `scubaGear`, `tent` and `sleepingBag` unregistered until 5C.4.2. Existing legitimate rentals/providers remain functional; no ownership or transactions generated by migration.
+- Wired 5C.4.1 module and migration into authoritative `tools/splice.py`. No Store redesign, new catalog products, durability updates, repair UI, or later 5C.4 checkpoints.
+
+
+## 2026-10-08 — Phase 5C.4.2 Seasonal Gear Catalog / Store Purchases
+- Added 20 seasonal gear SKUs to original `data.js` catalog (including existing canonical activity access keys `skiGear`, `scubaGear`, `tent`, `sleepingBag`). No existing product renamed or deleted.
+- Registered seasonal role/activity compatibility metadata; preserved existing purchase, money, H3, Inventory and rental lifecycle.
+- Existing Shop displays category/seasonal compatibility and disables capped product purchase controls; no extra tab or Store rewrite.
+- New focused browser QA `qa/t_5c4_2.py`; prior 5C.4.1 audit test expectations updated for the intentionally expanded catalog.
+- No durability, repair/rental extension, or detailed equipment bonuses implemented at 5C.4.2.
+
+
+## Phase 5C.4.3 — Seasonal consumables and equipment wear
+
+Added 5C.4.3 reusable finite-supply helper (preserving five-use sunscreen and opened-stack behavior) and bounded item-instance wear on successful seasonal outings, with canonical Inventory condition/useLog fields and recorded wear for idempotency. Rental/provider equipment and cancelled trips do not wear personal gear. No new Store, rental/repair UI or H3 modifications. Focused 23/23 and selected total 398/398 checks passed.
+
+
+## 2026-10-08 — Phase 5C.4.4 Rental / Repair / Replacement / Parent Approval
+- Canonical seasonal rental transaction helper for ski, scuba and camping, sharing cost authority with established activity executors; stable transaction identity, return/expiry, H3 minor decision and no fabricated equipment ownership.
+- Seasonal repair quotes and paid repairs reuse the Inventory item and condition model, respecting item-level repairability, consumable exclusion, wallet funds and H3.
+- Broken seasonal gear can be replaced through Inventory with price-displayed action, real spending and one-for-one item replacement; legacy nonseasonal items unchanged.
+- Added `qa/t_5c4_4.py` browser tests; relevant suite matrix 28/28, 509/509 checks passing. No 5C.4.5 features implemented.
+
+
+## 2026-10-08 — Phase 5C.4.5 (checkpoint only)
+- Added canonical read-only seasonal gear previews for the existing Store/Inventory and outdoor UI.
+- Added limited, real-outing-only effects for equipped, usable optional clothing and gear; genuine weather hazards and other execution gates still apply.
+- Retained the established 5C.4.3 wear, 5C.4.4 rental/repair/guardian flows, stable IDs and save compatibility.
+- Added conservative, idempotent 5C.4.5 migration integration.
+- Focused and selected regression suites executed; 5C.4.6 not started.

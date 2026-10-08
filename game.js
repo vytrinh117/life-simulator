@@ -106,7 +106,7 @@ function migrate(){
  S.weather=Object.assign(initialWeather(),S.weather||{});S.homeAmenities=Object.assign(initialAmenities(S.wealth||'Middle class'),S.homeAmenities||{});S.inventory=Object.assign({umbrella:0,raincoat:0,sweater:0,firewood:0,sunglasses:0,waterBottle:0},S.inventory||{});S.inventoryItems=Array.isArray(S.inventoryItems)?S.inventoryItems:[];S.possessions=Array.isArray(S.possessions)?S.possessions:[];S.purchaseHistory=Array.isArray(S.purchaseHistory)?S.purchaseHistory:[];
  S.phone=Object.assign({owned:false,model:null,price:600,condition:100,appsUnlocked:[]},S.phone||{});S.finance=Object.assign(initialFinance(),S.finance||{});S.permissions=Object.assign({stand:null,yardSale:null,dailyAccess:{}},S.permissions||{});S.permissions.dailyAccess=Object.assign({dateISO:currentDate(),tv:false,sharedDevice:false,phone:false,stove:false},S.permissions.dailyAccess||{});S.giftRequests=Array.isArray(S.giftRequests)?S.giftRequests:[];S.giftHistory=Array.isArray(S.giftHistory)?S.giftHistory:[];S.traditions=Object.assign(initialTraditions(S.place),S.traditions||{});S.familyEvents=Array.isArray(S.familyEvents)?S.familyEvents:[];S.choresDone=safeNum(S.choresDone,0,0);
  if(typeof S.career?.job==='string'&&S.career.job)S.career.job={title:S.career.job,pay:16,hours:4,performance:50};S.career=Object.assign(initialCareer(),S.career||{});S.healthState=Object.assign({fitness:50,sleep:80,illness:null},S.healthState||{});S.social=Object.assign({followers:0,reputation:50,posts:0,fame:0},S.social||{});S.romance=Object.assign({status:'Single',partner:null,history:[]},S.romance||{});S.travel=Object.assign({trips:0,lastTrip:null,passport:false},S.travel||{});S.location=S.location||'Home';S.current=S.current||{title:'Your life continues.',text:'The world is still moving.'};
- ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
+ ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
 }
 
 function save(){if(!S)return;try{localStorage.setItem(KEY,JSON.stringify(S));const el=$('save-status');if(el)el.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){console.error('Save failed',e);toast('Could not save this life.')}}
@@ -423,6 +423,14 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  // An overnight reservation is a multi-day schedule hold, not an attendable
+  // obligation. It is resolved when its owning outdoor plan is settled.
+  if(ev.type==='outdoorReservation'){
+   const plan=(S.plans||[]).find(p=>p.id===ev.payload?.overnightPlanId);
+   if(!plan)setCalendarStatus(ev,'Cancelled','Orphan outdoor reservation');
+   else if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);
+   continue;
+  }
   if(now<stamp(ev.dateISO,ev.startMinute))continue;
   if(SIM.skipping){simulateObligation(ev);continue}
   if(ev.type==='schoolEvent'&&ev.status==='Scheduled'&&isSchoolDay(ev.dateISO)&&ev.startMinute===600&&now<stamp(ev.dateISO,ev.graceMinute)){Object.assign(ev,contestSlot(ev.dateISO));ev.minute=ev.startMinute;continue}
@@ -1280,7 +1288,7 @@ function schoolPanel(){
  return `<div class="dashboard"><section class="card wide"><h3>Today at school</h3>${typeof schoolDayContextHtml4C1==='function'?schoolDayContextHtml4C1():''}${typeof schoolClassContextHtml4C2==='function'?schoolClassContextHtml4C2():''}${typeof schoolFacilitiesHtml4C3==='function'?schoolFacilitiesHtml4C3():''}${typeof schoolAfterSchoolHtml4C4==='function'?schoolAfterSchoolHtml4C4():''}${schoolSessionHtml()}${stayHomeHtml()}<p class="muted-text">On time by ${timeLabel(SCHOOL_DAY.tardyAfter)}, absent after ${timeLabel(SCHOOL_DAY.cutoff)}. This year: ${rec.daysAttended} days • ${rec.absences} absent • ${rec.tardies} late${rec.classesSkipped?` • ${rec.classesSkipped} classes skipped`:''}.</p></section><section class="card"><h3>${esc(S.school.name)}</h3>${typeof playerSchoolIdentityRows4A2==='function'?playerSchoolIdentityRows4A2():''}${statRow('Grade',esc(S.school.grade))}${statRow('Semester',esc(semesterLabel()))}${statRow('Class',esc(S.school.className))}${statRow('Academic average',Math.round(schoolAverage())+'%')}${statRow('Attendance',Math.round(S.school.attendance)+'%')}${statRow('Behavior',Math.round(S.school.behavior)+'%')}${!primary&&S.school.gpa!=null?statRow('GPA',Number(S.school.gpa).toFixed(2)):''}</section><section class="card"><h3>School reputation</h3>${repHtml()}</section>${typeof schoolRecognitionHtml4B4==='function'?schoolRecognitionHtml4B4():''}<section class="card"><h3>Education history</h3>${educationHistoryHtml()}</section><section class="card wide"><h3>Subjects, teachers & homework</h3><div class="subject-grid">${subjectHtml}</div></section>${typeof advancedStudyPanel5A4==='function'?`<section class="card wide"><h3>Advanced Study</h3>${advancedStudyPanel5A4()}</section>`:''}<section class="card wide"><h3>Assessments</h3>${examHtml}</section>${attendanceHtml()}<section class="card wide"><div class="section-heading"><div><h3>Clubs & activities</h3><p class="muted-text">Sessions are weekly commitments. Missing them has consequences; telling the leader beforehand is understood.</p></div><button class="small" data-act="exploreClub">Explore activities</button></div>${electionHtml()}${typeof clubLeadershipHtml4B3==='function'?clubLeadershipHtml4B3():''}${tryoutsHtml()?`<h4>Tryouts & auditions</h4>${tryoutsHtml()}`:''}<h4>Offers</h4>${offerHtml}<h4>Your commitments</h4>${clubHtml}${removed.length?`<p class="muted-text">Removed: ${removed.map(c=>esc(c.name)).join(', ')}</p>`:''}</section><section class="card wide"><div class="section-heading"><div><h3>Competitions & school events</h3><p class="muted-text">Registering is not enough — you have to show up on the day.</p></div><button class="small" data-act="exploreContest">Find event</button></div>${eventHtml}</section></div>`
 }
 function handleLifecycleClick(b){
- if(typeof workbook5a4Click==='function'&&workbook5a4Click(b))return true;if(typeof schoolDayClick4C1==='function'&&schoolDayClick4C1(b))return true;if(typeof communication3C4Click==='function'&&communication3C4Click(b))return true;if(typeof communication3C3Click==='function'&&communication3C3Click(b))return true;if(typeof communication3C2Click==='function'&&communication3C2Click(b))return true;if(typeof communication3C1Click==='function'&&communication3C1Click(b))return true;if(typeof romance3B2Click==='function'&&romance3B2Click(b))return true;if(handleInventoryClick(b))return true;if(promClick(b))return true;if(worldClick(b))return true;if(peopleHubClick(b))return true;if(people3a5Click(b))return true;if(narrativeClick(b))return true;if(friends3aClick(b))return true;if(people3aClick(b))return true;if(nurseClick(b))return true;if(healthClick(b))return true;if(ffClick(b))return true;if(eventsClick(b))return true;if(identClick(b))return true;if(majorClick(b))return true;if(campusClick(b))return true;if(oClick(b))return true;if(workClick(b))return true;if(uniClick(b))return true;if(bizClick(b))return true;if(rstClick(b))return true;if(lmpqClick(b))return true;if(knxClick(b))return true;if(handleSchoolClick(b))return true;if(hijClick(b))return true;if(handlePlanClick(b))return true;if(typeof schoolElectionClick4B2==='function'&&schoolElectionClick4B2(b))return true;if(typeof schoolLeadershipClick4B3==='function'&&schoolLeadershipClick4B3(b))return true;if(typeof schoolRecognitionClick4B4==='function'&&schoolRecognitionClick4B4(b))return true;if(handleClubClick(b))return true;if(handleUIClick(b))return true;
+ if(typeof outdoorClick5C35==='function'&&outdoorClick5C35(b))return true;if(typeof workbook5a4Click==='function'&&workbook5a4Click(b))return true;if(typeof schoolDayClick4C1==='function'&&schoolDayClick4C1(b))return true;if(typeof communication3C4Click==='function'&&communication3C4Click(b))return true;if(typeof communication3C3Click==='function'&&communication3C3Click(b))return true;if(typeof communication3C2Click==='function'&&communication3C2Click(b))return true;if(typeof communication3C1Click==='function'&&communication3C1Click(b))return true;if(typeof romance3B2Click==='function'&&romance3B2Click(b))return true;if(handleInventoryClick(b))return true;if(promClick(b))return true;if(worldClick(b))return true;if(peopleHubClick(b))return true;if(people3a5Click(b))return true;if(narrativeClick(b))return true;if(friends3aClick(b))return true;if(people3aClick(b))return true;if(nurseClick(b))return true;if(healthClick(b))return true;if(ffClick(b))return true;if(eventsClick(b))return true;if(identClick(b))return true;if(majorClick(b))return true;if(campusClick(b))return true;if(oClick(b))return true;if(workClick(b))return true;if(uniClick(b))return true;if(bizClick(b))return true;if(rstClick(b))return true;if(lmpqClick(b))return true;if(knxClick(b))return true;if(handleSchoolClick(b))return true;if(hijClick(b))return true;if(handlePlanClick(b))return true;if(typeof schoolElectionClick4B2==='function'&&schoolElectionClick4B2(b))return true;if(typeof schoolLeadershipClick4B3==='function'&&schoolLeadershipClick4B3(b))return true;if(typeof schoolRecognitionClick4B4==='function'&&schoolRecognitionClick4B4(b))return true;if(handleClubClick(b))return true;if(handleUIClick(b))return true;
  const d=b.dataset;
  if(d.nextDayConfirm){performNextDay();return true}
  if(d.closeModal){closeChoiceModal();render();return true}
@@ -1472,6 +1480,7 @@ function toggleWear(itemId){
 }
 function repairItem(itemId){
  const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;const d=catalogItem(it.key);
+ if(typeof seasonalRepairQuote5C44==='function'&&seasonalItemMetadata5C41(it.key)){const r=repairSeasonalGear5C44(itemId);if(!r.ok)toast(r.reason.replaceAll('_',' '));return r;}
  if(!hasCondition(it.lifecycleType)){toast('There is nothing to repair.');return}
  if(!d.repairable&&!['wearable'].includes(it.lifecycleType)){toast('This cannot really be repaired.');return}
  if(it.condition>=90){toast('It does not need repair.');return}
@@ -1491,7 +1500,7 @@ function sellItem(itemId){
 function discardItem(itemId){const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;if(!confirm(`Throw away ${it.quantity>1?'one ':''}${it.name}? This cannot be undone.`))return;removeItem(it.id,true);log(`Threw away ${it.name.toLowerCase()}`,it.sentimental>=35&&it.origin?`${it.origin} It is gone now.`:'It is no longer in your things.')}
 function useInventoryItem(id,action='use'){
  const it=S.inventoryItems.find(x=>x.id===id);if(!it)return;
- if(action==='wear')return toggleWear(id);if(action==='repair')return repairItem(id);if(action==='sell')return sellItem(id);if(action==='discard')return discardItem(id);
+ if(action==='wear')return toggleWear(id);if(action==='repair')return repairItem(id);if(action==='replace'){const result=replaceSeasonalGear5C44(id);if(!result.ok)toast(String(result.reason||'Replacement unavailable').replaceAll('_',' '));return result;}if(action==='sell')return sellItem(id);if(action==='discard')return discardItem(id);
  if(action==='store'){it.stored=!it.stored;if(it.stored)it.equipped=false;if(catalogItem(it.key)?.phone)syncPhoneState();feedback(it.stored?`Stored ${it.name.toLowerCase()}`:`Took out ${it.name.toLowerCase()}`,'',2);return}
  if(action==='charge')return chargeDevice(id);if(action==='refill')return refillContainer(id);if(action==='clean')return cleanItem(id);
  if(action==='activatePhone'){S.phone.activeItemId=it.id;it.stored=false;syncPhoneState();feedback(`Switched to ${it.name}`,'Your messages and apps move over.',10);return}
@@ -1590,7 +1599,8 @@ function itemCardActions(it){
   if(d.phone){if(it.id===S.phone.activeItemId)b.push(btn(`data-tab-jump="phone"`,'Open phone'));else b.push(btn(`data-item-action="activatePhone" data-item-id="${it.id}"`,'Switch to this phone'))}
   if(d.slot)b.push(btn(`data-item-action="wear" data-item-id="${it.id}"`,it.equipped?'Take off':'Wear'));
   if(it.battery!=null&&it.battery<98)more.push(btn(`data-item-action="charge" data-item-id="${it.id}"`,'Charge','small ghost'));
-  if(hasCondition(lt)&&it.condition<90&&(d.repairable||lt==='wearable'))(it.condition<45?b:more).push(btn(`data-item-action="repair" data-item-id="${it.id}"`,it.condition<=0?'Repair':'Repair','small ghost'));
+  if(hasCondition(lt)&&it.condition<=0&&seasonalItemMetadata5C41(it.key))b.push(btn(`data-item-action="replace" data-item-id="${it.id}"`,`Replace • ${money(d.price)}`,'small ghost'));
+  if(hasCondition(lt)&&it.condition<90&&(d.repairable||lt==='wearable'))(it.condition<45?b:more).push(btn(`data-item-action="repair" data-item-id="${it.id}"`,seasonalItemMetadata5C41(it.key)&&seasonalRepairQuote5C44(it.id).ok?`Repair • ${money(seasonalRepairQuote5C44(it.id).cost)}`:'Repair','small ghost'));
   more.push(btn(`data-item-action="gift" data-item-id="${it.id}"`,'Gift','small ghost'));if(!['finite','container','device'].includes(lt)||lt==='device'&&false)more.push(btn(`data-wrap="${it.id}" data-paper="${findUsable('heartWrap')?'heart':'gift'}"`,it.wrapped?'Unwrap':'🎀 Wrap as gift','small ghost'));
   more.push(btn(`data-item-action="store" data-item-id="${it.id}"`,'Store','small ghost'));
  }
@@ -1600,7 +1610,7 @@ function itemCardActions(it){
 function inventoryCard(it){
  const d=catalogItem(it.key)||{},st=itemStatus(it),tone=CAT_TONE[it.category]||'misc';
  const fx=['consumable','perishable','gift'].includes(it.lifecycleType)?'':effectChips(d);
- return `<article class="item-card tone-${tone} ${it.stored?'is-stored':''} ${it.equipped?'is-equipped':''}"><div class="item-icon" aria-hidden="true">${itemIcon(it.key)}</div><div class="item-body"><div class="item-title"><b>${esc(it.name)}${it.quantity>1&&!['finite','progress'].includes(it.lifecycleType)?` ×${it.quantity}`:''}</b>${it.equipped?'<span class="tag ok">Wearing</span>':''}${d.phone&&it.id===S.phone.activeItemId?'<span class="tag ok">In use</span>':d.phone?'<span class="tag">Spare</span>':''}${it.stored?'<span class="tag">Stored</span>':''}</div><small class="item-sub">${esc(it.category)} · ${esc(LIFECYCLE_LABEL[it.lifecycleType]||'Item')}${it.slot?` · ${SLOT_LABEL[it.slot]}`:''}</small><div class="item-status ${st.tone||''}">${esc(st.label)}</div>${st.meter!=null?`<div class="item-meter ${st.tone||''}"><i style="width:${clamp(st.meter)}%"></i></div>`:''}${fx?`<div class="fx-row">${fx}</div>`:''}${it.origin?`<p class="item-origin">${esc(it.origin)}</p>`:''}<small class="item-sub">Since ${formatDate(it.acquiredDate)}${it.timesUsed?` · used ${it.timesUsed}×`:''}</small>${itemCardActions(it)}</div></article>`
+ return `<article class="item-card tone-${tone} ${it.stored?'is-stored':''} ${it.equipped?'is-equipped':''}"><div class="item-icon" aria-hidden="true">${itemIcon(it.key)}</div><div class="item-body"><div class="item-title"><b>${esc(it.name)}${it.quantity>1&&!['finite','progress'].includes(it.lifecycleType)?` ×${it.quantity}`:''}</b>${it.equipped?'<span class="tag ok">Wearing</span>':''}${d.phone&&it.id===S.phone.activeItemId?'<span class="tag ok">In use</span>':d.phone?'<span class="tag">Spare</span>':''}${it.stored?'<span class="tag">Stored</span>':''}</div><small class="item-sub">${esc(it.category)} · ${esc(LIFECYCLE_LABEL[it.lifecycleType]||'Item')}${it.slot?` · ${SLOT_LABEL[it.slot]}`:''}</small><div class="item-status ${st.tone||''}">${esc(st.label)}</div>${st.meter!=null?`<div class="item-meter ${st.tone||''}"><i style="width:${clamp(st.meter)}%"></i></div>`:''}${fx?`<div class="fx-row">${fx}</div>`:''}${seasonalInventoryDetailsHtml5C45(it.id)}${it.origin?`<p class="item-origin">${esc(it.origin)}</p>`:''}<small class="item-sub">Since ${formatDate(it.acquiredDate)}${it.timesUsed?` · used ${it.timesUsed}×`:''}</small>${itemCardActions(it)}</div></article>`
 }
 function inventoryHtml(){
  const items=S.inventoryItems;if(!items.length)return '<p class="muted-text">You do not own any personal items yet.</p>';
@@ -1613,15 +1623,15 @@ function storeHtml(){
  const seasonOpen=d=>!d.seasonal||unitCount(Object.keys(D.catalog).find(k=>D.catalog[k]===d))>0||upcomingHolidays(8).some(x=>d.seasonal.includes(x.h.id)&&daysBetween(currentDate(),x.dateISO)<=21),visible=Object.entries(D.catalog).filter(([,d])=>!d.shopHidden&&S.age>=Math.max(0,d.minAge-3)&&seasonOpen(d)&&(!d.workbook5A||workbookShopVisible5A1(d))),cats=['All',...new Set(visible.map(([,d])=>d.category))];if(!cats.includes(shopCat))shopCat='All';
  const list=visible.filter(([,d])=>shopCat==='All'?!d.workbook5A:d.category===shopCat);
  return `<div class="filter-row">${cats.map(c=>`<button class="filter-chip ${shopCat===c?'active':''}" data-shop-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="product-grid">${list.map(([key,d])=>{
-  const owned=unitCount(key),relevant=S.age>=d.minAge,tone=CAT_TONE[d.category]||'misc',qty=d.stackable&&d.price<=20&&!d.workbook5A;
+  const owned=unitCount(key),relevant=S.age>=d.minAge,tone=CAT_TONE[d.category]||'misc',qty=d.stackable&&d.price<=20&&!d.workbook5A,atLimit=!!d.maxQuantity&&owned>=d.maxQuantity;
   const perm=S.age<18&&d.price>=d.permissionPrice?'<small class="perm-note">Needs caregiver OK</small>':'';
-  return `<article class="product-card tone-${tone} ${relevant?'':'is-later'}"><div class="product-art" aria-hidden="true">${d.icon||'📦'}</div><div class="product-body"><div class="product-head"><b>${esc(d.name)}</b><strong>${money(d.price)}</strong></div><p>${esc(d.description)}</p><div class="fx-row">${effectChips(d)}</div>${d.seasonal?'<small class="perm-note">Seasonal • optional</small>':''}<small class="product-type">${esc(productTypeLabel(d))}${owned?` · <b>Owned ×${owned}</b>`:''}</small>${!relevant?`<small class="perm-note">More relevant around age ${d.minAge}</small>`:d.phone&&S.age<D.ageRules.phone?'<small class="perm-note">Can own now • independent use later</small>':perm}${relevant?`<div class="product-actions">${qty?`<select class="qty-select" data-qty-for="${key}" aria-label="Quantity">${[1,2,3,4,5].map(n=>`<option>${n}</option>`).join('')}</select>`:''}<button class="small primary" data-shop-own="${key}" ${d.workbook5A&&owned?'disabled':''}>${d.workbook5A&&owned?'Owned':S.age<18?'Buy with my money':'Buy'}</button>${S.age<18?`<button class="small" data-shop-parent="${key}">Ask caregiver</button><button class="small ghost" data-shop-birthday="${key}">Birthday wish</button>${S.traditions.christmas?`<button class="small ghost" data-shop-christmas="${key}">Christmas wish</button>`:''}`:''}</div>`:''}</div></article>`}).join('')}</div>`
+  return `<article class="product-card tone-${tone} ${relevant?'':'is-later'}"><div class="product-art" aria-hidden="true">${d.icon||'📦'}</div><div class="product-body"><div class="product-head"><b>${esc(d.name)}</b><strong>${money(d.price)}</strong></div><p>${esc(d.description)}</p><div class="fx-row">${effectChips(d)}</div>${d.seasonalEquipment5C4?`<small class="perm-note">Outdoor gear • ${esc(d.seasonalEquipment5C4.activities.map(id=>seasonalActivityDefinition5C1(id)?.name||id).slice(0,2).join(' / '))}${d.seasonalEquipment5C4.role==='mandatory'?' • activity gear':' • optional'}${d.repairable?' • repairable':''}</small>`:d.seasonal?'<small class="perm-note">Seasonal • optional</small>':''}<small class="product-type">${esc(productTypeLabel(d))}${owned?` · <b>Owned ×${owned}</b>`:''}</small>${!relevant?`<small class="perm-note">More relevant around age ${d.minAge}</small>`:d.phone&&S.age<D.ageRules.phone?'<small class="perm-note">Can own now • independent use later</small>':perm}${relevant?`<div class="product-actions">${qty?`<select class="qty-select" data-qty-for="${key}" aria-label="Quantity">${[1,2,3,4,5].map(n=>`<option>${n}</option>`).join('')}</select>`:''}<button class="small primary" data-shop-own="${key}" ${d.workbook5A&&owned||atLimit?'disabled':''}>${d.workbook5A&&owned||atLimit?'Owned / limit reached':S.age<18?'Buy with my money':'Buy'}</button>${S.age<18?`<button class="small" data-shop-parent="${key}" ${atLimit?'disabled':''}>Ask caregiver</button><button class="small ghost" data-shop-birthday="${key}">Birthday wish</button>${S.traditions.christmas?`<button class="small ghost" data-shop-christmas="${key}">Christmas wish</button>`:''}`:''}</div>`:''}</div></article>`}).join('')}</div>`
 }
 function businessPanel(){
  const openReq=S.giftRequests.filter(r=>!r.resolved),pending=pendingOpen().filter(p=>/purchase/i.test(p.type)||p.type==='conditionalPurchase');
  const chores=S.age>=5?D.chores.filter(c=>S.age>=c.minAge).map(c=>`<button class="action compact" data-chore="${c.id}"><strong>${esc(c.name)}</strong><small>${c.minutes} min • allowance may be ${money(c.pay[0])}–${money(c.pay[1])}</small></button>`).join(''):'';
  const sellable=S.inventoryItems.filter(i=>!i.stored&&i.id!==S.phone.activeItemId),st=S.stall;
- return `<div class="dashboard"><section class="card"><h3>Money</h3>${statRow('Cash',money(S.money))}${statRow('Savings',money(S.finance.savings))}${S.age<13?statRow('Parent-managed savings',money(S.finance.parentSavings)):''}${statRow('Things you own',`${S.inventoryItems.reduce((a,i)=>a+(i.quantity||1),0)} items • worth ~${money(S.inventoryItems.reduce((a,i)=>a+itemValue(i),0))}`)}${statRow('Responsibility',Math.round(S.family.responsibility||0)+'%')}<div class="inline-actions"><button data-act="saveMoney" data-arg="25">Save $25</button>${S.age>=18?'<button data-act="invest">Invest $50</button>':''}</div></section><section class="card"><h3>Pending requests</h3>${openReq.length?openReq.slice(0,5).map(r=>`<div class="row"><span><b>${esc(r.item||catalogItem(r.itemKey)?.name)}</b><br><small>${esc(r.status||'Waiting')} • ${esc(r.occasion)}</small></span><button class="small ghost" data-gift-askagain="${r.id}">Ask again</button></div>`).join(''):'<p class="muted-text">No birthday/holiday wishes pending.</p>'}${pending.map(p=>`<div class="row"><span><b>${esc(p.title)}</b><br><small>${esc(p.detail||p.status)}</small></span>${statusTag(p.status)}</div>`).join('')}</section><section class="card wide"><div class="section-heading"><div><h3>Your things</h3><p class="muted-text">Each item shows what matters for it: portions left, supplies left, condition, battery, or progress.</p></div></div>${inventoryHtml()}</section><section class="card wide"><div class="section-heading"><div><h3>Shop</h3><p class="muted-text">${S.age<18?'Your own money still needs a caregiver OK for bigger purchases. You can also ask them, or save a wish for a birthday or holiday.':'Everything here has a real use in daily life.'}</p></div></div>${storeHtml()}</section>${S.age>=5?`<section class="card wide"><h3>Chores & allowance</h3><div class="action-grid">${chores}</div></section>`:''}<section class="card wide"><h3>Small business</h3>${businessesHtml()}</section></div>`
+ return `<div class="dashboard"><section class="card"><h3>Money</h3>${statRow('Cash',money(S.money))}${statRow('Savings',money(S.finance.savings))}${S.age<13?statRow('Parent-managed savings',money(S.finance.parentSavings)):''}${statRow('Things you own',`${S.inventoryItems.reduce((a,i)=>a+(i.quantity||1),0)} items • worth ~${money(S.inventoryItems.reduce((a,i)=>a+itemValue(i),0))}`)}${statRow('Responsibility',Math.round(S.family.responsibility||0)+'%')}<div class="inline-actions"><button data-act="saveMoney" data-arg="25">Save $25</button>${S.age>=18?'<button data-act="invest">Invest $50</button>':''}</div></section><section class="card"><h3>Pending requests</h3>${openReq.length?openReq.slice(0,5).map(r=>`<div class="row"><span><b>${esc(r.item||catalogItem(r.itemKey)?.name)}</b><br><small>${esc(r.status||'Waiting')} • ${esc(r.occasion)}</small></span><button class="small ghost" data-gift-askagain="${r.id}">Ask again</button></div>`).join(''):'<p class="muted-text">No birthday/holiday wishes pending.</p>'}${pending.map(p=>`<div class="row"><span><b>${esc(p.title)}</b><br><small>${esc(p.detail||p.status)}</small></span>${statusTag(p.status)}</div>`).join('')}</section><section class="card wide"><div class="section-heading"><div><h3>Your things</h3><p class="muted-text">Each item shows what matters for it: portions left, supplies left, condition, battery, or progress.</p></div></div>${inventoryHtml()}</section><section class="card wide"><div class="section-heading"><div><h3>Shop</h3><p class="muted-text">${S.age<18?'Your own money still needs a caregiver OK for bigger purchases. You can also ask them, or save a wish for a birthday or holiday.':'Shop for real-use items and seasonal outing gear. Outing gear is tracked by condition and suitability; temporary rentals are not owned.'}</p></div></div>${storeHtml()}</section>${S.age>=5?`<section class="card wide"><h3>Chores & allowance</h3><div class="action-grid">${chores}</div></section>`:''}<section class="card wide"><h3>Small business</h3>${businessesHtml()}</section></div>`
 }
 function yourThingsHtml(){
  const seen=new Set(),btns=[];
@@ -1947,7 +1957,7 @@ function worldPanel(){
 }
 function placesPanel(){
  const places=D.placesOutside.filter(p=>S.age>=p.minAge&&(!p.maxAge||S.age<=p.maxAge)),things=yourThingsHtml();
- return `<div class="dashboard"><section class="card wide"><div class="section-heading"><div><h3>Daily Life • ${lifeStage()}</h3><p class="muted-text">Core physiological actions stay accessible; the method changes with age and development.</p></div><span class="tag">${timeLabel(currentMinute())}</span></div>${careCards()}</section><section class="card wide">${personalCards()}</section><section class="card wide">${things||'<h3>Use your things</h3><p class="muted-text">Items you own (books, art supplies, a bike, a ball…) add better versions of everyday activities here.</p>'}</section><section class="card"><h3>Skills & hobbies</h3>${skillsHtml()}</section>${independenceHtml()}<section class="card wide"><h3>Summer programs & practice</h3>${programsHtml()}</section>${S.age>=5?`<section class="card"><h3>Baking & treats</h3>${bakingHtml()}<p class="muted-text">Homemade treats make great gifts. Wrap them from Your things.</p></section>`:''}<section class="card"><h3>Traits & talents</h3>${traitsHtml()}${devStatusHtml()}</section><section class="card wide"><h3>Go out</h3><p class="muted-text">Transport: ${esc(localTransport())}. Children and teens use supervision/permission rules automatically.</p><div class="place-grid">${places.map(p=>`<button class="place-card" data-place="${p.id}"><b>${esc(p.name)}</b><small>${p.minutes>=120?Math.round(p.minutes/60)+'h':p.minutes+' min'}${p.cost?` • about ${money(S.age<13?0:p.cost)}`:' • free'}</small></button>`).join('')}</div></section><section class="card"><h3>Weather comfort</h3><p class="muted-text">${esc(weatherAdvice())}</p><div class="inline-actions">${S.homeAmenities.fan?'<button data-act="comfort" data-arg="fan">Use fan</button>':''}${S.homeAmenities.ac?'<button data-act="comfort" data-arg="ac">Use A/C</button>':''}${S.homeAmenities.fireplace?'<button data-act="comfort" data-arg="fireplace">Use fireplace</button>':''}</div></section></div>`
+ return `<div class="dashboard"><section class="card wide"><div class="section-heading"><div><h3>Daily Life • ${lifeStage()}</h3><p class="muted-text">Core physiological actions stay accessible; the method changes with age and development.</p></div><span class="tag">${timeLabel(currentMinute())}</span></div>${careCards()}</section><section class="card wide">${personalCards()}</section><section class="card wide">${things||'<h3>Use your things</h3><p class="muted-text">Items you own (books, art supplies, a bike, a ball…) add better versions of everyday activities here.</p>'}</section><section class="card"><h3>Skills & hobbies</h3>${skillsHtml()}</section>${independenceHtml()}<section class="card wide"><h3>Summer programs & practice</h3>${programsHtml()}</section>${S.age>=5?`<section class="card"><h3>Baking & treats</h3>${bakingHtml()}<p class="muted-text">Homemade treats make great gifts. Wrap them from Your things.</p></section>`:''}<section class="card"><h3>Traits & talents</h3>${traitsHtml()}${devStatusHtml()}</section><section class="card wide"><h3>Go out</h3><p class="muted-text">Transport: ${esc(localTransport())}. Children and teens use supervision/permission rules automatically.</p><div class="place-grid">${places.map(p=>`<button class="place-card" data-place="${p.id}"><b>${esc(p.name)}</b><small>${p.minutes>=120?Math.round(p.minutes/60)+'h':p.minutes+' min'}${p.cost?` • about ${money(S.age<13?0:p.cost)}`:' • free'}</small></button>`).join('')}</div></section>${typeof outdoorPanel5C35==='function'?outdoorPanel5C35():''}<section class="card"><h3>Weather comfort</h3><p class="muted-text">${esc(weatherAdvice())}</p><div class="inline-actions">${S.homeAmenities.fan?'<button data-act="comfort" data-arg="fan">Use fan</button>':''}${S.homeAmenities.ac?'<button data-act="comfort" data-arg="ac">Use A/C</button>':''}${S.homeAmenities.fireplace?'<button data-act="comfort" data-arg="fireplace">Use fireplace</button>':''}</div></section></div>`
 }
 
 // =====================================================================
@@ -2329,7 +2339,7 @@ function createPlan(p,type,slot,{defy=false,endBy=null}={}){
  else if(plan.status==='Maybe'){plan.answerBy={dateISO:currentDate(),minute:Math.min(1290,currentMinute()+180)};threadStep(th,'Waiting for an answer',r.why);scheduleFollowUp('npcAnswer',{planId:plan.id},plan.answerBy);log(`${displayName(p)} might come`,r.why)}
  else{threadStep(th,'Declined',r.why,{resolve:true});recordOutcome('Plan',plan.title,'Declined',r.why);log(`${displayName(p)} can't make it`,r.why)}
 }
-function schedulePlanCalendar(plan){notifyParents(plan);const p=personById(plan.personId);createCalendarEvent({id:`plan-${plan.id}`,type:'plan',title:plan.title,dateISO:plan.dateISO,startMinute:plan.startMinute,endMinute:plan.endMinute,graceMinute:Math.min(1439,plan.startMinute+30),payload:{planId:plan.id},location:plan.location,participants:p?[displayName(p)]:[],required:true,source:'social'})}
+function schedulePlanCalendar(plan){if(plan.seasonalActivityId==='camping_weekend'&&plan.endDateISO&&plan.endDateISO>plan.dateISO&&!S.calendar?.some(x=>x.id==='outdoor-overnight-'+plan.id)){createCalendarEvent({id:'outdoor-overnight-'+plan.id,type:'outdoorReservation',title:plan.title+' (overnight)',dateISO:plan.endDateISO,startMinute:0,endMinute:plan.endMinute,payload:{overnightPlanId:plan.id},location:plan.location,required:true,source:'seasonal'});}notifyParents(plan);const p=personById(plan.personId);createCalendarEvent({id:`plan-${plan.id}`,type:'plan',title:plan.title,dateISO:plan.dateISO,startMinute:plan.startMinute,endMinute:plan.endDateISO&&plan.endDateISO!==plan.dateISO?1439:plan.endMinute,graceMinute:Math.min(1439,plan.startMinute+30),payload:{planId:plan.id},location:plan.location,participants:p?[displayName(p)]:[],required:true,source:'social'})}
 function planEvent(plan){return S.calendar.find(e=>e.type==='plan'&&e.payload?.planId===plan.id)}
 function attendPlan(planId){
  if(typeof seasonalPlanById5C1==='function'&&seasonalPlanById5C1(planId))return attendSeasonalPlan5C1(planId);
@@ -2359,7 +2369,16 @@ function attendPlan(planId){
  log(`${t.label} with ${firstName(p)}`,story)
 }
 function cancelPlan(planId){
- const plan=S.plans.find(x=>x.id===planId),p=plan&&personById(plan.personId);if(!plan||!['Accepted','Maybe'].includes(plan.status))return;if(p)adjustReliability(p,minutesUntil(plan.dateISO,plan.startMinute)<240?-5:-1);
+ const plan=S.plans.find(x=>x.id===planId),p=plan&&personById(plan.personId);if(!plan||!['Accepted','Maybe'].includes(plan.status))return;
+ // Canonical seasonal outings are player-hosted (or explicitly accepted invitations).
+ // Cancelling them must settle their Calendar holds without inventing an NPC response.
+ if(plan.seasonal5C1){
+  plan.status='Cancelled by you';const ev=planEvent(plan);
+  if(ev)setCalendarStatus(ev,'Cancelled','Seasonal outing cancelled by player');
+  if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);
+  resolveNotificationsFor(plan.id);log('Outing cancelled',`${plan.title} was cancelled.`);return;
+ }
+ if(p)adjustReliability(p,minutesUntil(plan.dateISO,plan.startMinute)<240?-5:-1);
  const ev=planEvent(plan),mins=minutesUntil(plan.dateISO,plan.startMinute),late=mins<180;
  plan.status='Cancelled by you';if(ev)setCalendarStatus(ev,'Cancelled',late?'Cancelled last minute':'Cancelled in advance');resolveNotificationsFor(plan.id);
  if(p){p.rel=clamp(p.rel-(late?3:1));p.trust=clamp(p.trust-(late?2:0));rememberPerson(p,late?'You cancelled on them at the last minute.':'You cancelled a plan, but told them early.')}
@@ -2396,7 +2415,7 @@ function plansTick(){
  const now=nowStamp();
  for(const plan of S.plans){
   if(plan.status==='Maybe'&&plan.playerMaybe&&plan.answerBy&&now>stampOf(plan.answerBy)){plan.status='Expired';const p=personById(plan.personId);if(p){p.rel=clamp(p.rel-1);rememberPerson(p,'You never gave a real answer about plans.')}resolveNotificationsFor(plan.id);if(!SIM.skipping)log('Never answered',`${firstName(p)} takes your silence as a no and makes other plans.`)}
-  if(plan.status==='Accepted'&&plan.dateISO>currentDate()&&!plan.npcCancelChecked){plan.npcCancelChecked=true;if(chance(6)){const p=personById(plan.personId);plan.status='Cancelled by them';const ev=planEvent(plan);if(ev)setCalendarStatus(ev,'Cancelled','They cancelled');const why=rand(['a family thing came up','they are sick','they forgot they had a test to study for']);if(!SIM.skipping){log(`${firstName(p)} cancelled`,`"I'm so sorry — ${why}. Rain check?"`);notify('Plans cancelled',`${firstName(p)} cancelled: ${why}.`,{sourceType:'plan',sourceId:plan.id})}}}
+  if(plan.status==='Accepted'&&!plan.seasonal5C1&&plan.dateISO>currentDate()&&!plan.npcCancelChecked){plan.npcCancelChecked=true;if(chance(6)){const p=personById(plan.personId);plan.status='Cancelled by them';const ev=planEvent(plan);if(ev)setCalendarStatus(ev,'Cancelled','They cancelled');const why=rand(['a family thing came up','they are sick','they forgot they had a test to study for']);if(!SIM.skipping){log(`${firstName(p)} cancelled`,`"I'm so sorry — ${why}. Rain check?"`);notify('Plans cancelled',`${firstName(p)} cancelled: ${why}.`,{sourceType:'plan',sourceId:plan.id})}}}
  }
  S.plans=S.plans.filter(x=>['Accepted','Maybe','Pending'].includes(x.status)||x.dateISO>=addDays(currentDate(),-30))
 }
@@ -6933,21 +6952,25 @@ function seasonalRsvp5C1(personId,activityId,slot,{mode='friend'}={}){
 function seasonalPermissionNeeded5C1(def,slot){
  if(S.age>=18||!def)return false;const p=def.permission||{},end=Number(slot.startMinute??slot.start??0)+Number(def.duration||60),cf=typeof curfewMinute==='function'?curfewMinute():null;return S.age<Number(p.under??0)||!!p.highRisk||!!p.overnight||(cf!=null&&end>cf)
 }
-function seasonalPermissionContext5C1(def,slot,opts={}){return {kind:'seasonalActivity',activityId:def.activityId,dateISO:slot.dateISO,startMinute:Number(slot.startMinute??slot.start??0),location:opts.location||def.locations?.[0]||'',cost:Number(def.cost||0),participantMode:opts.participantMode||'alone',personId:opts.personId||null,highRisk:!!def.permission?.highRisk,overnight:!!def.permission?.overnight}}
+function seasonalPermissionContext5C1(def,slot,opts={}){const base={kind:'seasonalActivity',activityId:def.activityId,dateISO:slot.dateISO,startMinute:Number(slot.startMinute??slot.start??0),location:opts.location||def.locations?.[0]||'',cost:Number(def.cost||0),participantMode:opts.participantMode||'alone',personId:opts.personId||null,highRisk:!!def.permission?.highRisk,overnight:!!def.permission?.overnight};if(typeof seasonalPermissionContextExtension5C31==='function')Object.assign(base,seasonalPermissionContextExtension5C31(def,slot,opts)||{});return base}
 function requestSeasonalPermission5C1(activityId,slot,opts={}){
  const def=seasonalActivityDefinition5C1(activityId);if(!def)return {ok:false,reason:'unknown_activity'};if(!seasonalPermissionNeeded5C1(def,slot))return {ok:true,required:false};
  const context=seasonalPermissionContext5C1(def,slot,opts),req=requestDecision({requestType:'seasonalActivityPermission',targetKey:`${activityId}:${slot.dateISO}:${Number(slot.startMinute??slot.start??0)}`,context,decide:(maker)=>{const r=familyRules(),wealth={Struggling:-14,Modest:-7,'Middle class':0,Comfortable:7,Wealthy:11,'Extremely wealthy':14}[S.wealth]||0,trust=S.family?.trust??60,responsibility=S.family?.responsibility||0,risk=def.permission?.highRisk?-18:0,overnight=def.permission?.overnight?-10:0,costPenalty=Math.min(18,Number(def.cost||0)/8),score=58-r.strictness*.22+(trust-50)*.28+responsibility*.18+wealth+risk+overnight-costPenalty,roll=hashOf(`${maker?.id||'guardian'}|${decisionContextSignature('seasonalActivityPermission',context.activityId,context)}`)%100,yes=roll<clamp(score,8,94);return {outcome:yes?'Yes':'No',reason:yes?`${decisionMakerLabel(maker)} approved the outing.`:`${decisionMakerLabel(maker)} did not approve this outing.`,resolved:true}}});
  const yes=['Yes','Approved'].includes(req.record?.outcome);return {ok:yes,required:true,reused:req.reused,record:req.record,makerId:req.record?.decisionMakerId||req.maker?.id||null,reason:req.record?.reason||req.error||''}
 }
 function seasonalPlanById5C1(id){return (S.plans||[]).find(p=>p.id===id&&p.seasonal5C1)||null}
-function createSeasonalPlan5C1(activityId,{dateISO=currentDate(),startMinute=null,location=null,participantMode='alone',personId=null}={}){
+function createSeasonalPlan5C1(activityId,{dateISO=currentDate(),startMinute=null,location=null,participantMode='alone',personId=null,participantIds=[],groupId=null,supervisorId=null,gearAccess=null}={}){
  ensureSeasonalState5C1();const def=seasonalActivityDefinition5C1(activityId);if(!def)return {ok:false,reason:'unknown_activity'};dateISO=dateISO||currentDate();startMinute=Number(startMinute??(dateISO===currentDate()?Math.max(currentMinute()+30,600):600));location=location||def.locations[0];const end=Math.min(1439,startMinute+def.duration);
+ const outdoor=typeof seasonalOutdoorPlanGate5C31==='function'?seasonalOutdoorPlanGate5C31(activityId,{dateISO,startMinute,location,participantMode,personId,participantIds,groupId,supervisorId}):{ok:true,handled:false};if(!outdoor.ok)return outdoor;supervisorId=outdoor.supervisorId||supervisorId;
  const elig=seasonalActivityEligibility5C1(activityId,{dateISO,location,checkLocation:true,startMinute});if(!elig.ok)return elig;
- const pGate=seasonalParticipantGate5C1(personId,participantMode);if(!pGate.ok)return {ok:false,reason:pGate.reason,compatibility:pGate.compatibility||null};let rsvp=null;if(personId){rsvp=seasonalRsvp5C1(personId,activityId,{dateISO,startMinute},{mode:participantMode});if(rsvp.answer!=='Accepted')return {ok:false,reason:'rsvp_declined',rsvp}}
- const perm=requestSeasonalPermission5C1(activityId,{dateISO,startMinute},{location,participantMode,personId});if(!perm.ok)return {ok:false,reason:'permission_denied',permission:perm,rsvp};
+ if(seasonalOutdoorDefinition5C31(activityId)){const outdoorGate=outdoorExecutionGate5C32(activityId,{dateISO,startMinute,location,participantMode,personId,participantIds,groupId,supervisorId,gearAccess});if(!outdoorGate.ok)return outdoorGate;}
+ const social=typeof outdoorParticipants5C33==='function'&&seasonalOutdoorDefinition5C31(activityId)?outdoorParticipants5C33(activityId,{participantMode,personId,participantIds,groupId,dateISO,startMinute,supervisorId}):null;if(social&&!social.ok)return social;if(social&&activityId==='camping_weekend'&&S.age<13&&outdoor.supervisorId&&!social.acceptedIds.includes(outdoor.supervisorId))return {ok:false,reason:'supervisor_not_attending',responses:social.responses};const pGate=seasonalParticipantGate5C1(personId,participantMode==='group'?'alone':participantMode);if(!pGate.ok)return {ok:false,reason:pGate.reason,compatibility:pGate.compatibility||null};let rsvp=null;if(personId&&!social){rsvp=seasonalRsvp5C1(personId,activityId,{dateISO,startMinute},{mode:participantMode});if(rsvp.answer!=='Accepted')return {ok:false,reason:'rsvp_declined',rsvp}}
+ const perm=requestSeasonalPermission5C1(activityId,{dateISO,startMinute},{location,participantMode,personId,supervisorId});if(!perm.ok)return {ok:false,reason:'permission_denied',permission:perm,rsvp,supervision:outdoor.supervision||null};
  const conflict=seasonalScheduleConflict5C1(dateISO,startMinute,end);if(conflict)return {ok:false,reason:'conflict',conflictId:conflict.id};
- const plan={id:uid('plan'),type:'seasonal',seasonal5C1:true,seasonalActivityId:activityId,title:personId?`${def.name} with ${displayName(pGate.person)}`:def.name,personId:personId||null,participantIds:personId?[personId]:[],participantMode,hostIsPlayer:true,dateISO,startMinute,endMinute:end,location,status:'Accepted',createdDate:currentDate(),cost:Number(def.cost||0),permissionDecisionId:perm.record?.id||null,rsvpKey:rsvp?.key||null,romanticContext:participantMode==='partner'};
- S.plans.unshift(plan);if(S.plans.length>80)S.plans.length=80;schedulePlanCalendar(plan);return {ok:true,plan,rsvp,permission:perm}
+ const plan={id:uid('plan'),type:'seasonal',seasonal5C1:true,seasonalActivityId:activityId,title:personId?`${def.name} with ${displayName(pGate.person)}`:def.name,personId:personId||null,participantIds:social?social.acceptedIds:(personId?[personId]:[]),groupId:social?.groupId||null,participantRsvps:social?.responses||null,participantMode,hostIsPlayer:true,dateISO,startMinute,endMinute:end,location,status:'Accepted',createdDate:currentDate(),cost:Number(def.cost||0),permissionDecisionId:perm.record?.id||null,rsvpKey:rsvp?.key||null,romanticContext:participantMode==='partner'};
+ if(seasonalOutdoorDefinition5C31(activityId)){const span=outdoorInterval5C32(activityId,dateISO,startMinute);plan.endDateISO=span.endDateISO;plan.endMinute=span.endMinute;plan.durationMinutes=span.minutes;plan.gearAccess=gearAccess||null;}
+ if(supervisorId)plan.supervisorId=supervisorId;if(outdoor.supervision?.source)plan.supervisionSource=outdoor.supervision.source;
+ S.plans.unshift(plan);if(S.plans.length>80)S.plans.length=80;schedulePlanCalendar(plan);return {ok:true,plan,rsvp,permission:perm,supervision:outdoor.supervision||null}
 }
 function performSeasonalActivity5C1(activityId,{location=S.location,personId=null,participantMode='alone'}={}){
  const def=seasonalActivityDefinition5C1(activityId),gate=seasonalActivityEligibility5C1(activityId,{location,checkLocation:true});if(!gate.ok)return gate;const pGate=seasonalParticipantGate5C1(personId,participantMode);if(!pGate.ok)return {ok:false,reason:pGate.reason};if(S.age>=18&&def.cost&&!spendOwn(def.cost))return {ok:false,reason:'money',detail:`You need ${money(def.cost)}.`};
@@ -6955,15 +6978,15 @@ function performSeasonalActivity5C1(activityId,{location=S.location,personId=nul
  const rec={id:uid('seasonal'),activityId,dateISO:before.dateISO,startMinute:before.minute,endDateISO:currentDate(),endMinute:currentMinute(),location,participantMode,participantIds:personId?[personId]:[],romanticContext:participantMode==='partner'};ensureSeasonalState5C1().history.unshift(rec);if(S.seasonal5C1.history.length>80)S.seasonal5C1.history.length=80;return {ok:true,record:rec,minutes:def.duration}
 }
 function attendSeasonalPlan5C1(planId){
- const plan=seasonalPlanById5C1(planId);if(!plan||plan.status!=='Accepted')return {ok:false,reason:'inactive'};const def=seasonalActivityDefinition5C1(plan.seasonalActivityId);if(!def)return {ok:false,reason:'unknown_activity'};const ev=planEvent(plan);if(!ev||isTerminal(ev.status))return {ok:false,reason:'resolved'};if(plan.dateISO!==currentDate())return {ok:false,reason:'date'};if(currentMinute()<plan.startMinute){if(plan.startMinute-currentMinute()>120)return {ok:false,reason:'early'};advanceTime(plan.startMinute-currentMinute(),{silent:true})}if(currentMinute()>ev.graceMinute){processCalendar();return {ok:false,reason:'late'};}
+ const plan=seasonalPlanById5C1(planId);if(plan&&typeof validateOutdoorAttendance5C33==='function'&&seasonalOutdoorDefinition5C31(plan.seasonalActivityId)){const social=validateOutdoorAttendance5C33(plan);if(!social.ok)return social;}if(!plan||plan.status!=='Accepted')return {ok:false,reason:'inactive'};const def=seasonalActivityDefinition5C1(plan.seasonalActivityId);if(!def)return {ok:false,reason:'unknown_activity'};const ev=planEvent(plan);if(!ev||isTerminal(ev.status))return {ok:false,reason:'resolved'};if(plan.dateISO!==currentDate())return {ok:false,reason:'date'};if(currentMinute()<plan.startMinute){if(plan.startMinute-currentMinute()>120)return {ok:false,reason:'early'};advanceTime(plan.startMinute-currentMinute(),{silent:true})}if(currentMinute()>ev.graceMinute){processCalendar();return {ok:false,reason:'late'};}
  const seasonGate=seasonalSeasonGate5C1(def,currentDate());if(!seasonGate.ok)return {ok:false,reason:'season',detail:seasonGate.reason};const locGate=seasonalLocationGate5C1(def,plan.location,currentDate());if(!locGate.ok)return {ok:false,reason:'location',detail:locGate.reason};const conflict=seasonalScheduleConflict5C1(currentDate(),currentMinute(),Math.min(1439,currentMinute()+def.duration),ev.id);if(conflict)return {ok:false,reason:'conflict',conflictId:conflict.id};
  if(S.age>=18&&def.cost&&!spendOwn(def.cost))return {ok:false,reason:'money'};setCalendarStatus(ev,'Attending','Seasonal outing started');const old=S.location;S.location=plan.location;const result=performSeasonalActivity5C1(plan.seasonalActivityId,{location:plan.location,personId:plan.personId,participantMode:plan.participantMode});S.location=old==='Trip'?'Trip':'Home';if(!result.ok){setCalendarStatus(ev,'Scheduled','Could not start');return result}plan.status='Attended';setCalendarStatus(ev,'Attended','Attended');recordOutcome('Seasonal activity',plan.title,'Attended',`${def.name} at ${plan.location}.`);return {ok:true,planId:plan.id,record:result.record}
 }
-function createSeasonalNpcInvitation5C1(personId,activityId,{dateISO=null,startMinute=null,location=null,participantMode='friend'}={}){
- const p=personById(personId),def=seasonalActivityDefinition5C1(activityId);if(!p||!def)return null;dateISO=dateISO||addDays(currentDate(),1);startMinute=Number(startMinute??840);location=location||def.locations[0];const elig=seasonalActivityEligibility5C1(activityId,{dateISO,location,checkLocation:true,startMinute});if(!elig.ok)return null;const pGate=seasonalParticipantGate5C1(personId,participantMode);if(!pGate.ok)return null;const conf=seasonalScheduleConflict5C1(dateISO,startMinute,Math.min(1439,startMinute+def.duration));if(conf)return null;const plan={id:uid('plan'),type:'seasonal',seasonal5C1:true,seasonalActivityId:activityId,title:`${def.name} with ${displayName(p)}`,personId:p.id,participantIds:[p.id],participantMode,hostIsPlayer:false,dateISO,startMinute,endMinute:Math.min(1439,startMinute+def.duration),location,status:'Pending',createdDate:currentDate(),cost:Number(def.cost||0),romanticContext:participantMode==='partner'};S.plans.unshift(plan);queueEvent({type:'seasonalInvitation5C1',title:`${displayName(p)} invites you: ${def.name.toLowerCase()}`,text:`${formatDate(dateISO)} at ${timeLabel(startMinute)} • ${location}.`,participants:[p.id],payload:{planId:plan.id},priority:3,expiresDays:2,choices:[{id:'accept',label:'Accept'},{id:'decline',label:'Decline'}]});return plan
+function createSeasonalNpcInvitation5C1(personId,activityId,{dateISO=null,startMinute=null,location=null,participantMode='friend',supervisorId=null}={}){
+ const p=personById(personId),def=seasonalActivityDefinition5C1(activityId);if(!p||!def)return null;dateISO=dateISO||addDays(currentDate(),1);startMinute=Number(startMinute??840);location=location||def.locations[0];const outdoor=typeof seasonalOutdoorPlanGate5C31==='function'?seasonalOutdoorPlanGate5C31(activityId,{dateISO,startMinute,location,participantMode,personId,supervisorId}):{ok:true,handled:false};if(!outdoor.ok)return null;if(typeof outdoorInvitationCooldown5C33==='function'&&!outdoorInvitationCooldown5C33(personId,activityId,dateISO))return null;supervisorId=outdoor.supervisorId||supervisorId;const elig=seasonalActivityEligibility5C1(activityId,{dateISO,location,checkLocation:true,startMinute});if(!elig.ok)return null;const pGate=seasonalParticipantGate5C1(personId,participantMode);if(!pGate.ok)return null;const conf=seasonalScheduleConflict5C1(dateISO,startMinute,Math.min(1439,startMinute+def.duration));if(conf)return null;const plan={id:uid('plan'),type:'seasonal',seasonal5C1:true,seasonalActivityId:activityId,title:`${def.name} with ${displayName(p)}`,personId:p.id,participantIds:[p.id],participantMode,hostIsPlayer:false,dateISO,startMinute,endMinute:Math.min(1439,startMinute+def.duration),location,status:'Pending',createdDate:currentDate(),cost:Number(def.cost||0),romanticContext:participantMode==='partner'};if(supervisorId)plan.supervisorId=supervisorId;if(outdoor.supervision?.source)plan.supervisionSource=outdoor.supervision.source;if(typeof outdoorInvitationStamp5C33==='function')outdoorInvitationStamp5C33(personId,activityId);S.plans.unshift(plan);queueEvent({type:'seasonalInvitation5C1',title:`${displayName(p)} invites you: ${def.name.toLowerCase()}`,text:`${formatDate(dateISO)} at ${timeLabel(startMinute)} • ${location}.`,participants:[p.id],payload:{planId:plan.id},priority:3,expiresDays:2,choices:[{id:'accept',label:'Accept'},{id:'decline',label:'Decline'}]});return plan
 }
 function seasonalActivityEventChoice5C1(e,id){
- if(e.type!=='seasonalInvitation5C1')return false;const plan=seasonalPlanById5C1(e.payload?.planId),p=plan&&personById(plan.personId);if(!plan)return true;if(id!=='accept'){plan.status='Declined';if(p)rememberPerson(p,`You declined ${plan.title}.`,1);return true}const perm=requestSeasonalPermission5C1(plan.seasonalActivityId,{dateISO:plan.dateISO,startMinute:plan.startMinute},{location:plan.location,participantMode:plan.participantMode,personId:plan.personId});if(!perm.ok){plan.status='Declined';plan.reason='Permission denied';return true}const conf=seasonalScheduleConflict5C1(plan.dateISO,plan.startMinute,plan.endMinute);if(conf){plan.status='Declined';plan.reason=`Schedule conflict with ${conf.title}`;return true}plan.status='Accepted';plan.permissionDecisionId=perm.record?.id||null;schedulePlanCalendar(plan);return true
+ if(e.type!=='seasonalInvitation5C1')return false;const plan=seasonalPlanById5C1(e.payload?.planId),p=plan&&personById(plan.personId);if(!plan)return true;if(id!=='accept'){plan.status='Declined';if(p)rememberPerson(p,`You declined ${plan.title}.`,1);return true}const outdoor=typeof seasonalOutdoorPlanGate5C31==='function'?seasonalOutdoorPlanGate5C31(plan.seasonalActivityId,{dateISO:plan.dateISO,startMinute:plan.startMinute,location:plan.location,participantMode:plan.participantMode,personId:plan.personId,participantIds:plan.participantIds,supervisorId:plan.supervisorId}):{ok:true};if(!outdoor.ok){plan.status='Declined';plan.reason=outdoor.reason;return true}if(outdoor.supervisorId)plan.supervisorId=outdoor.supervisorId;if(typeof validateOutdoorInvitation5C33==='function'){const valid=validateOutdoorInvitation5C33(plan);if(!valid.ok){plan.status='Declined';plan.reason=valid.reason;return true}}const perm=requestSeasonalPermission5C1(plan.seasonalActivityId,{dateISO:plan.dateISO,startMinute:plan.startMinute},{location:plan.location,participantMode:plan.participantMode,personId:plan.personId,supervisorId:plan.supervisorId});if(!perm.ok){plan.status='Declined';plan.reason='Permission denied';return true}const conf=seasonalScheduleConflict5C1(plan.dateISO,plan.startMinute,plan.endMinute);if(conf){plan.status='Declined';plan.reason=`Schedule conflict with ${conf.title}`;return true}plan.status='Accepted';plan.permissionDecisionId=perm.record?.id||null;schedulePlanCalendar(plan);return true
 }
 function migrateSeasonalActivities5C1(){
  const st=ensureSeasonalState5C1(),seen=new Set();const clean={};for(const [k,v] of Object.entries(st.rsvps||{})){if(!v||!v.personId||!v.activityId||!v.dateISO)continue;const key=seasonalRsvpKey5C1(v.personId,v.activityId,{dateISO:v.dateISO,startMinute:v.startMinute});if(seen.has(key))continue;seen.add(key);clean[key]={key,personId:v.personId,activityId:v.activityId,dateISO:v.dateISO,startMinute:Number(v.startMinute)||0,answer:v.answer==='Accepted'?'Accepted':'Declined',why:String(v.why||''),createdDate:v.createdDate||v.dateISO,mode:v.mode||'friend'}}st.rsvps=clean;
@@ -7003,16 +7026,13 @@ function seasonalGearAccess5C2(activityId,opts={}){
  }
  return {ok:true,mode:'none'}
 }
-function seasonalRentalCost5C2(activityId){return activityId==='ski_day'?38:activityId==='scuba_outing'?42:0}
+function seasonalRentalCost5C2(activityId){return RENTAL_COST_5C44[activityId]||0}
 function acquireSeasonalRental5C2(activityId,opts={}){
- const gate=seasonalGearAccess5C2(activityId,opts);if(!gate.ok)return gate;if(gate.mode!=='rent')return gate;
- const cost=seasonalRentalCost5C2(activityId),st=ensureSeasonalState5C2(),key=`${activityId}|${currentDate()}|${currentMinute()}`;
- if(cost&&!spendOwn(cost))return {ok:false,reason:'money',detail:`Rental costs ${money(cost)}.`};
- const rec={id:`rental:${hashOf(key)}`,activityId,dateISO:currentDate(),startMinute:currentMinute(),cost,temporary:true};st.rentals.push(rec);return {ok:true,mode:'rent',rental:rec}
+ const gate=seasonalGearAccess5C2(activityId,opts);if(!gate.ok)return gate;
+ if(gate.mode!=='rent')return gate;
+ return acquireSeasonalRental5C44(activityId,{extraCost:S.age>=18?Number(seasonalActivityDefinition5C1(activityId)?.cost||0):0});
 }
-function useSunscreen5C2(){
- registerSeasonalCatalog5C2();const it=findUsable('sunscreen');if(!it)return {ok:false,reason:'no_sunscreen'};const u=openOne(it);u.remaining=clamp((u.remaining??100)-20);u.timesUsed=(u.timesUsed||0)+1;u.useLog={date:currentDate(),count:(u.useLog?.date===currentDate()?(u.useLog.count||0):0)+1};if(u.remaining<=.5)removeItem(u.id);return {ok:true,itemId:u.id,remaining:Math.max(0,u.remaining||0)}
-}
+function useSunscreen5C2(){registerSeasonalCatalog5C2();return consumeSeasonalSupply5C43('sunscreen',20)}
 function seasonalSafetyGate5C2(activityId,opts={}){
  if(activityId==='scuba_outing'){
   if(S.age<13)return {ok:false,reason:'age'};
@@ -7046,17 +7066,19 @@ function seasonalOutcome5C2(activityId,opts={}){
  if(opts.participantMode==='partner'&&opts.personId)out.romanticMoment=seasonalRomanticMoment5C2(opts.personId,activityId);
  return out
 }
-function performSeasonalActivity5C1(activityId,{location=S.location,personId=null,participantMode='alone',gearAccess=null,supervision=null,useSunscreen=false}={}){
- const def=seasonalActivityDefinition5C1(activityId),gate=seasonalActivityEligibility5C1(activityId,{location,checkLocation:true});if(!gate.ok)return gate;const pGate=seasonalParticipantGate5C1(personId,participantMode);if(!pGate.ok)return {ok:false,reason:pGate.reason};
+function performSeasonalActivity5C1(activityId,{location=S.location,personId=null,participantMode='alone',participantIds=null,gearAccess=null,supervision=null,supervisorId=null,useSunscreen=false,ignoreCalendarId=null}={}){
+ const def=seasonalActivityDefinition5C1(activityId),gate=seasonalOutdoorDefinition5C31(activityId)?{ok:true}:seasonalActivityEligibility5C1(activityId,{location,checkLocation:true});if(!gate.ok)return gate;const pGate=seasonalParticipantGate5C1(personId,participantMode==='group'?'alone':participantMode);if(!pGate.ok)return {ok:false,reason:pGate.reason};
+ if(typeof seasonalOutdoorExecutionValidation5C31==='function'&&seasonalOutdoorDefinition5C31(activityId)){const outdoor=seasonalOutdoorExecutionValidation5C31(activityId,{dateISO:currentDate(),startMinute:currentMinute(),location,personId,participantMode,supervisorId});if(!outdoor.ok)return outdoor;return executeOutdoor5C32(activityId,{location,personId,participantIds,participantMode,supervisorId,gearAccess,ignoreCalendarId})}
  const safe=seasonalSafetyGate5C2(activityId,{supervision});if(!safe.ok)return safe;const gear=seasonalGearAccess5C2(activityId,{gearAccess});if(!gear.ok)return gear;const rental=acquireSeasonalRental5C2(activityId,{gearAccess});if(!rental.ok)return rental;
  if(S.age>=18&&def.cost&&!spendOwn(def.cost))return {ok:false,reason:'money',detail:`You need ${money(def.cost)}.`};
  const before={dateISO:currentDate(),minute:currentMinute()};advanceTime(def.duration,{silent:true});const outcome=seasonalOutcome5C2(activityId,{personId,participantMode,useSunscreen});if(personId&&!outcome.romanticMoment){S.needs.social=clamp(S.needs.social+8);pGate.person.rel=clamp((pGate.person.rel||0)+2);rememberPerson(pGate.person,`${def.name} together on ${formatDate(before.dateISO)}.`,1)}
- const rec={id:uid('seasonal'),activityId,dateISO:before.dateISO,startMinute:before.minute,endDateISO:currentDate(),endMinute:currentMinute(),location,participantMode,participantIds:personId?[personId]:[],romanticContext:participantMode==='partner',gearAccess:rental.mode||gear.mode,outcome};ensureSeasonalState5C1().history.unshift(rec);if(S.seasonal5C1.history.length>80)S.seasonal5C1.history.length=80;return {ok:true,record:rec,minutes:def.duration,outcome,rental:rental.rental||null}
+ if(rental.rental)finishSeasonalRental5C44(rental.rental);
+ const rec={id:uid('seasonal'),activityId,dateISO:before.dateISO,startMinute:before.minute,endDateISO:currentDate(),endMinute:currentMinute(),location,participantMode,participantIds:personId?[personId]:[],romanticContext:participantMode==='partner',gearAccess:rental.mode||gear.mode,rentalId:rental.rental?.id||null,outcome};applySeasonalGearBenefits5C45(rec);applySeasonalEquipmentUse5C43(rec);ensureSeasonalState5C1().history.unshift(rec);if(S.seasonal5C1.history.length>80)S.seasonal5C1.history.length=80;return {ok:true,record:rec,minutes:def.duration,outcome,rental:rental.rental||null}
 }
 function attendSeasonalPlan5C1(planId){
- const plan=seasonalPlanById5C1(planId);if(!plan||plan.status!=='Accepted')return {ok:false,reason:'inactive'};const def=seasonalActivityDefinition5C1(plan.seasonalActivityId);if(!def)return {ok:false,reason:'unknown_activity'};const ev=planEvent(plan);if(!ev||isTerminal(ev.status))return {ok:false,reason:'resolved'};if(plan.dateISO!==currentDate())return {ok:false,reason:'date'};if(currentMinute()<plan.startMinute){if(plan.startMinute-currentMinute()>120)return {ok:false,reason:'early'};advanceTime(plan.startMinute-currentMinute(),{silent:true})}if(currentMinute()>ev.graceMinute){processCalendar();return {ok:false,reason:'late'};}
- const sg=seasonalSeasonGate5C1(def,currentDate()),lg=seasonalLocationGate5C1(def,plan.location,currentDate());if(!sg.ok)return {ok:false,reason:'season'};if(!lg.ok)return {ok:false,reason:'location'};const conflict=seasonalScheduleConflict5C1(currentDate(),currentMinute(),Math.min(1439,currentMinute()+def.duration),ev.id);if(conflict)return {ok:false,reason:'conflict',conflictId:conflict.id};
- setCalendarStatus(ev,'Attending','Seasonal outing started');const old=S.location;S.location=plan.location;const result=performSeasonalActivity5C1(plan.seasonalActivityId,{location:plan.location,personId:plan.personId,participantMode:plan.participantMode,gearAccess:plan.gearAccess||'provider',supervision:plan.supervision||(S.age<18&&plan.seasonalActivityId==='scuba_outing'?'licensed_provider':null),useSunscreen:!!plan.useSunscreen});S.location=old==='Trip'?'Trip':'Home';if(!result.ok){setCalendarStatus(ev,'Scheduled','Could not start');return result}plan.status='Attended';plan.activityOutcome=result.outcome;setCalendarStatus(ev,'Attended','Attended');recordOutcome('Seasonal activity',plan.title,'Attended',`${def.name} at ${plan.location}.`);return {ok:true,planId:plan.id,record:result.record,outcome:result.outcome}
+ const plan=seasonalPlanById5C1(planId);if(plan&&seasonalOutdoorDefinition5C31(plan.seasonalActivityId)){const social=validateOutdoorAttendance5C33(plan);if(!social.ok)return social;}if(!plan||plan.status!=='Accepted')return {ok:false,reason:'inactive'};const def=seasonalActivityDefinition5C1(plan.seasonalActivityId);if(!def)return {ok:false,reason:'unknown_activity'};const ev=planEvent(plan);if(!ev||isTerminal(ev.status))return {ok:false,reason:'resolved'};if(plan.dateISO!==currentDate())return {ok:false,reason:'date'};if(currentMinute()<plan.startMinute){if(plan.startMinute-currentMinute()>120)return {ok:false,reason:'early'};advanceTime(plan.startMinute-currentMinute(),{silent:true})}if(currentMinute()>ev.graceMinute){processCalendar();return {ok:false,reason:'late'};}
+ const sg=seasonalSeasonGate5C1(def,currentDate()),lg=seasonalLocationGate5C1(def,plan.location,currentDate());if(!sg.ok)return {ok:false,reason:'season'};if(!lg.ok)return {ok:false,reason:'location'};const conflict=seasonalOutdoorDefinition5C31(plan.seasonalActivityId)?null:seasonalScheduleConflict5C1(currentDate(),currentMinute(),Math.min(1439,currentMinute()+def.duration),ev.id);if(conflict)return {ok:false,reason:'conflict',conflictId:conflict.id};
+ if(seasonalOutdoorDefinition5C31(plan.seasonalActivityId)){const x=outdoorExecutionGate5C32(plan.seasonalActivityId,{dateISO:currentDate(),startMinute:currentMinute(),location:plan.location,participantMode:plan.participantMode,personId:plan.personId,supervisorId:plan.supervisorId,gearAccess:plan.gearAccess,ignoreCalendarId:ev.id});if(!x.ok){if(x.reason==='severe_weather'){plan.status='Cancelled';setCalendarStatus(ev,'Cancelled','Severe weather');if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);}return x;}} setCalendarStatus(ev,'Attending','Seasonal outing started');const old=S.location;S.location=plan.location;const result=performSeasonalActivity5C1(plan.seasonalActivityId,{location:plan.location,personId:plan.personId,participantIds:plan.participantIds,participantMode:plan.participantMode,gearAccess:plan.gearAccess||(plan.seasonalActivityId==='camping_weekend'?'': 'provider'),ignoreCalendarId:ev.id,supervision:plan.supervision||(S.age<18&&plan.seasonalActivityId==='scuba_outing'?'licensed_provider':null),supervisorId:plan.supervisorId||null,useSunscreen:!!plan.useSunscreen});S.location=old==='Trip'?'Trip':'Home';if(!result.ok){setCalendarStatus(ev,'Scheduled','Could not start');return result}plan.status='Attended';plan.activityOutcome=result.outcome;setCalendarStatus(ev,'Attended','Attended');if(typeof settleOutdoorReservation5C35==='function')settleOutdoorReservation5C35(plan);recordOutcome('Seasonal activity',plan.title,'Attended',`${def.name} at ${plan.location}.`);return {ok:true,planId:plan.id,record:result.record,outcome:result.outcome}
 }
 function seasonalActivityOptions5C2(activityId){
  const def=seasonalActivityDefinition5C1(activityId);if(!def||def.phase!=='5C.2')return null;return {activityId,gearRequired:['ski_day','scuba_outing'].includes(activityId),rentalCost:seasonalRentalCost5C2(activityId),supportsSunscreen:['beach_day','sunbathe'].includes(activityId),requiresSupervision:activityId==='scuba_outing'&&S.age<18}
@@ -7079,6 +7101,620 @@ function seasonalParticipantGate5C1(personId,mode='friend'){
 }
 function sunExposureRisk5C2(activityId,{protectedBySunscreen=false,duration=null}={}){
  const def=seasonalActivityDefinition5C1(activityId),exposure=Number(duration??def?.duration??75),base=activityId==='sunbathe'?24:14,protection=protectedBySunscreen?18:0;return clamp(base+Math.max(0,(exposure-90)/15)-protection,1,55)
+}
+// =====================================================================
+// PHASE 5C.3.1 — AUTUMN / OUTDOOR ELIGIBILITY FOUNDATION
+// Recovery integration, age bands, legitimate supervision and H3 overnight
+// permission rules. Camping/hiking execution is handled by 5C.3.2.
+// =====================================================================
+const SEASONAL_OUTDOOR_IDS_5C31=new Set(['camping_weekend','autumn_hike']);
+function seasonalOutdoorDefinition5C31(activityId){
+ const def=seasonalActivityDefinition5C1(activityId);return def&&SEASONAL_OUTDOOR_IDS_5C31.has(activityId)&&def.phase==='5C.3'?def:null
+}
+function seasonalParticipantContext5C31({participantMode='alone',personId=null,participantIds=[],groupId=null,supervisorId=null}={}){
+ const requested=[];if(personId)requested.push(personId);if(Array.isArray(participantIds))requested.push(...participantIds);
+ const ids=[...new Set(requested.filter(Boolean))],valid=[],invalid=[];for(const id of ids)(personById(id)?valid:invalid).push(id);
+ const group=groupId?(S.groups||[]).find(g=>g.id===groupId)||null:null;
+ return {participantMode,personId:personId||null,participantIds:valid,invalidParticipantIds:invalid,groupId:group?.id||null,supervisorId:supervisorId||null}
+}
+function legitimateCampingSupervisor5C31(personId){
+ const p=personById(personId);if(!p)return {ok:false,reason:'supervisor_missing',person:null};
+ if(p.deceased||p.movedAway)return {ok:false,reason:'supervisor_unavailable',person:p};
+ const age=Number(personAge(p));if(!Number.isFinite(age)||age<18)return {ok:false,reason:'supervisor_not_adult',person:p,age};
+ const family=!!(isFamilyPerson(p)||isActualGuardian(p));
+ const friendsFamily=p.role==='friend parent'||p.relation==='friend parent'||p.supervisionRole==='friend_family_adult';
+ const organized=p.supervisionRole==='organized_adult'&&p.isAdultSupervisor===true;
+ if(!family&&!friendsFamily&&!organized)return {ok:false,reason:'supervisor_not_legitimate',person:p,age};
+ return {ok:true,person:p,personId:p.id,age,source:family?'family':friendsFamily?'friends_family':'organized'}
+}
+function inferredFamilyCampingSupervisor5C31(){
+ const candidates=(S.people||[]).filter(p=>!p.deceased&&!p.movedAway&&isFamilyPerson(p)&&Number(personAge(p))>=18);
+ const home=candidates.filter(p=>typeof inHousehold==='function'&&inHousehold(p));
+ const rank=p=>isActualGuardian(p)?0:p.role==='parent'?1:p.role==='grandparent'?2:['aunt','uncle'].includes(p.role)?3:4;
+ return [...(home.length?home:candidates)].sort((a,b)=>rank(a)-rank(b)||Number(personAge(b))-Number(personAge(a)))[0]||null
+}
+function campingSupervisionEligibility5C31(context={}){
+ const def=seasonalOutdoorDefinition5C31('camping_weekend');if(!def)return {ok:false,reason:'definition_missing'};
+ if(S.age<Number(def.minAge||0))return {ok:false,reason:'age',required:false,detail:`Camping requires age ${def.minAge} or older.`};
+ if(S.age>=13)return {ok:true,required:false,supervisorId:null,source:null};
+ const ctx=seasonalParticipantContext5C31(context);let chosen=null;
+ if(ctx.supervisorId)chosen=legitimateCampingSupervisor5C31(ctx.supervisorId);
+ else {
+  for(const id of ctx.participantIds){const c=legitimateCampingSupervisor5C31(id);if(c.ok){chosen=c;break}}
+  if(!chosen&&ctx.participantMode==='family'){const p=inferredFamilyCampingSupervisor5C31();if(p)chosen=legitimateCampingSupervisor5C31(p.id)}
+ }
+ if(!chosen)return {ok:false,reason:'supervision_required',required:true,detail:'A pre-teen camping trip needs a legitimate adult supervisor.'};
+ if(!chosen.ok)return {ok:false,reason:chosen.reason,required:true,supervisorId:ctx.supervisorId||null,detail:'The selected camping supervisor is not a legitimate available adult.'};
+ return {ok:true,required:true,supervisorId:chosen.personId,source:chosen.source,age:chosen.age}
+}
+function campingOvernightPermissionEligibility5C31(slot={},context={}){
+ const def=seasonalOutdoorDefinition5C31('camping_weekend');if(!def)return {ok:false,reason:'definition_missing'};
+ if(S.age<Number(def.minAge||0))return {ok:false,reason:'age',required:false};
+ const supervision=campingSupervisionEligibility5C31(context);if(!supervision.ok)return {ok:false,reason:supervision.reason,required:S.age<18,supervision};
+ if(S.age>=18)return {ok:true,required:false,authorityId:null,supervision};
+ const maker=decisionAuthorityPerson();if(!maker)return {ok:false,reason:'no_guardian_authority',required:true,supervision};
+ return {ok:true,required:true,authorityId:maker.id,supervision,overnight:true,dateISO:slot.dateISO||currentDate(),startMinute:Number(slot.startMinute??slot.start??0)}
+}
+function seasonalPermissionContextExtension5C31(def,slot,opts={}){
+ if(def?.activityId!=='camping_weekend')return {};
+ const sup=opts.supervisorId?legitimateCampingSupervisor5C31(opts.supervisorId):null;
+ return {supervisorId:sup?.ok?sup.personId:null,supervisionSource:sup?.ok?sup.source:null}
+}
+function seasonalOutdoorPlanGate5C31(activityId,opts={}){
+ const def=seasonalOutdoorDefinition5C31(activityId);if(!def)return {ok:true,handled:false};
+ if(S.age<Number(def.minAge||0))return {ok:false,reason:'age',detail:`${def.name} is not appropriate at this age.`,activity:def};
+ const participants=seasonalParticipantContext5C31(opts);if(participants.invalidParticipantIds.length)return {ok:false,reason:'invalid_participant',participantContext:participants};
+ if(activityId==='camping_weekend'){
+  const supervision=campingSupervisionEligibility5C31(participants);if(!supervision.ok)return {ok:false,reason:supervision.reason,detail:supervision.detail||'',supervision,participantContext:participants};
+  const permission=campingOvernightPermissionEligibility5C31({dateISO:opts.dateISO,startMinute:opts.startMinute},Object.assign({},participants,{supervisorId:supervision.supervisorId||participants.supervisorId}));if(!permission.ok)return {ok:false,reason:permission.reason,supervision,permission,participantContext:participants};
+  return {ok:true,handled:true,activity:def,participantContext:participants,supervision,permission,supervisorId:supervision.supervisorId||null}
+ }
+ // Hiking keeps its canonical day-activity metadata. It does not inherit camping's
+ // overnight or pre-teen adult-supervision requirement.
+ return {ok:true,handled:true,activity:def,participantContext:participants,supervision:{ok:true,required:false},permission:{ok:true,required:seasonalPermissionNeeded5C1(def,{dateISO:opts.dateISO||currentDate(),startMinute:Number(opts.startMinute??0)}),overnight:false}}
+}
+function seasonalOutdoorExecutionValidation5C31(activityId,opts={}){
+ const def=seasonalOutdoorDefinition5C31(activityId);if(!def)return {ok:true,handled:false};
+ const gate=seasonalOutdoorPlanGate5C31(activityId,Object.assign({dateISO:currentDate(),startMinute:currentMinute()},opts));if(!gate.ok)return gate;
+ if(activityId==='camping_weekend'&&S.age<18){
+  const permission=requestSeasonalPermission5C1(activityId,{dateISO:opts.dateISO||currentDate(),startMinute:Number(opts.startMinute??currentMinute())},{location:opts.location||S.location,participantMode:opts.participantMode||'alone',personId:opts.personId||null,supervisorId:gate.supervisorId||opts.supervisorId||null});
+  if(!permission.ok)return {ok:false,reason:'permission_denied',permission,supervision:gate.supervision,participantContext:gate.participantContext};
+  gate.permissionRecord=permission.record||null;
+ }
+ return Object.assign(gate,{ok:true,executionDeferred:false,executionHandledBy:'5C.3.2'})
+}
+function migrateSeasonalActivities5C31(){
+ // 5C.3.1 introduces no parallel state container and fabricates no history.
+ // Preserve optional explicit supervision fields on existing seasonal plans only.
+ for(const p of S.plans||[]){
+  if(!p||p.seasonalActivityId!=='camping_weekend')continue;
+  if(p.supervisorId!=null&&!personById(p.supervisorId))delete p.supervisorId;
+  if(p.supervisionSource!=null&&!['family','friends_family','organized'].includes(p.supervisionSource))delete p.supervisionSource;
+ }
+ return {schema:1,stateIntroduced:false}
+}
+// PHASE 5C.3.2 — canonical outdoor execution; later 5C.3 modules add social and stories.
+function outdoorInterval5C32(activityId,dateISO,startMinute){
+ const def=seasonalOutdoorDefinition5C31(activityId),start=Number(startMinute);
+ if(!def||!Number.isInteger(start)||start<0||start>=1440)return {ok:false,reason:'time'};
+ const minutes=activityId==='camping_weekend'?1200:Number(def.duration),total=start+minutes;
+ return {ok:true,dateISO,startMinute:start,endDateISO:addDays(dateISO,Math.floor(total/1440)),endMinute:total%1440,minutes};
+}
+function outdoorScheduleConflict5C32(interval,ignoreId=null){
+ if(!interval.ok)return null;
+ let d=interval.dateISO;
+ while(d<=interval.endDateISO){
+  const start=d===interval.dateISO?interval.startMinute:0,end=d===interval.endDateISO?interval.endMinute:1440;
+  const ignored=new Set([ignoreId,ignoreId&&ignoreId.startsWith('plan-')?'outdoor-overnight-'+ignoreId.slice(5):null]);
+  const conflict=(S.calendar||[]).find(ev=>ev&&ev.dateISO===d&&!ignored.has(ev.id)&&!isTerminal(ev.status)&&Number.isFinite(Number(ev.startMinute))&&Number.isFinite(Number(ev.endMinute))&&(ev.required!==false||['plan','exam','schoolDay','workDay','program'].includes(ev.type))&&start<Number(ev.endMinute)&&Number(ev.startMinute)<end);
+  if(conflict)return conflict;
+  d=addDays(d,1);
+ }
+ return null;
+}
+function outdoorWeather5C32(dateISO,activityId){
+ const w=S.weather?.dateISO===dateISO?S.weather:(S.weather?.forecast||[]).find(x=>x.dateISO===dateISO);
+ if(!w)return {ok:true,severity:0,unknown:true,weather:'Unforecast'};
+ const severity=Number(w.severity||0),type=String(w.type||'');
+ const severe=severity>=3||(/storm|blizzard|hurricane|tornado|flood|lightning/i.test(type)&&severity>=2);
+ return {ok:!severe,reason:severe?'severe_weather':null,severity,weather:type,unpleasant:severity>=2||/rain|snow|wind/i.test(type)};
+}
+function outdoorEquipment5C32(activityId,opts={}){
+ if(activityId!=='camping_weekend')return {ok:true,mode:'day_hike',cost:0};
+ const owned=!!(findUsable('tent')&&findUsable('sleepingBag'));
+ if(owned)return {ok:true,mode:'owned',cost:0};
+ const mode=String(opts.gearAccess||'').toLowerCase();
+ if(mode==='provider'&&['family','friend'].includes(opts.participantMode)&&opts.supervisorId&&legitimateCampingSupervisor5C31(opts.supervisorId).ok)return {ok:true,mode:'family_provider',cost:0};
+ if(mode==='rent')return {ok:true,mode:'rent',cost:RENTAL_COST_5C44.camping_weekend};
+ return {ok:false,reason:'gear',detail:'Camping requires a usable tent and sleeping bag, a legitimate adult provider, or paid rental.'};
+}
+function outdoorExecutionGate5C32(activityId,opts={}){
+ const def=seasonalOutdoorDefinition5C31(activityId);if(!def)return {ok:false,reason:'activity'};
+ const dateISO=opts.dateISO||currentDate(),startMinute=Number(opts.startMinute??currentMinute()),location=opts.location||S.location;
+ const base=seasonalOutdoorPlanGate5C31(activityId,{...opts,dateISO,startMinute,location});if(!base.ok)return base;
+ const season=seasonalSeasonGate5C1(def,dateISO),place=seasonalLocationGate5C1(def,location,dateISO);
+ if(!season.ok)return {ok:false,reason:'season'};if(!place.ok)return {ok:false,reason:'location'};
+ if(activityId==='camping_weekend'&&(![0,6].includes(parseISO(dateISO).getUTCDay())||startMinute<480||startMinute>1020))return {ok:false,reason:'weekend',detail:'Camping departures are Saturday/Sunday, 08:00–17:00.'};
+ const interval=outdoorInterval5C32(activityId,dateISO,startMinute),conflict=outdoorScheduleConflict5C32(interval,opts.ignoreCalendarId||null);
+ if(conflict)return {ok:false,reason:'conflict',conflictId:conflict.id};
+ const today=outdoorWeather5C32(dateISO,activityId),tomorrow=activityId==='camping_weekend'?outdoorWeather5C32(interval.endDateISO,activityId):{ok:true};
+ if(!today.ok||!tomorrow.ok)return {ok:false,reason:'severe_weather',weather:!today.ok?today:tomorrow};
+ const gear=outdoorEquipment5C32(activityId,{...opts,supervisorId:base.supervisorId||opts.supervisorId});if(!gear.ok)return gear;
+ return {ok:true,interval,weather:today,weatherNext:tomorrow,gear,supervision:base.supervision,permission:base.permission};
+}
+function executeOutdoor5C32(activityId,opts={}){
+ const dateISO=currentDate(),startMinute=currentMinute();const gate=outdoorExecutionGate5C32(activityId,{...opts,dateISO,startMinute});
+ if(!gate.ok)return gate;
+ if(S.age<18){const perm=requestSeasonalPermission5C1(activityId,{dateISO,startMinute},{location:opts.location||S.location,participantMode:opts.participantMode||'alone',personId:opts.personId||null,supervisorId:opts.supervisorId||null});if(!perm.ok)return {ok:false,reason:'permission_denied',permission:perm};}
+ const baseCost=Number(seasonalActivityDefinition5C1(activityId).cost||0),total=baseCost+gate.gear.cost;
+ if(total&&availableFunds()<total)return {ok:false,reason:'money',requiredCost:total};
+ const rental=gate.gear.mode==='rent'?acquireSeasonalRental5C44(activityId,{extraCost:baseCost}):null;
+ if(rental&&!rental.ok)return rental;
+ if(baseCost&&!spendOwn(baseCost))return {ok:false,reason:'money',requiredCost:total};
+ const loc=opts.location||S.location;advanceTime(gate.interval.minutes,{silent:true});
+ if(rental?.rental)finishSeasonalRental5C44(rental.rental);
+ S.energy=clamp(S.energy-(activityId==='camping_weekend'?19:12));S.needs.fun=clamp(S.needs.fun+(gate.weather.unpleasant?6:12));S.needs.hunger=clamp(S.needs.hunger+10);
+ if(gate.weather.unpleasant)S.energy=clamp(S.energy-3);
+ const rec={id:uid('seasonal'),activityId,dateISO,startMinute,endDateISO:currentDate(),endMinute:currentMinute(),location:loc,participantMode:opts.participantMode||'alone',participantIds:Array.isArray(opts.participantIds)?opts.participantIds.slice():(opts.personId?[opts.personId]:[]),romanticContext:false,gearAccess:gate.gear.mode,rentalId:rental?.rental?.id||null,costPaid:total,weather:gate.weather.weather,weatherInconvenience:!!gate.weather.unpleasant};
+ if(typeof outdoorExperience5C34==='function'){const story=outdoorExperience5C34(rec);rec.romanticContext=!!story?.romanticMoment;}
+ applySeasonalGearBenefits5C45(rec);applySeasonalEquipmentUse5C43(rec);const hist=ensureSeasonalState5C1().history;hist.unshift(rec);if(hist.length>80)hist.length=80;
+ return {ok:true,record:rec,minutes:gate.interval.minutes,outcome:{weather:gate.weather.weather,gear:gate.gear.mode}};
+}
+// PHASE 5C.3.3 — social participants and persistent invitations; no stories.
+function outdoorGroup5C33(id){return (S.groups||[]).find(g=>g.id===id)||null}
+function outdoorParticipants5C33(activityId,opts={}){
+ const mode=opts.participantMode||'alone',group=mode==='group'?outdoorGroup5C33(opts.groupId):null;
+ if(mode==='group'&&!group)return {ok:false,reason:'group_missing'};
+ const requested=mode==='group'?group.members:mode==='family'&&(!opts.personId)&&!(opts.participantIds||[]).length?(S.people||[]).filter(isFamilyPerson).map(p=>p.id):[opts.personId,...(opts.participantIds||[])];
+ const ids=[...new Set(requested.filter(Boolean))];if(mode==='group'&&!ids.length)return {ok:false,reason:'empty_group'};
+ const acceptedIds=[],responses={};const slot={dateISO:opts.dateISO||currentDate(),startMinute:Number(opts.startMinute??600)};
+ for(const id of ids){const p=personById(id);if(!p){responses[id]='Unavailable';continue}
+  const role=isFamilyPerson(p)?'family':mode==='partner'?'partner':'friend';const gate=seasonalParticipantGate5C1(id,role);
+  if(!gate.ok){responses[id]='Unavailable';continue}
+  const r=seasonalRsvp5C1(id,activityId,slot,{mode:role});responses[id]=r.answer==='Accepted'?'Accepted':'Declined';if(r.answer==='Accepted')acceptedIds.push(id);
+ }
+ if(mode==='group'&&!acceptedIds.length)return {ok:false,reason:'no_attendees',responses};
+ if(['friend','partner'].includes(mode)&&opts.personId&&!acceptedIds.includes(opts.personId))return {ok:false,reason:'rsvp_declined',responses};
+ return {ok:true,groupId:group?.id||null,acceptedIds,responses,requestedIds:ids};
+}
+function validateOutdoorAttendance5C33(plan){
+ if(!plan||!seasonalOutdoorDefinition5C31(plan.seasonalActivityId))return {ok:true};
+ for(const id of plan.participantIds||[]){const p=personById(id);if(!p||p.deceased||p.movedAway)return {ok:false,reason:'attendee_unavailable',personId:id};const availability=npcStatusAt(p,plan.dateISO,plan.startMinute);if(!availability.free)return {ok:false,reason:'attendee_unavailable',personId:id}}
+ const gate=seasonalOutdoorPlanGate5C31(plan.seasonalActivityId,{dateISO:plan.dateISO,startMinute:plan.startMinute,location:plan.location,participantMode:plan.participantMode,personId:plan.personId,participantIds:plan.participantIds,groupId:plan.groupId,supervisorId:plan.supervisorId});if(!gate.ok)return gate;
+ if(plan.participantMode==='group'&&!(plan.participantIds||[]).length)return {ok:false,reason:'no_attendees'};
+ return {ok:true};
+}
+function outdoorInvitationState5C33(){const st=ensureSeasonalState5C1();if(!st.outdoorInvitations||typeof st.outdoorInvitations!=='object'||Array.isArray(st.outdoorInvitations))st.outdoorInvitations={};return st.outdoorInvitations}
+function outdoorInvitationCooldown5C33(personId,activityId,dateISO){if(!seasonalOutdoorDefinition5C31(activityId))return true;const state=outdoorInvitationState5C33(),last=state[`${personId}|${activityId}`];return !last||daysBetween(last,currentDate())>=21}
+function outdoorInvitationStamp5C33(personId,activityId){if(seasonalOutdoorDefinition5C31(activityId))outdoorInvitationState5C33()[`${personId}|${activityId}`]=currentDate()}
+function validateOutdoorInvitation5C33(plan){if(!seasonalOutdoorDefinition5C31(plan.seasonalActivityId))return {ok:true};const interval=outdoorInterval5C32(plan.seasonalActivityId,plan.dateISO,plan.startMinute);const conflict=outdoorScheduleConflict5C32(interval);if(conflict)return {ok:false,reason:'conflict'};const gate=outdoorExecutionGate5C32(plan.seasonalActivityId,{dateISO:plan.dateISO,startMinute:plan.startMinute,location:plan.location,participantMode:plan.participantMode,personId:plan.personId,supervisorId:plan.supervisorId,gearAccess:plan.gearAccess});return gate.ok?{ok:true}:gate}
+function migrateOutdoorSocial5C33(){const st=outdoorInvitationState5C33();for(const [k,v] of Object.entries(st))if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))delete st[k];for(const p of S.plans||[])if(seasonalOutdoorDefinition5C31(p?.seasonalActivityId)){p.participantIds=[...new Set((p.participantIds||[]).filter(id=>!!personById(id)))];if(p.participantRsvps&&typeof p.participantRsvps==='object')p.participantRsvps=Object.fromEntries(Object.entries(p.participantRsvps).filter(([id])=>!!personById(id)));}return {ok:true}}
+// PHASE 5C.3.4 — narrative only after a successful real outdoor execution.
+function outdoorExperience5C34(record){
+ if(!record||!['camping_weekend','autumn_hike'].includes(record.activityId))return null;
+ if(record.outdoorStory5C34)return record.outdoorStory5C34;
+ const camp=record.activityId==='camping_weekend',wet=!!record.weatherInconvenience;
+ const choices=camp?['Setting up camp together','Sharing a simple outdoor meal','Talking around the campfire','Looking at the night sky']:['Finding the trail together','Taking a rest at the viewpoint','Talking during the walk','Helping each other across a tricky path'];
+ const index=Array.from(String(record.id||record.dateISO)).reduce((n,c)=>n+c.charCodeAt(0),0)%choices.length;
+ const scene=wet?(camp?'Dealing with damp camping supplies':'Working around a muddy trail'):choices[index];
+ const ids=[...new Set(Array.isArray(record.participantIds)?record.participantIds:[])];
+ const attended=ids.map(id=>personById(id)).filter(p=>p&&!p.deceased&&!p.movedAway);
+ const outcome={scene,attendees:attended.map(p=>p.id),romanticMoment:false,weatherInconvenience:wet};
+ S.needs.social=clamp(S.needs.social+(attended.length?Math.min(9,3+attended.length*2):0));
+ S.needs.fun=clamp(S.needs.fun+(wet?-2:3));
+ if(wet)S.energy=clamp(S.energy-2);
+ for(const p of attended){
+  const disagreement=wet&&(Number(p.conflict||0)>65);const family=isFamilyPerson(p);
+  p.rel=clamp(Number(p.rel||0)+(disagreement?-1:family?3:2));
+  p.trust=clamp(Number(p.trust||0)+(disagreement?0:1));
+  if(disagreement)p.conflict=clamp(Number(p.conflict||0)+1);
+  const label=disagreement?`You and ${displayName(p)} disagreed while ${scene.toLowerCase()}.`:`You and ${displayName(p)} shared ${scene.toLowerCase()} at ${record.location}.`;
+  rememberPerson(p,label,1);
+  const kind=camp?'camping':'hiking';const key=`outdoor-first-${kind}`;
+  p.outdoorFirsts5C34=p.outdoorFirsts5C34||{};
+  if(!p.outdoorFirsts5C34[key]){p.outdoorFirsts5C34[key]=record.id;addPersonMilestone(p,'moment',`First ${kind} outing together at ${record.location}.`)}
+  if(record.participantMode==='partner'&&ids.length===1&&p.id===ids[0]&&seasonalParticipantGate5C1(p.id,'partner').ok){
+   outcome.romanticMoment=true;outcome.romanticPersonId=p.id;
+   // Established Phase 3B partner context only; no automatic dating, kiss, or stage transitions.
+  }
+ }
+ record.outdoorStory5C34=outcome;return outcome;
+}
+function outdoorMeetingProvenance5C34(personId,record){
+ const p=personById(personId);
+ if(!p||!record||!['camping_weekend','autumn_hike'].includes(record.activityId)||!(record.participantIds||[]).includes(personId))return false;
+ // Never replace established provenance: only explicitly newly met attendees can be attributed.
+ if(p.metAt||p.meetingProvenance||p.knownSince<S.age||p.history?.length)return false;
+ p.metAt=record.activityId==='camping_weekend'?'at a campground':'on a hiking trail';return true;
+}
+// PHASE 5C.3.5 — conservative outdoor persistence and a small Daily Life entry point.
+// Plans, Calendar, RSVP, People, H3 and Inventory remain the only authorities.
+function migrateOutdoorIntegration5C35(){
+ const st=ensureSeasonalState5C1();
+ // Do not create visits, invitations, rental records, permissions or memories.
+ // Repair only explicitly persisted valid outdoor plans and their calendar reservations.
+ const validIds=new Set((S.people||[]).map(p=>p.id));
+ for(const plan of S.plans||[]){
+  if(!plan||!seasonalOutdoorDefinition5C31(plan.seasonalActivityId))continue;
+  if(Array.isArray(plan.participantIds))plan.participantIds=[...new Set(plan.participantIds.filter(id=>validIds.has(id)))];
+  if(plan.participantRsvps&&typeof plan.participantRsvps==='object'&&!Array.isArray(plan.participantRsvps)){
+   for(const id of Object.keys(plan.participantRsvps))if(!validIds.has(id)||!['Accepted','Declined','Unavailable'].includes(plan.participantRsvps[id]))delete plan.participantRsvps[id];
+  }
+  if(plan.seasonalActivityId!=='camping_weekend'||!/^\d{4}-\d{2}-\d{2}$/.test(plan.dateISO||'')||!Number.isInteger(Number(plan.startMinute)))continue;
+  const interval=outdoorInterval5C32(plan.seasonalActivityId,plan.dateISO,Number(plan.startMinute));
+  if(!interval.ok)continue;
+  // An existing plan needs its proper cross-date span; never infer a new outing.
+  if(plan.endDateISO!==interval.endDateISO)plan.endDateISO=interval.endDateISO;
+  if(plan.endMinute!==interval.endMinute)plan.endMinute=interval.endMinute;
+  if(plan.durationMinutes!==interval.minutes)plan.durationMinutes=interval.minutes;
+  const holdId='outdoor-overnight-'+plan.id,hold=(S.calendar||[]).find(e=>e.id===holdId);
+  const main=(S.calendar||[]).find(e=>e.id==='plan-'+plan.id&&e.type==='plan');
+  const active=plan.status==='Accepted'&&main&&!isTerminal(main.status);
+  if(active&&interval.endDateISO>interval.dateISO&&!hold){
+   createCalendarEvent({id:holdId,type:'outdoorReservation',title:plan.title+' (overnight)',dateISO:interval.endDateISO,startMinute:0,endMinute:interval.endMinute,payload:{overnightPlanId:plan.id},location:plan.location,required:true,source:'seasonal'});
+  }
+  if(hold&&outdoorTerminalPlanStatus5C35(plan.status)&&!isTerminal(hold.status))setCalendarStatus(hold,outdoorHoldStatus5C35(plan.status),'Outdoor plan ended');
+ }
+ // Story/first-experience markers are retained as saved, never inferred from history.
+ return {ok:true,historyCount:st.history.length};
+}
+function outdoorTerminalPlanStatus5C35(status){return ['Attended','Cancelled','Declined','Missed','Expired','Cancelled by you','Cancelled by them','No-show'].includes(status)}
+function outdoorHoldStatus5C35(status){return status==='Attended'?'Attended':['Cancelled by you','Cancelled by them','No-show'].includes(status)?'Cancelled':status}
+function settleOutdoorReservation5C35(plan){
+ if(plan?.seasonalActivityId!=='camping_weekend')return;
+ const hold=(S.calendar||[]).find(e=>e.id==='outdoor-overnight-'+plan.id);
+ if(hold&&!isTerminal(hold.status)&&outdoorTerminalPlanStatus5C35(plan.status))setCalendarStatus(hold,outdoorHoldStatus5C35(plan.status),'Outdoor plan ended');
+}
+function outdoorUiSlot5C35(activityId){
+ let d=currentDate();
+ if(activityId==='camping_weekend'){
+  let tries=0;while((![0,6].includes(parseISO(d).getUTCDay())||d===currentDate()&&currentMinute()>=900)&&tries++<9)d=addDays(d,1);
+ }else if(currentMinute()>=900)d=addDays(d,1);
+ return {dateISO:d,startMinute:600};
+}
+function outdoorUiOptions5C35(){
+ const family=(S.people||[]).filter(p=>isFamilyPerson(p)&&!p.deceased&&!p.movedAway);
+ const friends=(S.people||[]).filter(p=>!isFamilyPerson(p)&&!p.deceased&&!p.movedAway).slice(0,50);
+ const option=(p)=>`<option value="${esc(p.id)}">${esc(displayName(p))}</option>`;
+ return {family,friends,peopleOptions:family.concat(friends).map(option).join(''),groupOptions:(S.groups||[]).filter(g=>Array.isArray(g.members)&&g.members.length).map(g=>`<option value="${esc(g.id)}">${esc(g.name||g.id)}</option>`).join('')};
+}
+function outdoorPanel5C35(){
+ if(S.age<6)return '';
+ const opts=outdoorUiOptions5C35(),recent=(S.plans||[]).filter(p=>seasonalOutdoorDefinition5C31(p?.seasonalActivityId)).slice(0,8);
+ const modeOptions=['alone','family','friend','group','partner'].map(m=>`<option value="${m}">${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('');
+ const planRows=recent.map(p=>`<div class="timeline-entry"><b>${esc(p.title||p.seasonalActivityId)} • ${esc(p.status)}</b><p>${esc(p.dateISO)} ${timeLabel(p.startMinute)} · ${esc(p.location||'')} · ${esc(p.participantMode||'alone')} · ${p.participantIds?.length||0} attending</p>${p.participantRsvps&&Object.keys(p.participantRsvps).length?`<p class="muted-text">${Object.entries(p.participantRsvps).map(([id,answer])=>`${esc(displayName(personById(id))||id)}: ${esc(answer)}`).join(" · ")}</p>`:''}${p.status==='Accepted'&&p.dateISO===currentDate()?`<button class="small" data-outdoor-attend5c35="${esc(p.id)}">Attend planned outing</button>`:''}</div>`).join('');
+ const camp=outdoorUiSlot5C35('camping_weekend'),hike=outdoorUiSlot5C35('autumn_hike');
+ return `<section class="card wide"><h3>Autumn outdoors</h3><p class="muted-text">Camping needs autumn, a weekend, an overnight schedule, weather-safe conditions and a tent/sleeping bag or rental. Under-13 campers need a real adult; all minors need caregiver approval for overnight stays. Hiking is a day trip with its own age rules.</p><div class="inline-actions"><label>Outing <select data-outdoor-activity5c35><option value="camping_weekend">Camping weekend</option><option value="autumn_hike">Autumn hike</option></select></label><label>Date <input type="date" data-outdoor-date5c35 value="${camp.dateISO}" min="${currentDate()}"></label><label>Start <select data-outdoor-time5c35><option value="600">10:00</option><option value="840">14:00</option></select></label></div><div class="inline-actions"><label>Company <select data-outdoor-mode5c35>${modeOptions}</select></label><label>Person <select data-outdoor-person5c35><option value="">Choose person (when needed)</option>${opts.peopleOptions}</select></label><label>Friend group <select data-outdoor-group5c35><option value="">Choose group</option>${opts.groupOptions}</select></label></div><div class="inline-actions"><label>Adult supervisor (if required) <select data-outdoor-supervisor5c35><option value="">Auto family supervisor</option>${opts.family.concat(opts.friends.filter(p=>legitimateCampingSupervisor5C31(p.id).ok)).map(p=>`<option value="${esc(p.id)}">${esc(displayName(p))}</option>`).join('')}</select></label><label>Camping equipment <select data-outdoor-gear5c35><option value="owned">Use my gear</option><option value="rent">Rent temporary gear ($24)</option><option value="provider">Adult provider</option></select></label></div><div class="inline-actions"><button class="small primary" data-outdoor-plan5c35="1">Plan outing</button><small class="muted-text">Hiking: ${esc(hike.dateISO)} default; camping: ${esc(camp.dateISO)} default. Planning does not buy equipment or force NPC attendance.</small></div>${seasonalKitSummaryHtml5C45('camping_weekend')}${seasonalKitSummaryHtml5C45('autumn_hike')}${recent.length?`<h4>Outdoor plans</h4>${planRows}`:''}</section>`;
+}
+function outdoorClick5C35(button){
+ if(!button.dataset.outdoorPlan5c35&&!button.dataset.outdoorAttend5c35)return false;
+ let result;
+ if(button.dataset.outdoorAttend5c35){result=attendSeasonalPlan5C1(button.dataset.outdoorAttend5c35)}
+ else{
+  const host=button.closest('section');if(!host)return true;
+  const val=n=>host.querySelector(`[data-${n}]`)?.value||'';
+  const activityId=val('outdoor-activity5c35'),dateISO=val('outdoor-date5c35'),startMinute=Number(val('outdoor-time5c35'));
+  if(!seasonalOutdoorDefinition5C31(activityId)||!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)||dateISO<currentDate()){toast('Choose a valid future outdoor date.');return true}
+  const participantMode=val('outdoor-mode5c35'),personId=['friend','partner'].includes(participantMode)?val('outdoor-person5c35'):null;
+  const groupId=participantMode==='group'?val('outdoor-group5c35'):null;
+  if((['friend','partner'].includes(participantMode)&&!personId)||(participantMode==='group'&&!groupId)){toast('Choose a person or friend group for this outing.');return true}
+  const supervisorId=val('outdoor-supervisor5c35')||null,gearAccess=val('outdoor-gear5c35');
+  result=createSeasonalPlan5C1(activityId,{dateISO,startMinute,location:seasonalActivityDefinition5C1(activityId).locations[0],participantMode,personId,groupId,supervisorId,gearAccess});
+ }
+ if(result?.ok)toast(button.dataset.outdoorAttend5c35?'Outdoor outing completed.':'Outdoor outing planned.');
+ else toast('Cannot '+(button.dataset.outdoorAttend5c35?'attend':'plan')+' outing: '+String(result?.detail||result?.reason||'unavailable'));
+ save();render();return true;
+}
+function outdoorChange5C35(e){
+ if(!e?.target?.matches?.('[data-outdoor-activity5c35]'))return false;
+ const section=e.target.closest('section'),slot=outdoorUiSlot5C35(e.target.value);
+ const input=section?.querySelector('[data-outdoor-date5c35]');if(input)input.value=slot.dateISO;
+ return true;
+}
+// =====================================================================
+// PHASE 5C.4.1 — SEASONAL ITEM METADATA / COMPATIBLE INVENTORY CONTRACT
+// Foundation only. Existing Inventory owns item lifecycle and purchase flow;
+// 5C.2/5C.3 remain the final authorities for activity equipment access.
+// =====================================================================
+const SEASONAL_ITEM_SCHEMA_5C41=1;
+// Roles here describe catalog IDs; they never grant equipment or ownership.
+// 5C.4.2 adds real Store entries for the previously missing required gear.
+const SEASONAL_ITEM_ROLES_5C41=Object.freeze({
+ skiGear:{tags:['ski','safety'],activities:['ski_day'],role:'mandatory',temporary:['rent','provider']},
+ skiJacket:{tags:['ski','cold','insulation'],activities:['ski_day','build_snowman'],role:'optional'},
+ skiPants:{tags:['ski','cold','waterproof'],activities:['ski_day','build_snowman'],role:'optional'},
+ skiBoots:{tags:['ski','footwear'],activities:['ski_day'],role:'optional'},
+ skiHelmet:{tags:['ski','safety'],activities:['ski_day'],role:'optional'},
+ winterGloves:{tags:['cold','insulation'],activities:['ski_day','build_snowman'],role:'optional'},
+ snowBoots:{tags:['snow','footwear'],activities:['build_snowman','ski_day'],role:'optional'},
+ swimsuit:{tags:['swim','beach','clothing'],activities:['casual_swim','beach_day'],role:'optional'},
+ swimGoggles:{tags:['swim','eye_protection'],activities:['casual_swim'],role:'optional'},
+ swimCap:{tags:['swim','hair_protection'],activities:['casual_swim'],role:'optional'},
+ beachTowel:{tags:['beach','comfort'],activities:['beach_day','casual_swim','sunbathe'],role:'optional'},
+ snorkelSet:{tags:['snorkel','surface_water'],activities:['beach_day'],role:'optional'},
+ campingMat:{tags:['camping','comfort'],activities:['camping_weekend'],role:'optional'},
+ campingLantern:{tags:['camping','light'],activities:['camping_weekend'],role:'optional'},
+ flashlight:{tags:['camping','hiking','light'],activities:['camping_weekend','autumn_hike'],role:'optional'},
+ campingCookware:{tags:['camping','cooking'],activities:['camping_weekend'],role:'optional'},
+ hikingBoots:{tags:['hiking','footwear'],activities:['autumn_hike'],role:'optional'},
+
+ scubaGear:{tags:['scuba','diving'],activities:['scuba_outing'],role:'mandatory',temporary:['rent','provider']},
+ tent:{tags:['camping','shelter'],activities:['camping_weekend'],role:'mandatory',temporary:['rent','family_provider']},
+ sleepingBag:{tags:['camping','sleep'],activities:['camping_weekend'],role:'mandatory',temporary:['rent','family_provider']},
+ sunscreen:{tags:['sun','skin_protection'],activities:['beach_day','sunbathe'],role:'optional'},
+ sunglasses:{tags:['sun','eye_protection'],activities:['beach_day','sunbathe','autumn_hike'],role:'optional'},
+ cap:{tags:['sun','shade'],activities:['beach_day','autumn_hike'],role:'optional'},
+ umbrella:{tags:['rain','weather_protection'],activities:['autumn_hike','camping_weekend'],role:'optional'},
+ raincoat:{tags:['rain','weather_protection'],activities:['autumn_hike','camping_weekend'],role:'optional'},
+ sweater:{tags:['cold','insulation'],activities:['ski_day','camping_weekend'],role:'optional'},
+ hoodie:{tags:['cold','insulation'],activities:['camping_weekend'],role:'optional'},
+ waterBottle:{tags:['hydration','hiking'],activities:['autumn_hike','camping_weekend'],role:'optional'},
+ backpack:{tags:['storage','hiking'],activities:['autumn_hike','camping_weekend'],role:'optional'}
+});
+function registerSeasonalItemMetadata5C41(){
+ // 5C.2 alone is authorized to register the already-implemented sunscreen.
+ registerSeasonalCatalog5C2();
+ let registered=0,missing=[];
+ for(const [key,role] of Object.entries(SEASONAL_ITEM_ROLES_5C41)){
+  const d=D.catalog[key];if(!d){missing.push(key);continue}
+  // Add only absent 5C.4 metadata; never replace the catalog object or its
+  // existing lifecycle, price, category, age, or other authorititative fields.
+  if(!d.seasonalEquipment5C4)d.seasonalEquipment5C4={schema:SEASONAL_ITEM_SCHEMA_5C41,tags:[...role.tags],activities:[...role.activities],role:role.role,temporary:[...(role.temporary||[])]};
+  registered++;
+ }
+ return {registered,missing};
+}
+function seasonalItemMetadata5C41(key){
+ const d=D.catalog[key];if(!d)return null;
+ const m=d.seasonalEquipment5C4;if(!m)return null;
+ const lt=lifecycleOf(d);
+ return {key,category:d.category,lifecycleType:lt,consumable:['consumable','perishable','finite'].includes(lt),
+  maxUses:key==='sunscreen'?5:(Number.isFinite(d.units)?d.units:null),
+  maxCondition:hasCondition(lt)?100:null,repairable:!!d.repairable&&hasCondition(lt),
+  rentalEligible:!!m.temporary?.includes('rent'),minAge:d.minAge??0,
+  permissionPrice:d.permissionPrice??null,
+  equipmentTags:[...(m.tags||[])],activityCompatibility:[...(m.activities||[])],
+  role:m.role,temporaryAccess:[...(m.temporary||[])]};
+}
+function seasonalEquipmentRequirements5C41(activityId){
+ const required=Object.entries(SEASONAL_ITEM_ROLES_5C41).filter(([,v])=>v.role==='mandatory'&&v.activities.includes(activityId)).map(([key])=>key);
+ const optional=Object.entries(SEASONAL_ITEM_ROLES_5C41).filter(([,v])=>v.role==='optional'&&v.activities.includes(activityId)).map(([key])=>key);
+ return {activityId,required,optional,missingCatalog:required.filter(key=>!D.catalog[key]),
+  // Advisory metadata only: does not supersede seasonalGearAccess5C2 / outdoorEquipment5C32.
+  authority:activityId==='camping_weekend'?'outdoorEquipment5C32':'seasonalGearAccess5C2'};
+}
+function seasonalOwnedItemView5C41(itemId){
+ const it=(S.inventoryItems||[]).find(i=>i.id===itemId);if(!it)return null;
+ const meta=seasonalItemMetadata5C41(it.key);if(!meta)return null;
+ const usable=!it.stored&&(!hasCondition(it.lifecycleType)||it.condition>0)&&(it.lifecycleType!=='finite'||it.remaining>0);
+ return {id:it.id,key:it.key,quantity:it.quantity,remaining:it.remaining,condition:it.condition,
+  usable,metadata:meta};
+}
+function migrateSeasonalItems5C41(){
+ const audit=registerSeasonalItemMetadata5C41();let normalized=0;
+ // Only normalize explicit, already-owned, recognized seasonal item instances.
+ // No addItem(), no new state container, no rentals copied into ownership.
+ for(const it of S.inventoryItems||[]){
+  if(!it||!D.catalog[it.key]||!SEASONAL_ITEM_ROLES_5C41[it.key])continue;
+  const lt=it.lifecycleType||lifecycleOf(D.catalog[it.key]);
+  if(!Number.isFinite(it.quantity)||it.quantity<1||it.quantity%1!==0){it.quantity=Math.max(1,Math.floor(Number(it.quantity)||1));normalized++}
+  if(lt==='finite'&&(!Number.isFinite(it.remaining)||it.remaining<0||it.remaining>100)){
+   it.remaining=Number.isFinite(it.remaining)?Math.max(0,Math.min(100,it.remaining)):100;normalized++;
+  }
+  if(hasCondition(lt)&&(!Number.isFinite(it.condition)||it.condition<0||it.condition>100)){
+   it.condition=Number.isFinite(it.condition)?Math.max(0,Math.min(100,it.condition)):100;normalized++;
+  }
+ }
+ return {...audit,normalized,schema:SEASONAL_ITEM_SCHEMA_5C41};
+}
+// =====================================================================
+// PHASE 5C.4.3 — SEASONAL CONSUMABLES / REAL EQUIPMENT WEAR
+// Reuses existing Inventory instances, condition, useLog, and activity
+// executors. No rental ownership, repair service, or parallel lifecycle.
+// =====================================================================
+const SEASONAL_WEAR_5C43=Object.freeze({
+ ski_day:{skiGear:1.1,skiJacket:.3,skiPants:.3,skiBoots:.55,skiHelmet:.2,winterGloves:.2},
+ scuba_outing:{scubaGear:.9},
+ camping_weekend:{tent:1.1,sleepingBag:.7,campingMat:.35,campingLantern:.35,flashlight:.2,campingCookware:.4},
+ autumn_hike:{hikingBoots:.7,backpack:.25,raincoat:.15,flashlight:.15,waterBottle:.1},
+ beach_day:{beachTowel:.15,swimsuit:.2},casual_swim:{swimsuit:.3,swimGoggles:.2,swimCap:.15},
+ build_snowman:{winterGloves:.2,snowBoots:.35,skiJacket:.2},sunbathe:{beachTowel:.12}
+});
+// One existing owned instance per SKU. Optional items are used only when
+// actively equipped. A stored, depleted or broken item is never selected.
+function seasonalWearItem5C43(key,mandatory){
+ const matches=(S.inventoryItems||[]).filter(it=>it.key===key&&!it.stored&&hasCondition(it.lifecycleType)&&Number(it.condition)>0&&Number(it.quantity||1)>0&&(mandatory||it.equipped));
+ return matches.sort((a,b)=>Number(b.condition)-Number(a.condition)||String(a.id).localeCompare(String(b.id)))[0]||null;
+}
+function applySeasonalEquipmentUse5C43(record){
+ if(!record||!SEASONAL_WEAR_5C43[record.activityId])return [];
+ // The completed activity record is the idempotency authority. It is never
+ // populated by planning, weather cancellation, failure or migration.
+ if(Array.isArray(record.equipmentUse5C43))return record.equipmentUse5C43;
+ const wear=SEASONAL_WEAR_5C43[record.activityId],entries=[];
+ const required=seasonalEquipmentRequirements5C41(record.activityId).required;
+ const owned=record.gearAccess==='owned';
+ for(const [key,loss] of Object.entries(wear)){
+  const mandatory=required.includes(key);
+  // Provider/rented required equipment cannot silently wear a personal item.
+  if(mandatory&&!owned)continue;
+  const it=seasonalWearItem5C43(key,mandatory);if(!it)continue;
+  const before=Number(it.condition);setItemCondition(it,Math.max(0,before-loss));
+  it.timesUsed=Math.max(0,Number(it.timesUsed)||0)+1;
+  it.lastUsedDate=record.dateISO||currentDate();
+  const prev=it.useLog?.date===it.lastUsedDate?Math.max(0,Number(it.useLog.count)||0):0;
+  it.useLog={date:it.lastUsedDate,count:prev+1};
+  entries.push({itemId:it.id,key,before,after:it.condition});
+ }
+ record.equipmentUse5C43=entries;return entries;
+}
+// 5C.2 sunscreen remains a five-application finite supply (20% per use).
+// The common helper handles unopened stacks using the existing openOne()
+// semantics, records real usage and removes only the exhausted instance.
+function consumeSeasonalSupply5C43(key,percent){
+ const meta=seasonalItemMetadata5C41(key),size=Number(percent);
+ if(!meta||!meta.consumable||meta.lifecycleType!=='finite'||!Number.isFinite(size)||size<=0||size>100)return {ok:false,reason:'unsupported_supply'};
+ // Finish a previously opened bottle before splitting a new unopened stack.
+ const source=(S.inventoryItems||[]).find(it=>it.key===key&&it.opened&&!it.stored&&Number(it.remaining)>0)||findUsable(key);if(!source)return {ok:false,reason:key==='sunscreen'?'no_sunscreen':'no_supply'};
+ const it=openOne(source),before=Math.max(0,Math.min(100,Number(it.remaining)||0));
+ if(before<=0)return {ok:false,reason:'depleted'};
+ it.remaining=Math.max(0,before-size);
+ it.timesUsed=Math.max(0,Number(it.timesUsed)||0)+1;
+ const date=currentDate(),previous=it.useLog?.date===date?Math.max(0,Number(it.useLog.count)||0):0;
+ it.useLog={date,count:previous+1};it.lastUsedDate=date;
+ const result={ok:true,itemId:it.id,remaining:it.remaining};
+ if(it.remaining<=.5)removeItem(it.id);
+ return result;
+}
+// PHASE 5C.4.4 — Temporary seasonal rental transactions and seasonal gear services.
+// Inventory remains the only ownership source; H3 the only minor authority.
+const RENTAL_COST_5C44=Object.freeze({ski_day:38,scuba_outing:42,camping_weekend:24});
+function seasonalRentalStore5C44(){
+ const rentals=ensureSeasonalState5C2().rentals;
+ // Lazy expiry of newly issued rentals only; do not rewrite legacy rental history.
+ for(const r of rentals)if(r.id?.startsWith('rental44:')&&r.status==='active'&&r.expiresDateISO&&currentDate()>r.expiresDateISO){r.status='expired';r.closedDateISO=currentDate()}
+ return rentals;
+}
+function seasonalGearServicePermission5C44(kind,key,cost,context={}){
+ if(S.age>=18)return {ok:true,required:false};
+ const d=catalogItem(key)||{name:key,category:'Weather & outdoors',price:cost,description:'Safety equipment'};
+ const q=requestDecision({requestType:`seasonal${kind}Permission`,targetKey:key,context:{...context,cost,kind},decide:maker=>{
+  const score=purchaseScore({...d,price:cost},false)-(kind==='Rental'?2:0),ok=score>=45;
+  return {outcome:ok?'Yes':'No',resolved:true,reason:ok?`${decisionMakerLabel(maker)} approves this ${kind.toLowerCase()}.`:`${decisionMakerLabel(maker)} declines this ${kind.toLowerCase()}.`};
+ }});
+ if(q.error)return {ok:false,reason:'no_guardian',detail:q.error};
+ return {ok:q.record.outcome==='Yes',required:true,record:q.record,reused:q.reused,reason:q.record.outcome==='Yes'?null:'permission_denied'};
+}
+function seasonalRentalKey5C44(activityId,dateISO,startMinute){return `rental44:${activityId}:${dateISO}:${startMinute}`}
+function acquireSeasonalRental5C44(activityId,{dateISO=currentDate(),startMinute=currentMinute(),extraCost=0}={}){
+ const cost=RENTAL_COST_5C44[activityId];if(!cost)return {ok:false,reason:'unsupported_rental'};
+ const def=seasonalActivityDefinition5C1(activityId);if(!def||S.age<def.minAge)return {ok:false,reason:'age'};
+ const rentals=seasonalRentalStore5C44(),id=seasonalRentalKey5C44(activityId,dateISO,startMinute),old=rentals.find(r=>r.id===id);
+ if(old){if(old.status==='active')return {ok:true,mode:'rent',rental:old,reused:true,charged:0};return {ok:false,reason:'rental_already_settled',rental:old}}
+ const permission=seasonalGearServicePermission5C44('Rental',activityId,cost,{dateISO,startMinute,activityId});
+ if(!permission.ok)return {ok:false,reason:permission.reason||'permission_denied',permission};
+ if(availableFunds()<cost+Number(extraCost||0))return {ok:false,reason:'money',detail:`Rental and outing cost ${money(cost+Number(extraCost||0))}.`};
+ if(!spendOwn(cost))return {ok:false,reason:'money'};
+ const rec={id,activityId,dateISO,startMinute,cost,temporary:true,status:'active',expiresDateISO:activityId==='camping_weekend'?addDays(dateISO,1):dateISO,permissionDecisionId:permission.record?.id||null};
+ rentals.push(rec);return {ok:true,mode:'rent',rental:rec,charged:cost};
+}
+function finishSeasonalRental5C44(rec,status='returned'){
+ if(!rec)return null;const r=seasonalRentalStore5C44().find(x=>x.id===rec.id);
+ if(!r)return null;if(r.status==='active'){r.status=status==='cancelled'?'cancelled':'returned';r.closedDateISO=currentDate();r.closedMinute=currentMinute()}
+ return r;
+}
+function seasonalRentalStatus5C44(id){const r=seasonalRentalStore5C44().find(x=>x.id===id);return r?{...r}:null}
+function seasonalRepairQuote5C44(itemId){
+ const it=(S.inventoryItems||[]).find(x=>x.id===itemId),d=it&&catalogItem(it.key);
+ if(!it||!d||!seasonalItemMetadata5C41(it.key))return {ok:false,reason:'not_seasonal_gear'};
+ if(!hasCondition(it.lifecycleType)||!d.repairable)return {ok:false,reason:'not_repairable'};
+ if(!Number.isFinite(it.condition)||it.condition>=90)return {ok:false,reason:'no_repair_needed'};
+ const cost=Math.max(3,Math.round(d.price*.12*((100-it.condition)/50)));
+ return {ok:true,itemId:it.id,key:it.key,before:it.condition,cost,after:Math.min(it.condition<=0?70:95,it.condition+45)};
+}
+function repairSeasonalGear5C44(itemId){
+ const quote=seasonalRepairQuote5C44(itemId);if(!quote.ok)return quote;
+ const permission=seasonalGearServicePermission5C44('Repair',quote.key,quote.cost,{itemId,dateISO:currentDate(),condition:quote.before});
+ if(!permission.ok)return {ok:false,reason:permission.reason||'permission_denied',permission};
+ if(!spendOwn(quote.cost))return {ok:false,reason:'money',cost:quote.cost};
+ const it=S.inventoryItems.find(x=>x.id===itemId);setItemCondition(it,quote.after);advanceTime(30);
+ log(`Repaired ${it.name.toLowerCase()}`,`Condition ${Math.round(quote.before)}% → ${Math.round(it.condition)}% • ${money(quote.cost)}.`);
+ return {ok:true,cost:quote.cost,itemId:it.id,before:quote.before,after:it.condition,permissionDecisionId:permission.record?.id||null};
+}
+function replaceSeasonalGear5C44(itemId){
+ const it=(S.inventoryItems||[]).find(x=>x.id===itemId),d=it&&catalogItem(it.key);
+ if(!it||!d||!seasonalItemMetadata5C41(it.key)||!hasCondition(it.lifecycleType))return {ok:false,reason:'not_seasonal_gear'};
+ if(it.condition>0)return {ok:false,reason:'not_broken'};
+ if(S.age<d.minAge)return {ok:false,reason:'age'};
+ // Replace exactly one broken instance. Existing unbroken inventory is never touched.
+ const permission=seasonalGearServicePermission5C44('Replacement',it.key,d.price,{itemId,dateISO:currentDate(),condition:0});
+ if(!permission.ok)return {ok:false,reason:permission.reason||'permission_denied',permission};
+ if(!spendOwn(d.price))return {ok:false,reason:'money',cost:d.price};
+ const oldKey=it.key;removeItem(itemId,true);const fresh=addItem(oldKey,'replacement purchase');
+ if(!fresh){return {ok:false,reason:'catalog_missing'}}
+ // Existing addItem() records free-priced non-own-money sources; correct only this transaction.
+ const history=S.purchaseHistory.find(x=>x.key===oldKey&&x.source==='replacement purchase'&&x.dateISO===currentDate());
+ if(history)history.price=d.price;
+ advanceTime(15);log('Replaced broken equipment',`${d.name} replaced for ${money(d.price)}.`);
+ return {ok:true,oldItemId:itemId,itemId:fresh.id,cost:d.price,permissionDecisionId:permission.record?.id||null};
+}
+// =====================================================================
+// PHASE 5C.4.5 — SEASONAL EQUIPMENT INTEGRATION / PRESENTATION / MIGRATION
+// Catalog, Inventory and established activity gates remain authoritative.
+// Advisory previews grant no activity eligibility or temporary ownership.
+// =====================================================================
+const SEASONAL_INTEGRATION_SCHEMA_5C45=1;
+function seasonalGearPreview5C45(activityId){
+ const spec=seasonalEquipmentRequirements5C41(activityId);
+ const details=keys=>keys.map(key=>{
+  const d=catalogItem(key),owned=(S.inventoryItems||[]).filter(i=>i.key===key),ready=owned.filter(i=>!i.stored&&Number(i.quantity)>0&&(!hasCondition(i.lifecycleType)||Number(i.condition)>0)&&(!['finite','consumable','perishable'].includes(i.lifecycleType)||Number(i.remaining)>0));
+  const broken=owned.some(i=>hasCondition(i.lifecycleType)&&Number(i.condition)<=0);
+  return {key,name:d?.name||key,owned:owned.length>0,usable:ready.length>0,broken:!ready.length&&broken,optionalEquipped:ready.some(i=>i.equipped),itemIds:ready.map(i=>i.id)};
+ });
+ const required=details(spec.required),optional=details(spec.optional);
+ // A preview is not a safety/location/age/permission decision: those are
+ // performed by seasonalGearAccess5C2() / outdoorExecutionGate5C32().
+ return {activityId,required,optional,hasOwnedRequired:required.every(x=>x.usable),
+  rentalAvailable:Object.prototype.hasOwnProperty.call(RENTAL_COST_5C44,activityId),
+  rentalPrice:RENTAL_COST_5C44[activityId]||0,
+  providerConditional:['ski_day','scuba_outing','camping_weekend'].includes(activityId),
+  authority:spec.authority};
+}
+function seasonalItemDetail5C45(itemId){
+ const it=(S.inventoryItems||[]).find(i=>i.id===itemId);if(!it)return null;
+ const m=seasonalItemMetadata5C41(it.key);if(!m)return null;
+ const hasCon=hasCondition(it.lifecycleType),cond=hasCon?Math.max(0,Math.min(100,Number(it.condition)||0)):null;
+ const remaining=it.lifecycleType==='finite'?Math.max(0,Math.min(100,Number(it.remaining)||0)):null;
+ return {id:it.id,key:it.key,activities:m.activityCompatibility.slice(),condition:cond,
+  remainingPercent:remaining,remainingUses:remaining!=null&&m.maxUses?Math.ceil(remaining*m.maxUses/100)+Math.max(0,Math.floor(Number(it.quantity)||1)-1)*m.maxUses:null,
+  usable:!it.stored&&Number(it.quantity)>0&&(cond==null||cond>0)&&(remaining==null||remaining>0),
+  broken:cond!=null&&cond<=0,stored:!!it.stored,repairable:m.repairable,
+  owned:true,rental:false};
+}
+function seasonalKitSummaryHtml5C45(activityId){
+ const v=seasonalGearPreview5C45(activityId);if(!v.required.length&&!v.optional.length)return '';
+ const status=x=>`${esc(x.name)}: ${x.usable?'usable owned':x.broken?'broken':x.owned?'stored/unavailable':'not owned'}`;
+ const mandatory=v.required.length?`<p class="muted-text">Essential gear: ${v.required.map(status).join(' · ')}</p>`:'';
+ const alternate=v.rentalAvailable?`<p class="muted-text">Temporary rental: ${money(v.rentalPrice)} when eligible; returned after outing. Provider access requires a legitimate provider; never adds Inventory ownership.</p>`:'';
+ const optional=v.optional.length?`<p class="muted-text">Optional: ${v.optional.filter(x=>x.optionalEquipped).map(x=>esc(x.name)).join(', ')||'No eligible gear equipped'}${v.optional.some(x=>x.broken)?' · broken optional gear provides no benefit':''}</p>`:'';
+ return `<div class="seasonal-kit" data-seasonal-kit="${esc(activityId)}">${mandatory}${alternate}${optional}</div>`;
+}
+function seasonalInventoryDetailsHtml5C45(itemId){
+ const x=seasonalItemDetail5C45(itemId);if(!x)return '';
+ const names=x.activities.map(id=>seasonalActivityDefinition5C1(id)?.name||id).join(' / ');
+ const state=x.broken?'Broken — cannot satisfy gear checks':x.stored?'Stored — take out to use':x.usable?'Available for outings':'Unavailable';
+ return `<small class="item-sub">Outdoors: ${esc(names)} · ${esc(state)}${x.remainingUses!=null?` · ${x.remainingUses} use${x.remainingUses===1?'':'s'} left`:''}${x.condition!=null?` · Condition ${Math.round(x.condition)}%`:''}</small>`;
+}
+// Only equipped, usable, personally owned optional items can confer benefits.
+// Apply AFTER an outing succeeds, and only once per completed record.
+// The gain is deliberately small; it cannot override any activity gate.
+function applySeasonalGearBenefits5C45(record){
+ if(!record||!SEASONAL_WEAR_5C43[record.activityId])return [];
+ if(Array.isArray(record.equipmentBenefits5C45))return record.equipmentBenefits5C45;
+ const cfg=record.activityId==='autumn_hike'||record.activityId==='camping_weekend'
+  ?(record.weatherInconvenience?['raincoat','umbrella']:record.activityId==='autumn_hike'?['hikingBoots']:['campingMat'])
+  :record.activityId==='ski_day'?['skiJacket','winterGloves']
+  :['beach_day','casual_swim','sunbathe'].includes(record.activityId)?['beachTowel','swimsuit']:[];
+ const selected=cfg.map(key=>seasonalWearItem5C43(key,false)).filter(Boolean);
+ const unique=selected.filter((it,i,arr)=>arr.findIndex(j=>j.id===it.id)===i).slice(0,2);
+ const gains=[];
+ if(unique.length){
+  const protect=!!record.weatherInconvenience;
+  if(protect)S.energy=clamp(S.energy+Math.min(2,unique.length));
+  else S.needs.fun=clamp(S.needs.fun+Math.min(2,unique.length));
+  for(const it of unique)gains.push({itemId:it.id,key:it.key,effect:protect?'weather_comfort':'outing_comfort',value:1});
+ }
+ record.equipmentBenefits5C45=gains;
+ return gains;
+}
+function migrateSeasonalIntegration5C45(){
+ // Earlier migrations normalize existing Inventory and the 5C.2 rental store.
+ // Do not create state, infer prior gear use, convert rentals to ownership,
+ // repair broken gear, grant permissions, or rewrite old outing history.
+ const audit=registerSeasonalItemMetadata5C41();
+ return {schema:SEASONAL_INTEGRATION_SCHEMA_5C45,registered:audit.registered,
+  missingCatalog:audit.missing,ownedSeasonal:(S.inventoryItems||[]).filter(i=>!!seasonalItemMetadata5C41(i.key)).length,
+  rentals:(S.seasonal5C2?.rentals||[]).length};
 }
 
 // =====================================================================
@@ -8457,7 +9093,7 @@ $('save').addEventListener('click',()=>{save();toast('Saved')});$('export').addE
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;active=b.dataset.tab;render()});$('panel-host').addEventListener('click',handlePanelClick);$('event-actions').addEventListener('click',handlePanelClick);$('choice-content').addEventListener('click',handleModalClick);$('age-up').addEventListener('click',ageUp);$('next-day').addEventListener('click',()=>{nextDay();save();render()});$('ff-btn').addEventListener('click',()=>{if(S)openFastForward()});$('log-drawer').addEventListener('toggle',()=>{UI.logOpen=$('log-drawer').open;saveUI()});$('open-journal').addEventListener('click',()=>{if(!S)return;active='world';UI.subTab.world='journal';saveUI();render()});$('planner-btn').addEventListener('click',()=>document.body.classList.toggle('planner-open'));$('clear-log').addEventListener('click',()=>{if(!S)return;if(confirm('Clear the visible life log? Important milestones remain in the journal.')){S.log=[];save();render()}});
 $('needs-hud').addEventListener('click',e=>{const b=e.target.closest('[data-need]');if(!b||!S)return;const k=b.dataset.need;if(k==='social'){active='people';render()}else if(k==='comfort'){active='places';render()}else act(needAction(k))});
 $('choice-overlay').addEventListener('click',e=>{if(e.target===$('choice-overlay'))closeChoiceModal()});document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('choice-overlay').classList.contains('hidden'))closeChoiceModal();else $('overlay').classList.toggle('hidden')});
-$('panel-host').addEventListener('change',e=>{if(typeof handlePanelChange5B3==='function'&&handlePanelChange5B3(e))return;if(typeof handlePanelChange5A4==='function'&&handlePanelChange5A4(e))return});
+$('panel-host').addEventListener('change',e=>{if(typeof outdoorChange5C35==='function'&&outdoorChange5C35(e))return;if(typeof handlePanelChange5B3==='function'&&handlePanelChange5B3(e))return;if(typeof handlePanelChange5A4==='function'&&handlePanelChange5A4(e))return});
 $('panel-host').addEventListener('click',e=>{if(e.target.id==='open-stand'){startConfiguredStand({product:$('stand-product').value,price:$('stand-price').value,stock:$('stand-stock').value,location:$('stand-location').value,hours:$('stand-hours').value,quality:$('stand-quality').value,signQuality:$('stand-sign').value,exaggeration:$('stand-exaggeration').value,parentHelp:$('stand-parent-help').checked});save();render()}else if(e.target.id==='open-yard'){startYardSale($('yard-item').value,$('yard-price').value);save();render()}});
 
 setInterval(()=>{if(S)save()},45000);
@@ -8496,7 +9132,7 @@ window.__LIFE_SIM_TEST__={
  eventChoice:(id,choice)=>resolveEventChoice(id,choice),
  reconcile:()=>{reconcileState('test');render();save()},
  todayWarnings:()=>todayWarnings(),
- call:(name,...args)=>{const f={migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
+ call:(name,...args)=>{const f={seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
 };
 
 if(new URLSearchParams(location.search).get('smoke')==='1')setTimeout(()=>{try{$('c-name').value='Smoke Test';initializeNewLife();document.body.dataset.smoke=(!$('game').classList.contains('hidden')&&S)?'pass':'fail'}catch(e){console.error(e);document.body.dataset.smoke='fail';document.body.dataset.smokeError=e.message}},30);

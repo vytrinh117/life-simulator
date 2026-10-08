@@ -9,12 +9,13 @@ function advanceTime(minutes,{skipNeeds=false,silent=false,skipRoutine=false}={}
   else{remaining-=untilMidnight;S.clock.minute=1439;processCalendar();S.clock.minute=0;S.clock.dateISO=addDays(S.clock.dateISO,1);S.day++;dailyTick({skipRoutine});processCalendar()}
  }
  if(!skipNeeds)applyNeedConsequences();if(!silent&&!skipRoutine)maybeRandomEvent();checkConditionalRequests();
+ if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4('time advancement');
  if(!SIM.skipping&&!SIM.sleeping)checkBedtime();
  moodDrift(minutes);
  if(!SIM.skipping)clearCurrentContextIfSourceResolved()
 }
 function dailyTick({skipRoutine=false}={}){
- setWeather();ageSync();itemDailyTick();academicTick();schoolDailyTick(skipRoutine);schoolActivityTick();holidayTick();
+ setWeather();ageSync();itemDailyTick();academicTick();schoolDailyTick(skipRoutine);schoolActivityTick();if(typeof reconcileClubLeadership4B3==='function')reconcileClubLeadership4B3('Daily school reconciliation');if(typeof reconcileSchoolRecognition4B4==='function')reconcileSchoolRecognition4B4('Daily school recognition reconciliation');holidayTick();
  if(!skipRoutine){worldTick();const sd=needsFormalSchool()&&isSchoolDay();scheduleFollowUp('npcInitiative',{},{minute:(sd?940:600)+Math.floor(Math.random()*(sd?200:540))});applyNeedConsequences(true);if(S.stall?.active&&chance(35))runStall(false)}
  if(!skipRoutine)repDailyTick();
  promTick();npcAgencyTick();knxDaily();if(typeof communication3C3Daily==='function')communication3C3Daily();if(typeof communication3C4Daily==='function')communication3C4Daily();lmpqDaily();rstDaily();bizDaily();uniDaily();workDaily();identityTick();eventsDaily();healthDailyTick();familyGrowthTick();siblingRequestTick();friendNetworkTick();threadTick();devWeeklyTick();if(!skipRoutine){neighborhoodTick();groupTick()}

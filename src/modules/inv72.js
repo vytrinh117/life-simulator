@@ -38,12 +38,12 @@ function makeItemInstance(key,source='purchase',cond=null){
  if(lt==='container'){it.capacity=d.capacity||500;it.contents=it.capacity}
  if(lt==='progress'){it.progress=0;it.completions=0}
  if(lt==='perishable')it.freshUntil=addDays(currentDate(),d.freshnessDays||3);
- if(d.battery)it.battery=100;if(d.slot)it.slot=d.slot;
+ if(d.battery)it.battery=100;if(d.slot)it.slot=d.slot;if(d.workbook5A&&typeof applyWorkbookMetadata5A1==='function')applyWorkbookMetadata5A1(it,d);
  it.origin=originText(source,d);if(it.origin&&/first phone/.test(it.origin))it.sentimental=40;
  return it
 }
 function addItem(key,source='purchase',condition=null,{quantity=1}={}){
- const d=catalogItem(key);if(!d)return null;quantity=Math.max(1,Math.round(quantity)||1);let it=null;
+ const d=catalogItem(key);if(!d)return null;quantity=Math.max(1,Math.round(quantity)||1);if(d.workbook5A){const owned=S.inventoryItems.find(i=>i.key===key);if(owned)return owned;quantity=1}let it=null;
  if(d.stackable&&condition==null){const fresh=lifecycleOf(d)==='perishable'?addDays(currentDate(),d.freshnessDays||3):null;it=S.inventoryItems.find(x=>x.key===key&&!x.opened&&!x.stored&&(!fresh||x.freshUntil===fresh))}
  if(it)it.quantity=(it.quantity||1)+quantity;
  else{it=makeItemInstance(key,source,condition);if(d.stackable)it.quantity=quantity;S.inventoryItems.push(it);if(!d.stackable)for(let i=1;i<quantity;i++)S.inventoryItems.push(makeItemInstance(key,source,condition))}
@@ -71,8 +71,8 @@ function phoneItems(){return S.inventoryItems.filter(i=>catalogItem(i.key)?.phon
 function activePhoneItem(){const all=phoneItems();let p=all.find(i=>i.id===S.phone.activeItemId);if(!p){p=all.filter(i=>!i.stored).sort((a,b)=>b.condition-a.condition)[0]||null;S.phone.activeItemId=p?.id||null}return p}
 function syncPhoneState(){const p=activePhoneItem();S.phone.owned=!!p&&p.condition>0;S.phone.model=p?p.name:null;S.phone.price=p?p.originalPrice:600;S.phone.condition=p?Math.round(p.condition):100;S.phone.battery=p?Math.round(p.battery??100):100;if(p)p.isSpare=false;for(const o of phoneItems())if(o!==p)o.isSpare=true;ensurePhoneApps()}
 function setItemCondition(it,value){if(!it)return;const before=conditionLabel(it.condition);it.condition=clamp(value);if(it.condition<=0&&it.equipped)it.equipped=false;if(catalogItem(it.key)?.phone)syncPhoneState();return before!==conditionLabel(it.condition)?conditionLabel(it.condition):null}
-function canUsePhone(){if(S.age<D.ageRules.phone)return false;if(S.phone?.confiscatedUntil===currentDate())return false;const p=activePhoneItem();return !!p&&p.condition>0&&(p.battery??100)>0}
-function phoneLockReason(){if(S.age<D.ageRules.phone)return `Independent phone use starts around high school (age ${D.ageRules.phone} in this simulation).`;const p=activePhoneItem();if(!p)return 'You do not own a phone yet.';if(p.condition<=0)return `Your ${p.name} is broken. Repair or replace it.`;if((p.battery??100)<=0)return 'Your phone battery is dead. Charge it first.';return ''}
+function canUsePhone(){if(typeof schoolDeviceUseGate4C3==='function'&&!schoolDeviceUseGate4C3('phone').ok)return false;if(S.age<D.ageRules.phone)return false;if(S.phone?.confiscatedUntil===currentDate())return false;const p=activePhoneItem();return !!p&&p.condition>0&&(p.battery??100)>0}
+function phoneLockReason(){if(typeof schoolDeviceUseGate4C3==='function'){const g=schoolDeviceUseGate4C3('phone');if(!g.ok)return g.reason}if(S.age<D.ageRules.phone)return `Independent phone use starts around high school (age ${D.ageRules.phone} in this simulation).`;const p=activePhoneItem();if(!p)return 'You do not own a phone yet.';if(p.condition<=0)return `Your ${p.name} is broken. Repair or replace it.`;if((p.battery??100)<=0)return 'Your phone battery is dead. Charge it first.';return ''}
 function drainActivePhone(){const p=activePhoneItem();if(!p)return;p.battery=clamp((p.battery??100)-(3+Math.random()*5));p.timesUsed=(p.timesUsed||0)+1;let note=setItemCondition(p,p.condition-.12);if(chance(.4)){note=setItemCondition(p,p.condition-15);log('Cracked screen',`Your ${p.name} slips out of your hand and hits the floor. A crack runs across the corner of the screen.`)}if(p.battery<=0)toast('Your phone just died.');syncPhoneState()}
 function onPhoneAcquired(it){
  const cur=phoneItems().find(i=>i.id===S.phone.activeItemId&&i!==it);
@@ -175,6 +175,7 @@ function toggleWear(itemId){
 }
 function repairItem(itemId){
  const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;const d=catalogItem(it.key);
+ if(typeof seasonalRepairQuote5C44==='function'&&seasonalItemMetadata5C41(it.key)){const r=repairSeasonalGear5C44(itemId);if(!r.ok)toast(r.reason.replaceAll('_',' '));return r;}
  if(!hasCondition(it.lifecycleType)){toast('There is nothing to repair.');return}
  if(!d.repairable&&!['wearable'].includes(it.lifecycleType)){toast('This cannot really be repaired.');return}
  if(it.condition>=90){toast('It does not need repair.');return}
@@ -194,7 +195,7 @@ function sellItem(itemId){
 function discardItem(itemId){const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;if(!confirm(`Throw away ${it.quantity>1?'one ':''}${it.name}? This cannot be undone.`))return;removeItem(it.id,true);log(`Threw away ${it.name.toLowerCase()}`,it.sentimental>=35&&it.origin?`${it.origin} It is gone now.`:'It is no longer in your things.')}
 function useInventoryItem(id,action='use'){
  const it=S.inventoryItems.find(x=>x.id===id);if(!it)return;
- if(action==='wear')return toggleWear(id);if(action==='repair')return repairItem(id);if(action==='sell')return sellItem(id);if(action==='discard')return discardItem(id);
+ if(action==='wear')return toggleWear(id);if(action==='repair')return repairItem(id);if(action==='replace'){const result=replaceSeasonalGear5C44(id);if(!result.ok)toast(String(result.reason||'Replacement unavailable').replaceAll('_',' '));return result;}if(action==='sell')return sellItem(id);if(action==='discard')return discardItem(id);
  if(action==='store'){it.stored=!it.stored;if(it.stored)it.equipped=false;if(catalogItem(it.key)?.phone)syncPhoneState();feedback(it.stored?`Stored ${it.name.toLowerCase()}`:`Took out ${it.name.toLowerCase()}`,'',2);return}
  if(action==='charge')return chargeDevice(id);if(action==='refill')return refillContainer(id);if(action==='clean')return cleanItem(id);
  if(action==='activatePhone'){S.phone.activeItemId=it.id;it.stored=false;syncPhoneState();feedback(`Switched to ${it.name}`,'Your messages and apps move over.',10);return}
@@ -217,7 +218,7 @@ function normalizeInventory(){
  if(S.phone.owned&&!phoneItems().length){const key=S.phone.price<=300?'phoneUsed':S.phone.price>=900?'phoneFlagship':'phone';const it=makeItemInstance(key,'Existing phone',S.phone.condition??100);it.name=S.phone.model||it.name;S.inventoryItems.push(it)}
  for(const it of S.inventoryItems){
   it.id=it.id||uid('item');const d=catalogItem(it.key);if(!d){it.lifecycleType=it.lifecycleType||'durable';continue}
-  const lt=it.lifecycleType||lifecycleOf(d);it.lifecycleType=lt;it.name=it.name||d.name;it.category=d.category;
+  const lt=it.lifecycleType||lifecycleOf(d);it.lifecycleType=lt;it.name=it.name||d.name;it.category=d.category;if(d.workbook5A&&typeof applyWorkbookMetadata5A1==='function')applyWorkbookMetadata5A1(it,d);
   it.quantity=Math.max(1,Math.round(it.quantity||1));it.opened=!!it.opened;it.timesUsed=it.timesUsed||0;it.useLog=it.useLog||{date:null,count:0};it.acquiredDate=it.acquiredDate||currentDate();
   if(it.remaining==null)it.remaining=lt==='finite'?clamp(it.condition??100):100;
   if(!hasCondition(lt))it.condition=100;else it.condition=clamp(it.condition??100);
@@ -249,6 +250,8 @@ function applyWeatherGear(p,mins){
 function canBuyItem(key,qty=1){
  const d=catalogItem(key);if(!d)return {ok:false,reason:'Unknown item.'};
  if(S.age<d.minAge)return {ok:false,reason:`This item becomes relevant around age ${d.minAge}.`};
+ if(d.workbook5A&&unitCount(key)>0)return {ok:false,reason:'You already own this workbook.'};
+ if(d.workbook5A&&qty>1)return {ok:false,reason:'One reusable copy is enough.'};
  if(d.maxQuantity&&unitCount(key)+qty>d.maxQuantity)return {ok:false,reason:`You already have plenty (${unitCount(key)}).`};
  const total=d.price*qty;if(availableFunds()<total)return {ok:false,reason:`You need ${money(total-availableFunds())} more.`};
  const usingManaged=S.age<13&&S.money+(S.finance.savings||0)<total&&(S.finance.parentSavings||0)>0;

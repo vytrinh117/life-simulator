@@ -53,6 +53,6 @@ function transferPlayerSchool4A2(targetSchoolId,reason='School transfer'){
  const target=schoolById(targetSchoolId),sc=S.school;if(!target||!sc)return false;const curStage=canonicalSchoolStage4A1(sc.stage||stageOfSchool(sc));if(canonicalSchoolStage4A1(target.educationLevel)!==curStage)return false;if(sc.currentSchoolId===target.schoolId)return true;
  closePlayerSchoolEnrollment4A2(reason);sc.currentSchoolId=target.schoolId;sc.name=target.name;sc.stage=target.educationLevel;sc.startedDate=currentDate();
  for(const ev of S.calendar||[])if(schoolOwnedEventType4A1(ev)&&!isTerminal(ev.status)&&ev.dateISO>=currentDate()){ev.payload=ev.payload||{};ev.schoolId=target.schoolId;ev.payload.schoolId=target.schoolId;ev.payload.school=target.name;if(ev.type==='schoolDay')ev.title=`School • ${target.name}`}
- syncPlayerSchoolEnrollment4A2({reason});return true
+ syncPlayerSchoolEnrollment4A2({reason});if(typeof reconcileSchoolRoles4B1==='function')reconcileSchoolRoles4B1(reason);if(typeof ensureCurrentSchoolOrganizations4B1==='function')ensureCurrentSchoolOrganizations4B1();if(typeof reconcileSchoolRecognition4B4==='function')reconcileSchoolRecognition4B4(reason);return true
 }
 function playerSchoolIdentityRows4A2(){const sc=currentSchoolForPlayer4A2();if(!sc)return '';const type=sc.type?String(sc.type).replace(/_/g,' '):'Unknown';const stage=STAGE_LABEL[sc.educationLevel]||sc.educationLevel||'';return `${statRow('School type',esc(type[0]?.toUpperCase()+type.slice(1)))}${stage?statRow('Stage',esc(stage)):''}`}
