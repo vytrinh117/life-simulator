@@ -6,7 +6,8 @@
 // ---------- K40. Named relationship tiers ----------
 const FRIEND_TIERS=[[0,'Acquaintance'],[40,'Friend'],[60,'Good Friend'],[75,'Close Friend'],[88,'Best Friend']];
 const TIER_RANK={Stranger:0,Acquaintance:0,Contact:0,'Former Friend':0,'Old Friend':1,Friend:2,'Good Friend':2,'Casual Friend':2,'Close Friend':3,'Best Friend':4,Dating:3,Serious:4};
-function friendTier(p){if(!p||isFamilyPerson(p))return null;if(S.romance?.partnerId===p.id)return p.romanceStage==='partner'?'Serious':'Dating';return friendStatusLabel(p)||friendshipTier(p)}
+// Romance and friendship have separate ladders. Dating/Serious are NEVER friendship tiers.
+function friendTier(p){if(!p||isFamilyPerson(p))return null;return friendStatusLabel(p)||friendshipTier(p)}
 function tierRank(p){return TIER_RANK[friendTier(p)]??-1}
 function tierTick(){
  for(const p of S.people||[]){const t=friendTier(p);if(!t)continue;if(p.tier&&p.tier!==t&&!SIM.skipping){const up=(TIER_RANK[t]||0)>(TIER_RANK[p.tier]||0);if(up)friendshipMilestone(p,t);else if((TIER_RANK[p.tier]||0)>=3&&(TIER_RANK[t]||0)<=1)noteSeparation(p);
@@ -125,7 +126,7 @@ function npcBirthdayInvite(p,partyDay=null){const yk=(partyDay||addDays(currentD
 // N47. The player's own birthday: surprise party, gifts, invitations, partner
 function playerBirthdayExtras(){
  if(S.age<4)return;const friends=S.people.filter(p=>!isFamilyPerson(p)&&tierRank(p)>=1&&!p.movedAway),close=friends.filter(p=>tierRank(p)>=2);
- if(needsFormalSchool()&&isSchoolDay()&&friends.length>=2&&chance(45))scheduleFollowUp('surpriseParty',{ids:friends.slice(0,5).map(p=>p.id)},{minute:705});
+ // 6C.5: surprise birthday initiative belongs to the Occasion ledger, not an unverified school follow-up.
  for(const p of close)if(chance(60)){const k=giftFor(p);if(k){addItem(k,`from ${displayName(p,'formal')}`);if(!SIM.skipping)log(`🎁 From ${firstName(p)}`,`${firstName(p)} gives you a ${D.catalog[k].name.toLowerCase()} for your birthday.`)}}
  if(canUsePhone())for(const p of friends.filter(p=>typeof canDirectCommunicate3C1!=='function'||canDirectCommunicate3C1(p,'message')).slice(0,4))chatAdd(p.id,'them',rand(['Happy birthday!! 🎉','HBD!!! 🥳 have the best day','happy birthday!! old now lol']),'bdayWish');
  const inv=close.filter(p=>chance(35)).slice(0,2);for(const p of inv)if(!SIM.skipping)npcInvitesPlayer(p);
@@ -205,12 +206,12 @@ function knxFollowUp(f){
  if(f.type==='incomingMsg'){const p=personById(f.payload.personId);let k=f.payload.kind;if(k==='parent'&&!livesWithParents())k='parentSocial';if(p&&!SIM.skipping)incomingMessage(p,k,{committed:true});return true}
  if(f.type==='incomingCall'){const p=personById(f.payload.personId);if(p&&!SIM.skipping&&(typeof canDirectCommunicate3C1!=='function'||canDirectCommunicate3C1(p,'call')))incomingCall(p,f.payload.why);return true}
  if(f.type==='npcReply'){const p=personById(f.payload.personId);if(p&&!SIM.skipping)incomingMessage(p,'chitchat');return true}
- if(f.type==='surpriseParty'){if(SIM.skipping||!atSchool())return true;const ps=(f.payload.ids||[]).map(personById).filter(Boolean);queueEvent({type:'surpriseParty',title:'🎉 SURPRISE!',text:`At lunch, ${ps.map(firstName).join(', ')} jump out with a cake and a terrible handmade banner.`,participants:ps.map(p=>p.id),priority:5,expiresDays:1,choices:[{id:'hug',label:'Laugh and hug everyone'},{id:'shy',label:'Turn bright red'},{id:'speech',label:'Make a dramatic speech'}]});return true}
+ if(f.type==='surpriseParty'){return true} // retired: old queued follow-ups cannot invent guests or cakes
  return false
 }
 function knxEventChoice(e,id){
  if(e.type==='incomingCall')return handleIncomingCall(e,id);
- if(e.type==='surpriseParty'){const ps=(e.participants||[]).map(personById).filter(Boolean);ps.forEach(p=>{p.rel=clamp(p.rel+4);rememberPerson(p,'Threw you a surprise birthday party at school.',3)});S.happiness=clamp(S.happiness+8);S.needs.social=clamp(S.needs.social+20);addRep('social',2);log('Surprise party',{hug:'You laugh, hug everyone and get frosting on your sleeve. Best lunch of the year.',shy:'You go bright red. Everyone loves it.',speech:'You give a dramatic speech thanking "the academy". Your friends will quote it for weeks.'}[id]||'A great surprise.',true);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'🎉 Surprise party',text:`Your friends surprised you at school on your ${ordinal(S.age)} birthday.`});return true}
+ if(e.type==='surpriseParty'){return true} // legacy unverified event: no fabricated participants/rewards
  if(e.type==='invitation'&&id==='busy'){const plan=S.plans.find(x=>x.id===e.payload?.planId),p=personById(e.participants?.[0]);if(plan){plan.status='Declined';const free=freeBlocks(plan.dateISO).some(b=>b.from<=plan.startMinute&&b.to>=plan.startMinute+60);if(free){S.whiteLies=(S.whiteLies||[]);S.whiteLies.push({personId:p?.id,dateISO:plan.dateISO,start:plan.startMinute,end:plan.endMinute})}}if(p)p.rel=clamp(p.rel-.5);log("You said you're busy",`You tell ${p?firstName(p):'them'} you already have plans.`);return true}
  if(e.type==='birthdayParty'||e.type==='birthdayAlt')return ownBirthdayChoice(id,e);
  return false

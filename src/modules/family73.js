@@ -11,7 +11,37 @@ function householdMembers(){return livesWithParents()?S.people.filter(p=>isFamil
 function householdCaregivers(){return S.people.filter(p=>inHousehold(p)&&(['parent','grandparent','aunt','uncle'].includes(p.role)||(SIB_ROLES.includes(p.role)&&personAge(p)>=16&&personAge(p)>S.age)))}
 function householdCaregiver(){const h=householdCaregivers();return h.find(p=>p.role==='parent')||h[0]||S.people.find(p=>p.role==='parent')||null}
 function isSibling(p){return !!p&&SIB_ROLES.includes(p.role)}
-function siblingLabel(p){const a=personAge(p),g=p.gender||'',noun=g==='Female'?'Sister':g==='Male'?'Brother':'Sibling';if(a===S.age&&p.role==='sibling')return noun;const older=a>S.age||(a===S.age&&p.role==='older sibling');return `${older?'Older':'Younger'} ${noun}`}
+// H1: birth order is an immutable family identity, not a mutable displayed age.
+// A known birth date takes priority; otherwise preserve the creator's explicit
+// older/younger role. Only legacy ambiguous "sibling" records use the age snapshot.
+const FAMILY_BIRTH_ORDER_SCHEMA_H1=1;
+function validFamilyDateH1(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v}
+// The exact age of a documented newborn changes on THEIR birthday, not the
+// player's birthday. Legacy age-only relatives retain annual advancement.
+function familyAgeFromBirthH1(born,at=currentDate()){
+ if(!validFamilyDateH1(born)||!validFamilyDateH1(at))return null;
+ const years=Number(at.slice(0,4))-Number(born.slice(0,4));
+ return Math.max(0,years-(at.slice(5)<born.slice(5)?1:0));
+}
+function advanceFamilyAgesOnPlayerBirthdayH1(){
+ for(const p of S.people||[]){const birth=isSibling(p)?(validFamilyDateH1(p.born)?p.born:validFamilyDateH1(p.dob)?p.dob:null):null;
+  const actual=birth?familyAgeFromBirthH1(birth):null;
+  p.age=actual!=null?actual:Math.max(0,Number.isFinite(Number(p.age))?Number(p.age):Math.max(0,S.age-1))+1;
+ }
+}
+function ensureSiblingBirthOrderH1(p){
+ if(!isSibling(p))return null;
+ if(p.birthOrderH1?.schemaVersion===FAMILY_BIRTH_ORDER_SCHEMA_H1&&['older','younger','same','unknown'].includes(p.birthOrderH1.relative))return p.birthOrderH1;
+ let relative='unknown',basis='unverified';
+ const born=validFamilyDateH1(p.born)?p.born:(validFamilyDateH1(p.dob)?p.dob:null);
+ if(born&&validFamilyDateH1(S.dob)){relative=born<S.dob?'older':born>S.dob?'younger':'same';basis='recorded birth date'}
+ else if(p.role==='older sibling'||p.role==='younger sibling'){relative=p.role==='older sibling'?'older':'younger';basis='saved sibling role'}
+ else if(Number.isFinite(Number(p.age))&&Number.isFinite(Number(S.age))){relative=p.age>S.age?'older':p.age<S.age?'younger':'same';basis='legacy age snapshot'}
+ p.birthOrderH1={schemaVersion:FAMILY_BIRTH_ORDER_SCHEMA_H1,relative,basis};
+ if(born){const actual=familyAgeFromBirthH1(born);if(actual!=null&&p.age!==actual){p.birthOrderH1.previousSavedAge=p.age;p.age=actual}}
+ return p.birthOrderH1;
+}
+function siblingLabel(p){const r=ensureSiblingBirthOrderH1(p)?.relative||'unknown',g=p.gender||'',noun=g==='Female'?'Sister':g==='Male'?'Brother':'Sibling';return r==='older'?`Older ${noun}`:r==='younger'?`Younger ${noun}`:r==='same'?noun:noun}
 // NOTE: runs while the new life's state is being built (S may still be null) — use the creator's inputs, never S here
 function creatorContext(){const country=(typeof document!=='undefined'&&document.getElementById('c-country')?.value)||(S&&S.birthCountry)||'',wealth=(typeof document!=='undefined'&&document.getElementById('c-wealth')?.value)||(S&&S.wealth)||'Middle class';const k={Vietnam:'VN','South Korea':'KR',Japan:'JP',China:'CN',France:'FR',Thailand:'TH',Singapore:'CN'}[country]||(S?poolKey():'EN');return {k,wealth}}
 function grandCoResidenceChance(ctx=creatorContext()){let c=['VN','KR','JP','CN','TH'].includes(ctx.k)?32:9;if(ctx.wealth==='Struggling')c+=10;if(['Wealthy','Extremely wealthy'].includes(ctx.wealth))c-=4;return Math.max(3,c)}
@@ -29,7 +59,7 @@ function generateFamily(age){
 // maternal relatives carry the mother's family name, not the player's (only where both are generated)
 function applyBranchSurnames(){if(S.familyBranchNamed)return;const mom=familyByRelation('mother');if(!mom?.fullName)return;S.familyBranchNamed=true;const key=poolKey(),fam=S.familyName||'',momSur=(mom.surname&&mom.surname!==fam)?mom.surname:rand(((NAME_POOLS[key]||NAME_POOLS.EN).last).filter(x=>x!==fam));
  for(const p of S.people)if(p.branch==='maternal'&&p.firstName&&p.fullName){p.surname=momSur;p.fullName=composeName(p.firstName,momSur,key)}}
-function migrateFamily(){migrateDev();if(!S.people)return;migrateRelations();migrateFriendTiers();for(const q of S.people)if(typeof migrateMilestones==='function')migrateMilestones(q);S.family=S.family||{};if(!S.family.sizePref)S.family.sizePref=rollSiblingCount.lastPref||rand(['small','medium','medium','large']);for(const p of S.people){if(p.residence==null&&isFamilyPerson(p))p.residence=defaultResidence(p);if(isSibling(p)&&!p.gender){const first=p.firstName||String(p.name).split(/[ •]/)[0];p.gender=nameGender(first)||(hashOf(p.id)%2?'Female':'Male')}}applyBranchSurnames()}
+function migrateFamily(){migrateDev();if(!S.people)return;migrateRelations();migrateFriendTiers();for(const q of S.people)if(typeof migrateMilestones==='function')migrateMilestones(q);S.family=S.family||{};if(!S.family.sizePref)S.family.sizePref=rollSiblingCount.lastPref||rand(['small','medium','medium','large']);for(const p of S.people){if(p.residence==null&&isFamilyPerson(p))p.residence=defaultResidence(p);if(isSibling(p)&&!p.gender){const first=p.firstName||String(p.name).split(/[ •]/)[0];p.gender=nameGender(first)||(hashOf(p.id)%2?'Female':'Male')}if(isSibling(p))ensureSiblingBirthOrderH1(p)}applyBranchSurnames()}
 // ---------- 2B.2 Family UI ----------
 function familyPersonLine(p){const where=inHousehold(p)?'':' • lives elsewhere';const label=isSibling(p)?siblingLabel(p):(p.roleLabel||p.role);return `<div class="fam-row"><button class="linklike" data-person-open="${p.id}">${esc(p.fullName||p.name)}</button><small>${esc(cap(label))} • ${personAge(p)}${where}</small></div>`}
 function familyTreeHtml(){const fam=S.people.filter(isFamilyPerson),home=fam.filter(inHousehold),away=fam.filter(p=>!inHousehold(p));
@@ -42,8 +72,8 @@ function familyTarget(){return {small:2,medium:3,large:4}[S.family?.sizePref]||2
 function babyEligible(){const mom=familyByRelation('mother'),dad=familyByRelation('father');if(!mom||!dad||!livesWithParents()||S.family.expecting)return false;const ma=personAge(mom);if(ma<22||ma>43)return false;if(childrenAtHome()>=familyTarget())return false;const ages=[S.age,...S.people.filter(isSibling).map(personAge)];if(Math.min(...ages)<2)return false;if(S.family.lastBaby&&daysBetween(S.family.lastBaby,currentDate())<730)return false;return true}
 function babyChancePct(){let c=3.5;if(S.wealth==='Struggling')c*=.6;if((S.family.tension??0)>60)c*=.5;return c}
 function announceBaby(){const due=addDays(currentDate(),200+Math.floor(Math.random()*40));S.family.expecting={due,announced:currentDate()};if(!SIM.skipping)log('Big family news',`${familyByRelation('mother')?.firstName||'Mom'} and ${familyByRelation('father')?.firstName||'Dad'} sit you down at dinner, smiling: "You're going to be a big ${S.gender&&/girl|woman/i.test(S.gender)?'sister':'brother'}." The baby is due around ${formatDate(due)}.`,true);return due}
-function siblingBabyArrives(){const g=chance(50)?'Female':'Male',p=famPerson(`Baby ${g==='Female'?'sister':'brother'}`,'younger sibling',0,{gender:g,residence:'home',relation:'sibling',roleLabel:`younger ${g==='Female'?'sister':'brother'}`,rel:70,trust:60,born:currentDate()});S.people.push(p);S.family.expecting=null;S.family.lastBaby=currentDate();S.happiness=clamp(S.happiness+6);S.family.closeness=clamp(S.family.closeness+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:`👶 A new ${g==='Female'?'sister':'brother'}`,text:'The family grows.'});if(!SIM.skipping)log(`👶 Your baby ${g==='Female'?'sister':'brother'} is born`,'Tiny fingers, a lot of crying, and everyone suddenly whispering.',true);return p}
-function familyGrowthTick(){S.family=S.family||{};const t=currentDate();if(S.family.expecting){if(t>=S.family.expecting.due)siblingBabyArrives();return}if(t.slice(8)!=='01')return;if(babyEligible()&&chance(babyChancePct()))announceBaby()}
+function siblingBabyArrives(){const g=chance(50)?'Female':'Male',p=famPerson(`Baby ${g==='Female'?'sister':'brother'}`,'younger sibling',0,{gender:g,residence:'home',relation:'sibling',roleLabel:`younger ${g==='Female'?'sister':'brother'}`,rel:70,trust:60,born:currentDate(),birthOrderH1:{schemaVersion:1,relative:'younger',basis:'recorded birth date'}});S.people.push(p);S.family.expecting=null;S.family.lastBaby=currentDate();S.happiness=clamp(S.happiness+6);S.family.closeness=clamp(S.family.closeness+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:`👶 A new ${g==='Female'?'sister':'brother'}`,text:'The family grows.'});if(!SIM.skipping)log(`👶 Your baby ${g==='Female'?'sister':'brother'} is born`,'Tiny fingers, a lot of crying, and everyone suddenly whispering.',true);return p}
+function familyGrowthTick(){S.family=S.family||{};const t=currentDate();for(const p of (S.people||[]).filter(isSibling)){const born=validFamilyDateH1(p.born)?p.born:null;if(born){const age=familyAgeFromBirthH1(born,t);if(age!=null)p.age=age}}if(S.family.expecting){if(t>=S.family.expecting.due)siblingBabyArrives();return}if(t.slice(8)!=='01')return;if(babyEligible()&&chance(babyChancePct()))announceBaby()}
 // ---------- 2B.4 — Younger-sibling requests with negotiation ----------
 const SIB_TRAITS=['Kind','Calm','Cheerful','Clingy','Stubborn','Dramatic','Shy'];
 function sibTraits(p){if(!p.traits?.length||!p.traits.some(t=>SIB_TRAITS.includes(t)))p.traits=[...(p.traits||[]),SIB_TRAITS[hashOf(p.id)%SIB_TRAITS.length]];return p.traits}

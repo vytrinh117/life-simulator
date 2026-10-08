@@ -8,7 +8,7 @@
 //  • Adult intimacy requires mutual consent each time, fades to black, and
 //    respecting "no" is never punished.
 // =====================================================================
-function personAge(p){const n=npcById(p?.npcId);return n?npcAge(n):(p?.age??S.age)}
+function personAge(p){const n=npcById(p?.npcId);if(n)return npcAge(n);const born=p&&isSibling(p)&&(validFamilyDateH1(p.born)?p.born:validFamilyDateH1(p.dob)?p.dob:null);return born?familyAgeFromBirthH1(born):(p?.age??S.age)}
 function eligibleRomance(p){if(!p||isFamilyPerson(p)||S.age<13||S.romance?.optOut)return false;const a=personAge(p);if(S.age<18)return a>=13&&a<18&&Math.abs(a-S.age)<=2;return a>=18}
 function adultRomance(p){return S.age>=18&&personAge(p)>=18}
 const BOUNDARIES={noPublicAffection:'does not like public displays of affection',noExpensiveGifts:'is uncomfortable with expensive gifts',needsTime:'needs time before anything serious',noParties:'does not enjoy big parties',notReady:'is not ready for a relationship right now'};

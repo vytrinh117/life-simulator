@@ -78,7 +78,7 @@ function expireCalendarEvent(ev,reason='Window passed'){setCalendarStatus(ev,'Ex
 
 // ---------- Central obligation processing ----------
 function processCalendar(){tierTick();curfewCallCheck();
- ensureLifecycleContainers();const now=nowStamp();
+ ensureLifecycleContainers();if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1('calendar');const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
   if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
@@ -687,7 +687,7 @@ function reconcileState(reason='tick'){
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  if(typeof reconcileSchoolDay4C1==='function')reconcileSchoolDay4C1(reason);if(typeof reconcileSchoolClasses4C2==='function')reconcileSchoolClasses4C2(reason);if(typeof reconcileSchoolFacilities4C3==='function')reconcileSchoolFacilities4C3(reason);if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4(reason);
- reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
+ reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
 }
 function compactExam(e){return {id:e.id,subject:e.subject,type:e.type,dateISO:e.dateISO,minute:e.minute,status:e.status,score:e.score,reason:e.reason||null,makeupOf:e.makeupOf||null,makeupId:e.makeupId||null,replacedBy:e.replacedBy||null}}
 function closeSchoolYear(old,{leaving=false}={}){

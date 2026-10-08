@@ -9,7 +9,7 @@ function promDateStudent6A3(p){
  const n=p.npcId&&npcById(p.npcId);if(n&&(n.movedAway||npcEffectiveGradeNumber4A3(n)<8||npcEffectiveGradeNumber4A3(n)>12))return false;
  return true;
 }
-function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&ensureRomanceProfile(p).romanceOpen&&!p.boundaries?.includes('notReady'));}
+function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&(!partnerBoundaryH1(p,'noParties'))&&(isEstablishedPartner(p)||(ensureRomanceProfile(p).romanceOpen&&!partnerBoundaryH1(p,'notReady'))));}
 function promDateBusyReason6A3(p,pr=S.school?.prom){
  if(!promDateStudent6A3(p))return 'Not an eligible school-age guest';
  const other=personPromWith(p);

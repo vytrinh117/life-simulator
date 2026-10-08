@@ -35,7 +35,7 @@ function nextLoveStep(p){const L=ensureLove(p),i=LOVE_IDX[L.stage],adult=adultRo
  if(L.stage==='engaged')return adult?{id:'wedding',label:'Plan the wedding'}:null;
  if(L.stage==='married')return adult&&L.progress>=50?{id:'family',label:'Talk about starting a family'}:null;
  return null}
-function consent(p,base){return p.romanceOpen!==false&&chance(clamp(base+(p.rel-60)*.6+(p.trust-55)*.5+(ensureLove(p).progress-60)*.3-(p.conflict||0)*.6-(p.boundaries?.includes('needsTime')?15:0),5,96))}
+function consent(p,base){return (isEstablishedPartner(p)||p.romanceOpen!==false)&&chance(clamp(base+(p.rel-60)*.6+(p.trust-55)*.5+(ensureLove(p).progress-60)*.3-(p.conflict||0)*.6-(p.boundaries?.includes('needsTime')?15:0),5,96))}
 function loveStep(personId,step){
  const p=personById(personId);if(!p||!eligibleRomance(p))return;if(step==='official'&&typeof romanceOfficialConversation3B3==='function'){romanceOfficialConversation3B3(p,'player');return}closeChoiceModal();const fn=firstName(p),L=ensureLove(p);
  if(step==='official'){if(consent(p,55)){setLoveStage(p,'official','made it official');p.rel=clamp(p.rel+4);log('💗 Official',`You ask. ${fn} says yes before you even finish the sentence.`,true)}else{L.progress=clamp(L.progress-20);log('Not yet',`"I really like you — can we keep going like this a little longer?" ${fn} asks. You agree.`)}}
