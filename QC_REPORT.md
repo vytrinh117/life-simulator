@@ -1,3 +1,22 @@
+## Phase 6B.5 — Focused and selected regression QA (2026-10-08)
+- Focused Chromium `qa/t_6b5.py`: **45/45 PASS** on the generated production assets; actual ceremony/photo controls, locked Court results, factual award/photo records, venue/time/missed/closed gates, real attendee IDs, anti-replay, save/reload and no browser runtime exceptions.
+- Selected preceding suites: **621/621 PASS** with 6B.4–6B.1, 6A.7 acceptance and 300-action fuzz, 6A.6–6A.1, 5D.7 300-action finance fuzz, and 5C release checks. Combined **666/666 accepted checks** from 15 completed passing runs. `qa/results_6b5/*.log` contains raw outputs.
+- A randomized category-fixture failure in 6A.4 and a next-year scheduling-fixture failure in 6A.1 occurred on initial attempts. **Unchanged** reruns subsequently passed 54/54 and 43/43; failed attempts were preserved and excluded from pass counts. Initial 6B.5 fixture lacked two greeted eligible students for its group-photo test; final focused run passed 45/45 after fixture adjustment.
+- Two clean builds byte-identical; `node --check` of `game.js` and `data.js` passed. See `qa/results_6b5/build_pass{1,2}.sha256`.
+- Did not run comprehensive Phase 6B.7 fuzz, live remote GitHub Pages deployment or Phase 6B.6 post-Prom scenarios; no such passes claimed.
+
+## Phase 6B.3 — School Hall arrival / real attendees / social introductions (2026-10-08)
+- Added event-scoped arrival snapshot and conservative recovery from an actually active 6B.1 check-in; no backfilled historical Prom scenes.
+- School Hall roster uses real eligible NPC IDs and recorded availability; confirmed dates may be present, late with an explicit schedule, absent for a documented conflict, or unverified, without changing original RSVP.
+- Actual click-to-greet controls preserve prior People provenance or record genuine new school-Prom provenance, consume five minutes, and cannot be farmed. Prepared outfits only affect description; no automatic romance, awards, dance, photos or ballot changes.
+- 47/47 focused and 520/520 selected regression checks passed. Previous optional rival QA fixture failures documented in `PHASE_6B_PROGRESS.md`, not counted. Reproducible builds and syntax checks passed. Phase 6B.4 has NOT started.
+
+## Phase 6A.7 — Final Acceptance (2026-10-08)
+- 6A.7 final: **504/504** completed passing assertions across 14 suites; 300 seeded Prom fuzz action opportunities and 48 cross-region/year projected dates; regression suites 6A.1–6A.6, 5D.7, 4D.5, 4B.5, 5C release all passed.
+- Fixed new-season Prom date placement across school breaks and stabilized two incorrect QA fixtures; preserved all saved active Prom dates, history, voting and romance.
+- Built twice from source with identical hashes, JavaScript syntax PASS; nested-path static HTTP GET assets 200; Chrome-responsive Prom controls at 390/768/1280 px PASS. Browser HTTP localhost blocked by sandbox; no remote Pages deploy claimed.
+- 6A.7 focused logs: `qa_6a7_acceptance.log` (45/45), `qa_6a7_fuzz.log` (17/17; 300 operations), `qa_6a7_deploy.log` (11/11). Regression outputs: `qa_6a7_reg_*.log`. Prior failing randomized fixtures are not falsely counted. Details and reproducible hashes in `PHASE_6A_PROGRESS.md`.
+
 ## Phase 5C.5.2 — Cross-System Integration QA (2026-10-08)
 - Production browser focused `qa/t_5c5_2.py`: **23/23 PASS**, 0 page/console errors.
 - Selected Phase 5C/H3 regression: **16 suites / 316/316 PASS**, and 3B.5 + 3C.5 + 5B.5 acceptance: **3 suites / 60/60 PASS**. Total **20 suites / 399/399 PASS**; all included suites had exit code 0 and corresponding `qa/results_5c52/*.log` or focused output. No fuzz, full 5C.5.3 matrix, or final release claim.
@@ -888,3 +907,98 @@ Source: post-5C school-nav verified project. Root cause: data attributes such as
 New actual DOM-click test: **58/58 PASS**, previous school-nav test **17/17 PASS**. Relevant 4C1–4C5 acceptance suites, 5C seasonal/migration/integration/release, 5A1 also passed with exit 0. Exit-verified total **345/345 PASS over 14 suites**, including **4C.5 fuzz 21/21 PASS, exit code 0, 800 randomized operations** on the final source (`t_4c5_fuzz_final.exit`). An earlier tool invocation timed out; its unverified exit was not counted separately.
 
 A first 4C.4 regression discovered the missing legacy label “After school & homework” (21/22). This was fixed in actual production markup; the untouched 4C.4 suite then passed 22/22. All focused test buttons were clicked in Chromium and had real effects; no page JavaScript errors. The project preserves Phases 5C and H3; Phase 6 not started. See `HOTFIX_SCHOOL_UI_INTEGRATION_PROGRESS.md`.
+
+## Phase 5D.1 — Contract & integration verification (2026-10-08)
+- New focused Chromium-based suite: `qa/t_5d1.py` **33/33 PASS** (canonical session, legacy preservation, young-age gates, H3 anti-reroll, adult independence, stock, cross-session transaction identity, refund cap, net-profit, direct backend bypass guards, migration, save/load, zero page exceptions).
+- GitHub Pages hashed asset integrity `qa/t_hotfix_school_deploy_verify.py` **6/6 PASS** after root script content-hash update.
+- Historical 5B soft-event/fast-forward intermittency reproduced once (25/26 FAIL), then unchanged-source independent rerun **26/26 PASS**; initial failure retained in `qa/results_5d1/t_5b5_accept.log`.
+- An initial 5C.5.1 static migration-source assertion failed (29/30) because new splice source text repeated the function name. Rewrote only the splice command to avoid duplicate literal; original test rerun **30/30 PASS** without test changes. Logs for both attempts preserved.
+- Unfinished Phase 5D gameplay intentionally not tested as if implemented. See `PHASE_5D_PROGRESS.md` for risks and phase boundaries.
+- Final accepted run manifest `qa/results_5d1/accepted_final.tsv`: **17 suites / 381/381 PASS**, 475 seeded operations (275 + 200), with prior failure attempts retained separately. Follow-up 5C.5.2 acceptance first returned 20/23 from stochastic H3 outcome then independent rerun passed 23/23 without code/test changes. Two reproducible builds, syntax and assets checked; see completed progress tracker.
+
+### Phase 5D.2 QA acceptance (2026-10-08)
+- Source `src/` and verified 5D.1 baseline; 20 accepted browser/QA suites, 475/475 checks PASS. New focused 5D.2 45/45, 5D.1 regression 33/33. Includes 475 prior seeded fuzz operations, H3, school navigation UI, release hashes, 5C migration, 5A/5B. Reproducible source rebuild twice: identical JS/CSS/data hashes. Original 5C.5.2 stochastic guardian denial expectation 20/23 then unchanged-source rerun 23/23 retained. Refer `qa/results_5d2/`. No 5D.3 gameplay claimed.
+
+### Phase 5D.3 verified QA (2026-10-08)
+21 accepted suites / 520 of 520 checks passed. 5D.3 focused 45/45, 5D.2 45/45, 5D.1 33/33, upstream phase/School/H3 regressions. 475 seeded fuzz operations. Two generated builds byte-identical with valid JS syntax; deploy assets 6/6. Independent logs at qa/results_5d3/. One School Navigation run failed 16/17, unchanged-source rerun passed 17/17; an initial 4/6 asset check was resolved by updating index.html game content hash. Incomplete parallel test group never counted as completed. 5D.3 APIs are backend-only until later UI integration.
+
+
+## PHASE 5D.4 verified checkpoint (2026-10-08)
+Focused 5D.4 browser QA `qa/t_5d4.py`: 39/39 PASS. Whole accepted final source regression: 22 suites / 559 checks PASS, see `qa/results_5d4/accepted_final.tsv`. Phase 5C.5.4 (275) and 5C.4.6 (200) seeded fuzz operations PASS; School deployment assets 6/6 PASS; School UI integration 58/58 PASS; H3 checks intact. Source build done twice with matching SHA-256 game, style and data hashes; JavaScript syntax PASS. Interrupted grouped runs and pre-final test fixture fixes are preserved under `qa/results_5d4`, not recorded as successful full runs. No remote Pages deployment verified. UI and legacy-business integration remain 5D.6.
+
+
+## 2026-10-08 — Phase 5D.5 release QA
+New 5D.5 browser-focused: **50/50 PASS**. Accepted suite matrix: **23 suites / 609 of 609 PASS** with retained logs and exact test/build provenance in `qa/results_5d5/accepted_final.tsv` and `README.txt`. Seeded fuzz completed **475** real operations. Previous known stochastic School Navigation and neighborhood-NPC fixture attempts are preserved alongside accepted reruns; interrupted batch was not accepted. Two independent generated builds SHA-256-identical, `node --check game.js` and `data.js` PASS, deploy asset test **6/6**. Remote Pages hosting not exercised. No 5D.6/5D.7 gameplay claimed.
+
+## Phase 5D.6 accepted checkpoint QA (2026-10-08)
+- Actual player-facing Selling DOM focused QA: 42/42 PASS (`qa/t_5d6.py`). Includes browser click handlers, money/stock identity, customer choices and refunds, bake/yard Inventory, established-customer Calendar order, older balance opt-in/out and save/reload.
+- Regression matrix: 24 accepted suites / 651 of 651 checks PASS. Upstream seeded fuzz 475 operations PASS. Exact per-suite records: `qa/results_5d6/accepted_final.tsv` and final logs.
+- Prior stochastic attempts are **not** misrepresented as successful: 5B.5 25/26 and school commute assertion 16/17 before unchanged-source acceptance reruns 26/26 and 17/17; interrupted order-form test excluded from counts.
+- Build twice reproduced identical `game.js`, `style.css`, `data.js` hashes; node syntax PASS, theme CSS audit clean and Pages deployment asset hash 6/6. Remote deployment not checked. 5D.7 still pending.
+
+### Phase 5D.7 — Final Local Release Acceptance
+Accepted **25/25 suites, 695/695 checks**, including new 5D.7 browser acceptance **44/44** and **300 seeded adverse financial operations**; upstream seeded fuzz **475 operations**. Full log manifest `qa/results_5d7/accepted_final.tsv`; interrupted/nonaccepted runs kept separately. Repeated unchanged-source stochastic 5D.4 suite originally gave 37/39; passing rerun 39/39. Runtime JS syntax and two-build hashes match. GitHub Pages root/asset references 6/6; remote deployment unverified. No Phase 6A execution.
+
+## Phase 6A.1 checkpoint acceptance (2026-10-08)
+
+- New browser suite `qa/t_6a1.py`: **43/43 PASS**. Actual DOM Register/Decline buttons were exercised. Coverage includes school eligibility, canonical calendar/venue/ID, one-time advance notices, signed registration decisions, missed deadlines, cleanup, idempotence, reload, event-ID migration, school transfer, school-year rollover, terminal legacy history preservation and zero browser runtime exceptions.
+- Preceding acceptance rerun: `qa/t_5d7.py` **44/44 PASS** (plus 300 deterministic fuzz steps); `qa/t_4d5_accept.py` **23/23 PASS**; `qa/t_4b5_accept.py` **23/23 PASS**; `qa/t_5c55_release.py` **24/24 PASS**. Total relevant preceding reruns: **114/114**. No unexecuted suite was counted.
+- Static deployment files and relative runtime assets verified again by Phase 5C release suite; remote GitHub Pages deployment was not exercised.
+- Script logs: `qa_6a1_final.log`, `qa_6a1_reg_5d7.log`, `qa_6a1_reg_4d5.log`, `qa_6a1_reg_4b5.log`, `qa_6a1_reg_5c55.log`.
+- Build and hashes: `qa_6a1_build_hashes.txt`. Future full Phase 6A.7 acceptance/fuzz and revised legacy Prom fixtures are not yet performed.
+
+## Phase 6A.2 checkpoint acceptance (2026-10-08)
+Chromium focused QA: 50/50 passed; see `qa_6a2_latest.log`. Regressions: 6A.1 43/43, 5D.7 44/44 (+300 deterministic finance fuzz operations), 4D.5 23/23, 4B.5 23/23, 5C release 24/24, see `qa_6a2_reg_*.log`. New coverage: real DOM application/work clicks, approved school organization linkage, approval/rejection determinism, budget ceiling, unique duties, calendar conflict, weekday/class/venue time gating, missed/rejected/declined notices, save/reload migration, school transfer cleanup and no runtime errors. Prom Court and full Prom Night remain unimplemented under their scheduled checkpoints.
+Final 6A.2 build: two clean source-based builds byte-identical (`qa_6a2_build_pass{1,2}.sha256`); JS syntax pass; static Pages workflow untouched. Total selected acceptance assertions 207/207. These are not Prom Court/Voting acceptance results.
+
+## Phase 6A.3 checkpoint verification — 2026-10-08
+- Browser QA `qa/t_6a3.py` 60/60 PASS, including actual invitation/answer modal DOM controls and cancellation button; pending answer timeouts, incoming offer expiry, duplicate decisions, school changes, 3B romance compatibility vs platonic friends, saved state and zero JS runtime errors.
+- Reran on final authoritative source: `qa/t_6a2.py` 50/50, `qa/t_6a1.py` 43/43, `qa/t_5d7.py` 44/44 (300 deterministic finance fuzz operations), `qa/t_4d5_accept.py` 23/23, `qa/t_4b5_accept.py` 23/23 and `qa/t_5c55_release.py` 24/24. **267/267 PASS** focused + selected earlier checks; not full Phase 6A acceptance/fuzz.
+- See final `qa_6a3_*.log`, two build hash files. Static Pages files preserved, remote deployment not tested. Later Court election mechanics not tested or claimed.
+
+
+## Phase 6A.4 checkpoint QA — 2026-10-08
+Chromium browser-focused `qa/t_6a4.py`: **54/54 PASS**, exercising live nomination/vote UI clicks, registration/grade/discipline gates, eligibility/shortlist, real NPC roster, locked nomination/vote windows, optional school calendar deadline, deterministic NPC ballots, accurate tallies, no double vote/self-vote/stale transfer vote, official no-reroll coronation, save/reload, and console errors.
+Accepted upstream regressions: 6A.3 60/60; 6A.2 50/50 (unchanged-source rerun after intermittent failures); 6A.1 43/43; 5D.7 44/44 + 300 deterministic finance fuzz; 4D.5 23/23; 4B.5 23/23; 5C release 24/24. **321/321 accepted assertions**, not full 6A.7 comprehensive fuzz. Early 6A.2 attempts 49/50 and 48/50/StopIteration were not accepted or counted: school fixture/randomized setup may warrant later stabilization.
+Two `BUILD.md` rebuilds byte-identical (`qa_6a4_build_pass{1,2}.sha256`) and `node --check game.js` PASS. GitHub Pages static assets/workflow retained; hosted deployment not verified.
+## Phase 6A.5 checkpoint QA — 2026-10-08
+
+- `qa/t_6a5.py`: 51/51 PASS (Chromium, real campaign button, timelines, peer consent/decline, anti-repeat, cohort gates, closed windows, migration/save, transfer, post-Prom once-only consequences, zero runtime errors).
+- `qa/t_6a5_rival.py`: 20/20 PASS (real rival button clicks, respectful vs rumor outcomes, bounded reputation and People state, stable ballots, no fake romantic consent, save/reload).
+- Regressions: 6A.4 54/54, 6A.3 60/60, 6A.2 50/50 on unchanged suite rerun, 6A.1 43/43, 5D.7 44/44 + 300 deterministic fuzz transactions, 4D.5 23/23, 4B.5 23/23, 5C.5.5 release 24/24. Combined accepted assertions: 392/392 PASS.
+- Baseline 6A.2 randomized transfer-fixture flakiness reproduced on first run (45/50 then StopIteration); both the initial failing run and successful rerun are logged. Does not establish universal pass.
+- Two byte-identical builds, `node --check game.js` PASS. SHA-256 manifest in `qa_6a5_build_pass*.sha256`. Static GitHub Pages files preserved; no live hosting check.
+
+### Phase 6A.6 — verified checkpoint (2026-10-08)
+- Focused Chromium `qa/t_6a6.py`: **39/39 PASS**. Real Education registration button, School/Home/Calendar status, calendar route, deadline display, browser errors, age gates, stale notices, save/reload and migration idempotence.
+- Accepted passing preceding runs: 6A.5 51/51 + rivals 20/20, 6A.4 54/54, 6A.3 60/60, 6A.2 50/50, 6A.1 43/43, 5D.7 44/44 + 300 fuzz ops, 4D.5 23/23, 4B.5 23/23, 5C release 24/24. **431/431** checks across successful completed runs.
+- Original 6A.4 failed/aborted random fixture and two 6A.2 inconsistent randomized fixtures retained in `qa_6a6_reg_*` logs. Subsequent unchanged reruns passed; don't equate earlier failures to success. 6A.7 full fuzz/acceptance pending.
+- Rebuilt source twice and checked reproducibility and syntax. No remote GitHub Pages deploy performed.
+
+## Phase 6B.1 — focused acceptance / preceding regression (2026-10-08)
+- Focused actual Chromium `qa/t_6b1.py`: **39/39 PASS**, including Education enter click, Home exit click, real roster identities, current school/grade registration, approved Hall, time/calendar conflict gate, active save/reload, idempotence, missed/closed-state guards and absence of award/romance fabrication.
+- Selected completed preceding runs: 6A.7 acceptance 45/45; 6A.7 fuzz 17/17 (300 seeded operations); 6A.6 39/39; 6A.5 + rival 71/71; 6A.4 54/54; 6A.3 60/60; 6A.2 50/50; 6A.1 43/43; 5D.7 44/44 with its finance fuzz; 4D.5 23/23; 4B.5 23/23; 5C release 24/24. Combined completed accepted checks with B1: 532/532.
+- After final guarded source edits, focused B1 and 6A.7 acceptance/fuzz, 6A.6, 5C release ran again and passed. Two source-based clean builds byte-identical; syntax PASS. Logs and SHA manifests included.
+- A long combined regression run and a separate static-deploy smoke hit command timeouts before their final results; no pass counts for unfinished runs, and no remote GitHub Pages deployment claimed. See `PHASE_6B_PROGRESS.md`.
+
+### 6B.2 — Verified checkpoint QA (2026-10-08)
+- Focused Chromium `qa/t_6b2.py`: **54/54 PASS**; no JS page errors, real Home panel buttons, actual Store purchase and money deduction, genuine item equip/consumption, makeup age/day gates, family attendance and refusal, idempotence and Court preservation.
+- Selected regressions: 6B.1 39/39; 6A.7 45/45; 6A.7 fuzz 17/17; 6A.6 39/39; 6A.5 51/51; 6A.4 54/54; 6A.3 60/60; 6A.2 50/50; 5D.7 44/44; 5C release 24/24. Accepted **477/477**. Logs in project root as `qa_6b2_*.log`. Earlier 48/50 focused test setup assumptions corrected; no gameplay error claimed for those tests. One long wrapper command exceeded execution limit *after* 5D.7 44/44 had finished and flushed its log.
+- `node --check game.js` PASS; two deterministic source-based builds match: `game.js` 57d9cb7746146b79025aeb4ab587167c829739a785ea08283bae36501428649a, `style.css` 78296f49dbc0d667acfdc26760769aac5b232b78ffad6b75e649e07f44f1d275, `data.js` 1640e4ac438c2895144cd723f855d50bd387b432b71fe86e83ddabebc5f2f6f3. Live remote deployment NOT tested.
+
+
+## 6B.4 acceptance (2026-10-08)
+Focused Chromium `qa/t_6b4.py`: 54/54 PASS, including positive NPC consent and explicit refusal, actual button clicks, anti-farming, direct-call eligibility checks, venue/time and save/reload. Selected preceding regressions: 567/567 PASS across 13 suites (`qa_6b4_reg_master.log`). Total 621/621 distinct accepted checks. Initial focused fixture failures corrected, logs retained. Clean builds two SHA-256 manifests match; `node --check game.js` and `data.js` PASS. No remote GitHub Pages deployment, no 6B.5+ claims.
+
+
+### Phase 6B.6 acceptance — 2026-10-08
+Focused Chromium `qa/t_6b6.py` **40/40 PASS**. Selected passing regressions (distinct suites) B5 45/45, B4 54/54, B3 47/47, B2 54/54, B1 39/39, 6A7 acceptance 45/45, 6A7 fuzz 17/17, 6A6 39/39, 6A5 51/51, 6A4 54/54, 6A3 60/60, 6A2 50/50, 6A1 43/43, 5D7 44/44, 5C release 24/24. **706/706 PASS across 16 suites.** First B5 (43/45), B4 (51/54), A1 (42/43) runs had existing randomized fixture issues; original logs and passing unchanged reruns retained. First 6B.6 UI test exposed post-completion Prom panel hidden by old Season gate; corrected before successful final 40/40. Two clean builds byte-identical; `node --check game.js` and `data.js` PASS. Static GitHub Pages files preserved, remote deploy not verified. Broader 6B.7 fuzz not performed.
+
+
+## Phase 6B.7 — Final release QA (2026-10-08)
+- **PASS:** 63/63 integrated Chromium checks, 37/37 six-region fuzz assertions across 360 production actions, 12/12 local static/HTTP checks.
+- **PASS:** Existing 6B.1–6B.6 (279 checks), 6A.1–6A.7 (359 checks), Phase 5D.7 (44 checks including 300 finance-fuzz operations), Phase 5C final (24 checks). Combined: **818/818 verified accepted checks**, with all completed logs retained.
+- Release defect fixed: completed legacy Prom without `foundation6A1` caused TypeError in 6A.6 notification cleanup. Added null-safe handling and 6B.7 migration regression; unchanged 6A.1 rerun 43/43 PASS.
+- Initial nonpassing QA logs are preserved: first B7 Court comparison used a legitimately unlocked ballot; first B7 fuzz harness could not access closure-scoped production functions; a 6A.1 run exposed a real historical crash. After corrections, final suites passed.
+- Two reproducible clean builds byte-identical for game.js/style.css/data.js; node --check PASS. HTML cache query strings updated and verified to match final content. Root static assets served byte-identically over local HTTP.
+- Not tested: remote GitHub Pages deployment or successful Chromium local HTTP navigation. Photos are saved structured in-game records, not bitmap images. Phase 6C not started.

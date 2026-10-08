@@ -1,3 +1,20 @@
+## Phase 6B.5 — Prom Court ceremony and actual event photographs (2026-10-08)
+- Added school-approved 9:00 PM, one-time Court presentation reading **only** the locked Phase 6A vote winners; no vote rerolls, new awards or automatic attendance rewards.
+- Added real School Hall solo/paired/group photo controls, actual student/People IDs, anti-repeat controls, canonical time costs, bounded factual event history, one first-photo milestone and conditional real player-award milestone.
+- Extended the existing Phase 6B attendance record, School/Home Prom card and main click routing; source-only changes with clean reproducible builds.
+- Chromium focused 45/45 and selected regressions 621/621 PASS. Full result logs and randomized fixture reruns documented in `PHASE_6B_PROGRESS.md`. Phase 6B.6 NOT started.
+
+## Phase 6B.3 — School Hall arrival / real attendees / social introductions (2026-10-08)
+- Added event-scoped arrival snapshot and conservative recovery from an actually active 6B.1 check-in; no backfilled historical Prom scenes.
+- School Hall roster uses real eligible NPC IDs and recorded availability; confirmed dates may be present, late with an explicit schedule, absent for a documented conflict, or unverified, without changing original RSVP.
+- Actual click-to-greet controls preserve prior People provenance or record genuine new school-Prom provenance, consume five minutes, and cannot be farmed. Prepared outfits only affect description; no automatic romance, awards, dance, photos or ballot changes.
+- 47/47 focused and 520/520 selected regression checks passed. Previous optional rival QA fixture failures documented in `PHASE_6B_PROGRESS.md`, not counted. Reproducible builds and syntax checks passed. Phase 6B.4 has NOT started.
+
+## Phase 6A COMPLETE — 6A.7 Final Acceptance / Fuzz / Release (2026-10-08)
+- 6A.7 final: **504/504** completed passing assertions across 14 suites; 300 seeded Prom fuzz action opportunities and 48 cross-region/year projected dates; regression suites 6A.1–6A.6, 5D.7, 4D.5, 4B.5, 5C release all passed.
+- Fixed new-season Prom date placement across school breaks and stabilized two incorrect QA fixtures; preserved all saved active Prom dates, history, voting and romance.
+- Built twice from source with identical hashes, JavaScript syntax PASS; nested-path static HTTP GET assets 200; Chrome-responsive Prom controls at 390/768/1280 px PASS. Browser HTTP localhost blocked by sandbox; no remote Pages deploy claimed.
+
 ## Phase 5C.5.2 — Cross-System Integration QA (2026-10-08)
 - Fixed genuine calendar self-conflict on accepted 5C.2 beach/snow/ski/scuba plans: eligibility now ignores only their own plan event on execution; unrelated obligations still block.
 - Enforced H3 parental decisions on direct/planned minor 5C.2 activity execution (especially teen scuba); denied actions consume no time/cash/gear or history and repeated H3 denials remain persistent.
@@ -1316,3 +1333,100 @@ Added 275 seeded production-browser operations and targeted seasonal/Calendar/H3
 - Consolidated School-tab school-day/header, Current/Next/Attendance, Teacher/Facilities/Session actions, timetable and homework note into one responsive `Today at school` card; prevented duplicate School tab travel CTA and inert after-dismissal Skip/Leave-Early controls.
 - Added real rendered-button Chromium regression covering each relevant School action and prior school-nav flow; 5C regression remains passing. Details: `HOTFIX_SCHOOL_UI_INTEGRATION_PROGRESS.md`.
 - Phase 5C remains COMPLETE; Phase 6 NOT STARTED.
+
+## Phase 5D.1 — Canonical Microbusiness Architecture (2026-10-08)
+- Added isolated `src/modules/microbusiness5d1.js` canonical session definitions, age/H3 permission and transition contracts, conserved initialization/migration and receipt/stock idempotence gateway.
+- Build system `tools/splice.py` invokes migrator in existing chain, appends source module, and exposes narrow test hooks; root `game.js` regenerated. Production `index.html` cache-buster and existing school deployment marker updated to match new root script bytes. No global UI redesign.
+- Preserved live lemonade/cookies/cupcakes/yard/crafts/beads simulation and formal 5B jobs. No retroactive accounting, fabricated NPCs or rewards; current legacy aggregate sales are NOT YET routed through 5D transaction contract.
+- Focused 5D.1 browser coverage, downstream 5C, 5B/5A, school-navigation and H3 regressions recorded in `PHASE_5D_PROGRESS.md` and `qa/results_5d1/`.
+- 5D.1 final verification completed: 33/33 focused, 17-suite accepted matrix 381/381 after independent reruns where historical randomness required, two reproducible builds, no Phase 5D.2+ gameplay or UI changes.
+
+### 2026-10-08 — Phase 5D.2 ONLY
+- Added backend real-source microbusiness batch procurement, quality/expiry-aware baking Inventory transfer, yard-sale ownership and pricing guards, idempotent expense/sale receipts and unsold-stock settlement. Legacy yard automatic sales cannot credit missing/reserved items. No 5D.3 UI/customer gameplay.
+
+- Phase 5D.2 terminal lifecycle integration: direct 5D.1 session completion/cancellation settles unsold owned or paid stock once; unbacked fixtures cannot create stock on carry-over.
+
+### 2026-10-08 — Phase 5D.3 (checkpoint only)
+Canonical bounded customers, question/negotiation/buy/decline choices, receipt-backed optional tips, complaints, refunds and stock-backed remakes. Backend-only; no persistent NPC/reputation/UI changes. Regression 520/520. See PHASE_5D_PROGRESS.md.
+
+
+## 2026-10-08 — PHASE 5D.4 (verified checkpoint)
+Added stable existing-neighborhood customer identities and limited repeat-customer tracking alongside the 5D.3 anonymous encounter flow. Safe acquaintance conversion requires purchases on separate days plus meaningful conversation; People IDs and provenance reuse current NPC/People architecture. Added per-business bounded reputation driven by receipt-backed quality, pricing, complaints and genuine resolutions; existing neighborhood business reputation is synchronized conservatively. No UI, new NPC-on-every-sale logic, calendar orders, friendship grants or earnings replay. 22 final accepted browser suites / 559 checks passed; 475 seeded fuzz operations; two reproducible source builds. See `PHASE_5D_PROGRESS.md` and `qa/results_5d4/`.
+
+
+## 2026-10-08 — Phase 5D.5 CHECKPOINT COMPLETE
+Calendar-linked paid preorders for real repeat customers, stable request IDs, stock-and-price-validated order completion, bounded neighborhood demand/competition, H3 family assistance offers and under-12 order supervisor gating, bounded reliable-customer reputation, receipt-backed modest Business/Leadership/Cooking Talent Evidence. New `microbusiness5d5.js`, narrow hooks in 5D3/5D4/core Calendar, build splice, and 50-check focused QA. No UI/legacy-sales replacement (5D.6).
+
+## 2026-10-08 — Phase 5D.6 UI / Migration / Integration (verified)
+- Added `src/modules/microbusiness5d6.js`: compact Money & Items → Selling interaction with real receipt-backed customer actions and scheduled returning-customer pickups.
+- Wired legacy stand cards to canonical stock preparation; no duplicate shift wages/auto earnings for businesses in interactive mode. Preserved a reversible classic stock path after session closure.
+- Added idempotent UI migration and browser DOM tests (42/42); accepted 24-suite regression matrix (651/651). See `PHASE_5D_PROGRESS.md`. 5D.7 not started.
+
+### Phase 5D.7 — Final Release Acceptance (2026-10-08)
+- Fixed modern microbusiness under-12 direct-backend supervision bypass without modifying historical business earnings.
+- Added 44-check Chromium release acceptance plus 300 deterministic adversarial transaction operations; 25-suite accepted regression matrix 695/695 with 475 existing fuzz operations.
+- Two reproducible source builds, deployment asset checks, source hashes and release evidence included. Phase 5D fully accepted; Phase 6A not started.
+
+## 2026-10-08 — Phase 6A.1 (Prom Season Foundation / Calendar) — COMPLETE
+
+- Verified authoritative Phase 5D.7 handoff, H3 and 3A–5D sign-offs. Reused canonical school identity/calendar, notifications, academic year, existing Prom record and Phase 4B.4 committee permission gate.
+- Added `src/modules/promseason6a1.js` for school+year+grade Prom IDs, authorized school Hall, one-time advance notice, explicit registration/decline, deadline expiry, opt-in attendance gate, conservative archival/idempotence and old event-ID migration.
+- Adapted existing `prom72.js`/calendar/home UI instead of creating a competing Prom system. Removed no working People/romance/School engines. Preserved legacy scene for later 6B and deferred real Prom Court to 6A.4.
+- New Chromium-focused 43/43 and prior 5D.7 44/44, 4D.5 23/23, 4B.5 23/23, 5C release 24/24 acceptance regression.
+- See `PHASE_6A_PROGRESS.md` and `qa_6a1_build_hashes.txt`. STOP before 6A.2.
+
+## 2026-10-08 — Phase 6A.2 (checkpoint only)
+- Added faculty-approved Prom committee application and selection, restricted event-owned work sessions, real school-organization membership, on-campus timing and canonical calendar conflict checks.
+- Retired the old free Prom committee reputation button. Added limited school-approved theme/decor planning, discretionary budget, transfer cleanup, and one-time application/decision notices.
+- No 6A.3 date invitation redesign, Prom Court voting, or Prom Night work. See `PHASE_6A_PROGRESS.md` for checks and source authority.
+
+## 2026-10-08 — Phase 6A.3 (Prom Date Invitations / RSVP) — COMPLETE
+- Preserved canonical current-school Prom, explicit 6A.1 registration and approved 6A.2 planning. Scoped outgoing/incoming date invitations to event+Person IDs, enforced Phase 3B mutual romance rules, explicit platonic attendance, realistic rejection/deferral, and durable answer integrity.
+- Added a respectful date-cancellation/change plan action and compact RSVP history to the existing Home Prom card; old Prom Night/Court scenes unchanged. Transfer and expired-event cleanup prevent stale follow-up pairing. Save/reload preserves only actual Prom decisions.
+- Focused Chromium 60/60 and 6A.2/6A.1/5D.7/4D.5/4B.5/5C release regressions 207/207. See `PHASE_6A_PROGRESS.md`; STOP before 6A.4.
+
+## 2026-10-08 — Phase 6A.4 (Prom Court / Nominations / Voting) — COMPLETE
+- Added `promcourt6a4.js`: same school/grade nominations, faculty standing-based shortlist, deterministic NPC ballots, one eligible student vote per award, anti-reroll count, official locked winners and a school-calendar voting deadline.
+- Replaced the legacy random king/queen stage with official results. Retained existing Prom Night story flow, Committee, RSVP and School Council election engine. New event-bound record and deduplicated notices, conservative archives and transfer cancellation.
+- Focused Chromium 54/54; accepted selected regressions 267/267, total 321/321. Reproducible clean builds + syntax PASS; see `PHASE_6A_PROGRESS.md`. STOP before 6A.5.
+## 2026-10-08 — Phase 6A.5 (Prom Court Social Dynamics) — COMPLETE
+
+- Added event-scoped nomination-period campaigning, limited after-school peer support with meaningful NPC refusals, reputation-limited helpful actions and candidate rival interactions (respect vs rumor).
+- Official school ballot still controls awards; candidate behavior cannot edit cast votes, and future results remain confidential until Prom Night. School reputation and existing People memories react without automatic romance progression.
+- Social history archives only actual recorded interactions, survives save/reload and does not transfer to a new school; corrected a null court-record guard.
+- Chromium focused 71/71, relevant completed regressions 321/321, two byte-identical source builds. See PHASE_6A_PROGRESS.md for recorded baseline 6A.2 flaky fixture rerun and limitations. STOP before 6A.6.
+
+### Phase 6A.6 — Prom UI / Notifications / Integration (2026-10-08)
+- Added a single cohesive Prom status, RSVP, committee, Court and campaigning section in Education; Home displays the same event-bound workflow without duplicating it on one screen. Calendar Month has a Prom countdown and canonical deadline guide.
+- Added source-scoped cleanup for legacy/stale Prom action notices including schoolless players and transfer history, preserving unrelated reminders and faculty result notice visibility.
+- New `promui6a6.js` draws from existing canonical systems; no new Prom ledger, awarding or Prom Night narrative. Rebuilt generated files, browser QA and selected regressions. 6A.7 remains pending.
+
+## 2026-10-08 — Phase 6B.1 (Prom Night foundation)
+- Added `promnight6b1.js`: event-bound, guarded school-hall check-in, real NPC attendee roster, calendar-compliant attendance lifecycle, stable save state, missed/declined/exit handling and calendar/location reconciliation.
+- Switched legacy single-click `attendProm` to 6B.1 entry gates. Full legacy Prom scenes are disabled until their sequential 6B checkpoints; no automatic crowns, romance or fabricated memories.
+- Reused existing School/People/Calendar/6A record and UI; preserved prior 6A voting/RSVP history. New live entry/exit controls appear in the Education and Home Prom panels.
+- Focused Chromium QA 39/39, selected Phase 6A/5D/4D/4B/5C regressions passing; reproducible builds and JS syntax PASS. See `PHASE_6B_PROGRESS.md`.
+
+### 2026-10-08 — Phase 6B.2 (Getting Ready / Outfit / Makeup / Family Help)
+- Introduced event-specific, save-safe getting-ready actions on existing 6B.1 Prom Night record. Real Inventory clothing selection/equipping and two new Store formalwear items; finite makeup-set consumption for self application; eligible existing mother/older sister/aunt assistance and quality; timed at-home hairstyling. Existing phantom instant-purchase/borrow shortcuts retired. No arrival/social/award/photos scene from 6B.3+.
+- Chromium focused 54/54; selected prior suites and 300-action Prom fuzz, 300-finance-action business fuzz all passed; two clean reproducible builds.
+
+
+## Phase 6B.4 — School Prom Interactive Moments (2026-10-08)
+- Added save-safe event-bound Prom dancing, solo dance, classmate conversations, rest, school water/snacks and light ambient moments with canonical time and bounded need changes.
+- NPC dance invitations honor actual School Hall presence, introductions, NPC consent/decline, and one-ask-per-NPC integrity. No automatic romance, new NPCs, photos or Court award changes.
+- Added School/Home Prom panel controls, focused Chromium QA, prior checkpoint regressions, reproducible build verification and handoff tracker.
+
+
+### 2026-10-08 — Phase 6B.6 (after-Prom)
+- Extended verified School Hall attendance with one-time real-peer farewells, factual People history, completed checkout and 20-minute canonical journey home.
+- Added optional one-time at-home reflection or actual household caregiver conversation, real curfew/event-time context, first-Prom activity-grounded milestone, safe save/reload and event-specific anti-farming guards.
+- Kept 6A Court, RSVP, Inventory, Calendar, 6B.1–6B.5 histories intact. Enabled completed-event recap in the existing Home Prom card. Focused 40/40 and selected regression suites passed. No 6B.7 work.
+
+
+## 2026-10-08 — Phase 6B.7 final acceptance and release
+- Verified integrated Prom Night across authentic inventory preparation, School Hall entry, actual attendee interactions, Court ceremony, factual photographs, farewell and family reflection.
+- Added 63 Chromium cross-stage checks, 360-action/six-region deterministic fuzz, and 12 GitHub Pages static smoke checks; 818/818 total selected accepted regression checks.
+- Fixed `promUiNoticeCleanup6A6` crash when historical Done/Skipped Prom has no 6A foundation; preserved all genuine existing memories.
+- Added QA-only `promqa6b7.js` via authoritative build; updated static index cache-busting hashes for game.js/style.css/data.js.
+- Verified repeatable clean builds and JavaScript syntax. Phase 6C not started; remote Pages deployment not verified.

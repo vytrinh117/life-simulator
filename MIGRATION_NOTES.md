@@ -1,3 +1,13 @@
+## Phase 6B.5 — Event-scoped ceremony/photos (2026-10-08)
+`S.school.prom.night6B1.ceremony6B5` is an optional schema-1 record, keyed by existing `foundation6A1.eventId`, school and approved venue. It is instantiated only after a genuine active Hall check-in, with empty photo/ceremony fields. No old Done/Skipped/missed games receive synthetic visits, Court results, photographs, relationship history or awards. Event photo IDs, current school cohort NPC IDs, and real linked People IDs are persisted verbatim, without creating a second album or student directory. `archiveProm6A1` already deep-copies real `night6B1` fields, including the newly recorded ceremony and photographs. Repeated reconciliation or save/load does not grant duplicate milestones or rewrite Phase 6A ballots. No changes to Inventory, existing dating/romance, date RSVP, Hall entry gates, Calendar or school progression.
+
+## Phase 6B.3 — Arrival state and provenance (2026-10-08)
+The new optional `S.school.prom.night6B1.arrivals6B3` field exists only after a verified physical check-in at the current school hall. It stores current event/school/venue IDs, real attendee NPC IDs, an explicit expected/absent roster, companion status, and player-triggered greetings. Existing active 6B.1 check-ins with no arrival snapshot can be reconciled from their genuine recorded attendee IDs; no missing or completed historical Prom records are manufactured. Reconciliation is idempotent; actual source history and prior relationships are unchanged. `archiveProm6A1` already deep-copies the complete `night6B1` object, so real introductions archive with it. No new top-level save container, separate People or Calendar system, synthetic romance, votes, purchases or attendance.
+
+## Phase 6A.7 — Save and compatibility acceptance (2026-10-08)
+- No new schema, separate Prom state, fabricated attendance, dates, votes, committee membership, romances, people memories or awards. 6A.7 only changes newly scheduled Prom dates when the old midpoint Saturday falls during a school break or leaves fewer than four preparatory schooldays. Existing saved canonical `S.school.prom.dateISO` remains intact.
+- Migration idempotence and save/reload Court ballot, decisions, Calendar, historical archives, transfer isolation and notifications reverified. Fixture and QA-only code changes do not mutate historical saves.
+
 ## Phase 5C.5.2 — Cross-system plan/permission/payment audit (2026-10-08)
 - **No new save schema or migration.** Existing seasonal plan `dateISO`/`startMinute`, Calendar event ID and H3 Decision Ledger remain the only authorities. Execution reuses the original plan's permission context and ignores only its own Calendar record for schedule overlap.
 - Previously permitted direct minor scuba without H3 is now rejected unless the canonical real guardian decision approves. Existing historical decisions are not generated, changed or discarded by migration. Historical outings, payments and RSVP are not retroactively revised.
@@ -528,3 +538,88 @@ Canonical 5C migration and save/reload fixed-point checks passed. Existing load-
 - Full Phase 5C migration ordering and backward-compatible state preservation were rechecked using the existing `qa/t_5c5_1.py` and subsequent integration/fuzz suites in the fresh final 73-suite run; all tests passed. No new migration code/schema or special migration run is added by final sign-off.
 - Existing stable People IDs, accepted/declined RSVPs, real Calendar overnight reservations, H3 decisions, seasonal activity history, durable equipment/consumables, financial purchases, and time-limited rentals remain authoritative. No fabricated old events, ownership, permissions, receipts, rental return or romantic milestone.
 - Generated build SHA-256 unchanged from verified 5C.5.3 source: `game.js` `5d7788104f67b9382abfaf0e620c839d324c588c631f4358f08d24197bf136c4`. Source/build boundary retained; Phase 6 not started.
+
+## Phase 5D.1 — Conservative business-session initialization (2026-10-08)
+- Adds only `S.microbusiness5D1` with `schemaVersion:1` and an initially empty `sessions` array when missing. Re-running migration retains explicit sessions and receipts; no automatic migration of `S.stall` or `S.businesses` history.
+- Never replays old `revenue`, `profit`, `costs`, sale inventory, tips, profits or owner cash. Leaves `S.money`, `S.finance`, `S.inventoryItems`, `S.people`, `S.calendar`, `S.programs`, `S.talents`, `S.skills` and H3 Decision Ledger untouched by migration.
+- New sessions, if explicitly created later, persist a `businessId` pointing to an existing owned business and `permissionDecisionId` from a real H3 decision; the new transaction gateway cannot credit/refund stock/cash twice for one globally unique transaction ID.
+- No guessed historical customers, reputation, relationship milestones or Talent Evidence. 5D.2+ will integrate this schema with actual Store/Inventory, and 5D.6 will re-audit migration/UI and backward compatibility.
+
+### 5D.2 — No historical business replay
+- No new wallet, replay, legacy revenue backfill or fabricated old cost/sale receipts. Canonical new session batches carry optional `source`, `preparationSignature5D2`, `itemId`, `expiryDateISO`, `preparationCost`, and leftover disposition. Missing properties on 5D.1 records remain optional. `normalizeInventory()` preserves returned unsold perishable lot identities flagged `microbusinessBatchReturn5D2`. Migration remains idempotent; Inventory ownership retained.
+
+- Phase 5D.2 terminal lifecycle integration: direct 5D.1 session completion/cancellation settles unsold owned or paid stock once; unbacked fixtures cannot create stock on carry-over.
+
+### 5D.3 backward compatibility
+No new migration pass and no historical conversion. Existing S.microbusiness5D1 sessions contain customerEncounters and 5D.3 lazily sets the visitor quota only on first arrival. The 5D.1 receipt remains the sole wallet/stock mutation authority. Newly added zero-value replacement receipt uses kind=replacement linked to a valid encounter sale, reducing real canonical stock once without crediting money. Legacy finance, Inventory, People, Calendar, H3 and formal job records untouched.
+
+
+## 5D.4 migration / backward compatibility (2026-10-08)
+`migrateMicrobusiness5D4()` initializes `S.microbusiness5D1.reputations5D4={}` and `customerBook5D4={}` only when absent, in the existing migration pipeline. No conversion of legacy business income, sessions, anonymous customers, reputation, contact exchange, People, Calendar, Inventory, skills, talents or work shifts. Provenance is recorded only for actual subsequent meaningful neighborhood contact; 5D.3 encountered `personId` is retained in future receipts only for an existing person. `S.money` and existing receipt/Inventory authorities unchanged. Running migration twice and save/reload tested. Later 5D checkpoints can extend this state without reconstructing historical sales.
+
+
+## Phase 5D.5 — conservative order-state initialization
+`migrateMicrobusiness5D5()` only ensures `S.microbusiness5D1.orders5D5` is an array. Old saves receive an **empty** order collection; never infer old customer orders, receipts, history, refunds, family help, reputation or Talent evidence. Save/reload retains explicit existing 5D.5 orders and Calendar events. Actual order expiry is handled in Calendar processing, not by replaying earnings during migration. Full normalized player-side order interface belongs to 5D.6.
+
+## Phase 5D.6 migration
+- `migrateMicrobusiness5D6()` adds only `microbusiness5D1.ui5D6 = { schemaVersion:1, message:'' }` if absent and leaves existing sessions/transactions/inventory/money/People/Calendar/talents unchanged. Repeat migration is idempotent.
+- Older `S.businesses` opt into canonical sessions explicitly. `microbusinessMode5D6` disables future aggregate selling for that business while a canonical session is in use; older paid stock and earned balances are untouched, not counted as free canonical stock or retrospectively replayed. Businesses with unsold legacy stock may explicitly return to classic mode after closing the canonical session.
+- No migration backfills orders, permanent NPCs, H3 approvals, talent evidence, inventory consumption, or business reputation.
+
+### Phase 5D.7
+No saved schema/version change. No side-hustle earnings, customer, legacy stock, money, People, Calendar, H3 decision, or Talent Evidence migration/replay. The release-only under-12 interactive supervision guard uses existing 5D.5 approved family-help state and 5D.6 interactive business marker at execution time. Previous saves load normally.
+
+## Phase 6A.1 — Prom Season migration (2026-10-08)
+
+- No save-version bump and no standalone date/notification/romance registry. Current active `S.school.prom` gets a conservative `foundation6A1` object: `{schemaVersion,eventId,schoolId,yearKey,grade,announceDate,registrationDeadline,announcementSent,registrationStatus,registrationDecisionDate?,registrationClosedDate?,attendanceIntent?}`.
+- Eligibility uses enrolled current school ID and grade 8–12 in middle/high stage. A future existing Prom is upgraded in-place; eligible new Prom uses a deterministic `prom-{schoolSlug}-{academicYear}-g{grade}` ID, while an old nonterminal `prom-{year}` calendar entry is migrated to that identity rather than duplicated.
+- The default venue for active/future Prom is that school's Hall; old resolved/terminal calendar records are not rewritten. Transfer cancels an old scheduled school Prom rather than transferring ownership of that event.
+- New current-year Prom enrollment begins `not_registered` even if the old save bought tickets, selected plans or has a partner: **no invented RSVP**. The player registers/declines explicitly. At missed deadline, unresolved `not_registered` becomes `missed`; registration notification is resolved. `announced` is persisted to avoid repeated notices.
+- Existing terminal `Done`/`Skipped` Prom records are left as is, including original People memories, milestone history and results. Only superseded nonterminal seasons with a real foundation record are captured once in `S.promHistory6A1`. No backfill of past Prom attendance, organizing roles, dates or court results.
+- `reconcileState()` calls `reconcilePromSeason6A1()` before the ordinary `reconcileCalendar()`; repeated migration/reconciliation/save/reload is non-destructive. Old clients that never ran 6A.1 must not assume the new opt-in state exists.
+
+## Phase 6A.2 conservative Prom committee state
+`S.school.prom.committee6A2` is created only for a canonical, nonterminal Prom event with existing `foundation6A1`. Event ID and school ID tie the record to the player’s current school/grade/year. Previously earned legacy `pr.committee` counters do not automatically create approval, work sessions, election votes, membership or past milestones. The existing 4B.1 school-organization container owns committee membership when the school adviser makes a positive decision. Reconciliation does not reroll adviser decisions; dates/statuses remain stable across save/reload. Approval expires on the preparation deadline, school transfer, or Prom completion. Transfer archives only source-backed committee facts. `S.calendar`, student IDs, social memories and existing registration remain authoritative.
+
+## Phase 6A.3 — Current Prom date RSVP compatibility
+The active nonterminal `S.school.prom` gains `date6A3`, an event-ID-qualified summary of genuine partner/mode and recorded date changes. Existing nonterminal `pr.asked[]` and `pr.received[]` histories remain canonical and are annotated idempotently with event/request IDs; their prior acceptance/refusal statuses are **never recalculated**. Legacy current `pr.partnerId`, where it truly exists, remains a recorded date, not a new romance commitment. No new vote, court win, romantic milestone, preexisting invitation, historical attendance or new People entry is fabricated by migration. A previous season's tagged `promWith` holds are cleared only after canonical current-school/cohort event changes; existing unrelated partnership records stay untouched. Old season pending callbacks cannot pair a player with a new school's student. Superseded event archives copy only existing actual outgoing/incoming/partner decisions. Previously completed/Skipped legacy Prom is not backfilled.
+
+
+## Phase 6A.4 — Conservative Court state (2026-10-08)
+- Reconciliation creates `S.school.prom.court6A4` only for the current existing nonterminal school Prom (`foundation6A1.eventId`). Initialized fields are **empty requests, ballots, nominations, results**, not fabricated historical election facts.
+- Nomination/ballot locked records persist unchanged on repeated reconciliation/save/reload. No backfilling of previous award wins, king/queen nominations, prior peer voting, previously completed Prom, real Council elections, or People memories.
+- Transferring schools/years archives only actually recorded Court facts within `promHistory6A1`, cancels the former voting deadline event, and begins a different current-school event ID. Historical legacy Done/Skipped saves remain untouched. No global save schema bump and no parallel calendar/People/notifications storage.
+## Phase 6A.5 — Event-scoped social record (2026-10-08)
+
+- `S.school.prom.social6A5` is lazy, schemaVersion 1, keyed to `foundation6A1.eventId`/school/grade. Defaults to empty actions, supporters, rivalEncounters and consequences. Idempotent; no backfilled campaigns, supporters, votes, romances, historical honors or memories.
+- `S.promHistory6A1` archives social actions only when actual activities/conversations/consequences are recorded; new school/cohort/year does not inherit supporters or rivals.
+- Before the nomination lock, confirmed current-school peer support can slightly adjust court nomination strength and next official ballots. Once cast, ballots are immutable. Reputation/social outcomes are once-only, post-event, without premature result disclosure.
+
+### 6A.6 — Prom presentation and notification reconciliation
+No new persistent schema or fabricated past Prom decisions. The UI derives from `S.school.prom`, School, People and canonical `S.calendar`. Existing `reconcilePromSeason6A1` now invokes source-scoped `promUiNoticeCleanup6A6` for active, terminal, transferred or schoolless saves, resolving only outdated Prom action notices; unrelated notifications and historical Prom decisions remain. Idempotent across migration and save/reload.
+
+## Phase 6B.1 — conservative event-bound Prom Night migration
+- `S.school.prom.night6B1` is initialized only for a real, current, nonterminal Phase 6A Prom with matching canonical Calendar event, venue/school/year/grade. It reuses `foundation6A1.eventId`; there is no independent Prom event or People ledger.
+- Reconciliation is repeat-safe and leaves historical completed/skipped Prom saves without a fabricated 6B.1 attendance record.
+- During transfer or school-year rollover, Phase 6A history archives the actual 6B.1 state (when present), not new memories, photos, nominees, dates, clothes or attendance guesses.
+- Active checked-in Prom survives save/reload; calendar and location normalize to the school-approved Hall context until event exit/end. Only actual physical entry creates `attendanceRecorded`; exiting once marks the canonical Calendar event Attended.
+- Existing `court6A4`, `date6A3`, `people`, `inventoryItems`, `milestones`, `calendar`, `notifications`, 6A committee and voting fields are otherwise preserved.
+
+### 6B.2 — Conservative getting-ready state
+- Lazy, event-ID-bound `S.school.prom.night6B1.gettingReady6B2` created only after actual preparation action. Existing 6A registration/date/Court state and 6B.1 attendance authority remain unchanged; no backfill from legacy `prom.prep.outfit`, hair or makeup shortcuts.
+- Outfits reference stable **real** inventory item IDs; cosmetics store actual used finite item IDs and remaining supplies; family helpers reference existing Person IDs. Old done/skipped historical Proms do not receive newly fabricated preparation records. Repeated ensure/reconcile and save/reload verified. Formalwear added to existing catalog only.
+
+
+## Phase 6B.4 conservative activity migration
+`S.school.prom.night6B1.moments6B4` is keyed to the existing canonical Prom `eventId`/school/venue; an empty ledger is generated only from actual current check-in and 6B.3 arrival. Loading a saved active check-in may create this empty record on Prom UI render, but historical Done/Missed events do not gain invented dancing, conversations or partners. Existing `S.people`, relationship history, 6A ballots/results, date RSVP, clothes, photos, inventory and calendar remain authoritative. Real activities persist through save/reload; repeated reconciliation must not duplicate them.
+
+
+### Phase 6B.6 conservative event-bound after-Prom ledger
+`night6B1.after6B6` (schemaVersion 1) is created only with genuine active 6B.1 check-in or a verified live checkout from a 6B.1–6B.5 save. Event ID, school ID and approved Hall venue must match. Empty farewells, checkout and homeResponse are *not* backfilled into old Done, missed, Skipped, transferred or archived saves. Reconciliations never manufacture prior first-Prom milestones, family conversations, friend goodbyes, Court results, photographs or dances. Once-only checkout and home debrief are persisted with canonical event identity; all earlier records remain unchanged.
+
+
+## 2026-10-08 — Phase 6B.7 final migration acceptance
+- No new player-save schema or manufactured historical actions. Every 6B stage remains tied to the existing 6A event ID/school/venue and persists only real player actions.
+- Terminal legacy Prom records without `foundation6A1` now safely traverse Prom UI notice cleanup; null-safe repair is idempotent and does not materialize attendance, photos, Court titles or milestones.
+- Save/reload was tested across pre-event gear/makeup, actual Hall attendance, photos, real dance and Court presentation, farewell, Home reflection, and repeated reconciliation; no retroactive backfills or repeated rewards.
+- Added QA-only seeded 6B.7 fuzz runner; no new player save fields or separate calendars, NPCs, Inventories or romance data.

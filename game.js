@@ -106,7 +106,7 @@ function migrate(){
  S.weather=Object.assign(initialWeather(),S.weather||{});S.homeAmenities=Object.assign(initialAmenities(S.wealth||'Middle class'),S.homeAmenities||{});S.inventory=Object.assign({umbrella:0,raincoat:0,sweater:0,firewood:0,sunglasses:0,waterBottle:0},S.inventory||{});S.inventoryItems=Array.isArray(S.inventoryItems)?S.inventoryItems:[];S.possessions=Array.isArray(S.possessions)?S.possessions:[];S.purchaseHistory=Array.isArray(S.purchaseHistory)?S.purchaseHistory:[];
  S.phone=Object.assign({owned:false,model:null,price:600,condition:100,appsUnlocked:[]},S.phone||{});S.finance=Object.assign(initialFinance(),S.finance||{});S.permissions=Object.assign({stand:null,yardSale:null,dailyAccess:{}},S.permissions||{});S.permissions.dailyAccess=Object.assign({dateISO:currentDate(),tv:false,sharedDevice:false,phone:false,stove:false},S.permissions.dailyAccess||{});S.giftRequests=Array.isArray(S.giftRequests)?S.giftRequests:[];S.giftHistory=Array.isArray(S.giftHistory)?S.giftHistory:[];S.traditions=Object.assign(initialTraditions(S.place),S.traditions||{});S.familyEvents=Array.isArray(S.familyEvents)?S.familyEvents:[];S.choresDone=safeNum(S.choresDone,0,0);
  if(typeof S.career?.job==='string'&&S.career.job)S.career.job={title:S.career.job,pay:16,hours:4,performance:50};S.career=Object.assign(initialCareer(),S.career||{});S.healthState=Object.assign({fitness:50,sleep:80,illness:null},S.healthState||{});S.social=Object.assign({followers:0,reputation:50,posts:0,fame:0},S.social||{});S.romance=Object.assign({status:'Single',partner:null,history:[]},S.romance||{});S.travel=Object.assign({trips:0,lastTrip:null,passport:false},S.travel||{});S.location=S.location||'Home';S.current=S.current||{title:'Your life continues.',text:'The world is still moving.'};
- ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
+ ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();migrateMicrobusiness5D1();migrateMicrobusiness5D4();migrateMicrobusiness5D5();migrateMicrobusiness5D6();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
 }
 
 function save(){if(!S)return;try{localStorage.setItem(KEY,JSON.stringify(S));const el=$('save-status');if(el)el.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){console.error('Save failed',e);toast('Could not save this life.')}}
@@ -423,6 +423,7 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
   // An overnight reservation is a multi-day schedule hold, not an attendable
   // obligation. It is resolved when its owning outdoor plan is settled.
   if(ev.type==='outdoorReservation'){
@@ -434,6 +435,7 @@ function processCalendar(){tierTick();curfewCallCheck();
   if(now<stamp(ev.dateISO,ev.startMinute))continue;
   if(SIM.skipping){simulateObligation(ev);continue}
   if(ev.type==='schoolEvent'&&ev.status==='Scheduled'&&isSchoolDay(ev.dateISO)&&ev.startMinute===600&&now<stamp(ev.dateISO,ev.graceMinute)){Object.assign(ev,contestSlot(ev.dateISO));ev.minute=ev.startMinute;continue}
+  if(ev.type==='prom'&&typeof reconcilePromNight6B1==='function'){reconcilePromNight6B1(S.school?.prom);if(ev.status==='Attending')continue;}
   if(ev.status==='Attending'){if(ev.type==='schoolDay'&&now>=stamp(ev.dateISO,ev.endMinute))finishSchoolDay(ev);continue}
   if(now>stamp(ev.dateISO,ev.graceMinute)){missObligation(ev);continue}
   if(ev.status==='Scheduled'){setCalendarStatus(ev,'Due','Window opened');onObligationDue(ev)}
@@ -451,7 +453,7 @@ function onObligationDue(ev){
  if(ev.type==='medicalFollowUp'){notify('Doctor follow-up','Today at '+timeLabel(ev.startMinute),{sourceType:'calendar',sourceId:ev.id,tab:'health'});return}
  if(ev.type==='workDay'){offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:`Work • ${ev.location}`,text:'9:00–5:00. On time until 9:15.',expiresAt:{dateISO:ev.dateISO,minute:660}});return}
  if(ev.type==='program'){notify(ev.title,`${timeLabel(ev.startMinute)} • ${ev.location}`,{sourceType:'program',sourceId:ev.id,tab:'places'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:4,title:ev.title,text:`Starts at ${timeLabel(ev.startMinute)}.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}});return}
- if(ev.type==='prom'){if(S.school?.prom?.plan!=='skip'){notify('Prom tonight',`${ev.location} • 7:00 PM`,{sourceType:'prom',sourceId:ev.id,tab:'home'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:'Prom tonight',text:`${ev.location}. Doors at 7:00 PM.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}})}return}
+ if(ev.type==='prom'){if(promRegistered6A1(S.school?.prom)&&S.school?.prom?.plan!=='skip'){notify('Prom tonight',`${ev.location} • 7:00 PM`,{sourceType:'prom',sourceId:ev.id,tab:'home'});offerContext({sourceType:'calendar',sourceId:ev.id,priority:5,title:'Prom tonight',text:`${ev.location}. Doors at 7:00 PM.`,expiresAt:{dateISO:ev.dateISO,minute:ev.graceMinute}})}return}
  if(ev.type==='party'){const host=ev.payload?.hostId||ev.payload?.personId||(S.plans||[]).find(x=>x.id===ev.payload?.planId)?.personId;queueEvent({type:'party',title:ev.title,text:ev.text||'A social event you were expecting has arrived.',participants:host&&personById(host)?[host]:[],payload:{...(ev.payload||{}),hostId:host||null},choices:[{id:'go',label:'Go'},{id:'skip',label:'Skip'}]});setCalendarStatus(ev,'Resolved','Converted to invitation');return}
  if(ev.type!=='schoolDay')setCalendarStatus(ev,'Resolved','Reached')
 }
@@ -490,7 +492,7 @@ function simulateObligation(ev){
  if(ev.type==='schoolEvent'){const c=contestById(ev.payload?.contestId);if(!c||c.status!=='Registered'){setCalendarStatus(ev,'Cancelled','Not registered');return}if(attend&&!sick){resolveContest(c,{simulated:true});setCalendarStatus(ev,'Attended','Simulated attendance')}else resolveContestAttendance(ev,sick?'Withdrew':'No-show',{simulated:true});return}
  if(ev.type==='leadershipSelection'){if(typeof simulateLeadershipSelection4B3==='function')simulateLeadershipSelection4B3(ev);else setCalendarStatus(ev,'Completed','Simulated');return}
  if(ev.type==='tryout'){const t=S.school?.tryouts?.find(x=>x.id===ev.payload?.tryoutId);if(t&&t.status==='Scheduled'&&attend){t.prep=Math.max(t.prep,25+Math.random()*30);evaluateTryout(t,{simulated:true});setCalendarStatus(ev,'Attended','Simulated')}else tryoutMissed(ev);return}
- if(ev.type==='prom'){const pr=S.school?.prom;if(!pr||pr.plan==='skip'||!attend){promMissed(ev);return}pr.status='Done';setCalendarStatus(ev,'Attended','Simulated');const pp=pr.partnerId?personById(pr.partnerId):null;if(pp)pp.rel=clamp(pp.rel+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'💃 Prom',text:pp?`You went to prom with ${displayName(pp,'formal')}.`:'You went to prom with friends.'});if(SIM.summary)SIM.summary.notable.push('Went to prom');return}
+ if(ev.type==='prom'){if(typeof missPromNight6B1==='function'){missPromNight6B1(ev,'simulated_no_checkin');return}const pr=S.school?.prom;if(!promRegistered6A1(pr)||pr.plan==='skip'||!attend){promMissed(ev);return}pr.status='Done';setCalendarStatus(ev,'Attended','Simulated');const pp=pr.partnerId?personById(pr.partnerId):null;if(pp)pp.rel=clamp(pp.rel+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'💃 Prom',text:pp?`You went to prom with ${displayName(pp,'formal')}.`:'You went to prom with friends.'});if(SIM.summary)SIM.summary.notable.push('Went to prom');return}
  if(ev.type==='plan'){const plan=S.plans?.find(x=>x.id===ev.payload?.planId);if(plan&&attend){plan.status='Attended';const p=personById(plan.personId);if(p)p.rel=clamp(p.rel+3);setCalendarStatus(ev,'Attended','Simulated')}else planNoShow(ev);return}
  if(ev.type==='election'){const el=S.elections?.find(x=>x.id===ev.payload?.electionId);if(el)decideElection(el);setCalendarStatus(ev,'Completed','Simulated');return}
  setCalendarStatus(ev,'Expired','Skipped ahead')
@@ -1027,11 +1029,11 @@ function reconcileState(reason='tick'){
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  if(typeof reconcileSchoolDay4C1==='function')reconcileSchoolDay4C1(reason);if(typeof reconcileSchoolClasses4C2==='function')reconcileSchoolClasses4C2(reason);if(typeof reconcileSchoolFacilities4C3==='function')reconcileSchoolFacilities4C3(reason);if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4(reason);
- reconcileExams();reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
+ reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
 }
 function compactExam(e){return {id:e.id,subject:e.subject,type:e.type,dateISO:e.dateISO,minute:e.minute,status:e.status,score:e.score,reason:e.reason||null,makeupOf:e.makeupOf||null,makeupId:e.makeupId||null,replacedBy:e.replacedBy||null}}
 function closeSchoolYear(old,{leaving=false}={}){
- if(!old)return;awardsCeremony(old);const rec=old.record||null;
+ if(!old)return;if(typeof archiveProm6A1==='function'&&old.prom)archiveProm6A1(old.prom);awardsCeremony(old);const rec=old.record||null;
  for(const exam of S.exams||[]){if(examIsOpen(exam)){exam.status='Cancelled';exam.reason=leaving?'Left school':'School year ended';for(const ev of examCalendarEvents(exam))setCalendarStatus(ev,'Cancelled',exam.reason)}}
  S.archive.exams.unshift(...(S.exams||[]).map(compactExam));if(S.archive.exams.length>150)S.archive.exams.length=150;S.exams=[];
  for(const ev of S.calendar)if(['schoolDay'].includes(ev.type)&&!isTerminal(ev.status)&&ev.dateISO>currentDate())setCalendarStatus(ev,'Cancelled','School year ended');
@@ -1251,6 +1253,7 @@ function heroParts(c){
   if(ev.type==='tryout'){const t=S.school?.tryouts?.find(x=>x.id===ev.payload?.tryoutId);return {detail:`<div class="hero-when urgent">Check in by ${timeLabel(ev.graceMinute)}</div><div class="hero-stats">${meter('Preparation',t?.prep||0)}${meter('Energy',S.energy)}${meter('Stress',S.stress,true)}</div>`,actions:`<button class="primary" data-tryout-go="${t?.id}">Go to ${esc(clubInfo(t?.club).entry||'tryout')}</button>`}}
   if(ev.type==='workDay')return {detail:`<div class="hero-when">9:00–5:00 • ${esc(ev.location||'')}</div>`,actions:`<button class="primary" data-work="normal">Go to work</button><button class="ghost" data-work="sick">Call in sick</button><button class="ghost" data-work="leave">Take today off</button>`};
   if(ev.type==='program')return {detail:`<div class="hero-when">${timeLabel(ev.startMinute)}–${timeLabel(ev.endMinute)} • ${esc(ev.location||'')}</div>`,actions:`<button class="primary" data-program-go="${ev.id}">Go</button>`};
+  if(ev.type==='prom'&&!promRegistered6A1(S.school?.prom))return {detail:`<div class="hero-when">Registration required • ${esc(ev.location||'')}</div>`,actions:''};
   if(ev.type==='prom')return {detail:`<div class="hero-when urgent">Doors 7:00 PM • ${esc(ev.location||'')}</div>`,actions:`<button class="primary" data-prom-go="1">Go to prom</button>`};
   if(ev.type==='plan'){const pl=S.plans?.find(x=>x.id===ev.payload?.planId);return {detail:`<div class="hero-when">${timeLabel(ev.startMinute)} • ${esc(ev.location||'')}</div>`,actions:`<button class="primary" data-plan-go="${pl?.id}">Go</button><button class="ghost" data-plan-cancel="${pl?.id}">Cancel (last minute)</button>`}}
   const ct=contestById(ev.payload?.contestId);return {detail:`<div class="hero-when urgent">Check-in ${timeLabel(ev.startMinute)}–${timeLabel(ev.graceMinute)}</div><div class="hero-stats">${meter('Preparation',ct?.prep||0)}${meter('Energy',S.energy)}${meter('Stress',S.stress,true)}</div>`,actions:`<button class="primary" data-contest-attend="${ct?.id}">Go to the event</button>`}}
@@ -1268,7 +1271,7 @@ function pendingHtml(){const p=pendingOpen();if(!p.length)return '<p class="mute
 function eventHtml(){const shown=S.current?.sourceType==='event'?S.current.sourceId:null,list=S.events.filter(x=>x.status==='Open'&&x.id!==shown&&!eventExpired(x));if(!list.length)return `<p class="muted-text">${shown?'The current moment is shown at the top of the page.':'No major interruption right now. Ordinary life is still moving.'}</p>`;return list.slice(0,3).map(e=>`<div class="event-card"><div class="event-kicker">WAITING FOR YOU${e.expiresAt?` • RESPOND BY ${esc(timeLabel(e.expiresAt.minute))}${e.expiresAt.dateISO!==currentDate()?' '+esc(formatDate(e.expiresAt.dateISO)):''}`:''}</div><h3>${esc(e.title)}</h3>${inviteMetaHtml(e)}<p>${esc(e.text)}</p><div class="event-actions">${e.choices.map(c=>`<button data-event-id="${e.id}" data-event-choice="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div></div>`).join('')}
 function notificationsHtml(){const n=activeNotifications().slice(0,6);if(!n.length)return '<p class="muted-text">No active notifications.</p>';return n.map(x=>`<button class="note-row ${x.status==='Unread'?'unread':''}" data-note-open="${x.id}"><b>${esc(x.title)}</b><small>${esc(x.text)} • ${formatDate(x.dateISO)}</small></button>`).join('')+`<div class="inline-actions"><button class="small ghost" data-notes-read="1">Mark all read</button></div>`}
 function agendaHtml(){const a=todayAgenda();if(!a.length)return '<p class="muted-text">Nothing scheduled today.</p>';return a.map(x=>`<div class="agenda-row ${x.done?'done':''}"><span>${x.icon}</span><b>${esc(x.title)}</b><small>${x.type==='homework'||x.type==='birthday'?esc(x.status||''):timeLabel(x.minute)}</small>${x.type!=='homework'&&x.type!=='birthday'&&x.status?statusTag(x.status):''}</div>`).join('')}
-function homePanel(){const q=quickContextActions(),gift=S.giftHistory.find(x=>!x.reaction);return `<div class="dashboard home-dashboard"><section class="card wide"><div class="section-heading"><div><h3>What needs your attention?</h3><p class="muted-text">The game surfaces context instead of making you hunt through menus.</p></div><span class="tag">${esc(S.emotion.current)}</span></div><div class="context-grid">${q.map(x=>`<button class="context-action" data-tab-jump="${x[0]}"><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></section><section class="card"><h3>Today • ${esc(weekday())}</h3>${agendaHtml()}${isGrounded()?`<p class="urgent-text">Grounded until ${formatDate(S.family.restrictions.groundedUntil)}.</p>`:''}</section><section class="card"><h3>Mood</h3>${moodHtml()}</section><section class="card"><h3>Notifications</h3>${notificationsHtml()}</section>${promHtml()?`<section class="card wide"><h3>Prom</h3>${promHtml()}</section>`:''}${holidayWindow().length?`<section class="card wide"><h3>Holidays</h3>${holidayHtml()}</section>`:''}<section class="card wide"><h3>What's happening?</h3>${eventHtml()}</section><section class="card"><h3>Right now</h3>${statRow('Location',esc(S.location))}${statRow('Weather',`${weatherIcon(S.weather.type)} ${esc(S.weather.type)} • ${S.weather.temp}°C`)}${statRow('Emotion',esc(S.emotion.current))}<p class="muted-text">${esc(S.emotion.reason||weatherAdvice())}</p></section><section class="card"><h3>Pending decisions</h3>${pendingHtml()}</section>${gift?`<section class="card wide"><h3>🎁 A gift reaction is still yours to choose</h3><p>You received <b>${esc(gift.item)}</b> for ${esc(gift.occasion)}. Your private feeling and outward behavior do not have to match.</p><div class="inline-actions"><button data-act="giftThank">Say thank you</button><button data-act="giftExcited">Act excited</button><button data-act="giftHide">Hide disappointment</button><button data-act="giftHug">Hug giver</button><button class="ghost" data-act="giftComplain">Complain</button></div></section>`:''}</div>`}
+function homePanel(){const q=quickContextActions(),gift=S.giftHistory.find(x=>!x.reaction);return `<div class="dashboard home-dashboard"><section class="card wide"><div class="section-heading"><div><h3>What needs your attention?</h3><p class="muted-text">The game surfaces context instead of making you hunt through menus.</p></div><span class="tag">${esc(S.emotion.current)}</span></div><div class="context-grid">${q.map(x=>`<button class="context-action" data-tab-jump="${x[0]}"><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></section><section class="card"><h3>Today • ${esc(weekday())}</h3>${agendaHtml()}${isGrounded()?`<p class="urgent-text">Grounded until ${formatDate(S.family.restrictions.groundedUntil)}.</p>`:''}</section><section class="card"><h3>Mood</h3>${moodHtml()}</section><section class="card"><h3>Notifications</h3>${notificationsHtml()}</section>${typeof promUiHomeHtml6A6==='function'?promUiHomeHtml6A6():''}${holidayWindow().length?`<section class="card wide"><h3>Holidays</h3>${holidayHtml()}</section>`:''}<section class="card wide"><h3>What's happening?</h3>${eventHtml()}</section><section class="card"><h3>Right now</h3>${statRow('Location',esc(S.location))}${statRow('Weather',`${weatherIcon(S.weather.type)} ${esc(S.weather.type)} • ${S.weather.temp}°C`)}${statRow('Emotion',esc(S.emotion.current))}<p class="muted-text">${esc(S.emotion.reason||weatherAdvice())}</p></section><section class="card"><h3>Pending decisions</h3>${pendingHtml()}</section>${gift?`<section class="card wide"><h3>🎁 A gift reaction is still yours to choose</h3><p>You received <b>${esc(gift.item)}</b> for ${esc(gift.occasion)}. Your private feeling and outward behavior do not have to match.</p><div class="inline-actions"><button data-act="giftThank">Say thank you</button><button data-act="giftExcited">Act excited</button><button data-act="giftHide">Hide disappointment</button><button data-act="giftHug">Hug giver</button><button class="ghost" data-act="giftComplain">Complain</button></div></section>`:''}</div>`}
 function quickContextActions(){const a=[];const exam=nextExam();if(exam){const d=daysBetween(currentDate(),exam.dateISO);if(d<=3)a.push(['school','📝 '+exam.subject,d<=0?`Assessment today • ${timeLabel(exam.minute)}`:`Assessment in ${d} day${d===1?'':'s'} • prep ${Math.round(examSubject(exam)?.prep||0)}%`])}const sd=schoolDayEvent();if(sd&&!isTerminal(sd.status)&&currentMinute()<=SCHOOL_DAY.cutoff)a.push(['school','🏫 School today',schoolDayStatus()]);if(needsFormalSchool()){const hw=S.school.subjects.find(s=>s.homework?.status==='Late'||(s.homework?.status==='Assigned'&&daysBetween(currentDate(),s.homework.dueDate)<=1));if(hw)a.push(['school','📒 '+hw.name+' homework',homeworkLabel(hw.homework)])}if(S.needs.hunger>=60)a.push(['places','🍽️ Eat',S.age<=1?'Signal caregiver / be fed':'Take care of hunger']);if(S.needs.toilet>=65)a.push(['places','🚽 Bathroom',S.age<=4?'Age-appropriate toileting help':'Relieve yourself']);if(S.needs.sleep<=35||S.energy<=30)a.push(['places','😴 Sleep','You are running low on rest']);if(unreadMessages())a.push(['phone','💬 Messages',`${unreadMessages()} unread`]);if(pendingOpen().length)a.push(['calendar','⏳ Pending decision',`${pendingOpen().length} unresolved`]);if(!a.length)a.push(['places','🧭 Choose an activity','Your immediate needs are stable'],['people','👥 See someone','Relationships keep moving']);return a.slice(0,6)}
 function developmentPanel(){const k=S.development.kindergarten,p=S.pendingDecisions.find(x=>!x.resolved&&x.type==='kindergarten');return `<div class="dashboard"><section class="card"><h3>Development & autonomy</h3><p class="stage-note"><b>${lifeStage()}</b> • skills grow through actual care routines.</p>${Object.entries(S.development.skills).map(([key,v])=>`<div class="skill-line"><span>${esc(key.replace(/([A-Z])/g,' $1'))}</span><div class="progress"><i style="width:${clamp(v)}%"></i></div><b>${Math.round(v)}%</b></div>`).join('')}</section><section class="card"><h3>Early education</h3>${statRow('Kindergarten',esc(k.decision||(p?p.status:'Not decided')))}${p&&p.status==='Waiting for your preference'?`<p>Your family is discussing kindergarten. Your preference matters, but caregivers still make the final decision${p.autoDecideDate?` — by ${formatDate(p.autoDecideDate)} at the latest`:''}.</p><div class="inline-actions"><button data-act="kindergartenYes">I want to go</button><button class="ghost" data-act="kindergartenNo">I don't want to go</button></div>`:p?`<p class="muted-text">${esc(p.detail)}</p>`:''}<h4>Milestones</h4>${S.development.milestones.slice(0,6).map(x=>`<p>${esc(x)}</p>`).join('')||'<p class="muted-text">Milestones appear as skills develop.</p>'}</section></div>`}
 function examStatusLabel(e){const d=daysBetween(currentDate(),e.dateISO);if(e.status==='Completed')return `${e.score}%`;if(e.status==='Replaced by make-up')return 'Replaced';if(e.status==='Make-up scheduled'){const mk=S.exams.find(x=>x.id===e.makeupId);return mk?`Make-up ${formatDate(mk.dateISO)}`:'Make-up'}if(!examIsOpen(e))return e.status;return d===0?`TODAY ${timeLabel(e.minute)}`:`${d} day${d===1?'':'s'}`}
@@ -1349,7 +1352,7 @@ function makeItemInstance(key,source='purchase',cond=null){
 }
 function addItem(key,source='purchase',condition=null,{quantity=1}={}){
  const d=catalogItem(key);if(!d)return null;quantity=Math.max(1,Math.round(quantity)||1);if(d.workbook5A){const owned=S.inventoryItems.find(i=>i.key===key);if(owned)return owned;quantity=1}let it=null;
- if(d.stackable&&condition==null){const fresh=lifecycleOf(d)==='perishable'?addDays(currentDate(),d.freshnessDays||3):null;it=S.inventoryItems.find(x=>x.key===key&&!x.opened&&!x.stored&&(!fresh||x.freshUntil===fresh))}
+ if(d.stackable&&condition==null){const fresh=lifecycleOf(d)==='perishable'?addDays(currentDate(),d.freshnessDays||3):null;it=S.inventoryItems.find(x=>x.key===key&&!x.opened&&!x.stored&&!x.microbusinessBatchReturn5D2&&(!fresh||x.freshUntil===fresh))}
  if(it)it.quantity=(it.quantity||1)+quantity;
  else{it=makeItemInstance(key,source,condition);if(d.stackable)it.quantity=quantity;S.inventoryItems.push(it);if(!d.stackable)for(let i=1;i<quantity;i++)S.inventoryItems.push(makeItemInstance(key,source,condition))}
  if(d.phone)onPhoneAcquired(it);
@@ -1536,7 +1539,7 @@ function normalizeInventory(){
   delete it.currentValue
  }
  // merge legacy duplicates of stackable, unopened items into one stack
- const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored)return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
+ const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored||it.microbusinessBatchReturn5D2)return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
  // one equipped item per slot
  const used=new Set();for(const it of S.inventoryItems)if(it.equipped){if(!it.slot||used.has(it.slot))it.equipped=false;else used.add(it.slot)}
  if(S.phone.activeItemId&&!phoneItems().some(i=>i.id===S.phone.activeItemId))S.phone.activeItemId=null;
@@ -2132,7 +2135,7 @@ function holidayHtml(){
 
 // ---------- v7.2 Month calendar, date agenda & Life Planner ----------
 let calView=null,calSelected=null,calFilter=null;
-const CAL_CATS={workDay:'Work',wedding:'Family',program:'Activity',trip:'Family',conference:'School',term:'School',prom:'Social',tryout:'Club',plan:'Social',election:'Club',schoolDay:'School',exam:'Exam',homework:'Homework',clubSession:'Club',schoolEvent:'Competition',party:'Social',holiday:'Holiday',birthday:'Birthday',decision:'Decision',generic:'Other'};
+const CAL_CATS={promCourtBallot:'School',workDay:'Work',wedding:'Family',program:'Activity',trip:'Family',conference:'School',term:'School',prom:'Social',tryout:'Club',plan:'Social',election:'Club',schoolDay:'School',exam:'Exam',homework:'Homework',clubSession:'Club',schoolEvent:'Competition',party:'Social',holiday:'Holiday',birthday:'Birthday',decision:'Decision',generic:'Other'};
 const CAL_TONE={School:'school',Exam:'exam',Homework:'homework',Club:'club',Competition:'competition',Social:'social',Holiday:'holiday',Birthday:'birthday',Decision:'decision',Other:'other'};
 function calShift(n){const v=calView||currentDate().slice(0,7),[y,m]=v.split('-').map(Number);calView=isoDate(new Date(Date.UTC(y,m-1+n,1))).slice(0,7)}
 function monthLabel(ym){const [y,m]=ym.split('-').map(Number);return new Date(Date.UTC(y,m-1,1)).toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'})}
@@ -2169,7 +2172,7 @@ function calendarPanel(){
  const recent=[...S.calendar].filter(e=>isTerminal(e.status)&&e.type!=='schoolDay').sort((a,b)=>stampOf(b.resolvedAt||{dateISO:b.dateISO}).localeCompare(stampOf(a.resolvedAt||{dateISO:a.dateISO}))).slice(0,10);
  const y=parseISO(currentDate()).getUTCFullYear(),hols=HOLIDAYS.filter(holidayObserved).map(h=>({h,d:holidayDate(h,y)})).filter(x=>x.d).sort((a,b)=>a.d.localeCompare(b.d));
  const filters=Object.keys(CAL_TONE).filter(c=>c!=='Other');
- return `<div class="dashboard"><section class="card wide" data-sub="month"><div class="cal-toolbar"><div class="cal-nav"><button class="small ghost" data-cal-month="-1" aria-label="Previous month">‹</button><h3>${esc(monthLabel(ym))}</h3><button class="small ghost" data-cal-month="1" aria-label="Next month">›</button><button class="small" data-cal-today="1">Today</button></div><div class="filter-row">${filters.map(c=>`<button class="filter-chip ${calFilter===c?'active':''}" data-cal-filter="${c}"><i class="dot-${CAL_TONE[c]}"></i>${c}</button>`).join('')}</div></div><div class="cal-layout">${monthGrid(ym)}<div class="cal-agenda">${agendaListHtml(sel)}</div></div></section>
+ return `<div class="dashboard">${typeof promUiCalendarHtml6A6==='function'?promUiCalendarHtml6A6():''}<section class="card wide" data-sub="month"><div class="cal-toolbar"><div class="cal-nav"><button class="small ghost" data-cal-month="-1" aria-label="Previous month">‹</button><h3>${esc(monthLabel(ym))}</h3><button class="small ghost" data-cal-month="1" aria-label="Next month">›</button><button class="small" data-cal-today="1">Today</button></div><div class="filter-row">${filters.map(c=>`<button class="filter-chip ${calFilter===c?'active':''}" data-cal-filter="${c}"><i class="dot-${CAL_TONE[c]}"></i>${c}</button>`).join('')}</div></div><div class="cal-layout">${monthGrid(ym)}<div class="cal-agenda">${agendaListHtml(sel)}</div></div></section>
  <section class="card" data-sub="today"><h3>Today • ${esc(weekday())}</h3>${agendaListHtml(currentDate())}</section><section class="card" data-sub="today"><h3>Now</h3>${statRow('Time',timeLabel(currentMinute()))}${statRow('School',esc(schoolDayStatus()))}${statRow('Bedtime',S.age<18?timeLabel(bedtimeMinute()):'Your choice')}${statRow('Calendar profile',esc(calendarProfile().region))}<h4>Pending decisions</h4>${pendingHtml()}</section>
  <section class="card wide" data-sub="upcoming"><h3>Upcoming</h3>${up.map(e=>{const d=daysBetween(currentDate(),e.dateISO);return `<div class="calendar-row"><div><b>${e.icon||typeIcon(e.type)} ${esc(e.title)}</b><small>${formatDate(e.dateISO)}${e.minute!=null&&e.type!=='homework'?` • ${timeLabel(e.minute)}`:''}${e.location?` • ${esc(e.location)}`:''}${e.required?' • required':''}</small></div><div class="inline-actions">${e.status&&e.status!=='Scheduled'?statusTag(e.status):''}<span class="countdown">${d===0?'TODAY':d===1?'TOMORROW':`${d} days`}</span></div></div>`}).join('')||'<p class="muted-text">Nothing scheduled.</p>'}</section>
  <section class="card" data-sub="history"><h3>Recently resolved</h3>${recent.map(e=>`<div class="calendar-row"><div><b>${typeIcon(e.type)} ${esc(e.title)}</b><small>${formatDate(e.dateISO)}${e.resolutionReason?` • ${esc(e.resolutionReason)}`:''}</small></div>${statusTag(e.status)}</div>`).join('')||'<p class="muted-text">Nothing resolved recently.</p>'}</section><section class="card" data-sub="history"><h3>Holidays this year (${calendarProfile().region})</h3>${hols.map(x=>`<div class="calendar-row"><div><b>${x.h.icon} ${esc(x.h.name)}</b><small>${formatDate(x.d)}</small></div><span class="countdown">${x.d<currentDate()?'passed':daysBetween(currentDate(),x.d)+'d'}</span></div>`).join('')}</section></div>`
@@ -2649,8 +2652,8 @@ function romanceAction(p,kind){
  if(!story)return;rememberPerson(p,story.slice(0,90),2);advanceTime(30);log(`${firstName(p)}`,story)
 }
 // ---------- Scene runner (dates, prom night) ----------
-function startScene(kind,data){S.scene={id:uid('scene'),kind,step:0,score:50,lines:[],data};renderScene()}
-function sceneDef(){return S.scene?.kind==='date'?DATE_SCENE:S.scene?.kind==='prom'?PROM_SCENE:null}
+function startScene(kind,data){if(kind==='prom'&&typeof promNightEntryGate6B1==='function'){toast('Prom Night scenes will open in later checkpoints.');return}S.scene={id:uid('scene'),kind,step:0,score:50,lines:[],data};renderScene()}
+function sceneDef(){return S.scene?.kind==='date'?DATE_SCENE:S.scene?.kind==='prom'&&typeof promNightEntryGate6B1!=='function'?PROM_SCENE:null}
 function renderScene(){const sc=S.scene,def=sceneDef();if(!sc||!def){S.scene=null;return}const st=def.steps[sc.step];if(!st){finishScene();return}const view=st.view(sc);openModal(view.title,`${sc.lines.length?`<div class="scene-lines">${sc.lines.slice(-3).map(l=>`<p>${esc(l)}</p>`).join('')}</div>`:''}<p class="scene-text">${esc(view.text)}</p><div class="modal-action-grid">${view.choices.map(c=>`<button class="${c.primary?'primary':''}" data-scene-choice="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div>`)}
 function sceneChoice(id){const sc=S.scene,def=sceneDef();if(!sc||!def)return;const st=def.steps[sc.step];const r=st.choose(sc,id)||{};if(r.line)sc.lines.push(r.line);if(r.score)sc.score=clamp(sc.score+r.score);if(r.minutes)advanceTime(r.minutes,{silent:true});if(r.end){finishScene(r);return}sc.step=r.goto??sc.step+1;save();renderScene()}
 function finishScene(r={}){const sc=S.scene,def=sceneDef();S.scene=null;closeChoiceModal();if(def)def.finish(sc,r);save();render()}
@@ -2682,12 +2685,12 @@ const DATE_SCENE={steps:[
 }};
 
 // ---------- v7.2 PHASE 5b: PROM (§63–70) ----------
-function promEligible(){const g=gradeNumber();return needsFormalSchool()&&g>=8&&g<=12}
+function promEligible(){return promSeasonEligibility6A1().ok}
 function promDaysLeft(){const pr=S.school?.prom;return pr?daysBetween(currentDate(),pr.dateISO):null}
 function promTick(){
  const pr=ensureProm();if(!pr||['Done','Skipped'].includes(pr.status))return;const d=promDaysLeft();
- if(pr.status==='Upcoming'&&d<=28){pr.status='Season';const th=thread('prom',`prom-${pr.year}`,'Prom season');threadStep(th,'Prom announced',`${formatDate(pr.dateISO)} at ${pr.venue}`);if(!SIM.skipping)log(pr.junior?'💃 Junior Prom is coming':'💃 Prom is coming',`Posters go up everywhere: ${pr.junior?'junior prom':'prom'} is on ${formatDate(pr.dateISO)} at ${pr.venue}. Dress code: formal. Tickets ${money(pr.ticket)}. Suddenly everyone is asking everyone.`,true)}
- if(pr.status!=='Season')return;
+ if(pr.status==='Upcoming'&&d>=0&&d<=28){pr.status='Season';const th=thread('prom',`prom-${pr.year}`,'Prom season');threadStep(th,'Prom announced',`${formatDate(pr.dateISO)} at ${pr.venue}`);if(!SIM.skipping)log(pr.junior?'💃 Junior Prom is coming':'💃 Prom is coming',`Posters go up everywhere: ${pr.junior?'junior prom':'prom'} is on ${formatDate(pr.dateISO)} at ${pr.venue}. Dress code: formal. Tickets ${money(pr.ticket)}. Suddenly everyone is asking everyone.`,true)}
+ if(pr.status!=='Season'||!promRegistered6A1(pr))return;
  // NPC agency: peers pair up, some decide not to go
  const pool=S.people.filter(p=>!isFamilyPerson(p)&&personAge(p)>=13&&personAge(p)<=18&&Math.abs(personAge(p)-S.age)<=2&&!p.promWith&&p.id!==pr.partnerId);
  for(const p of pool){if(personPromWith(p))continue;const cpl=p.datingNpc&&(S.npcs||[]).find(n=>n.fullName===p.datingNpc);if(cpl&&!cpl.promWith){pairPersonWithNpc(p,cpl);continue}if(chance(3)){const other=freePromNpc([p.npcId],personAge(p));if(other){pairPersonWithNpc(p,other);if(p.rel>=60&&!SIM.skipping)log('Prom news',`${firstName(p)} is going to prom with ${other.fullName}.`)}}else if(chance(.6))p.notGoingProm=true}
@@ -2696,7 +2699,7 @@ function promTick(){
 }
 function npcAsksToProm(p){const pr=S.school.prom;pr.received.push({personId:p.id,dateISO:currentDate(),status:'Pending'});queueEvent({type:'promInvite',title:`${displayName(p)} asks about prom`,text:`"So… do you have plans for prom? Would you want to go with me?" ${firstName(p)} looks nervous.`,participants:[p.id],priority:4,expiresDays:3,choices:[{id:'accept',label:'Accept'},{id:'friends',label:'Suggest going as friends'},{id:'time',label:'Say you need time'},{id:'decline',label:'Politely decline'},...(pr.partnerId?[{id:'have',label:'Tell them you already have a date'}]:[])]})}
 function handlePromInvite(e,id){
- const pr=S.school?.prom,p=personById(e.participants?.[0]);if(!pr||!p)return true;const rec=pr.received.find(r=>r.personId===p.id&&r.status==='Pending');const th=thread('prom',`prom-${pr.year}`,'Prom season');
+ const pr=S.school?.prom,p=personById(e.participants?.[0]);if(!pr||!p)return true;if(!promRegistered6A1(pr)&&['accept','friends'].includes(id)){toast('Register for prom before accepting a date.');return true}const rec=pr.received.find(r=>r.personId===p.id&&r.status==='Pending');const th=thread('prom',`prom-${pr.year}`,'Prom season');
  if(id==='accept'){if(pr.partnerId){toast('You already have a prom date.');return true}pr.partnerId=p.id;pr.plan='date';pr.asFriends=false;if(rec)rec.status='Accepted';p.rel=clamp(p.rel+6);setPromWithPerson(p,S.name);threadStep(th,'Got a prom date',`${displayName(p)} asked you`);recordOutcome('Prom',`${displayName(p,'formal')} asked you`,'Accepted','You said yes.');log('Prom date!',`You say yes. ${firstName(p)} grins and tries to act casual about it. It is not working.`,true);if(eligibleRomance(p)&&p.romanceStage==='none')p.romanceStage='crush'}
  else if(id==='friends'){pr.partnerId=p.id;pr.plan='date';pr.asFriends=true;if(rec)rec.status='Accepted as friends';p.rel=clamp(p.rel+3);setPromWithPerson(p,S.name);threadStep(th,'Going with a friend',displayName(p));log('Prom — as friends',`"As friends? Sure — honestly that's less pressure," ${firstName(p)} says.`)}
  else if(id==='time'){if(rec){rec.status='Waiting';rec.deadline=addDays(currentDate(),2)}scheduleFollowUp('promTimeout',{personId:p.id},{days:2,minute:1080});log('You need time',`"Can I get back to you?" ${firstName(p)} nods. "Sure… just don't take too long."`)}
@@ -2705,11 +2708,11 @@ function handlePromInvite(e,id){
  return true
 }
 const PROM_APPROACH={casual:'Ask casually',private:'Ask privately',promposal:'Make a cute promposal',text:'Ask by text',public:'Ask in front of friends',gift:'Ask with a small gift',joke:'Ask jokingly'};
-function promCandidates(){return S.people.filter(p=>!isFamilyPerson(p)&&personAge(p)>=13&&personAge(p)<=18&&Math.abs(personAge(p)-S.age)<=2&&!p.movedAway).map(p=>{ensureRomanceProfile(p);return p})}
+function promCandidates(){return S.people.filter(p=>promDateStudent6A3(p)).map(p=>{ensureRomanceProfile(p);return p})}
 function promAskTarget(id){if(String(id).startsWith('npc:')){const n=npcById(id.slice(4));if(!n)return null;const p=addNeighborPerson(n,'neighbor');p.rel=Math.max(p.rel,45);ensureRomanceProfile(p);return p}return personById(id)}
 function promAskModal(personId){const p=promAskTarget(personId);if(!p)return;openModal(`Ask ${displayName(p)} to prom`,`<p class="muted-text">How you ask matters — and depends on who they are.${p.trust>=55&&p.boundaries?.includes('noPublicAffection')?` You know ${firstName(p)} dislikes public attention.`:''}</p><div class="modal-action-grid">${Object.entries(PROM_APPROACH).filter(([k])=>k!=='text'||canUsePhone()).map(([k,l])=>`<button data-prom-approach="${k}" data-person-id="${p.id}">${esc(l)}${k==='gift'?` • ${money(8)}`:k==='promposal'?` • ${money(10)}`:''}</button>`).join('')}<button class="ghost" data-close-modal="1">Not yet</button></div>`)}
 function askToProm(personId,approach){
- const pr=S.school?.prom,p=promAskTarget(personId);if(!pr||!p||pr.status!=='Season'){toast('It is not prom season.');return}closeChoiceModal();if(pr.partnerId){toast('You already have a prom date.');return}
+ const pr=S.school?.prom,p=promAskTarget(personId);if(!pr||!p||pr.status!=='Season'||!promRegistered6A1(pr)){toast('Register for prom before asking someone.');return}closeChoiceModal();if(pr.partnerId){toast('You already have a prom date.');return}
  if(pr.asked.some(a=>a.personId===p.id&&a.result!=='Pending')){toast(`You already asked ${firstName(p)}.`);return}
  if((approach==='gift'||approach==='promposal')&&S.age>=13&&!spendOwn(approach==='gift'?8:10)){toast('You cannot afford that approach.');return}
  const recent=pr.asked.filter(a=>daysBetween(a.dateISO,currentDate())<=7).length,tr=p.traits||[],romantic=eligibleRomance(p),a=p.attraction??40;
@@ -2738,7 +2741,7 @@ function askToProm(personId,approach){
 }
 const PROM_PREP={outfitBuy:['Buy a formal outfit',120,'outfit','bought'],outfitOwn:['Wear something you own',0,'outfit','existing'],outfitBorrow:['Borrow an outfit',0,'outfit','borrowed'],hairSalon:['Get hair styled',30,'hair','salon'],hairDiy:['Do your own hair',0,'hair','diy'],makeup:['Do makeup',0,'makeup','done'],corsage:['Buy a corsage / boutonnière',25,'corsage','yes'],rideParents:['Ask a caregiver to drive',0,'transport','parents'],rideCarpool:['Carpool with friends',0,'transport','carpool'],rideLimo:['Split a limo',40,'transport','limo'],dinnerOut:['Plan dinner out',30,'dinner','restaurant'],dinnerHome:['Dinner at home first',0,'dinner','home'],photos:['Plan pre-prom photos',0,'photos','yes'],ticket:['Buy your ticket',40,'ticket','bought'],waiver:['Ask about a ticket waiver',0,'ticket','waiver']};
 function promPrep(key){
- const pr=S.school?.prom,x=PROM_PREP[key];if(!pr||!x||pr.status!=='Season')return;const [label,cost,slot,val]=x;
+ const pr=S.school?.prom,x=PROM_PREP[key];if(!pr||!x||pr.status!=='Season'||!promRegistered6A1(pr))return;const [label,cost,slot,val]=x;
  if(slot==='outfit'&&val==='existing'&&S.inventoryItems.filter(i=>i.lifecycleType==='wearable'&&i.condition>40).length<2){toast('You do not own anything nice enough — borrow or buy.');return}
  if(slot==='makeup'&&!findUsable('makeup')){toast('You do not own a makeup set.');return}
  if(slot==='corsage'&&!['US','UK','CA','AU'].includes(calendarProfile().region)){toast('Not really a tradition here.');return}
@@ -2747,17 +2750,18 @@ function promPrep(key){
  if(slot==='makeup'){const it=openOne(findUsable('makeup'));it.remaining=clamp(it.remaining-3)}
  pr.prep[slot]=val;if(slot==='ticket')pr.ticketBought=true;advanceTime(slot==='outfit'&&val==='bought'?120:30);log(`Prom prep • ${label}`,{outfit:val==='borrowed'?'It fits — mostly. A safety pin fixes the rest.':val==='existing'?'With a little ironing, something you already own looks great.':'You find something that makes you stand up straighter.',hair:val==='salon'?'The stylist works magic.':'A tutorial, two attempts, and it looks good.',transport:val==='limo'?'The group chat explodes with excitement about the limo.':val==='carpool'?'Your friends work out who drives.':`${primaryCaregiver()} agrees to drive, on the condition of taking photos.`,dinner:val==='restaurant'?'Reservations made.':'Home dinner first — cheaper and calmer.',photos:'Someone volunteers their backyard for photos.',ticket:val==='waiver'?'The school quietly covers your ticket.':'Ticket bought.',corsage:'Ordered, in a color that matches.',makeup:'You practice the look once, just to be sure.'}[slot])
 }
-function setPromPlan(plan){const pr=S.school?.prom;if(!pr||pr.status!=='Season')return;if(plan==='committee'){const gate=typeof promOrganizationEligibility4B4==='function'?promOrganizationEligibility4B4():{ok:true};if(!gate.ok){toast(gate.reason||'You do not currently have a school role that can organize Prom.');return}if(pr.committee>=3){toast('Planning is done.');return}if(atSchool()){toast('After classes.');return}pr.committee++;addRep('leadership',2);addRep('social',1);advanceTime(60);log('Prom committee',rand(['You argue for twenty minutes about balloon colors. You win.','You help design the decorations. It is going to look good.','You handle the playlist requests — a thankless job.']));return}
+function setPromPlan(plan){const pr=S.school?.prom;if(!pr||pr.status!=='Season'||(plan!=='committee'&&!promRegistered6A1(pr)))return;if(plan==='committee'){toast('Apply for the school Prom committee and wait for faculty approval first.');return}
  if(plan!=='date'&&pr.partnerId){const p=personById(pr.partnerId);if(p){p.rel=clamp(p.rel-6);p.promWith=null;log('Prom plans changed',`You tell ${firstName(p)} you are not going together after all. They are hurt.`)}pr.partnerId=null}
  pr.plan=plan;const th=thread('prom',`prom-${pr.year}`,'Prom season');threadStep(th,{friends:'Going with friends',alone:'Going alone',skip:'Skipping prom',wait:'Waiting to be asked'}[plan]||plan,'');log('Prom plans',{friends:'You and your friends decide to go as a group. No pressure, all fun.',alone:'You decide to go on your own. Plenty of people do.',skip:'You decide prom is not for you this year.',wait:'You decide to wait and see if someone asks.'}[plan])}
-function promHtml(){
+function promHtmlLegacy6A3(){
  const pr=S.school?.prom;if(!pr||!['Season'].includes(pr.status))return '';const d=promDaysLeft(),partner=pr.partnerId?personById(pr.partnerId):null;
+ if(!promRegistered6A1(pr))return `<div class="holiday-card prom-card"><b>💃 ${pr.junior?'Junior Prom':'Prom'} • ${formatDate(pr.dateISO)}</b>${promFoundationHtml6A1(pr)}</div>`;
  const cands=promCandidates().filter(p=>p.id!==pr.partnerId&&!pr.asked.some(a=>a.personId===p.id)),nbs=neighborPromCandidates();
  const prepRow=(slot,keys)=>`<div class="prom-prep"><b>${slot}</b>${pr.prep[slot.toLowerCase()]?`<span class="tag ok">${esc(pr.prep[slot.toLowerCase()])}</span>`:keys.map(k=>`<button class="small ${PROM_PREP[k][1]?'':'ghost'}" data-prom-prep="${k}">${esc(PROM_PREP[k][0])}${PROM_PREP[k][1]?` • ${money(PROM_PREP[k][1])}`:''}</button>`).join('')}</div>`;
  return `<div class="holiday-card prom-card"><div class="holiday-head"><span class="holiday-icon">💃</span><div><b>Prom • ${d===0?'tonight':`in ${d} day${d===1?'':'s'}`}</b><small>${formatDate(pr.dateISO)} • ${esc(pr.venue)} • formal${partner?` • going with ${esc(displayName(partner))}${pr.asFriends?' (as friends)':''}`:pr.plan?` • plan: ${esc(pr.plan)}`:''}</small></div></div>
- ${!partner&&pr.plan!=='skip'?`<h4>Ask someone</h4>${cands.length||nbs.length?`<div class="holiday-acts">${cands.slice(0,10).map(p=>`<button class="small" data-prom-ask="${p.id}">${esc(displayName(p))}${personPromWith(p)?' • has a date':''}${eligibleRomance(p)?'':' (as friends)'}</button>`).join('')}${nbs.slice(0,4).map(n=>`<button class="small ghost" data-prom-ask="npc:${n.id}">${esc(n.fullName)} (neighbor)</button>`).join('')}</div>`:'<p class="muted-text">Nobody left to ask right now — meet more people at school, clubs or around town.</p>'}`:''}
- <div class="holiday-acts">${['friends','alone','wait','skip'].filter(x=>x!==pr.plan).map(x=>`<button class="small ghost" data-prom-plan="${x}">${{friends:'Go with friends',alone:'Go alone',wait:'Wait to be asked',skip:'Skip prom'}[x]}</button>`).join('')}${pr.committee<3?(typeof promOrganizationEligibility4B4!=='function'||promOrganizationEligibility4B4().ok?`<button class="small ghost" data-prom-plan="committee">Help the prom committee (${pr.committee}/3)</button>`:`<small class="muted-text">Prom committee help requires a current Student Council / event-committee role.</small>`):''}</div>
- ${pr.plan!=='skip'?`<h4>Preparation</h4>${prepRow('Ticket',['ticket','waiver'])}${prepRow('Outfit',['outfitOwn','outfitBorrow','outfitBuy'])}${prepRow('Hair',['hairDiy','hairSalon'])}${findUsable('makeup')?prepRow('Makeup',['makeup']):''}${partner&&['US','UK','CA','AU'].includes(calendarProfile().region)?prepRow('Corsage',['corsage']):''}${prepRow('Transport',['rideParents','rideCarpool','rideLimo'])}${prepRow('Dinner',['dinnerHome','dinnerOut'])}${prepRow('Photos',['photos'])}<small class="muted-text">Nothing expensive is required — free options work.</small>`:''}</div>`
+ ${promFoundationHtml6A1(pr)}${!partner&&pr.plan!=='skip'?`<h4>Ask someone</h4>${cands.length||nbs.length?`<div class="holiday-acts">${cands.slice(0,10).map(p=>`<button class="small" data-prom-ask="${p.id}">${esc(displayName(p))}${personPromWith(p)?' • has a date':''}${eligibleRomance(p)?'':' (as friends)'}</button>`).join('')}${nbs.slice(0,4).map(n=>`<button class="small ghost" data-prom-ask="npc:${n.id}">${esc(n.fullName)} (neighbor)</button>`).join('')}</div>`:'<p class="muted-text">Nobody left to ask right now — meet more people at school, clubs or around town.</p>'}`:''}
+ <div class="holiday-acts">${['friends','alone','wait','skip'].filter(x=>x!==pr.plan).map(x=>`<button class="small ghost" data-prom-plan="${x}">${{friends:'Go with friends',alone:'Go alone',wait:'Wait to be asked',skip:'Skip prom'}[x]}</button>`).join('')}</div>
+ ${pr.plan!=='skip'?`<h4>Preparation</h4>${prepRow('Ticket',['ticket','waiver'])}${partner&&['US','UK','CA','AU'].includes(calendarProfile().region)?prepRow('Corsage',['corsage']):''}${prepRow('Transport',['rideParents','rideCarpool','rideLimo'])}${prepRow('Dinner',['dinnerHome','dinnerOut'])}${prepRow('Photos',['photos'])}<small class="muted-text">Nothing expensive is required — free options work.</small>`:''}</div>`
 }
 // ---------- Prom night as a scene (§69) ----------
 const PROM_SCENE={steps:[
@@ -2770,13 +2774,13 @@ const PROM_SCENE={steps:[
  {view:sc=>{const pr=S.school.prom,p=pr.partnerId?personById(pr.partnerId):null;const confess=!p&&chance(18)&&S.people.find(x=>eligibleRomance(x)&&(x.attraction||0)>=65&&!x.promWith);if(confess)sc.data.confessor=confess.id;return {title:'Slow song',text:confess?`During the slow song, ${firstName(confess)} comes over. "Can I tell you something? I've liked you for a while."`:p?`A slow song starts. ${firstName(p)} looks at you.`:'A slow song starts. Couples drift to the floor.',choices:confess?[{id:'feelings',label:'Say you feel the same'},{id:'gentle',label:'Gently say you see them as a friend'},{id:'time',label:'Say you need time to think'}]:p?[{id:'slow',label:'Ask for a slow dance',primary:true},{id:'sit',label:'Sit this one out'}]:[{id:'groupdance',label:'Join a group sway with friends'},{id:'sit',label:'Grab a drink'}]}},
   choose:(sc,id)=>{const c=sc.data.confessor?personById(sc.data.confessor):null;if(id==='feelings'&&c){if(!S.romance.partnerId)setPartner(c,'dating');c.rel=clamp(c.rel+8);sc.data.newCouple=c.id}if(id==='gentle'&&c){c.rel=clamp(c.rel-2);c.attraction=clamp((c.attraction||50)-20)}const p=S.school.prom.partnerId?personById(S.school.prom.partnerId):null;
    return {line:{slow:`You sway together, not very skillfully. ${S.school.prom.asFriends?'It is goofy and sweet.':'It is a moment you will remember.'}`,sit:'You sit it out and watch. Still nice.',groupdance:'A circle of friends swaying badly to a love song. Perfect.',feelings:`You tell ${firstName(c)} you feel the same. The rest of the night is a blur of smiling.`,gentle:`You tell ${firstName(c)} kindly. They nod — it hurts, but they are glad they said it.`,time:`"Can I think about it?" ${firstName(c)} nods.`}[id],score:{slow:9,sit:0,groupdance:6,feelings:10,gentle:1,time:2}[id],minutes:20}}},
- {view:sc=>{const r=ensureRep(),nom=(r.social+r.leadership)/2>=45&&chance(55);sc.data.nominated=nom;return {title:'Prom court',text:nom?'They announce the prom court nominees — and your name is called.':'They announce prom court. Your friends cheer for the winners.',choices:[{id:'ok',label:nom?'Walk up to the stage':'Cheer',primary:true}]}},
-  choose:(sc,id)=>{if(!sc.data.nominated)return {line:'You cheer for the court. Someone throws confetti.',score:2,minutes:20};const win=chance(35+ensureRep().social*.3);sc.data.court=win;if(win){addRep('social',6);return {line:'You win. There is a crown or a sash involved, and photos you will never live down.',score:10,minutes:20}}return {line:'You do not win, but being nominated was a nice surprise.',score:4,minutes:20}}},
+ {view:sc=>promCourtNight6A4(sc),
+  choose:(sc,id)=>({line:sc.data.court?`You accept the ${sc.data.courtAward} award. The votes were counted before tonight.`:'You cheer for the school ballot winners.',score:sc.data.court?8:3,minutes:20})},
  {view:sc=>({title:'After prom',text:'The lights come up. What now?',choices:[{id:'diner',label:'Late-night diner with friends'},{id:'home',label:'Go home'},{id:'after',label:'Go to the after-party'}]}),
   choose:(sc,id)=>{if(id==='after'&&S.age<18&&curfewMinute()&&curfewMinute()<1439&&!caregiverYes(-10)){sc.data.defied=true;return {line:'Your curfew says no. You go anyway, a little nervous the whole time.',score:2,end:true,minutes:90}}return {line:{diner:'Pancakes at midnight in formal clothes. The best part of the night, maybe.',home:'You go home and kick your shoes off. Tired and happy.',after:'The after-party is loud and fun, and you leave at a reasonable hour.'}[id],score:{diner:6,home:2,after:4}[id],end:true,minutes:id==='home'?30:90}}}
 ],finish(sc){
  const pr=S.school?.prom;if(!pr)return;pr.status='Done';const p=pr.partnerId?personById(pr.partnerId):null,s=sc.score,tier=s>=80?'A wonderful night':s>=62?'A good night':s>=45?'A mixed night':'A rough night';
- const ev=S.calendar.find(e=>e.id===`prom-${pr.year}`);if(ev)setCalendarStatus(ev,'Attended','Went to prom');
+ const ev=S.calendar.find(e=>e.id===(pr.foundation6A1?.eventId||`prom-${pr.year}`));if(ev)setCalendarStatus(ev,'Attended','Went to prom');
  if(p){p.rel=clamp(p.rel+(s>=62?6:1));rememberPerson(p,`You went to prom together${pr.asFriends?' as friends':''}: ${tier.toLowerCase()}.`,3)}
  S.needs.social=clamp(S.needs.social+25);S.needs.fun=clamp(S.needs.fun+25);S.happiness=clamp(S.happiness+(s>=62?8:0));addRep('social',3);
  const memory=p?`You attended prom with ${displayName(p,'formal')}${pr.asFriends?' as friends':''}.`:pr.plan==='friends'?'You went to prom with your friends.':'You went to prom on your own.';
@@ -2785,24 +2789,42 @@ const PROM_SCENE={steps:[
  if(sc.data.defied)defyCheck({endMinute:1439});
  log(`💃 Prom — ${tier.toLowerCase()}`,`${memory} ${sc.lines.join(' ')}`,true)
 }};
-function attendProm(){const pr=S.school?.prom;if(!pr||pr.status!=='Season'||pr.dateISO!==currentDate()){toast('Prom is not tonight.');return}if(pr.plan==='skip'){toast('You decided to skip prom.');return}if(!pr.ticketBought){toast('You need a ticket (or a waiver) first.');return}const ev=S.calendar.find(e=>e.id===`prom-${pr.year}`);if(currentMinute()<1080){toast('Prom starts at 7:00 PM.');return}if(ev&&currentMinute()>ev.graceMinute){processCalendar();return}if(ev)setCalendarStatus(ev,'Attending','Getting ready');startScene('prom',{accident:chance(10),late:!!pr.partnerId&&chance(15)})}
-function promMissed(ev){const pr=S.school?.prom;if(!pr){setCalendarStatus(ev,'Expired','No prom');return}if(pr.plan==='skip'){setCalendarStatus(ev,'Completed','Skipped by choice');pr.status='Skipped';if(SIM.skipping)return;queueEvent({type:'promSkipNight',title:'Prom night — not going',text:'Everyone is at prom tonight. What do you do instead?',priority:2,expiresDays:1,choices:[{id:'gaming',label:'Game night with other non-prom friends'},{id:'family',label:'Movie night with family'},{id:'alone',label:'Enjoy a quiet evening'}]});return}
+function attendProm(){return enterPromNight6B1()}
+function attendPromLegacy6B1(){const pr=S.school?.prom;if(!promRegistered6A1(pr)){toast('You must register for prom first.');return}if(!pr||pr.status!=='Season'||pr.dateISO!==currentDate()){toast('Prom is not tonight.');return}if(pr.plan==='skip'){toast('You decided to skip prom.');return}if(!pr.ticketBought){toast('You need a ticket (or a waiver) first.');return}const ev=S.calendar.find(e=>e.id===(pr.foundation6A1?.eventId||`prom-${pr.year}`));if(currentMinute()<1080){toast('Prom starts at 7:00 PM.');return}if(ev&&currentMinute()>ev.graceMinute){processCalendar();return}if(ev)setCalendarStatus(ev,'Attending','Getting ready');startScene('prom',{accident:chance(10),late:!!pr.partnerId&&chance(15)})}
+function promMissed(ev){return missPromNight6B1(ev)}
+function promMissedLegacy6B1(ev){const pr=S.school?.prom;if(!pr){setCalendarStatus(ev,'Expired','No prom');return}if(!promRegistered6A1(pr)){setCalendarStatus(ev,'Completed','No prom registration');pr.status='Skipped';return}if(pr.plan==='skip'){setCalendarStatus(ev,'Completed','Skipped by choice');pr.status='Skipped';if(SIM.skipping)return;queueEvent({type:'promSkipNight',title:'Prom night — not going',text:'Everyone is at prom tonight. What do you do instead?',priority:2,expiresDays:1,choices:[{id:'gaming',label:'Game night with other non-prom friends'},{id:'family',label:'Movie night with family'},{id:'alone',label:'Enjoy a quiet evening'}]});return}
  pr.status='Done';setCalendarStatus(ev,'Missed','Did not go');const p=pr.partnerId?personById(pr.partnerId):null;if(p){p.rel=clamp(p.rel-10);p.trust=clamp(p.trust-8);p.conflict=clamp((p.conflict||0)+12);rememberPerson(p,'You were supposed to go to prom together and never showed.',3);if(!SIM.skipping)log('Missed prom',`${firstName(p)} waited, then went in alone. That is going to be hard to fix.`)}recordOutcome('Prom','Prom night','Missed',p?'Your date went without you.':'You did not go.')}
 function handlePromSkip(id){const t={gaming:'You skipped prom and spent the evening gaming with friends who also skipped. Zero regrets.',family:'You skipped prom and watched movies with your family. Honestly lovely.',alone:'A quiet night: snacks, a book, no dress code.'}[id];S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'Prom night',text:t});recordOutcome('Prom','Skipped prom','Chose something else',t);log('Prom night',t);return true}
-function promClick(b){const d=b.dataset;if(d.promAsk){promAskModal(d.promAsk);return true}if(d.promApproach){askToProm(d.personId,d.promApproach);save();render();return true}if(d.promPrep){promPrep(d.promPrep);save();render();return true}if(d.promPlan){setPromPlan(d.promPlan);save();render();return true}if(d.promGo){attendProm();save();return true}if(d.sceneChoice){sceneChoice(d.sceneChoice);return true}if(d.sceneResume){renderScene();return true}if(d.romance){const rp=personById(d.personId);romanceAction(rp,d.romance);syncLoveAfterRomance(rp,d.romance);save();render();return true}if(d.romanceOpen){romanceMenu(d.romanceOpen);return true}return false}
+function promClickLegacy6A3(b){if(promAfterClick6B6(b)||promCeremonyClick6B5(b)||promMomentsClick6B4(b)||promArrivalClick6B3(b)||promReadyClick6B2(b)||promNightClick6B1(b)||promFoundationClick6A1(b)||promCommitteeClick6A2(b)||promDateClick6A3(b)||promCourtClick6A4(b)||(typeof promSocialClick6A5==='function'&&promSocialClick6A5(b)))return true;const d=b.dataset;if(d.promAsk){promAskModal(d.promAsk);return true}if(d.promApproach){askToProm(d.personId,d.promApproach);save();render();return true}if(d.promPrep){promPrep(d.promPrep);save();render();return true}if(d.promPlan){setPromPlan(d.promPlan);save();render();return true}if(d.promGo){const r=attendProm();if(!r.ok)toast('Prom entry: '+r.reason);save();render();return true}if(d.sceneChoice){sceneChoice(d.sceneChoice);return true}if(d.sceneResume){renderScene();return true}if(d.romance){const rp=personById(d.personId);romanceAction(rp,d.romance);syncLoveAfterRomance(rp,d.romance);save();render();return true}if(d.romanceOpen){romanceMenu(d.romanceOpen);return true}return false}
 
-// v7.3: prom date = middle of semester 2 (moved to the following Saturday); consistent two-way pairs
-function promDateFor(yearKey){const a=academicYear(yearKey);let d=addDays(a.sem2Start,Math.floor(daysBetween(a.sem2Start,a.end)/2));while(parseISO(d).getUTCDay()!==6)d=addDays(d,1);return d}
-function ensureProm(){
- if(!promEligible())return null;const sc=S.school;if(sc.yearKey==null)return null;if(sc.prom&&sc.prom.year===sc.yearKey)return sc.prom;
- const d=promDateFor(sc.yearKey);if(d<=currentDate())return null;const junior=gradeNumber()<=9;
- sc.prom={year:sc.yearKey,junior,dateISO:d,venue:junior?'the school gym, transformed':rand(['the Grand Hotel ballroom','the school gym, transformed','the riverside event hall','the old city museum']),dress:'Formal',status:'Upcoming',plan:null,partnerId:null,asFriends:false,asked:[],received:[],prep:{},committee:0,ticket:junior?20:40,ticketBought:false};
- createCalendarEvent({id:`prom-${sc.yearKey}`,type:'prom',title:junior?'Junior Prom':'Prom',dateISO:d,startMinute:1140,endMinute:1380,graceMinute:1230,location:sc.prom.venue,payload:{year:sc.yearKey},required:false,source:'school'});return sc.prom
+// 6A.7 release acceptance: keep the existing mid-semester Saturday preference,
+// but avoid a school-holiday Prom with effectively no committee workdays.
+// Use the canonical regional calendar, never a second Prom scheduling engine.
+// Already-created Prom records retain their saved date in ensureProm6A1().
+function promDateFor(yearKey){
+ const a=academicYear(yearKey);
+ let base=addDays(a.sem2Start,Math.floor(daysBetween(a.sem2Start,a.end)/2));
+ while(parseISO(base).getUTCDay()!==6)base=addDays(base,1);
+ const safe=d=>{
+  if(d<a.sem2Start||d>addDays(a.end,-14))return false;
+  const info=academicInfo(d);
+  if(info.phase!=='sem2'||breakOn(d,info)||dayOffHoliday(d,info.region))return false;
+  let sessions=0;
+  for(let i=-16;i<=-3;i++)if(isSchoolDay(addDays(d,i)))sessions++;
+  return sessions>=4;
+ };
+ if(safe(base))return base;
+ // Prefer the next available school-approved Saturday, then the previous.
+ for(let i=1;i<=8;i++){const d=addDays(base,i*7);if(safe(d))return d;}
+ for(let i=1;i<=8;i++){const d=addDays(base,-i*7);if(safe(d))return d;}
+ return base; // Preserve old semantics if a region supplies no possible term date.
 }
+function ensureProm(){return ensureProm6A1()}
+
 function npcPromWith(n){return n?.promWith||null}
 function personPromWith(p){return p?.promWith||npcById(p?.npcId)?.promWith||null}
-function setPromWithNpc(npcId,name){const n=npcById(npcId);if(n)n.promWith=name;for(const p of S.people)if(p.npcId===npcId)p.promWith=name}
-function setPromWithPerson(p,name){p.promWith=name;if(p.npcId)setPromWithNpc(p.npcId,name)}
+function setPromWithNpcLegacy6A3(npcId,name){const n=npcById(npcId);if(n)n.promWith=name;for(const p of S.people)if(p.npcId===npcId)p.promWith=name}
+function setPromWithPersonLegacy6A3(p,name){p.promWith=name;if(p.npcId)setPromWithNpc(p.npcId,name)}
 function freePromNpc(excludeIds,age){return (S.npcs||[]).filter(n=>!excludeIds.includes(n.id)&&!n.promWith&&Math.abs(npcAge(n)-age)<=1&&npcAge(n)>=13&&npcAge(n)<=18&&!n.movedAway).sort(()=>Math.random()-.5)[0]||null}
 function pairPersonWithNpc(p,n){if(!p||!n)return;setPromWithPerson(p,n.fullName);setPromWithNpc(n.id,displayName(p,'formal'))}
 function neighborPromCandidates(){const ids=new Set(S.people.map(p=>p.npcId).filter(Boolean));return (S.neighborhood?.households||[]).map(id=>S.households.find(h=>h.id===id)).filter(Boolean).flatMap(h=>hhKids(h)).filter(n=>!ids.has(n.id)&&npcAge(n)>=13&&npcAge(n)<=18&&Math.abs(npcAge(n)-S.age)<=2&&!n.movedAway)}
@@ -2983,6 +3005,7 @@ function worldEventChoice(e,id){
  if(e.type==='sneakTalk'){const s={apologize:'You admit it and apologize. Grounded for three days, but some trust is saved.',lie:'You deny it. They do not believe you. That makes it worse.',argue:'You argue that you are old enough. It goes badly.'}[id];if(id==='apologize'){ground(3,'Sneaking out');S.family.trust=clamp(S.family.trust-4)}else{ground(6,'Sneaking out');S.family.trust=clamp(S.family.trust-12);S.family.tension=clamp(S.family.tension+6)}log(e.title,s);return true}
  return false}
 function worldFollowUp(f){
+ if(typeof promFollowUp6A3==='function'&&promFollowUp6A3(f))return true;
  if(f.type==='promTimeout'){const pr=S.school?.prom,p=personById(f.payload.personId),rec=pr?.received?.find(r=>r.personId===p?.id&&r.status==='Waiting');if(!rec)return true;rec.status='Expired';const o2=freePromNpc([p.npcId],personAge(p));if(o2)pairPersonWithNpc(p,o2);else setPromWithPerson(p,'someone else');p.rel=clamp(p.rel-2);if(!SIM.skipping)log('Too slow',`${firstName(p)} got tired of waiting and asked ${personPromWith(p)} instead.`);return true}
  if(f.type==='promAnswer'){const pr=S.school?.prom,p=personById(f.payload.personId),a=pr?.asked?.find(x=>x.personId===p?.id&&x.result==='Pending');if(!a)return true;if(!pr.partnerId&&chance(55)){a.result='Accepted';pr.partnerId=p.id;pr.plan='date';p.promWith=S.name;if(!SIM.skipping)log(`${firstName(p)} said yes!`,`"Okay. Yes. I'd like to go with you." Worth the wait.`,true)}else{a.result='Rejected';a.reason='Decided not to';if(!SIM.skipping)log(`${firstName(p)} decided`,`"I thought about it… I don't think so. Sorry."`)}return true}
  if(f.type==='sneakFound'){if(SIM.skipping){S.family.trust=clamp(S.family.trust-6);return true}const how={neighbor:'A neighbor mentioned seeing you out late',sibling:'Your sibling told',parent:'Something gave you away'}[f.payload.how]||'Someone noticed';queueEvent({type:'sneakTalk',title:'They know you snuck out',text:`${how}. ${primaryCaregiver()} wants to talk — now.`,priority:4,expiresDays:1,choices:[{id:'apologize',label:'Admit it and apologize'},{id:'lie',label:'Deny it'},{id:'argue',label:'Argue'}]});if(f.payload.how==='neighbor')nbRep('troublemaker',2);return true}
@@ -3726,7 +3749,7 @@ function migratePlayerSchool4A2(){
 function transferPlayerSchool4A2(targetSchoolId,reason='School transfer'){
  const target=schoolById(targetSchoolId),sc=S.school;if(!target||!sc)return false;const curStage=canonicalSchoolStage4A1(sc.stage||stageOfSchool(sc));if(canonicalSchoolStage4A1(target.educationLevel)!==curStage)return false;if(sc.currentSchoolId===target.schoolId)return true;
  closePlayerSchoolEnrollment4A2(reason);sc.currentSchoolId=target.schoolId;sc.name=target.name;sc.stage=target.educationLevel;sc.startedDate=currentDate();
- for(const ev of S.calendar||[])if(schoolOwnedEventType4A1(ev)&&!isTerminal(ev.status)&&ev.dateISO>=currentDate()){ev.payload=ev.payload||{};ev.schoolId=target.schoolId;ev.payload.schoolId=target.schoolId;ev.payload.school=target.name;if(ev.type==='schoolDay')ev.title=`School • ${target.name}`}
+ for(const ev of S.calendar||[])if(schoolOwnedEventType4A1(ev)&&!isTerminal(ev.status)&&ev.dateISO>=currentDate()){if(ev.type==='prom'){setCalendarStatus(ev,'Cancelled','School transfer before prom');continue}ev.payload=ev.payload||{};ev.schoolId=target.schoolId;ev.payload.schoolId=target.schoolId;ev.payload.school=target.name;if(ev.type==='schoolDay')ev.title=`School • ${target.name}`}
  syncPlayerSchoolEnrollment4A2({reason});if(typeof reconcileSchoolRoles4B1==='function')reconcileSchoolRoles4B1(reason);if(typeof ensureCurrentSchoolOrganizations4B1==='function')ensureCurrentSchoolOrganizations4B1();if(typeof reconcileSchoolRecognition4B4==='function')reconcileSchoolRecognition4B4(reason);return true
 }
 function playerSchoolIdentityRows4A2(){const sc=currentSchoolForPlayer4A2();if(!sc)return '';const type=sc.type?String(sc.type).replace(/_/g,' '):'Unknown';const stage=STAGE_LABEL[sc.educationLevel]||sc.educationLevel||'';return `${statRow('School type',esc(type[0]?.toUpperCase()+type.slice(1)))}${stage?statRow('Stage',esc(stage)):''}`}
@@ -4302,6 +4325,7 @@ function goToSchool4C1(opts={}){
  return true
 }
 function goHomeFromSchool4C1({quiet=false}={}){
+ if(typeof promNightRecord6B1==='function'&&promNightRecord6B1()?.status==='attending')return leavePromNight6B1('left_early').ok;
  if(!playerAtSchool4C1()){toast('You are not at school.');return false}
  const hours=schoolHours4C1(),ev=schoolDayEvent(),leaveMinute=currentMinute(),early=!!ev&&ev.status==='Attending'&&leaveMinute<hours.classEnd;
  if(ev&&ev.status==='Attending')finishSchoolDay(ev,{early,quiet:true,stayAtSchool:false});
@@ -4328,7 +4352,8 @@ function reconcileSchoolDay4C1(reason='tick'){
  else if(!x.isSchoolDay&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why=x.closedReason||'School closed';
  else if(x.phase==='before_open'&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why='Campus not open yet';
  else if(x.phase==='closed_after_hours'&&!(typeof schoolEventCampusAccess4D3==='function'&&schoolEventCampusAccess4D3()))why='Campus closed for the day';
- if(why)setPlayerLocation4C1('Home',{reason:`${why}; normalized school location`,quiet:true});
+ if(why){const night=typeof promNightRecord6B1==='function'?promNightRecord6B1():null;const promAccess=night?.status==='attending'&&S.location==='School'&&night.schoolId===sid&&currentDate()===night.dateISO&&currentMinute()<night.endMinute;
+  if(!promAccess)setPlayerLocation4C1('Home',{reason:`${why}; normalized school location`,quiet:true});}
  return schoolDayState4C1()
 }
 function migrateSchoolDay4C1(){
@@ -5429,35 +5454,35 @@ function startBusiness(kind,location,price,stock){
  bizList().push(b);advanceTime(20,{silent:true});log(`Opened: ${t.name}`,t.yard?'Pick a few things from Your things to put out on the table.':`${b.stock} to sell at ${money(b.price)} each, ${loc.name.toLowerCase()}.`,true)
 }
 function bizSell(b,hours,manual){
- if(b.status!=='Open')return 0;const t=BIZ_TYPES[b.kind],loc=bizLoc(b),w=S.weather?.type,sev=S.weather?.severity||0;
+ if(b.status!=='Open'||b.microbusinessMode5D6)return 0;const t=BIZ_TYPES[b.kind],loc=bizLoc(b),w=S.weather?.type,sev=S.weather?.severity||0;
  if(sev>=2&&loc.id!=='school'){if(manual)toast(`Too ${String(w).toLowerCase()} to sell outside today.`);return 0}
  const visitors=Math.max(0,Math.round(hours*(1+loc.traffic/30)+Math.random()*4));let sold=0,rev=0;
- if(t.yard){for(const l of b.listed){if(l.sold)continue;const p=clamp(loc.traffic*.8+(l.value-l.price)/Math.max(1,l.value)*60+(S.luck-50)*.2,10,90);if(chance(p*hours/3)){l.sold=true;sold++;rev+=l.price;const it=S.inventoryItems.find(x=>x.id===l.itemId);if(it)removeItem(it.id,true)}}}
+ if(t.yard){for(const l of b.listed){if(l.sold)continue;const eligible=microbusinessValidateYardItem5D2(l.itemId,{businessId:b.id});if(!eligible.ok){l.invalidReason5D2=eligible.reason;continue}const p=clamp(loc.traffic*.8+(l.value-l.price)/Math.max(1,l.value)*60+(S.luck-50)*.2,10,90);if(chance(p*hours/3)){const removed=removeItem(l.itemId,true);if(!removed)continue;l.sold=true;sold++;rev+=l.price;l.saleDateISO=currentDate()}}}
  else{if(b.stock<=0){if(manual)toast(`${b.name}: sold out — restock first.`);return 0}const prod=bizProduct(b),weather=prod.weatherBonus?.[w]||0,priceP=(b.price-prod.basePrice)*9,quality=(b.quality-50)*.35,rep=(b.reputation-50)*.2,social=(S.personality||[]).includes('Social')?8:(S.personality||[]).includes('Shy')?-3:0,talent=(S.talents||[]).includes('Business')?6:0,luck=(S.luck-50)*.15;
   const rate=clamp(loc.traffic+weather-priceP+quality+rep+social+talent+luck,5,95);sold=Math.min(b.stock,Math.round(visitors*rate/100));rev=sold*b.price;b.stock-=sold}
  b.revenue+=rev;b.customers+=visitors;b.reputation=clamp(b.reputation+(sold>0?1:-.5));S.money+=rev;S.finance.earned=(S.finance.earned||0)+rev;if(sold)practiceSkill('business',manual?.6:.2);return {sold,rev,visitors}
 }
-function workBusiness(id,hours=2){const b=bizList().find(x=>x.id===id);if(!b)return;if(b.status!=='Open'){toast('Open it first.');return}if(atSchool()){toast('After school.');return}if(currentMinute()>1200){toast('Too late to sell today.');return}
+function workBusiness(id,hours=2){const b=bizList().find(x=>x.id===id);if(!b)return;if(b.microbusinessMode5D6){toast('Use interactive customer sessions for this business.');return;}if(b.status!=='Open'){toast('Open it first.');return}if(atSchool()){toast('After school.');return}if(currentMinute()>1200){toast('Too late to sell today.');return}
  const r=bizSell(b,hours,true);if(!r)return;advanceTime(hours*60,{silent:true});S.energy=clamp(S.energy-6*hours);noteOuting(b.location);
  log(`${BIZ_TYPES[b.kind].icon} ${b.name}`,r.sold?`${r.visitors} people stop by; you sell ${r.sold} for ${money(r.rev)}.${!BIZ_TYPES[b.kind].yard&&b.stock===0?' Sold out!':''}`:`${r.visitors} people walk past. No sales today${S.weather?.type==='Rainy'?' — the rain does not help':''}.`)}
-function restock(id,n=10){const b=bizList().find(x=>x.id===id);if(!b||BIZ_TYPES[b.kind].yard)return;const prod=bizProduct(b),cost=Math.round(prod.baseCost*n*100)/100;if(!payStock(cost))return;b.stock+=n;b.costs+=cost;advanceTime(30,{silent:true});log(`Restocked ${b.name}`,`${n} more ready to sell (${money(cost)} in supplies).`)}
-function toggleBusiness(id){const b=bizList().find(x=>x.id===id);if(!b)return;b.status=b.status==='Open'?'Closed':'Open';log(b.status==='Open'?`Reopened ${b.name}`:`Closed ${b.name}`,b.status==='Open'?'The sign is back up.':'You pack everything away for now. You can reopen any time.')}
-function retireBusiness(id){const b=bizList().find(x=>x.id===id);if(!b)return;b.status='Retired';b.closedDate=currentDate();for(const l of b.listed||[])l.sold=l.sold||false;recordOutcome('Business',b.name,'Closed for good',`Revenue ${money(b.revenue)} • supplies ${money(b.costs)} • profit ${money(b.revenue-b.costs)}.`);log(`Retired: ${b.name}`,`Final tally: ${money(b.revenue)} revenue, ${money(b.revenue-b.costs)} profit.`)}
-function listYardItem(bizId,itemId){const b=bizList().find(x=>x.id===bizId),it=S.inventoryItems.find(x=>x.id===itemId);if(!b||!it||!BIZ_TYPES[b.kind].yard)return;if(b.listed.filter(l=>!l.sold).length>=8){toast('The table is full (8 items).');return}if(b.listed.some(l=>l.itemId===itemId&&!l.sold)){toast('Already on the table.');return}if(it.equipped||S.phone?.activeItemId===it.id){toast('Unequip it first.');return}const v=Math.max(1,Math.round(itemValue(it)/(it.quantity||1)));b.listed.push({itemId,name:it.name,value:v,price:Math.max(1,Math.round(v*.8)),sold:false});toast(`${it.name} listed for ${money(Math.max(1,Math.round(v*.8)))}`)}
+function restock(id,n=10){const b=bizList().find(x=>x.id===id);if(!b||BIZ_TYPES[b.kind].yard)return;if(b.microbusinessMode5D6){toast('Prepare supplies inside the interactive session.');return;}const prod=bizProduct(b),cost=Math.round(prod.baseCost*n*100)/100;if(!payStock(cost))return;b.stock+=n;b.costs+=cost;advanceTime(30,{silent:true});log(`Restocked ${b.name}`,`${n} more ready to sell (${money(cost)} in supplies).`)}
+function toggleBusiness(id){const b=bizList().find(x=>x.id===id);if(!b)return;if(b.microbusinessMode5D6&&b.status==='Open'&&microbusinessActiveSession5D6(id)){toast('Close your selling session before closing this business.');return;}b.status=b.status==='Open'?'Closed':'Open';log(b.status==='Open'?`Reopened ${b.name}`:`Closed ${b.name}`,b.status==='Open'?'The sign is back up.':'You pack everything away for now. You can reopen any time.')}
+function retireBusiness(id){const b=bizList().find(x=>x.id===id);if(!b)return;if(b.microbusinessMode5D6&&microbusinessActiveSession5D6(id)){toast('Finish your selling session first.');return;}b.status='Retired';b.closedDate=currentDate();for(const l of b.listed||[])l.sold=l.sold||false;recordOutcome('Business',b.name,'Closed for good',`Revenue ${money(b.revenue)} • supplies ${money(b.costs)} • profit ${money(b.revenue-b.costs)}.`);log(`Retired: ${b.name}`,`Final tally: ${money(b.revenue)} revenue, ${money(b.revenue-b.costs)} profit.`)}
+function listYardItem(bizId,itemId){const b=bizList().find(x=>x.id===bizId),it=S.inventoryItems.find(x=>x.id===itemId);if(!b||!it||!BIZ_TYPES[b.kind].yard)return;if(b.listed.filter(l=>!l.sold).length>=8){toast('The table is full (8 items).');return}if(b.listed.some(l=>l.itemId===itemId&&!l.sold)){toast('Already on the table.');return}const allowed=microbusinessValidateYardItem5D2(it.id,{businessId:b.id});if(!allowed.ok){toast('This item is unavailable for sale.');return}const v=Math.max(1,Math.round(itemValue(it)/(it.quantity||1)));b.listed.push({itemId,name:it.name,value:v,price:Math.max(1,Math.round(v*.8)),sold:false});toast(`${it.name} listed for ${money(Math.max(1,Math.round(v*.8)))}`)}
 function bizDaily(){for(const b of bizActive())if(b.status==='Open'&&chance(35)&&!SIM.skipping){const r=bizSell(b,1,false);if(r&&r.sold&&chance(40))log(`${BIZ_TYPES[b.kind].icon} ${b.name}`,`A few sales while you were busy: ${money(r.rev)}.`)}}
 function businessesHtml(){
  if(S.age<D.ageRules.smallBusiness)return `<p class="muted-text">From age ${D.ageRules.smallBusiness}, you can run small businesses with a caregiver's help.</p>`;
  const act=bizActive(),types=Object.entries(BIZ_TYPES).filter(([k,t])=>(!t.minAge||S.age>=t.minAge)&&!act.some(b=>b.kind===k)),locs=D.standLocations.filter(l=>S.age>=l.minAge);
  const cards=act.map(b=>{const t=BIZ_TYPES[b.kind],yard=t.yard,open=b.status==='Open';const items=yard?S.inventoryItems.filter(i=>!i.equipped&&!i.wrapped&&S.phone?.activeItemId!==i.id&&!b.listed.some(l=>l.itemId===i.id&&!l.sold)).slice(0,10):[];
   return `<div class="biz-card ${open?'open':'closed'}"><div class="biz-head"><b>${t.icon} ${esc(b.name)}</b><span class="tag ${open?'ok':''}">${open?'Open':'Closed'}</span></div><small class="muted-text">${esc(bizLoc(b).name)}${yard?` • ${b.listed.filter(l=>!l.sold).length} on the table`:` • ${b.stock} in stock • ${money(b.price)} each • quality ${Math.round(b.quality)}`} • revenue ${money(b.revenue)} • profit ${money(b.revenue-b.costs)} • reputation ${Math.round(b.reputation)}</small>
-  <div class="inline-actions">${open?`<button class="small" data-biz-work="${b.id}">Work a 2-hour shift</button>`:''}${!yard?`<button class="small ghost" data-biz-restock="${b.id}">Restock 10</button>`:''}<button class="small ghost" data-biz-toggle="${b.id}">${open?'Close for now':'Reopen'}</button><button class="small ghost" data-biz-retire="${b.id}">Retire</button></div>
-  ${yard&&items.length?`<details class="more-menu"><summary>Put items on the table</summary><div>${items.map(i=>`<button class="small ghost" data-biz-list="${b.id}" data-item-id="${i.id}">${esc(i.name)}</button>`).join('')}</div></details>`:''}</div>`}).join('');
+  <div class="inline-actions">${!b.microbusinessMode5D6&&open?`<button class="small" data-biz-work="${b.id}">Work a 2-hour shift (legacy)</button>`:''}${!b.microbusinessMode5D6&&!yard?`<button class="small ghost" data-biz-restock="${b.id}">Restock 10 (legacy)</button>`:''}<button class="small ghost" data-biz-toggle="${b.id}">${open?'Close for now':'Reopen'}</button><button class="small ghost" data-biz-retire="${b.id}">Retire</button></div>
+  ${!b.microbusinessMode5D6&&yard&&items.length?`<details class="more-menu"><summary>Put items on the table</summary><div>${items.map(i=>`<button class="small ghost" data-biz-list="${b.id}" data-item-id="${i.id}">${esc(i.name)}</button>`).join('')}</div></details>`:''}${microbusinessSessionHtml5D6(b)}</div>`}).join('');
  const can=act.length<BIZ_MAX&&types.length;
- return `<p class="muted-text">Run up to ${BIZ_MAX} at once (${act.length}/${BIZ_MAX}). Weather, location, price, quality, reputation and your talents affect sales.</p>${cards||''}
- ${can?`<div class="business-builder"><label>Business<select id="biz-kind">${types.map(([k,t])=>`<option value="${k}">${t.icon} ${esc(t.name)}</option>`).join('')}</select></label><label>Where<select id="biz-loc">${locs.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label><label>Price<input id="biz-price" type="number" min="1" max="50" value="3"></label><label>Stock<input id="biz-stock" type="number" min="3" max="40" value="10"></label><button class="primary" data-biz-start="1">Start</button></div>`:act.length>=BIZ_MAX?'<p class="muted-text">You are running the maximum of 3. Retire one to start another.</p>':''}`
+ return `<p class="muted-text">Interactive selling uses real stock, individual customers, receipts, expenses and Calendar orders. Existing legacy balances are preserved.</p>${ensureMicrobusiness5D1().ui5D6?.message?`<p class="micro-feedback" role="status">${esc(ensureMicrobusiness5D1().ui5D6.message)}</p>`:''}${cards||''}
+ ${can?`<div class="business-builder"><label>Business<select id="biz-kind">${types.map(([k,t])=>`<option value="${k}">${t.icon} ${esc(t.name)}</option>`).join('')}</select></label><label>Where<select id="biz-loc">${locs.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label><label><small>Supplies and prices are selected inside the session.</small><button class="primary" data-biz-start="1">Create interactive stand</button></div>`:act.length>=BIZ_MAX?'<p class="muted-text">You are running the maximum of 3. Retire one to start another.</p>':''}`
 }
-function bizClick(b){const d=b.dataset;
- if(d.bizStart){startBusiness(document.getElementById('biz-kind')?.value,document.getElementById('biz-loc')?.value,document.getElementById('biz-price')?.value,document.getElementById('biz-stock')?.value);save();render();return true}
+function bizClick(b){if(typeof microbusinessClick5D6==='function'&&microbusinessClick5D6(b))return true;const d=b.dataset;
+ if(d.bizStart){microbusinessUIMessage5D6(microbusinessStartBusiness5D6(document.getElementById('biz-kind')?.value,document.getElementById('biz-loc')?.value),'Stand created; prepare stock next');save();render();return true}
  if(d.bizWork){workBusiness(d.bizWork);save();render();return true}if(d.bizRestock){restock(d.bizRestock);save();render();return true}
  if(d.bizToggle){toggleBusiness(d.bizToggle);save();render();return true}if(d.bizRetire){retireBusiness(d.bizRetire);save();render();return true}
  if(d.bizList){listYardItem(d.bizList,d.itemId);save();render();return true}return false}
@@ -9022,6 +9047,2666 @@ CHAT_KINDS.goodnight=CHAT_KINDS.goodnight||{texts:['Goodnight ❤️ sleep well'
 CHAT_KINDS.partnerCheckin=CHAT_KINDS.partnerCheckin||{texts:['How is your day actually going?','Checking in. You okay?'],opts:[['warm','Better now that you asked ❤️'],['comfort','A little stressed, honestly.'],['short','I’m okay.']]};
 CHAT_KINDS.romanceResolve=CHAT_KINDS.romanceResolve||{texts:['Can we talk about what has felt off lately? I do not want to ignore it.','I hate that things feel tense between us. Can we talk?'],opts:[['listen','I’m listening.'],['direct','Yes. We should talk honestly.'],['later','Can we talk later when I can focus?']]};
 CHAT_KINDS.anniversaryHook=CHAT_KINDS.anniversaryHook||{texts:['I know we are not making a huge thing of it, but I remembered what today is ❤️','Do you realize what day it is? I remembered us.'],opts:[['warm','I remembered too ❤️'],['agree','That means a lot.'],['joke','Look at you remembering dates 😄']]};
+// =====================================================================
+// PHASE 5D.1 — Canonical MICROBUSINESS CONTRACTS ONLY.
+// New explicit sessions do not backfill or replay legacy S.businesses/S.stall.
+// 5D.2 supplies canonical product sourcing; 5D.3+ will connect customers/UI.
+// =====================================================================
+const MICRO_STATES_5D1=Object.freeze(['planned','preparing','open','completed','cancelled']);
+const MICRO_TRANSITIONS_5D1=Object.freeze({planned:['preparing','cancelled'],preparing:['open','cancelled'],open:['completed','cancelled'],completed:[],cancelled:[]});
+function microbusinessTypes5D1(){return Object.keys(BIZ_TYPES)} // existing kinds are the stable activity identifiers
+function ensureMicrobusiness5D1(){
+ if(!S.microbusiness5D1||typeof S.microbusiness5D1!=='object'||Array.isArray(S.microbusiness5D1))S.microbusiness5D1={};
+ const st=S.microbusiness5D1;st.schemaVersion=1;
+ if(!Array.isArray(st.sessions))st.sessions=[];
+ return st;
+}
+function migrateMicrobusiness5D1(){
+ // Intentionally do not call bizList(): it converts legacy S.stall to S.businesses
+ // and mutates the original stall. Neither legacy revenue nor expenses is replayed.
+ return ensureMicrobusiness5D1();
+}
+function microbusinessEligibility5D1(kind,location,phase='plan'){
+ const t=BIZ_TYPES[kind];if(!t)return {ok:false,reason:'unknown_business_type'};
+ const min=Math.max(Number(D.ageRules.smallBusiness)||6,Number(t.minAge)||0);
+ if(S.age<min)return {ok:false,reason:'age',minAge:min};
+ const loc=D.standLocations.find(x=>x.id===location);if(!loc)return {ok:false,reason:'unknown_location'};
+ if(S.age<Number(loc.minAge||0))return {ok:false,reason:'location_age'};
+ if(S.age<18&&isGrounded())return {ok:false,reason:'grounded'};
+ if(phase==='operate'){
+  if(atSchool())return {ok:false,reason:'at_school'};
+  if(currentMinute()>=1200)return {ok:false,reason:'closing_time'};
+  const curfew=typeof curfewMinute==='function'?curfewMinute():null;
+  if(S.age<18&&curfew!=null&&currentMinute()>=curfew)return {ok:false,reason:'curfew'};
+ }
+ if(S.age<16&&!decisionAuthorityPerson())return {ok:false,reason:'guardian_required'};
+ return {ok:true,minAge:min,permissionRequired:S.age<16,supervisionRequired:S.age<12};
+}
+function microbusinessPermission5D1(kind,location){
+ const gate=microbusinessEligibility5D1(kind,location);
+ if(!gate.ok||!gate.permissionRequired)return gate;
+ // Stable H3 context/target prevents re-rolling the same decision by repeating a click.
+ const context={kind,location,category:'informal_microbusiness',ageBand:S.age<12?'child':'teen'};
+ const q=requestDecision({requestType:'microbusinessPermission5D1',targetKey:`${kind}:${location}`,context,decide:(maker)=>{
+  const r=familyRules(),trust=Number(S.family?.trust??60),responsibility=Number(S.family?.responsibility||0);
+  const threshold=clamp(57-r.strictness*.23+(trust-50)*.23+responsibility*.18+(S.age>=13?8:0),10,93);
+  const roll=hashOf(`${maker.id}|${decisionContextSignature('microbusinessPermission5D1',`${kind}:${location}`,context)}`)%100;
+  const yes=roll<threshold;
+  return {outcome:yes?'Yes':'No',resolved:true,reason:yes?'Guardian approves supervised informal selling.':'Guardian declines this microbusiness request.',...(yes?{}:{reconsiderAfter:addDays(currentDate(),7)})};
+ }});
+ return {ok:q.record?.outcome==='Yes'||q.record?.outcome==='Approved',permissionRequired:true,supervisionRequired:gate.supervisionRequired,decisionId:q.record?.id||null,reused:!!q.reused,reason:q.error||q.record?.reason||''};
+}
+function microbusinessSource5D1(businessId){
+ // Neither formal S.career nor Phase 5B S.programs is ever a business source.
+ const b=(Array.isArray(S.businesses)?S.businesses:[]).find(x=>x.id===businessId&&BIZ_TYPES[x.kind]);
+ if(b&&b.status!=='Retired')return {businessId:b.id,kind:b.kind,location:b.location,source:'businesses'};
+ const old=S.stall;if(old&&old.id===businessId){const kind=old.type==='Yard Sale'?'yard':Object.keys(BIZ_TYPES).find(k=>BIZ_TYPES[k].product===old.product);if(kind)return {businessId:old.id,kind,location:old.location||D.standLocations[0].id,source:'legacy_stall'}}
+ return null;
+}
+function microbusinessCreateSession5D1({businessId,dateISO=currentDate(),startMinute=currentMinute()}={}){
+ const source=microbusinessSource5D1(businessId);if(!source)return {ok:false,reason:'unknown_business'};
+ if(dateISO!==currentDate()||!Number.isInteger(startMinute)||startMinute<0||startMinute>1439)return {ok:false,reason:'invalid_time'};
+ const eligibility=microbusinessEligibility5D1(source.kind,source.location);
+ if(!eligibility.ok)return eligibility;
+ const perm=microbusinessPermission5D1(source.kind,source.location);if(!perm.ok)return {ok:false,reason:'permission_denied',permission:perm};
+ const s={id:uid('micro5d'),businessId:source.businessId,businessType:source.kind,source:source.source,ageAtStart:S.age,dateISO,location:source.location,startMinute,endMinute:null,status:'planned',permissionDecisionId:perm.decisionId||null,batches:[],pricing:{},stock:{},actualCosts:0,grossRevenue:0,tips:0,refunds:0,netProfit:0,customerEncounters:[],transactions:[]};
+ ensureMicrobusiness5D1().sessions.push(s);return {ok:true,session:s};
+}
+function microbusinessSession5D1(id){return ensureMicrobusiness5D1().sessions.find(x=>x.id===id)||null}
+function microbusinessTransition5D1(id,next){
+ const s=microbusinessSession5D1(id);if(!s)return {ok:false,reason:'unknown_session'};
+ if(!MICRO_STATES_5D1.includes(next)||!MICRO_TRANSITIONS_5D1[s.status]?.includes(next))return {ok:false,reason:'invalid_transition'};
+ // 5D.2: never strand paid/prepared stock on a direct cancellation/completion call.
+ if(['completed','cancelled'].includes(next)&&s.batches.some(b=>b.remaining>0)&&!s.leftoversResolved5D2)return microbusinessFinishStock5D2(id,{action:'store',cancel:next==='cancelled'});
+ if(next==='open'){
+  if(s.dateISO!==currentDate())return {ok:false,reason:'wrong_day'};
+  const gate=microbusinessEligibility5D1(s.businessType,s.location,'operate');if(!gate.ok)return gate;
+  const perm=microbusinessPermission5D1(s.businessType,s.location);if(!perm.ok)return {ok:false,reason:'permission_denied'};
+  const supervision=microbusinessSupervisionGate5D7(s);if(!supervision.ok)return supervision;
+  s.permissionDecisionId=perm.decisionId||null;
+ }
+ if(['completed','cancelled'].includes(next)){
+  // Close unresolved customer invitations; never fabricate a sale or clear actual receipts.
+  for(const e of s.customerEncounters||[])if(['arrived','question','counter_offer'].includes(e.status)){e.status='walked_away';e.outcome5D3='stand_closed'}
+  s.endMinute=currentMinute();
+ }
+ s.status=next;return {ok:true,session:s};
+}
+function microbusinessRegisterBatch5D1(id,{batchId,productId,quantity,unitPrice}={}){
+ // Contract-only 5D.1 stock fixture; no ingredients, Inventory or income are created.
+ // Actual prepared stock must be wired to Store/Inventory in 5D.2.
+ const s=microbusinessSession5D1(id);if(!s||!['planned','preparing'].includes(s.status))return {ok:false,reason:'invalid_session_state'};
+ if(!batchId||!productId||!Number.isInteger(quantity)||quantity<=0||!Number.isFinite(unitPrice)||unitPrice<=0)return {ok:false,reason:'invalid_batch'};
+ if(s.batches.some(x=>x.batchId===batchId))return {ok:false,reason:'duplicate_batch'};
+ const b={batchId:String(batchId),productId:String(productId),quantity,remaining:quantity,unitPrice:Math.round(unitPrice*100)/100};
+ s.batches.push(b);s.stock[b.batchId]=quantity;s.pricing[b.batchId]=b.unitPrice;return {ok:true,batch:b};
+}
+function microbusinessCommit5D1(id,tx={}){
+ // Explicit idempotent receipt gateway; no UI or automatic legacy sales call it in 5D.1.
+ const s=microbusinessSession5D1(id);if(!s)return {ok:false,reason:'session_not_open'};
+ if(!(s.status==='open'||(tx.kind==='expense'&&s.status==='preparing')))return {ok:false,reason:'session_not_open'};
+ const source=microbusinessSource5D1(s.businessId);
+ if(!source||source.kind!==s.businessType)return {ok:false,reason:'business_no_longer_valid'};
+ if(s.dateISO!==currentDate())return {ok:false,reason:'session_expired'};
+ const eligibility=microbusinessEligibility5D1(s.businessType,s.location,tx.kind==='expense'&&s.status==='preparing'?'plan':'operate');if(!eligibility.ok)return eligibility;
+ const permission=microbusinessPermission5D1(s.businessType,s.location);if(!permission.ok)return {ok:false,reason:'permission_denied'};
+ if(s.status==='open'){const supervision=microbusinessSupervisionGate5D7(s);if(!supervision.ok)return supervision;}
+ const transactionId=typeof tx.transactionId==='string'?tx.transactionId.trim():'';
+ if(!transactionId)return {ok:false,reason:'missing_transaction_id'};
+ const kind=tx.kind,amount=Number(tx.amount),quantity=Number(tx.quantity||0),batchId=String(tx.batchId||''),against=String(tx.against||'');
+ if(!['sale','tip','expense','refund','replacement'].includes(kind)||!Number.isFinite(amount)||(kind==='replacement'?amount!==0:amount<=0)||Math.round(amount*100)/100!==amount)return {ok:false,reason:'invalid_transaction'};
+ const signature=JSON.stringify({kind,amount,quantity,batchId,against,encounterId:String(tx.encounterId||'')});
+ const old=ensureMicrobusiness5D1().sessions.flatMap(x=>x.transactions||[]).find(x=>x.transactionId===transactionId);
+ if(old)return old.sessionId===id&&old.signature===signature?{ok:true,reused:true,receipt:old}:{ok:false,reason:'transaction_id_conflict'};
+ let batch=null,refSale=null;
+ if(kind==='sale'||kind==='replacement'){
+  batch=s.batches.find(x=>x.batchId===batchId);
+  if(!batch||!Number.isInteger(quantity)||quantity<=0||batch.remaining<quantity||(kind==='sale'&&amount>Math.round(quantity*batch.unitPrice*100)/100))return {ok:false,reason:'invalid_stock_or_price'};
+  if(batch.expiryDateISO&&currentDate()>batch.expiryDateISO)return {ok:false,reason:'expired_stock'};
+  if(s.businessType==='yard'){
+   if(kind==='replacement')return {ok:false,reason:'item_cannot_be_remade'};
+   if(batch.source!=='owned_item'||quantity!==1||!batch.itemId)return {ok:false,reason:'unbacked_yard_stock'};
+   const valid=microbusinessValidateYardItem5D2(batch.itemId,{sessionId:s.id});if(!valid.ok)return valid;
+  }
+ }
+ if(kind==='replacement'){
+  refSale=s.transactions.find(x=>x.transactionId===against&&x.kind==='sale'&&x.batchId===batchId);
+  const already=s.transactions.filter(x=>x.kind==='replacement'&&x.against===against).reduce((v,x)=>v+x.quantity,0);
+  if(!refSale||refSale.encounterId!==tx.encounterId||quantity>refSale.quantity-already||!tx.encounterId)return {ok:false,reason:'invalid_replacement'};
+ }
+ if(kind==='refund'){
+  refSale=s.transactions.find(x=>x.transactionId===against&&x.kind==='sale');
+  const already=s.transactions.filter(x=>x.kind==='refund'&&x.against===against).reduce((v,x)=>v+x.amount,0);
+  if(!refSale||(tx.encounterId&&refSale.encounterId!==tx.encounterId)||amount>Math.round((refSale.amount-already)*100)/100)return {ok:false,reason:'invalid_refund'};
+ }
+ if((kind==='expense'||kind==='refund')&&S.money<amount)return {ok:false,reason:'insufficient_cash'};
+ if(tx.personId&&!personById(tx.personId))return {ok:false,reason:'unknown_customer'};
+ // Apply exactly once, after all validations. S.money remains the sole wallet authority.
+ if(batch){
+  if(s.businessType==='yard'){const removed=removeItem(batch.itemId,true);if(!removed)return {ok:false,reason:'item_not_owned'}}
+  batch.remaining-=quantity;s.stock[batchId]=batch.remaining;if(kind==='sale')s.grossRevenue=Math.round((s.grossRevenue+amount)*100)/100
+ }
+ else if(kind==='tip')s.tips=Math.round((s.tips+amount)*100)/100;
+ else if(kind==='expense')s.actualCosts=Math.round((s.actualCosts+amount)*100)/100;
+ else if(kind==='refund')s.refunds=Math.round((s.refunds+amount)*100)/100;
+ if(kind!=='replacement')S.money=Math.round((S.money+(kind==='sale'||kind==='tip'?amount:-amount))*100)/100;
+ if(kind==='sale'||kind==='tip')S.finance.earned=Math.round(((S.finance.earned||0)+amount)*100)/100;
+ s.netProfit=Math.round((s.grossRevenue+s.tips-s.refunds-s.actualCosts)*100)/100;
+ const receipt={transactionId,sessionId:id,kind,amount,quantity:kind==='sale'||kind==='replacement'?quantity:0,batchId:kind==='sale'||kind==='replacement'?batchId:null,against:kind==='refund'||kind==='replacement'?against:null,encounterId:tx.encounterId||null,personId:tx.personId||null,dateISO:currentDate(),minute:currentMinute(),signature};
+ s.transactions.push(receipt);return {ok:true,reused:false,receipt};
+}
+// PHASE 5D.2 — stock sourced from actual purchases or owned Inventory.
+// These APIs are backend-only. Customer choices/UI are reserved for 5D.3/5D.6.
+const MICRO_BAKE_ITEMS_5D2=Object.freeze({cookies:['bakedCookies','heartCookies'],cupcakes:['cupcakes']});
+const MICRO_CENTS_5D2=n=>Math.round(n*100)/100;
+function microbusinessBatchProduct5D2(kind){return D.standProducts.find(p=>p.id===BIZ_TYPES[kind]?.product)||null}
+function microbusinessBatch5D2(s,batchId){return s.batches.find(b=>b.batchId===batchId)||null}
+function microbusinessPrice5D2(kind,price){const n=Number(price);return Number.isFinite(n)&&n>=0.5&&n<= (kind==='yard'?10000:500)&&MICRO_CENTS_5D2(n)===n}
+function microbusinessPreparationGate5D2(s){
+ if(!s||s.status!=='preparing')return {ok:false,reason:'invalid_session_state'};
+ const source=microbusinessSource5D1(s.businessId);
+ if(!source||source.kind!==s.businessType)return {ok:false,reason:'business_no_longer_valid'};
+ if(s.dateISO!==currentDate())return {ok:false,reason:'session_expired'};
+ const gate=microbusinessEligibility5D1(s.businessType,s.location);
+ if(!gate.ok)return gate;
+ const permission=microbusinessPermission5D1(s.businessType,s.location);
+ if(!permission.ok)return {ok:false,reason:'permission_denied'};
+ return {ok:true};
+}
+function microbusinessValidateYardItem5D2(itemId,{sessionId=null,businessId=null}={}){
+ const it=(S.inventoryItems||[]).find(x=>x.id===itemId);
+ if(!it)return {ok:false,reason:'item_not_owned'};
+ if(it.equipped||it.stored||it.wrapped||it.locked||it.questLocked||it.isSpare===false||S.phone?.activeItemId===it.id||
+     catalogItem(it.key)?.phone||it.lifecycleType==='perishable'&&isSpoiled(it))return {ok:false,reason:'item_ineligible'};
+ if(!catalogItem(it.key)||!Number.isInteger(it.quantity||1)||(it.quantity||1)<=0||itemValue(it)<=0)return {ok:false,reason:'item_ineligible'};
+ // Reservations held by active canonical sessions cannot be sold elsewhere.
+ if(ensureMicrobusiness5D1().sessions.some(s=>s.id!==sessionId&&!['completed','cancelled'].includes(s.status)&&s.batches.some(b=>b.itemId===itemId&&b.remaining>0)))return {ok:false,reason:'item_reserved'};
+ if((Array.isArray(S.businesses)?S.businesses:[]).some(b=>(!businessId||b.id!==businessId)&&b.status!=='Retired'&&(b.listed||[]).some(l=>l.itemId===itemId&&!l.sold)))return {ok:false,reason:'item_reserved'};
+ return {ok:true,item:it,value:Math.max(1,Math.round(itemValue(it)/(it.quantity||1)))};
+}
+function microbusinessSetPrice5D2(sessionId,batchId,price){
+ const s=microbusinessSession5D1(sessionId),gate=microbusinessPreparationGate5D2(s);
+ if(!gate.ok)return gate;
+ const b=microbusinessBatch5D2(s,batchId);
+ if(!b)return {ok:false,reason:'unknown_batch'};
+ if(!microbusinessPrice5D2(s.businessType,price))return {ok:false,reason:'invalid_price'};
+ if(s.businessType==='yard'&&Number(price)>Math.max(5,Math.ceil((b.valueAtListing||0)*2.5)))return {ok:false,reason:'price_exceeds_value'};
+ b.unitPrice=Number(price);s.pricing[b.batchId]=b.unitPrice;return {ok:true,batch:b};
+}
+function microbusinessPrepareBatch5D2(sessionId,{batchId,quantity,unitPrice,itemId=null,storedBatchId=null}={}){
+ const s=microbusinessSession5D1(sessionId),gate=microbusinessPreparationGate5D2(s);
+ if(!gate.ok)return gate;
+ const duplicate=microbusinessBatch5D2(s,batchId);
+ if(duplicate){const sig=JSON.stringify({quantity,unitPrice:Number(unitPrice),itemId,storedBatchId});return duplicate.preparationSignature5D2===sig?{ok:true,reused:true,batch:duplicate,cost:0}:{ok:false,reason:'duplicate_batch_conflict'}};
+ if(typeof batchId!=='string'||!batchId.trim()||!Number.isInteger(quantity)||quantity<=0||quantity>200||!microbusinessPrice5D2(s.businessType,unitPrice))return {ok:false,reason:'invalid_batch'};
+ const kind=s.businessType,product=microbusinessBatchProduct5D2(kind),signature=JSON.stringify({quantity,unitPrice:Number(unitPrice),itemId,storedBatchId});
+ if(kind==='yard'){
+  if(quantity!==1||!itemId)return {ok:false,reason:'yard_item_required'};
+  const valid=microbusinessValidateYardItem5D2(itemId,{sessionId:s.id});if(!valid.ok)return valid;
+  if(Number(unitPrice)>Math.max(5,Math.ceil(valid.value*2.5)))return {ok:false,reason:'price_exceeds_value'};
+  if(s.batches.some(b=>b.itemId===itemId&&b.remaining>0))return {ok:false,reason:'item_reserved'};
+  const result=microbusinessRegisterBatch5D1(s.id,{batchId,productId:valid.item.key,quantity:1,unitPrice});
+  if(!result.ok)return result;
+  Object.assign(result.batch,{source:'owned_item',itemId,condition:valid.item.condition,valueAtListing:valid.value,quality:valid.item.quality||null,expiryDateISO:null,preparationSignature5D2:signature});
+  return {...result,cost:0};
+ }
+ if(itemId&&MICRO_BAKE_ITEMS_5D2[kind]){
+  const it=(S.inventoryItems||[]).find(x=>x.id===itemId),keys=MICRO_BAKE_ITEMS_5D2[kind];
+  if(!it||!keys.includes(it.key)||it.opened||it.stored||it.wrapped||isSpoiled(it)||it.freshUntil&&currentDate()>it.freshUntil||(it.quantity||1)<quantity)return {ok:false,reason:'baked_stock_unavailable'};
+  const expiry=it.freshUntil||null,quality=it.quality||'good',sourceCopy={key:it.key,quality,expiryDateISO:expiry,source:'baked_inventory'};
+  // No new ingredient charge: baking() already paid for ingredients when applicable.
+  const result=microbusinessRegisterBatch5D1(s.id,{batchId,productId:product.id,quantity,unitPrice});if(!result.ok)return result;
+  if((it.quantity||1)===quantity)removeItem(itemId);
+  else{it.quantity-=quantity;syncLegacyInventory();}
+  Object.assign(result.batch,sourceCopy,{itemId,itemKey5D2:it.key,preparationCost:0,preparationSignature5D2:signature});return {...result,cost:0};
+ }
+ if(storedBatchId){
+  const biz=(S.businesses||[]).find(b=>b.id===s.businessId);
+  const carry=(biz?.storedBatches5D2||[]).find(x=>x.id===storedBatchId&&x.status==='stored');
+  if(!carry||carry.productId!==product?.id||carry.quantity!==quantity||carry.expiryDateISO&&currentDate()>carry.expiryDateISO)return {ok:false,reason:'carried_stock_unavailable'};
+  const result=microbusinessRegisterBatch5D1(s.id,{batchId,productId:product.id,quantity,unitPrice});if(!result.ok)return result;
+  carry.status='transferred';carry.transferredTo=sessionId;
+  Object.assign(result.batch,{source:'carried_stock',quality:carry.quality,expiryDateISO:carry.expiryDateISO||null,preparationCost:0,preparationSignature5D2:signature});return {...result,cost:0};
+ }
+ if(itemId||!product||!microbusinessBatchProduct5D2(kind))return {ok:false,reason:'invalid_product_source'};
+ if(MICRO_BAKE_ITEMS_5D2[kind])return {ok:false,reason:'baking_required'};
+ // Procurement uses current stand-product supply prices, not fictitious Inventory ingredients.
+ const cost=MICRO_CENTS_5D2(quantity*product.baseCost);
+ if(cost<=0)return {ok:false,reason:'invalid_supply_cost'};
+ if(S.money<cost)return {ok:false,reason:'insufficient_cash'};
+ const receipt=microbusinessCommit5D1(s.id,{transactionId:`supply5d2:${sessionId}:${batchId}`,kind:'expense',amount:cost});
+ if(!receipt.ok)return receipt;
+ const result=microbusinessRegisterBatch5D1(s.id,{batchId,productId:product.id,quantity,unitPrice});
+ // All batch inputs were validated above; registration cannot fail unless state was modified synchronously.
+ if(!result.ok)return {ok:false,reason:'batch_registration_failed',receipt:receipt.receipt};
+ Object.assign(result.batch,{preparationSignature5D2:signature,source:'purchased_supplies',quality:Math.round(clamp(50+(S.skills?.[BIZ_TYPES[kind].skill]||30)*.4)),expiryDateISO:kind==='lemonade'?addDays(currentDate(),1):null,preparationCost:cost});
+ return {...result,cost,receipt:receipt.receipt};
+}
+function microbusinessFinishStock5D2(sessionId,{action='store',cancel=false}={}){
+ const s=microbusinessSession5D1(sessionId);
+ if(!s)return {ok:false,reason:'unknown_session'};
+ if(['completed','cancelled'].includes(s.status)&&s.leftoversResolved5D2)return {ok:true,reused:true,leftovers:s.leftoversResolved5D2};
+ if(!['open','preparing'].includes(s.status)||!['store','discard'].includes(action))return {ok:false,reason:'invalid_session_state'};
+ const source=microbusinessSource5D1(s.businessId);
+ if(!source)return {ok:false,reason:'business_no_longer_valid'};
+ const biz=(S.businesses||[]).find(b=>b.id===s.businessId);
+ if(action==='store'&&!biz)return {ok:false,reason:'storage_unavailable'};
+ const leftovers=[];
+ for(const batch of s.batches){
+  const q=batch.remaining||0;if(!q)continue;
+  const spoiled=!!batch.expiryDateISO&&currentDate()>batch.expiryDateISO;
+  const disposition=action==='store'&&!spoiled?'stored':'discarded';
+  const rec={id:`leftover5d2:${s.id}:${batch.batchId}`,batchId:batch.batchId,productId:batch.productId,quantity:q,quality:batch.quality||null,expiryDateISO:batch.expiryDateISO||null,status:disposition};
+  if(disposition==='stored'&&batch.source==='baked_inventory'){
+   const itemKey=batch.itemKey5D2;
+   // Restore real food with its original expiry, no wallet or purchase credit.
+   const itm=makeItemInstance(itemKey,'returned unsold batch');itm.quantity=q;itm.freshUntil=batch.expiryDateISO;itm.quality=batch.quality;itm.microbusinessBatchReturn5D2=rec.id;S.inventoryItems.push(itm);syncLegacyInventory();
+   rec.status='returned_to_inventory';
+  }else if(batch.source==='owned_item'){
+   rec.status=(S.inventoryItems||[]).some(x=>x.id===batch.itemId)?'unlisted':'item_unavailable'; // Never discard the owner's item.
+  }else if(disposition==='stored'&&['purchased_supplies','carried_stock'].includes(batch.source)){
+   biz.storedBatches5D2=Array.isArray(biz.storedBatches5D2)?biz.storedBatches5D2:[];
+   biz.storedBatches5D2.push(rec);
+  }else if(disposition==='stored'){rec.status='unbacked_void'}
+  batch.remaining=0;s.stock[batch.batchId]=0;batch.leftoverDisposition5D2=rec.status;leftovers.push(rec);
+ }
+ s.leftoversResolved5D2=leftovers;
+ const done=microbusinessTransition5D1(s.id,cancel||s.status==='preparing'?'cancelled':'completed');if(!done.ok)return done;
+ return {ok:true,leftovers};
+}
+// PHASE 5D.3 — Interactive, bounded customer encounters. No persistent NPCs or UI.
+// All cash/Inventory changes go through 5D.1/5D.2 authoritative receipts.
+const MICRO_CUSTOMER_STAGES_5D3=Object.freeze(['arrived','question','counter_offer','complaint']);
+const microCents5D3=n=>Math.round(n*100)/100;
+function microbusinessCustomerGate5D3(sessionId){
+ const s=microbusinessSession5D1(sessionId);
+ if(!s||s.status!=='open')return {ok:false,reason:'session_not_open'};
+ if(s.dateISO!==currentDate())return {ok:false,reason:'session_expired'};
+ const src=microbusinessSource5D1(s.businessId);
+ if(!src||src.kind!==s.businessType)return {ok:false,reason:'business_no_longer_valid'};
+ const gate=microbusinessEligibility5D1(s.businessType,s.location,'operate');if(!gate.ok)return gate;
+ const perm=microbusinessPermission5D1(s.businessType,s.location);if(!perm.ok)return {ok:false,reason:'permission_denied'};
+ const supervision=microbusinessSupervisionGate5D7(s);if(!supervision.ok)return supervision;
+ return {ok:true,session:s};
+}
+function microbusinessTrafficLimit5D3(s){
+ const loc=D.standLocations.find(l=>l.id===s.location);
+ if(!loc)return 0;
+ if((S.weather?.severity||0)>=2&&s.location!=='home')return 0;
+ const traffic=Math.max(0,Number(loc.traffic)||0);
+ const time=currentMinute(),daylight=time>=480&&time<1140;
+ // Session-wide quota, captured at the first customer; no infinite click farming.
+ const market=typeof microbusinessMarketContext5D5==='function'?microbusinessMarketContext5D5(s):{trafficDelta:0};
+ return Math.max(0,Math.min(12,Math.floor((traffic+30)/14)+(daylight?2:0)-((S.weather?.severity||0)>0?2:0)+market.trafficDelta));
+}
+function microbusinessNextCustomer5D3(sessionId,{batchId=null}={}){
+ const gate=microbusinessCustomerGate5D3(sessionId);if(!gate.ok)return gate;
+ const s=gate.session;
+ const busy=s.customerEncounters.find(e=>MICRO_CUSTOMER_STAGES_5D3.includes(e.status));
+ if(busy)return {ok:true,reused:true,encounter:busy};
+ if(!Number.isInteger(s.customerLimit5D3))s.customerLimit5D3=microbusinessTrafficLimit5D3(s);
+ if(s.customerEncounters.length>=s.customerLimit5D3)return {ok:false,reason:'no_more_customers'};
+ const available=s.batches.filter(b=>b.remaining>0&&(!b.expiryDateISO||currentDate()<=b.expiryDateISO));
+ const b=batchId==null?available[Math.floor(Math.random()*available.length)]:available.find(b=>b.batchId===batchId);
+ if(!b)return {ok:false,reason:'no_stock'};
+ const q=s.businessType==='yard'?1:Math.min(b.remaining,1+Math.floor(Math.random()*3));
+ const kinds=['direct','question','bargain','browse'];
+ const kind=kinds[Math.floor(Math.random()*kinds.length)];
+ const buyer={id:uid('customer5d3'),sessionId:s.id,status:'arrived',kind,batchId:b.batchId,quantity:q,
+  listUnitPrice:b.unitPrice,listedTotal:microCents5D3(b.unitPrice*q),
+  budgetFactor:microCents5D3(.75+Math.random()*.65),patience:Math.floor(Math.random()*101),
+  friendliness:Math.floor(Math.random()*101),buyRoll:Math.floor(Math.random()*100),tipRoll:Math.floor(Math.random()*100),
+  complaintRoll:Math.floor(Math.random()*100),arrivalDateISO:currentDate(),arrivalMinute:currentMinute(),
+  customerType:'anonymous',personId:null,turns:0};
+ buyer.offerTotal=microCents5D3(Math.max(.01,buyer.listedTotal*(.70+Math.random()*.16)));
+ if(typeof microbusinessAttachCustomer5D4==='function')microbusinessAttachCustomer5D4(s,buyer);
+ s.customerEncounters.push(buyer);return {ok:true,reused:false,encounter:buyer};
+}
+function microbusinessCustomerScore5D3(s,e,total){
+ const b=s.batches.find(x=>x.batchId===e.batchId);if(!b)return -100;
+ const quality=typeof b.quality==='number'?b.quality:typeof b.quality==='string'?({excellent:90,good:75,average:55,poor:25}[b.quality]||60):65;
+ const original=e.listedTotal||1;
+ const pricePressure=(total-original)/original*70;
+ const affordability=(e.budgetFactor-1)*50;
+ const reputation=typeof microbusinessReputation5D4==='function'?microbusinessReputation5D4(s.businessId)?.score??50:50;
+ const market=typeof microbusinessMarketContext5D5==='function'?microbusinessMarketContext5D5(s):{scoreDelta:0};
+ return clamp(48+affordability-pricePressure+(quality-60)*.35+(e.friendliness-50)*.08+(e.turns?6:0)+(reputation-50)*.16+market.scoreDelta,3,94);
+}
+function microbusinessRespond5D3(sessionId,encounterId,choice){
+ const gate=microbusinessCustomerGate5D3(sessionId);if(!gate.ok)return gate;
+ const s=gate.session,e=s.customerEncounters.find(x=>x.id===encounterId);if(!e)return {ok:false,reason:'unknown_encounter'};
+ if(typeof choice!=='string')return {ok:false,reason:'invalid_choice'};
+ if(e.status==='resolved'||e.status==='walked_away')return e.decision5D3===choice?{ok:true,reused:true,encounter:e}:{ok:false,reason:'encounter_already_resolved'};
+ if(e.status==='complaint')return {ok:false,reason:'complaint_pending'};
+ if(!['arrived','question','counter_offer'].includes(e.status))return {ok:false,reason:'invalid_encounter_state'};
+ const valid=['recommend','answer','keep_price','discount','counter','accept_offer','decline'];
+ if(!valid.includes(choice))return {ok:false,reason:'invalid_choice'};
+ if(choice==='answer'||choice==='recommend'){
+  if(e.status==='counter_offer')return {ok:false,reason:'invalid_choice'};
+  if(e.turns>=1)return {ok:false,reason:'already_answered'};
+  e.status='question';e.turns=1;return {ok:true,encounter:e,requiresResponse:true};
+ }
+ if(choice==='counter'){
+  if(e.kind!=='bargain'||e.status==='counter_offer')return {ok:false,reason:'not_negotiating'};
+  e.status='counter_offer';e.turns=1;e.counterTotal=microCents5D3((e.offerTotal+e.listedTotal)/2);
+  return {ok:true,encounter:e,requiresResponse:true};
+ }
+ if(choice==='accept_offer'&&e.kind!=='bargain')return {ok:false,reason:'not_negotiating'};
+ if(choice==='decline'){
+  e.status='walked_away';e.decision5D3=choice;e.outcome5D3='declined';if(typeof microbusinessCustomerSettlement5D4==='function')microbusinessCustomerSettlement5D4(s,e,'walk');return {ok:true,encounter:e};
+ }
+ const batch=s.batches.find(x=>x.batchId===e.batchId);
+ if(!batch||batch.remaining<e.quantity)return {ok:false,reason:'no_stock'};
+ const total=choice==='accept_offer'?(e.status==='counter_offer'?e.counterTotal:e.offerTotal):choice==='discount'?microCents5D3(e.listedTotal*.90):choice==='keep_price'?e.listedTotal:e.status==='counter_offer'?e.counterTotal:e.listedTotal;
+ if(!(total>0))return {ok:false,reason:'invalid_price'};
+ // Customer response was fixed when this encounter was generated, not re-rolled per click.
+ const accepted=e.buyRoll<microbusinessCustomerScore5D3(s,e,total);
+ if(!accepted){e.status='walked_away';e.decision5D3=choice;e.outcome5D3='refused';e.offerAccepted5D3=total;if(typeof microbusinessCustomerSettlement5D4==='function')microbusinessCustomerSettlement5D4(s,e,'walk');return {ok:true,encounter:e};}
+ const saleId=`micro5d3:sale:${e.id}`;
+ const sale=microbusinessCommit5D1(s.id,{transactionId:saleId,kind:'sale',batchId:e.batchId,quantity:e.quantity,amount:total,encounterId:e.id,personId:e.personId||null});
+ if(!sale.ok)return sale;
+ e.saleTransactionId=saleId;e.paidTotal=total;e.decision5D3=choice;e.outcome5D3='purchased';
+ // Tips require a sale, depend on a persisted customer roll, and remain optional.
+ const quality=typeof batch.quality==='number'?batch.quality:batch.quality==='excellent'?90:batch.quality==='poor'?25:70;
+ if(e.tipRoll<Math.max(0,Math.min(35,Math.floor((e.friendliness+quality-95)/4)))){
+  const tipValue=microCents5D3(Math.min(2,Math.max(.25,total*.05)));
+  const tip=microbusinessCommit5D1(s.id,{transactionId:`micro5d3:tip:${e.id}`,kind:'tip',amount:tipValue,encounterId:e.id,personId:e.personId||null});
+  if(tip.ok)e.tipTransactionId=tip.receipt.transactionId;
+ }
+ const complaintOdds=clamp(Math.floor((60-quality)*.5)+Math.floor((e.friendliness<20?10:0)),0,40);
+ e.status=e.complaintRoll<complaintOdds?'complaint':'resolved';
+ if(typeof microbusinessCustomerSettlement5D4==='function')microbusinessCustomerSettlement5D4(s,e,'sale');
+ return {ok:true,encounter:e,sale:sale.receipt,complaint:e.status==='complaint'};
+}
+function microbusinessResolveComplaint5D3(sessionId,encounterId,choice){
+ const gate=microbusinessCustomerGate5D3(sessionId);if(!gate.ok)return gate;
+ const s=gate.session,e=s.customerEncounters.find(x=>x.id===encounterId);if(!e)return {ok:false,reason:'unknown_encounter'};
+ if(e.complaintResolution5D3)return e.complaintResolution5D3===choice?{ok:true,reused:true,encounter:e}:{ok:false,reason:'complaint_already_resolved'};
+ if(e.status!=='complaint'||!e.saleTransactionId)return {ok:false,reason:'no_active_complaint'};
+ if(!['apologize','refund','replace','decline'].includes(choice))return {ok:false,reason:'invalid_choice'};
+ if(choice==='refund'){
+  const result=microbusinessCommit5D1(s.id,{transactionId:`micro5d3:refund:${e.id}`,kind:'refund',against:e.saleTransactionId,amount:e.paidTotal,encounterId:e.id,personId:e.personId||null});
+  if(!result.ok)return result;
+  e.refundTransactionId=result.receipt.transactionId;
+ }else if(choice==='replace'){
+  if(s.businessType==='yard')return {ok:false,reason:'item_cannot_be_remade'};
+  const result=microbusinessCommit5D1(s.id,{transactionId:`micro5d3:replacement:${e.id}`,kind:'replacement',against:e.saleTransactionId,batchId:e.batchId,quantity:e.quantity,amount:0,encounterId:e.id,personId:e.personId||null});
+  if(!result.ok)return result;
+  e.replacementTransactionId=result.receipt.transactionId;
+ }
+ e.complaintResolution5D3=choice;e.status='resolved';if(typeof microbusinessCustomerSettlement5D4==='function')microbusinessCustomerSettlement5D4(s,e,'complaint_resolved');return {ok:true,encounter:e};
+}
+// PHASE 5D.4 — Neighborhood customers and bounded, receipt-backed reputation.
+// Does not create NPCs for walk-ins, grant friendship/romance, or replace the People authority.
+const MICRO_CUSTOMER_BOOK_LIMIT_5D4=24;
+function microbusinessState5D4(){
+ const st=ensureMicrobusiness5D1();
+ if(!st.reputations5D4||typeof st.reputations5D4!=='object'||Array.isArray(st.reputations5D4))st.reputations5D4={};
+ if(!st.customerBook5D4||typeof st.customerBook5D4!=='object'||Array.isArray(st.customerBook5D4))st.customerBook5D4={};
+ return st;
+}
+function migrateMicrobusiness5D4(){
+ // Intentionally NO replay/backfill of earlier encounters, sales, People or reputation.
+ const st=microbusinessState5D4();return {schemaVersion:1,customers:Object.keys(st.customerBook5D4).length,businesses:Object.keys(st.reputations5D4).length};
+}
+function microbusinessReputation5D4(businessId){
+ const st=microbusinessState5D4();const key=String(businessId||'');
+ if(!key||!microbusinessSource5D1(key))return null;
+ if(!st.reputations5D4[key])st.reputations5D4[key]={score:50,positive:0,negative:0,feedback:[],dailyImpact:{}};
+ return st.reputations5D4[key];
+}
+function microbusinessNeighborCandidates5D4(){
+ // Only NPCs from already-established neighborhood households; do not call ensureNeighborhood(),
+ // ensureRoster() or generateHousehold() just to produce shoppers.
+ const households=new Set(S.neighborhood?.households||[]);
+ return (S.npcs||[]).filter(n=>n?.id&&households.has(n.householdId)&&!n.movedAway);
+}
+function microbusinessAttachCustomer5D4(s,e){
+ if(!s||!e||e.customerKey5D4)return e;
+ const neighbors=microbusinessNeighborCandidates5D4();if(!neighbors.length)return e;
+ const book=microbusinessState5D4().customerBook5D4;
+ const returning=neighbors.filter(n=>book[n.id]?.purchases>0);
+ // Preserve anonymous majority, even when a neighbor exists in the simulation.
+ if(Math.random()>=.28)return e;
+ const pool=returning.length&&Math.random()<.65?returning:neighbors;
+ const n=pool[Math.floor(Math.random()*pool.length)];if(!n)return e;
+ e.customerKey5D4=n.id;e.neighborhoodHouseholdId5D4=n.householdId;
+ const p=(S.people||[]).find(p=>p.npcId===n.id&&!isFamilyPerson(p));
+ if(p){e.personId=p.id;e.customerType='known_neighbor';}
+ else if(book[n.id]?.purchases>0){e.customerType='returning_neighbor';}
+ // No NPC name or identity is invented for otherwise anonymous customers.
+ return e;
+}
+function microbusinessCustomerBookEntry5D4(npcId){
+ const book=microbusinessState5D4().customerBook5D4;
+ const n=npcById(npcId),neighbors=microbusinessNeighborCandidates5D4();
+ if(!n||!neighbors.some(x=>x.id===npcId))return null;
+ if(!book[npcId]){
+  const ids=Object.keys(book);
+  if(ids.length>=MICRO_CUSTOMER_BOOK_LIMIT_5D4){
+   // Evict only an unlinked inactive visitor, never a People contact or active encounter.
+   const eligible=ids.filter(id=>!book[id].personId&&!S.people.some(p=>p.npcId===id)&&!(S.microbusiness5D1.sessions||[]).some(s=>s.customerEncounters.some(e=>e.customerKey5D4===id&&['arrived','question','counter_offer','complaint'].includes(e.status))));
+   if(!eligible.length)return null;
+   eligible.sort((a,b)=>(book[a].lastSeenISO||'').localeCompare(book[b].lastSeenISO||''));delete book[eligible[0]];
+  }
+  book[npcId]={npcId,householdId:n.householdId,visits:0,purchases:0,distinctDates:[],sessionIds:[],conversations:0,personId:null,lastSeenISO:null,lastOutcome:null};
+ }
+ return book[npcId];
+}
+function microbusinessAdjustReputation5D4(s,e,event,delta,reason){
+ const rep=microbusinessReputation5D4(s.businessId);if(!rep)return 0;
+ e.reputationEvents5D4=e.reputationEvents5D4||[];
+ if(e.reputationEvents5D4.includes(event))return 0;
+ const today=currentDate(),used=rep.dailyImpact[today]||0;
+ // Cap repeated stand sessions in one day; protect bounded neighborhood reputation.
+ const allowed=delta>0?Math.max(0,8-Math.max(0,used)):Math.max(-10-Math.min(0,used),delta);
+ const applied=delta>0?Math.min(delta,allowed):Math.max(delta,allowed);
+ e.reputationEvents5D4.push(event);
+ rep.score=clamp(rep.score+applied,0,100);
+ rep.dailyImpact[today]=used+applied;
+ if(applied>0)rep.positive+=applied;else if(applied<0)rep.negative+=Math.abs(applied);
+ rep.feedback.push({encounterId:e.id,event,delta:applied,dateISO:today,reason});
+ if(rep.feedback.length>80)rep.feedback.splice(0,rep.feedback.length-80);
+ if(S.neighborhood?.rep&&Number.isFinite(S.neighborhood.rep.business))S.neighborhood.rep.business=clamp(S.neighborhood.rep.business+applied,0,100);
+ return applied;
+}
+function microbusinessPromoteRegular5D4(s,e,entry){
+ if(!entry||entry.personId)return entry?.personId||null;
+ // A contact is established only through repeated transactions across different days,
+ // plus a real customer conversation. A transaction alone never establishes friendship.
+ if(entry.purchases<2||entry.distinctDates.length<2||entry.sessionIds.length<2||entry.conversations<1)return null;
+ const n=npcById(entry.npcId);if(!n)return null;
+ let p=(S.people||[]).find(p=>p.npcId===n.id);
+ if(!p){
+  if(S.people.filter(p=>!isFamilyPerson(p)).length>=50)return null;
+  p=personFromNpc(n,'friend','neighbor customer');
+  p.rel=22;p.trust=38;p.fun=45;p.respect=50;p.roleLabel='neighbor contact';
+  const place=D.standLocations.find(l=>l.id===s.location)?.name||s.location;
+  p.metAt=`at your ${BIZ_TYPES[s.businessType]?.label||s.businessType} stand (${place})`;
+  p.metVia='repeat neighborhood customer';p.metDate=currentDate();
+  if(typeof recordMeetingProvenance4A4==='function'){
+   const m=recordMeetingProvenance4A4(p,{sourceType:'neighborhood',metAt:p.metAt,metVia:p.metVia,knownSinceAge:S.age});
+   if(m){m.sourceType='neighborhood';m.metAt=p.metAt;m.metVia=p.metVia;}
+  }
+  S.people.push(p);
+  rememberPerson(p,'You talked while they returned to your neighborhood stand on another day.',1);
+ }
+ entry.personId=p.id;e.personId=p.id;e.customerType='familiar_neighbor';
+ return p.id;
+}
+function microbusinessCustomerSettlement5D4(s,e,stage){
+ if(!s||!e||!['sale','walk','complaint_resolved'].includes(stage)||microbusinessSession5D1(s.id)!==s||!s.customerEncounters?.includes(e))return false;
+ e.settlementStages5D4=e.settlementStages5D4||[];
+ if(e.settlementStages5D4.includes(stage))return false;
+ // Wait for an actual canonical sale receipt to avoid fictional positive feedback.
+ if(stage==='sale'&&!s.transactions.some(t=>t.kind==='sale'&&t.transactionId===e.saleTransactionId))return false;
+ if(stage==='complaint_resolved'&&(!e.saleTransactionId||!e.complaintResolution5D3))return false;
+ if(stage==='walk'&&!['walked_away'].includes(e.status))return false;
+ e.settlementStages5D4.push(stage);
+ if(stage==='sale'){
+  if(typeof microbusinessSaleEvidence5D5==='function')microbusinessSaleEvidence5D5(s,e);
+  const b=s.batches.find(b=>b.batchId===e.batchId),raw=b?.quality;
+  const quality=typeof raw==='number'?raw:({excellent:90,good:75,average:55,poor:25}[raw]||60);
+  const fair=e.paidTotal<=e.listedTotal;
+  const gained=e.status==='complaint'?-2:quality>=70&&fair?2:quality>=40&&fair?1:-1;
+  microbusinessAdjustReputation5D4(s,e,'sale',gained,e.status==='complaint'?'customer complained':fair?'quality and fair pricing':'quality or pricing concern');
+  if(e.status==='complaint')microbusinessAdjustReputation5D4(s,e,'complaint',-1,'unresolved customer complaint');
+ }else if(stage==='complaint_resolved'){
+  const delta={refund:2,replace:2,apologize:1,decline:-2}[e.complaintResolution5D3]||0;
+  microbusinessAdjustReputation5D4(s,e,'resolution',delta,`complaint ${e.complaintResolution5D3}`);
+ }else if(stage==='walk'&&e.outcome5D3==='refused'&&e.offerAccepted5D3>e.listedTotal*(e.budgetFactor||1)){
+  microbusinessAdjustReputation5D4(s,e,'refusal',-1,'price too high');
+ }
+ if(stage!=='complaint_resolved'&&e.customerKey5D4){
+  const entry=microbusinessCustomerBookEntry5D4(e.customerKey5D4);
+  if(entry){
+   entry.visits++;entry.lastSeenISO=currentDate();entry.lastOutcome=e.outcome5D3||e.status;
+   if(stage==='sale'){
+    entry.purchases++;
+    if(!entry.distinctDates.includes(s.dateISO))entry.distinctDates.push(s.dateISO);
+    if(!entry.sessionIds.includes(s.id))entry.sessionIds.push(s.id);
+    if(e.turns>0)entry.conversations++;
+    // Bound historical identifiers but preserve counts.
+    if(entry.distinctDates.length>24)entry.distinctDates=entry.distinctDates.slice(-24);
+    if(entry.sessionIds.length>24)entry.sessionIds=entry.sessionIds.slice(-24);
+    microbusinessPromoteRegular5D4(s,e,entry);
+   }
+  }
+ }
+ return true;
+}
+// PHASE 5D.5 — Actual-order Calendar commitments, bounded competition, family help, talent evidence.
+// Intentionally backend-only (5D.6 provides player UI); never replays historic income.
+const MICRO_ORDER_STATES_5D5=Object.freeze(['Scheduled','Due','Completed','Missed','Cancelled']);
+function microbusinessState5D5(){
+ const st=ensureMicrobusiness5D1();if(!Array.isArray(st.orders5D5))st.orders5D5=[];return st;
+}
+function migrateMicrobusiness5D5(){return {orders:microbusinessState5D5().orders5D5.length}}
+function microbusinessOrder5D5(id){return microbusinessState5D5().orders5D5.find(o=>o.id===id)||null}
+function microbusinessOrderCalendar5D5(o){return (S.calendar||[]).find(ev=>ev.id===`micro-order:${o.id}`)||null}
+function microbusinessMarketContext5D5(s){
+ if(!s)return {trafficDelta:0,scoreDelta:0,competition:0,communityEvent:false};
+ const rivals=(S.businesses||[]).filter(b=>b.id!==s.businessId&&b.status==='Open'&&b.location===s.location&&b.kind===s.businessType).length;
+ const competition=Math.min(3,rivals);
+ const communityEvent=(S.calendar||[]).some(ev=>ev.dateISO===currentDate()&&!isTerminal(ev.status)&&
+  ['neighborhood','community','festival','holiday','market'].some(term=>String(ev.type||'').toLowerCase().includes(term))&&
+  (!ev.location||ev.location===s.location||ev.location==='Neighborhood'));
+ const time=currentMinute(),peak=time>=660&&time<=1020;
+ // Existing 5D.3 weather rules stay authoritative. This adds ONLY modest local demand effects.
+ const trafficDelta=Math.max(-2,Math.min(2,(communityEvent?1:0)+(peak?1:0)-competition));
+ const scoreDelta=Math.max(-6,Math.min(6,(communityEvent?2:0)+(peak?1:0)-competition*2));
+ return {trafficDelta,scoreDelta,competition,communityEvent};
+}
+function microbusinessCaregiver5D5(personId){
+ return householdCaregivers().find(p=>p.id===personId&&!p.deceased&&!p.movedAway)||null;
+}
+function microbusinessFamilyHelp5D5(sessionId,personId,purpose){
+ const s=microbusinessSession5D1(sessionId);if(!s||!['planned','preparing','open'].includes(s.status))return {ok:false,reason:'invalid_session_state'};
+ if(s.dateISO!==currentDate())return {ok:false,reason:'session_expired'};
+ if(!['prepare','supervise','supplies','encourage'].includes(purpose))return {ok:false,reason:'invalid_help_type'};
+ const p=microbusinessCaregiver5D5(personId);if(!p)return {ok:false,reason:'caregiver_not_at_home'};
+ const gate=microbusinessEligibility5D1(s.businessType,s.location);if(!gate.ok)return gate;
+ const permission=microbusinessPermission5D1(s.businessType,s.location);if(!permission.ok)return {ok:false,reason:'permission_denied'};
+ s.familyHelp5D5=Array.isArray(s.familyHelp5D5)?s.familyHelp5D5:[];
+ const old=s.familyHelp5D5.find(x=>x.personId===personId&&x.purpose===purpose);
+ if(old)return {ok:old.accepted,reused:true,reason:old.accepted?'approved':'declined',help:old};
+ const context={sessionId:s.id,purpose,helperId:p.id,businessType:s.businessType};
+ // H3 remembers the result even if another button path repeats the same request.
+ const decision=requestDecision({requestType:'microbusinessFamilyHelp5D5',targetKey:`${s.id}:${personId}:${purpose}`,context,decide:(maker)=>{
+  const strict=Number(familyRules().strictness||0),trust=Number(S.family?.trust??50);
+  const score=clamp(76-strict*.24+(trust-50)*.18+(purpose==='supervise'?-6:0),15,95);
+  const roll=hashOf(`${maker?.id||'adult'}|${p.id}|${s.id}|${purpose}`)%100;
+  return {outcome:roll<score?'Yes':'No',resolved:true,reason:roll<score?'Caregiver agrees to help.':'Caregiver is unavailable or unwilling to help.'};
+ }});
+ if(!decision.record)return {ok:false,reason:'guardian_required'};
+ const accepted=['Yes','Approved'].includes(decision.record.outcome);
+ const help={personId:p.id,purpose,accepted,decisionId:decision.record.id,dateISO:currentDate(),minute:currentMinute()};
+ // 'supplies' is only an offer to help acquire supplies; 5D.2 still charges/consumes
+ // actual stock. No inventory, money, or receipts are generated by this approval.
+ s.familyHelp5D5.push(help);
+ return {ok:accepted,reason:accepted?'approved':'declined',help};
+}
+function microbusinessSupervisorGate5D5(s){
+ if(S.age>=12)return {ok:true};
+ const helpers=s.familyHelp5D5||[];
+ return helpers.some(h=>h.purpose==='supervise'&&h.accepted&&microbusinessCaregiver5D5(h.personId))?{ok:true}:{ok:false,reason:'adult_supervision_required'};
+}
+function microbusinessOrderCustomer5D5(s,npcId){
+ const book=microbusinessState5D4().customerBook5D4[npcId];
+ if(!book||book.purchases<1||!microbusinessNeighborCandidates5D4().some(n=>n.id===npcId))return false;
+ // Require actual matching same-business sale; a made-up book record is not enough.
+ return ensureMicrobusiness5D1().sessions.some(x=>x.businessId===s.businessId&&(x.customerEncounters||[]).some(e=>e.customerKey5D4===npcId&&
+   x.transactions.some(t=>t.kind==='sale'&&t.transactionId===e.saleTransactionId)));
+}
+function microbusinessCreateOrder5D5({requestId,sessionId,customerNpcId,productId,quantity,unitPrice,pickupDateISO,pickupMinute}={}){
+ const st=microbusinessState5D5(),key=typeof requestId==='string'?requestId.trim():'';
+ if(!/^[\w-]{5,80}$/.test(key))return {ok:false,reason:'invalid_request_id'};
+ const id=`order5d5:${key}`,sig=JSON.stringify({sessionId,customerNpcId,productId,quantity,unitPrice,pickupDateISO,pickupMinute});
+ const prior=microbusinessOrder5D5(id);if(prior)return prior.signature===sig?{ok:true,reused:true,order:prior}:{ok:false,reason:'order_id_conflict'};
+ const gate=microbusinessCustomerGate5D3(sessionId);if(!gate.ok)return gate;
+ const s=gate.session,supervision=microbusinessSupervisorGate5D5(s);if(!supervision.ok)return supervision;
+ if(s.businessType==='yard')return {ok:false,reason:'yard_orders_not_supported'};
+ const product=microbusinessBatchProduct5D2(s.businessType);
+ if(!product||product.id!==productId||!s.batches.some(b=>b.productId===productId&&b.source!=='unbacked'))return {ok:false,reason:'product_not_offered'};
+ if(!microbusinessOrderCustomer5D5(s,customerNpcId))return {ok:false,reason:'customer_not_established'};
+ if(!Number.isInteger(quantity)||quantity<1||quantity>12||!microbusinessPrice5D2(s.businessType,unitPrice))return {ok:false,reason:'invalid_order_terms'};
+ if(!s.batches.some(b=>b.productId===productId&&b.remaining>0&&b.unitPrice>=Number(unitPrice)))return {ok:false,reason:'price_exceeds_current_offer'};
+ if(typeof pickupDateISO!=='string'||!/^\d{4}-\d\d-\d\d$/.test(pickupDateISO)||!Number.isInteger(daysBetween(currentDate(),pickupDateISO))||daysBetween(currentDate(),pickupDateISO)<1||daysBetween(currentDate(),pickupDateISO)>7||addDays(currentDate(),daysBetween(currentDate(),pickupDateISO))!==pickupDateISO||!Number.isInteger(pickupMinute)||pickupMinute<540||pickupMinute>1080)return {ok:false,reason:'invalid_pickup_time'};
+ const same=st.orders5D5.filter(o=>o.businessId===s.businessId&&!['Cancelled','Completed','Missed'].includes(o.status));
+ if(same.length>=5||same.some(o=>o.customerNpcId===customerNpcId&&o.pickupDateISO===pickupDateISO))return {ok:false,reason:'order_capacity'};
+ const end=Math.min(1439,pickupMinute+60);
+ const conflicting=(S.calendar||[]).some(ev=>ev.dateISO===pickupDateISO&&!isTerminal(ev.status)&&ev.required!==false&&ev.type!=='microbusinessOrder'&&Number(ev.startMinute??0)<end&&pickupMinute<Number(ev.endMinute??1439));
+ if(conflicting)return {ok:false,reason:'calendar_conflict'};
+ const o={id,signature:sig,businessId:s.businessId,businessType:s.businessType,sourceSessionId:s.id,customerNpcId,productId,quantity,unitPrice:Number(unitPrice),pickupDateISO,pickupMinute,graceMinute:end,status:'Scheduled',createdDateISO:currentDate(),createdMinute:currentMinute(),saleTransactionId:null,fulfilledSessionId:null};
+ const event=createCalendarEvent({id:`micro-order:${id}`,type:'microbusinessOrder',title:`Customer pickup • ${BIZ_TYPES[s.businessType].name}`,dateISO:pickupDateISO,startMinute:pickupMinute,endMinute:end,graceMinute:end,location:s.location,required:true,category:'business',source:'microbusiness5D5',payload:{orderId:id}});
+ if(!event||event.payload?.orderId!==id)return {ok:false,reason:'calendar_unavailable'};
+ st.orders5D5.push(o);return {ok:true,order:o,calendarId:event.id};
+}
+function microbusinessOrderFeedback5D5(o,event,delta){
+ const source=microbusinessSession5D1(o.sourceSessionId);
+ if(!source||source.businessId!==o.businessId)return false;
+ // The existing 5D.4 reputation authority applies its normal daily bounds.
+ return microbusinessAdjustReputation5D4(source,o,event,delta,`customer order ${event}`);
+}
+function microbusinessOrderCalendarTick5D5(event){
+ const o=microbusinessOrder5D5(event?.payload?.orderId);
+ if(!o){setCalendarStatus(event,'Cancelled','Unlinked customer order');return false}
+ if(['Completed','Cancelled','Missed'].includes(o.status)){
+  if(!isTerminal(event.status))setCalendarStatus(event,o.status,'Already resolved');return false;
+ }
+ const source=microbusinessSource5D1(o.businessId);
+ if(!source||source.kind!==o.businessType){o.status='Cancelled';microbusinessOrderFeedback5D5(o,'business_unavailable',-2);setCalendarStatus(event,'Cancelled','Business unavailable');return true}
+ const now=stamp(currentDate(),currentMinute()),start=stamp(o.pickupDateISO,o.pickupMinute),end=stamp(o.pickupDateISO,o.graceMinute);
+ if(now>end){o.status='Missed';o.resolvedDateISO=currentDate();microbusinessOrderFeedback5D5(o,'pickup_missed',-3);setCalendarStatus(event,'Missed','Pickup missed');return true}
+ if(now>=start&&o.status==='Scheduled'){
+  o.status='Due';setCalendarStatus(event,'Due','Customer pickup window open');
+  if(!SIM.skipping)notify('Customer pickup due',`${BIZ_TYPES[o.businessType].name}: ${o.quantity} reserved for pickup.`,{sourceType:'microbusinessOrder',sourceId:event.id,tab:'business'});
+  return true;
+ }
+ return false;
+}
+function microbusinessFulfillOrder5D5(orderId,sessionId,batchId){
+ const o=microbusinessOrder5D5(orderId);if(!o)return {ok:false,reason:'unknown_order'};
+ if(o.status==='Completed')return {ok:true,reused:true,order:o};
+ if(['Missed','Cancelled'].includes(o.status))return {ok:false,reason:'order_closed'};
+ const event=microbusinessOrderCalendar5D5(o);if(!event)return {ok:false,reason:'calendar_missing'};
+ microbusinessOrderCalendarTick5D5(event);
+ if(['Missed','Cancelled'].includes(o.status))return {ok:false,reason:'order_closed'};
+ if(o.pickupDateISO!==currentDate()||currentMinute()<o.pickupMinute)return {ok:false,reason:'pickup_not_due'};
+ const gate=microbusinessCustomerGate5D3(sessionId);if(!gate.ok)return gate;
+ const s=gate.session,supervision=microbusinessSupervisorGate5D5(s);if(!supervision.ok)return supervision;
+ if(s.businessId!==o.businessId||s.businessType!==o.businessType)return {ok:false,reason:'wrong_business'};
+ const b=s.batches.find(x=>x.batchId===batchId);
+ if(!b||b.productId!==o.productId||b.remaining<o.quantity||b.unitPrice<o.unitPrice)return {ok:false,reason:'order_stock_or_price'};
+ if(!microbusinessOrderCustomer5D5(s,o.customerNpcId))return {ok:false,reason:'customer_not_established'};
+ const person=microbusinessState5D4().customerBook5D4[o.customerNpcId]?.personId;
+ const amount=MICRO_CENTS_5D2(o.quantity*o.unitPrice),txid=`micro5d5:sale:${o.id}`;
+ const sale=microbusinessCommit5D1(s.id,{transactionId:txid,kind:'sale',quantity:o.quantity,batchId,amount,encounterId:o.id,personId:person&&personById(person)?person:null});
+ if(!sale.ok)return sale;
+ o.status='Completed';o.saleTransactionId=txid;o.fulfilledSessionId=s.id;o.resolvedDateISO=currentDate();o.resolvedMinute=currentMinute();
+ setCalendarStatus(event,'Completed','Order collected and paid');
+ microbusinessOrderFeedback5D5(o,'pickup_completed',2);
+ microbusinessOrderEvidence5D5(s,o,sale.receipt);
+ return {ok:true,order:o,sale:sale.receipt};
+}
+function microbusinessCancelOrder5D5(orderId){
+ const o=microbusinessOrder5D5(orderId);if(!o)return {ok:false,reason:'unknown_order'};
+ if(o.status==='Cancelled')return {ok:true,reused:true,order:o};
+ if(['Completed','Missed'].includes(o.status))return {ok:false,reason:'order_closed'};
+ const event=microbusinessOrderCalendar5D5(o);if(!event)return {ok:false,reason:'calendar_missing'};
+ microbusinessOrderCalendarTick5D5(event);if(!['Scheduled','Due'].includes(o.status))return {ok:false,reason:'order_closed'};
+ o.status='Cancelled';o.resolvedDateISO=currentDate();microbusinessOrderFeedback5D5(o,'seller_cancelled',-1);setCalendarStatus(event,'Cancelled','Seller cancelled agreed order');return {ok:true,order:o};
+}
+function microbusinessSaleEvidence5D5(s,e){
+ if(!s||!e||e.talentRecorded5D5||!s.customerEncounters?.includes(e))return false;
+ const receipt=s.transactions.find(t=>t.kind==='sale'&&t.transactionId===e.saleTransactionId&&t.encounterId===e.id);
+ if(!receipt||receipt.quantity<1)return false;
+ e.talentRecorded5D5=true;
+ const basis={source:'served a paying customer',system:'microbusiness',eventId:`${receipt.transactionId}:business`,context:s.businessType,quality:1};
+ recordTalentEvidence('Business',basis);
+ if(e.turns>0)recordTalentEvidence('Leadership',{...basis,source:'guided a customer through a product choice',eventId:`${receipt.transactionId}:leadership`,quality:.6});
+ const batch=s.batches.find(b=>b.batchId===e.batchId);
+ if(['cookies','cupcakes'].includes(s.businessType)&&batch?.source==='baked_inventory')recordTalentEvidence('Cooking',{...basis,source:'sold personally baked food',eventId:`${receipt.transactionId}:cooking`,quality:.75});
+ return true;
+}
+function microbusinessOrderEvidence5D5(s,o,receipt){
+ if(!receipt||receipt.transactionId!==o.saleTransactionId||o.talentRecorded5D5)return false;
+ o.talentRecorded5D5=true;
+ recordTalentEvidence('Business',{source:'fulfilled a scheduled paying customer order',system:'microbusiness',eventId:`${receipt.transactionId}:order`,context:'special order',quality:1.2});
+ if((s.familyHelp5D5||[]).some(h=>h.accepted&&h.purpose==='prepare'))recordTalentEvidence('Leadership',{source:'coordinated family help for a completed order',system:'microbusiness',eventId:`${receipt.transactionId}:coordination`,context:'family assistance',quality:.6});
+ return true;
+}
+// PHASE 5D.6 — Compact, actual-button microbusiness integration.
+// Existing 5D.1–5D.5 receipts/Inventory/H3/Calendar remain authoritative.
+// Legacy businesses retain historical balances; opt-in only controls FUTURE auto-selling.
+function migrateMicrobusiness5D6(){
+ const st=ensureMicrobusiness5D1();
+ if(!st.ui5D6||typeof st.ui5D6!=='object'||Array.isArray(st.ui5D6))st.ui5D6={};
+ st.ui5D6.schemaVersion=1;
+ if(typeof st.ui5D6.message!=='string')st.ui5D6.message='';
+ return {schemaVersion:1,sessions:st.sessions.length};
+}
+function microbusinessUIMessage5D6(r,success='Updated'){
+ const ui=migrateMicrobusiness5D6()&&ensureMicrobusiness5D1().ui5D6;
+ ui.message=r?.ok?success:`Cannot do that: ${String(r?.reason||r?.permission?.reason||'unavailable').replace(/_/g,' ')}`;
+ return r;
+}
+function microbusinessActiveSession5D6(businessId){
+ return ensureMicrobusiness5D1().sessions.filter(s=>s.businessId===businessId&&!['completed','cancelled'].includes(s.status)).slice(-1)[0]||null;
+}
+function microbusinessStartBusiness5D6(kind,location){
+ const t=BIZ_TYPES[kind],loc=D.standLocations.find(x=>x.id===location);
+ if(!t||!loc)return {ok:false,reason:'unknown_business_or_location'};
+ if(bizActive().length>=BIZ_MAX||bizActive().some(b=>b.kind===kind))return {ok:false,reason:'business_limit_or_duplicate'};
+ const gate=microbusinessEligibility5D1(kind,location);if(!gate.ok)return gate;
+ const perm=microbusinessPermission5D1(kind,location);if(!perm.ok)return {ok:false,reason:'permission_denied'};
+ const b={id:uid('biz'),kind,name:t.name,location,price:t.yard?0:bizProduct({kind})?.basePrice||3,stock:0,quality:60,status:'Open',revenue:0,costs:0,customers:0,reputation:50,opened:currentDate(),listed:[],microbusinessMode5D6:true};
+ bizList().push(b);
+ const created=microbusinessCreateSession5D1({businessId:b.id});
+ if(!created.ok){S.businesses=S.businesses.filter(x=>x.id!==b.id);return created}
+ const prep=microbusinessTransition5D1(created.session.id,'preparing');
+ if(!prep.ok){S.businesses=S.businesses.filter(x=>x.id!==b.id);ensureMicrobusiness5D1().sessions=ensureMicrobusiness5D1().sessions.filter(s=>s.id!==created.session.id);return prep}
+ return {ok:true,business:b,session:created.session};
+}
+function microbusinessStartSession5D6(businessId){
+ const b=bizList().find(x=>x.id===businessId&&x.status==='Open');if(!b)return {ok:false,reason:'business_closed'};
+ const existing=microbusinessActiveSession5D6(businessId);
+ if(existing){
+  if(existing.dateISO===currentDate())return {ok:true,reused:true,session:existing};
+  // Old open sessions cannot transact on a new day; settle leftovers, without replaying sales.
+  if(existing.status==='planned')microbusinessTransition5D1(existing.id,'cancelled');
+  else microbusinessFinishStock5D2(existing.id,{action:'store',cancel:existing.status==='preparing'});
+  if(microbusinessActiveSession5D6(businessId))return {ok:false,reason:'prior_session_not_closed'};
+ }
+ const created=microbusinessCreateSession5D1({businessId});if(!created.ok)return created;
+ const moved=microbusinessTransition5D1(created.session.id,'preparing');if(!moved.ok)return moved;
+ // Switch off legacy automatic/shift income ONLY after permission and session creation succeed.
+ b.microbusinessMode5D6=true;
+ return {ok:true,session:created.session};
+}
+function microbusinessResumeLegacy5D6(businessId){
+ const b=bizList().find(x=>x.id===businessId&&x.status==='Open');
+ if(!b||!b.microbusinessMode5D6)return {ok:false,reason:'not_interactive_business'};
+ if(microbusinessActiveSession5D6(businessId))return {ok:false,reason:'finish_interactive_session_first'};
+ if(!(b.stock>0||(b.listed||[]).some(l=>!l.sold)))return {ok:false,reason:'no_legacy_stock'};
+ // No historical balances or stock are transferred or replayed; only the existing
+ // pre-5D operator is re-enabled while no canonical session is active.
+ b.microbusinessMode5D6=false;return {ok:true,business:b};
+}
+function microbusinessFinishSession5D6(sessionId,action='store'){
+ const s=microbusinessSession5D1(sessionId);if(!s)return {ok:false,reason:'unknown_session'};
+ if(s.status==='planned')return microbusinessTransition5D1(sessionId,'cancelled');
+ return microbusinessFinishStock5D2(sessionId,{action,cancel:s.status==='preparing'});
+}
+function microbusinessOption5D6(value,label){return `<option value="${esc(String(value))}">${esc(String(label))}</option>`}
+function microbusinessButtons5D6(items,id){return items.map(([action,text])=>`<button type="button" class="small ghost" data-micro-action="${action}" data-micro-session="${esc(id)}">${esc(text)}</button>`).join('')}
+function microbusinessSessionHtml5D6(b){
+ const s=microbusinessActiveSession5D6(b.id),history=ensureMicrobusiness5D1().sessions.filter(x=>x.businessId===b.id).slice(-3);
+ if(!s)return `<div class="micro-note"><button class="small primary" data-micro-action="session" data-micro-business="${esc(b.id)}">Prepare a selling session</button>${(b.stock>0||(b.listed||[]).some(l=>!l.sold))?`<small>Earlier purchased/listed legacy stock remains separate. No second charge or automatic transfer.</small>${b.microbusinessMode5D6?`<button class="small ghost" data-micro-action="legacy" data-micro-business="${esc(b.id)}">Return to classic selling with earlier stock</button>`:''}`:''}</div>${microbusinessHistoryHtml5D6(history)}`;
+ const prep=s.status==='preparing',open=s.status==='open',orders=(microbusinessState5D5().orders5D5||[]).filter(o=>o.businessId===b.id&&!['Completed','Missed','Cancelled'].includes(o.status));
+ const stock=s.batches.reduce((n,x)=>n+(x.remaining||0),0),rep=microbusinessReputation5D4(b.id)?.score??50;
+ const batches=s.batches.map(x=>`<div class="micro-line"><span>${esc(x.productId)} • ${x.remaining}/${x.quantity} • ${money(x.unitPrice)}${x.expiryDateISO?' • until '+esc(x.expiryDateISO):''}</span>${prep?`<label>Price <input type="number" min="0.5" max="500" step="0.01" data-micro-price="${esc(x.batchId)}" value="${x.unitPrice}"></label><button class="small ghost" data-micro-action="price" data-micro-session="${esc(s.id)}" data-micro-batch="${esc(x.batchId)}">Set price</button>`:''}</div>`).join('');
+ const financial=`<div class="micro-stats"><span>Stock <b>${stock}</b></span><span>Reputation <b>${Math.round(rep)}/100</b></span><span>Gross <b>${money(s.grossRevenue)}</b></span><span>Tips <b>${money(s.tips)}</b></span><span>Costs <b>${money(s.actualCosts)}</b></span><span>Refunds <b>${money(s.refunds)}</b></span><span>Net <b>${money(s.netProfit)}</b></span></div>`;
+ let work='';
+ if(prep){
+  const perishable=['cookies','cupcakes'].includes(s.businessType),yard=s.businessType==='yard';
+  const items=(S.inventoryItems||[]).filter(it=>yard?microbusinessValidateYardItem5D2(it.id,{sessionId:s.id}).ok:(s.businessType==='cookies'?['bakedCookies','heartCookies']:['cupcakes']).includes(it.key)&&!isSpoiled(it)&&!it.stored&&!it.opened).slice(0,60);
+  const stored=((S.businesses||[]).find(x=>x.id===b.id)?.storedBatches5D2||[]).filter(x=>x.status==='stored'&&(!x.expiryDateISO||x.expiryDateISO>=currentDate()));
+  work=`<div class="micro-prepare"><div class="micro-form" data-micro-form="${esc(s.id)}"><label>${yard?'Owned item':perishable?'Baked food from Inventory':'Supplies / saved stock'}<select data-micro-field="source">${yard||perishable?items.map(it=>microbusinessOption5D6(it.id,`${it.name} (${it.quantity||1})`)).join(''):microbusinessOption5D6('new','Buy real supplies')+stored.map(x=>microbusinessOption5D6('stored:'+x.id,`Reuse ${x.quantity} unsold (${x.productId})`)).join('')}</select></label><label>Quantity<input type="number" min="1" max="200" value="${yard?1:10}" data-micro-field="quantity"></label><label>Unit price<input type="number" min="0.5" max="500" step="0.01" value="${s.batches.slice(-1)[0]?.unitPrice||bizProduct(b)?.basePrice||3}" data-micro-field="price"></label><button class="small primary" data-micro-action="batch" data-micro-session="${esc(s.id)}" ${((yard||perishable)&&!items.length)?'disabled':''}>Prepare stock</button></div>${(yard||perishable)&&!items.length?`<small>${yard?'You need an eligible owned item.':'Bake food first, then return here.'}</small>`:''}</div><div class="inline-actions">${microbusinessButtons5D6([['open','Open for customers'],['cancel','Cancel session']],s.id)}</div>`;
+ }else if(open){
+  const e=s.customerEncounters.find(x=>['arrived','question','counter_offer','complaint'].includes(x.status));
+  const eventHtml=e?`<div class="micro-encounter"><b>${esc(e.customerType==='anonymous'?'A customer':e.customerType?.replace(/_/g,' ')||'Customer')}</b> wants ${e.quantity} × ${esc(s.batches.find(x=>x.batchId===e.batchId)?.productId||'item')}. Listed ${money(e.listedTotal)}${e.kind==='bargain'?`, offers ${money(e.offerTotal)}`:''}${e.counterTotal?`, counter ${money(e.counterTotal)}`:''}.<small>${esc(e.status==='complaint'?'Customer has raised a complaint.':e.status==='counter_offer'?'Awaiting decision on your counteroffer.':e.kind==='question'?'Customer is asking about quality or ingredients.':e.kind==='browse'?'Customer is browsing.':'Customer is considering the price.')}</small><div class="inline-actions">${e.status==='complaint'?microbusinessButtons5D6([['apologize','Apologize'],['refund','Refund'],...(s.businessType==='yard'?[]:[['replace','Replace']]),['complaint_decline','Decline complaint']],s.id):microbusinessButtons5D6([...(e.turns?[]:[['answer','Answer'],['recommend','Recommend']]),['keep_price','Keep price'],['discount','10% discount'],...(e.kind==='bargain'?[['counter','Counteroffer'],['accept_offer','Accept offer']]:[]),['decline','Decline sale']],s.id)}</div><input type="hidden" data-micro-encounter="${esc(e.id)}"></div>`:'';
+  work=`<div class="inline-actions"><button class="small primary" data-micro-action="customer" data-micro-session="${esc(s.id)}" ${e?'disabled':''}>${e?'Customer waiting':'Next customer'}</button>${microbusinessButtons5D6([['finish','Close & store unsold'],['discard','Close & discard unsold']],s.id)}</div>${eventHtml}${!e&&s.customerEncounters.length?`<small>${esc(s.customerEncounters.slice(-1)[0].outcome5D3||'Customer left')} • ${s.customerEncounters.length}/${s.customerLimit5D3??'?'} visits</small>`:''}`;
+ }
+ const caregivers=S.age<18&&['preparing','open'].includes(s.status)?householdCaregivers().filter(p=>p.id).slice(0,5):[];
+ const helpHtml=caregivers.length?`<details><summary>Family assistance</summary><div class="micro-form" data-micro-help="${esc(s.id)}"><select data-micro-helper>${caregivers.map(p=>microbusinessOption5D6(p.id,p.name)).join('')}</select><select data-micro-purpose>${[['supervise','Supervise'],['prepare','Help prepare'],['supplies','Help source supplies'],['encourage','Encourage']].map(x=>microbusinessOption5D6(...x)).join('')}</select><button class="small ghost" data-micro-action="help" data-micro-session="${esc(s.id)}">Ask caregiver</button></div><small>Permission uses household decisions; approval never creates free ingredients.</small></details>`:'';
+ const customerIDs=[...new Set(s.customerEncounters.filter(e=>e.saleTransactionId&&e.customerKey5D4&&microbusinessOrderCustomer5D5(s,e.customerKey5D4)).map(e=>e.customerKey5D4))];
+ const orderForm=open&&customerIDs.length&&s.businessType!=='yard'?`<details><summary>Schedule a returning customer order</summary><div class="micro-form" data-micro-order="${esc(s.id)}"><select data-micro-order-customer>${customerIDs.map(n=>microbusinessOption5D6(n,(S.npcs||[]).find(x=>x.id===n)?.firstName||n)).join('')}</select><select data-micro-order-batch>${s.batches.filter(x=>x.remaining>0).map(x=>microbusinessOption5D6(x.batchId,`${x.productId} (${x.remaining})`)).join('')}</select><label>Qty<input type="number" min="1" max="12" value="1" data-micro-order-qty></label><label>Pickup in days<input type="number" min="1" max="7" value="1" data-micro-order-days></label><label>Hour (9–18)<input type="number" min="9" max="18" value="12" data-micro-order-hour></label><button class="small primary" data-micro-action="order" data-micro-session="${esc(s.id)}">Schedule order</button></div></details>`:'';
+ const orderRows=orders.map(o=>`<div class="micro-line"><span>${esc(o.status)} • ${o.quantity} × ${esc(o.productId)} • ${esc(o.pickupDateISO)} ${timeLabel(o.pickupMinute)}</span><div class="inline-actions">${o.status==='Due'&&open?`<button class="small primary" data-micro-action="fulfill" data-micro-session="${esc(s.id)}" data-micro-order-id="${esc(o.id)}">Complete pickup</button>`:''}<button class="small ghost" data-micro-action="cancel_order" data-micro-order-id="${esc(o.id)}">Cancel order</button></div></div>`).join('');
+ const market=open?microbusinessMarketContext5D5(s):null;
+ return `<div class="micro-session"><div class="micro-line"><b>Interactive session • ${esc(s.status)}</b><small>${esc(s.dateISO)} • ${timeLabel(s.startMinute)}${market?` • nearby competitors ${market.competition}`:''}</small></div>${financial}${batches}${work}${helpHtml}${orderForm}${orderRows?`<details open><summary>Pickup commitments (${orders.length})</summary>${orderRows}</details>`:''}</div>${microbusinessHistoryHtml5D6(history)}`;
+}
+function microbusinessHistoryHtml5D6(rows){return rows.length?`<details class="micro-history"><summary>Session history (${rows.length} recent)</summary>${rows.map(s=>`<div class="micro-line"><span>${esc(s.dateISO)} • ${esc(s.status)}</span><small>Revenue ${money(s.grossRevenue)} • net ${money(s.netProfit)} • ${s.transactions.length} receipts</small></div>`).join('')}</details>`:''}
+function microbusinessClick5D6(button){
+ const d=button.dataset,action=d.microAction;if(!action)return false;
+ const id=d.microSession,s=id?microbusinessSession5D1(id):null;
+ const parent=button.closest('.micro-session,.biz-card,.business-builder')||document;
+ const field=(selector)=>parent.querySelector(selector);
+ let r={ok:false,reason:'unknown_action'},label='Updated';
+ if(action==='session'){r=microbusinessStartSession5D6(d.microBusiness);label='Business session ready';}
+ else if(action==='legacy'){r=microbusinessResumeLegacy5D6(d.microBusiness);label='Classic selling restored for earlier stock';}
+ else if(action==='batch'&&s){const form=field('[data-micro-form]'),source=form?.querySelector('[data-micro-field="source"]')?.value||'new',quantity=Number(form?.querySelector('[data-micro-field="quantity"]')?.value),unitPrice=Number(form?.querySelector('[data-micro-field="price"]')?.value),stored=source.startsWith('stored:');r=microbusinessPrepareBatch5D2(id,{batchId:`ui5d6:${id}:${s.batches.length+1}`,quantity,unitPrice,...(stored?{storedBatchId:source.slice(7)}:source==='new'?{}:{itemId:source})});label='Stock prepared';}
+ else if(action==='price'&&s){r=microbusinessSetPrice5D2(id,d.microBatch,Number(field(`[data-micro-price="${d.microBatch}"]`)?.value));label='Price updated';}
+ else if(action==='open'&&s){const gate=microbusinessSupervisorGate5D5(s);r=gate.ok?microbusinessTransition5D1(id,'open'):gate;label='Customers welcome';}
+ else if(action==='cancel'&&s){r=microbusinessFinishSession5D6(id,'store');label='Session cancelled';}
+ else if(action==='finish'&&s){r=microbusinessFinishSession5D6(id,'store');label='Unsold stock stored';}
+ else if(action==='discard'&&s){r=microbusinessFinishSession5D6(id,'discard');label='Unsold stock discarded';}
+ else if(action==='customer'&&s){r=microbusinessNextCustomer5D3(id);label=r.reused?'Existing customer still waiting':'Customer arrived';}
+ else if(['answer','recommend','keep_price','discount','counter','accept_offer','decline'].includes(action)&&s){const e=field('[data-micro-encounter]')?.dataset.microEncounter;r=microbusinessRespond5D3(id,e,action);label=r.encounter?.outcome5D3==='purchased'?'Sale completed':r.requiresResponse?'Customer conversation continues':'Customer decision recorded';}
+ else if(['apologize','refund','replace','complaint_decline'].includes(action)&&s){r=microbusinessResolveComplaint5D3(id,field('[data-micro-encounter]')?.dataset.microEncounter,action==='complaint_decline'?'decline':action);label='Complaint resolved';}
+ else if(action==='help'&&s){r=microbusinessFamilyHelp5D5(id,field('[data-micro-helper]')?.value,field('[data-micro-purpose]')?.value);label='Family request recorded';}
+ else if(action==='order'&&s){const form=field('[data-micro-order]'),batch=s.batches.find(x=>x.batchId===form?.querySelector('[data-micro-order-batch]')?.value);r=batch?microbusinessCreateOrder5D5({requestId:`ui-${s.id}-${microbusinessState5D5().orders5D5.length+1}`,sessionId:id,customerNpcId:form.querySelector('[data-micro-order-customer]').value,productId:batch.productId,quantity:Number(form.querySelector('[data-micro-order-qty]').value),unitPrice:batch.unitPrice,pickupDateISO:addDays(currentDate(),Number(form.querySelector('[data-micro-order-days]').value)),pickupMinute:Number(form.querySelector('[data-micro-order-hour]').value)*60}):{ok:false,reason:'no_stock'};label='Pickup added to Calendar';}
+ else if(action==='fulfill'&&s){const o=microbusinessOrder5D5(d.microOrderId),batch=s.batches.find(x=>x.productId===o?.productId&&x.remaining>=o.quantity&&x.unitPrice>=o.unitPrice);r=microbusinessFulfillOrder5D5(d.microOrderId,id,batch?.batchId||'');label='Pickup completed';}
+ else if(action==='cancel_order'){r=microbusinessCancelOrder5D5(d.microOrderId);label='Order cancelled';}
+ // Explicit gameplay actions consume time; read-only price edits, H3 questions and
+ // failed operations never advance the clock. The canonical receipt remains once-only.
+ if(r?.ok&&!r.reused){
+  const minutes=action==='batch'?20:action==='customer'?6:
+   ['answer','recommend','keep_price','discount','counter','accept_offer','decline','apologize','refund','replace','complaint_decline'].includes(action)?5:action==='order'?10:0;
+  if(minutes)advanceTime(minutes,{silent:true});
+ }
+ microbusinessUIMessage5D6(r,label);save();render();return true;
+}
+// PHASE 5D.7 — Final release guard for *interactive* under-12 operations.
+// The original legacy simulation and the 5D.1–5D.5 non-UI contract fixtures
+// remain backward-compatible; a business explicitly in interactive mode must
+// not bypass the same H3-backed caregiver supervision enforced by the UI.
+function microbusinessSupervisionGate5D7(session){
+ if(!session)return {ok:false,reason:'unknown_session'};
+ if(S.age>=12)return {ok:true};
+ const business=(S.businesses||[]).find(b=>b.id===session.businessId);
+ if(!business?.microbusinessMode5D6)return {ok:true};
+ return microbusinessSupervisorGate5D5(session);
+}
+// PHASE 6A.1 — Prom season foundation on the EXISTING S.school.prom and S.calendar.
+// Do not introduce a parallel student/notification/romance/calendar system.
+const PROM_FOUNDATION_SCHEMA_6A1=1;
+function promSeasonEligibility6A1(){
+ const sc=S?.school,g=gradeNumber(),sid=typeof playerCurrentSchoolId4A2==='function'?playerCurrentSchoolId4A2():null;
+ const stage=canonicalSchoolStage4A1(sc?.stage||stageOfSchool(sc));
+ if(!sc||!needsFormalSchool()||g<8||g>12||!['middle','high'].includes(stage)||!sid)
+  return {ok:false,reason:'Prom is only for eligible enrolled middle/high-school students in Grades 8–12.'};
+ if(!Number.isInteger(sc.yearKey))return {ok:false,reason:'School year not established.'};
+ return {ok:true,schoolId:sid,yearKey:sc.yearKey,grade:g,stage};
+}
+function promIdentity6A1(e=promSeasonEligibility6A1()){
+ if(!e.ok)return null;
+ const key=`${e.schoolId}:${e.yearKey}:g${e.grade}`;
+ return {key,eventId:`prom-${schoolSlug4A2(e.schoolId)}-${e.yearKey}-g${e.grade}`,schoolId:e.schoolId,yearKey:e.yearKey,grade:e.grade};
+}
+function promApprovedVenue6A1(schoolId){
+ const school=schoolById(schoolId);
+ // Future committee-approved alternatives are explicitly handled by 6A.2.
+ return `${school?.name||S.school?.name||'School'} Hall`;
+}
+function archiveProm6A1(pr){
+ if(!pr?.foundation6A1?.eventId)return;
+ S.promHistory6A1=Array.isArray(S.promHistory6A1)?S.promHistory6A1:[];
+ if(S.promHistory6A1.some(r=>r.eventId===pr.foundation6A1.eventId))return;
+ // Only facts already recorded in the player's actual Prom state are archived.
+ S.promHistory6A1.push({eventId:pr.foundation6A1.eventId,schoolId:pr.foundation6A1.schoolId,
+  yearKey:pr.year,grade:pr.foundation6A1.grade,dateISO:pr.dateISO,venue:pr.venue,
+  registrationStatus:pr.foundation6A1.registrationStatus,registrationDecisionDate:pr.foundation6A1.registrationDecisionDate||null,
+  eventStatus:pr.status,plan:pr.plan||null,
+  ...(pr.date6A3?.eventId===pr.foundation6A1.eventId?{date6A3:{...pr.date6A3,changes:(pr.date6A3.changes||[]).map(r=>({...r}))},asked:(pr.asked||[]).map(r=>({...r})),received:(pr.received||[]).map(r=>({...r}))}:{}),
+  ...(pr.night6B1?.eventId===pr.foundation6A1.eventId?{night6B1:JSON.parse(JSON.stringify(pr.night6B1))}:{}),
+  ...(pr.court6A4?.eventId===pr.foundation6A1.eventId?{court6A4:JSON.parse(JSON.stringify(pr.court6A4))}:{}),
+  ...(pr.social6A5?.eventId===pr.foundation6A1.eventId&&(pr.social6A5.actions?.length||pr.social6A5.rivalEncounters?.length||pr.social6A5.resultApplied)?{social6A5:JSON.parse(JSON.stringify(pr.social6A5))}:{}),
+  ...(pr.committee6A2?.eventId===pr.foundation6A1.eventId?{committee6A2:{eventId:pr.committee6A2.eventId,status:pr.committee6A2.status,applicationDate:pr.committee6A2.applicationDate||null,rolePreference:pr.committee6A2.rolePreference||null,assignedRole:pr.committee6A2.assignedRole||null,work:(pr.committee6A2.work||[]).map(w=>({...w})),theme:pr.committee6A2.theme||null,decor:pr.committee6A2.decor||null}}:{} )});
+ if(S.promHistory6A1.length>30)S.promHistory6A1.splice(0,S.promHistory6A1.length-30);
+}
+function promRegistrationOpen6A1(pr){
+ const f=pr?.foundation6A1;
+ return !!f&&f.registrationStatus==='not_registered'&&currentDate()>=f.announceDate&&currentDate()<=f.registrationDeadline&&currentDate()<pr.dateISO;
+}
+function promRegistered6A1(pr=S?.school?.prom){return pr?.foundation6A1?.registrationStatus==='registered'}
+function ensureProm6A1(){
+ const e=promSeasonEligibility6A1();if(!e.ok)return null;
+ const identity=promIdentity6A1(e),sc=S.school,d=promDateFor(e.yearKey);
+ let pr=sc.prom;
+ if(pr&&(pr.year!==e.yearKey||(pr.foundation6A1?.schoolId&&pr.foundation6A1.schoolId!==e.schoolId)
+  ||(pr.foundation6A1?.grade&&pr.foundation6A1.grade!==e.grade))){
+  if(typeof closePromCommittee6A2==='function')closePromCommittee6A2(pr,'School change or academic-year rollover');archiveProm6A1(pr);if(pr.foundation6A1){resolveNotificationsFor(`${pr.foundation6A1.eventId}:registration`);resolveNotificationsFor(`${pr.foundation6A1.eventId}:court_nominations`);resolveNotificationsFor(`${pr.foundation6A1.eventId}:court_voting`);const v=(S.calendar||[]).find(x=>x.id===`${pr.foundation6A1.eventId}:court-ballot`);if(v&&!isTerminal(v.status))setCalendarStatus(v,'Cancelled','Former school or academic year');}pr=null;sc.prom=null;
+ }
+ if(!pr){
+  if(d<=currentDate())return null; // No retrospective event/attendance from migration.
+  pr={year:e.yearKey,junior:e.grade<=9,dateISO:d,venue:promApprovedVenue6A1(e.schoolId),dress:'Formal',
+   status:'Upcoming',plan:null,partnerId:null,asFriends:false,asked:[],received:[],prep:{},committee:0,
+   ticket:e.grade<=9?20:40,ticketBought:false};sc.prom=pr;
+ }
+ // Past saves: never rewrite completed attendance, prior memories, or adjudicated Prom.
+ if(['Done','Skipped'].includes(pr.status)){if(typeof closePromCommittee6A2==='function')closePromCommittee6A2(pr,'Prom is complete');if(typeof reconcilePromSocial6A5==='function')reconcilePromSocial6A5(pr);if(typeof reconcilePromUi6A6==='function')reconcilePromUi6A6(pr);if(typeof reconcilePromNight6B1==='function')reconcilePromNight6B1(pr);return pr}
+ pr.asked=Array.isArray(pr.asked)?pr.asked:[];
+ pr.received=Array.isArray(pr.received)?pr.received:[];
+ pr.prep=pr.prep&&typeof pr.prep==='object'?pr.prep:{};
+ pr.dateISO=/^\d{4}-\d{2}-\d{2}$/.test(pr.dateISO||'')?pr.dateISO:d;
+ const f=pr.foundation6A1&&typeof pr.foundation6A1==='object'?pr.foundation6A1:{};
+ // Legacy 'prom-Y' must be mapped once to school/cohort-specific identity.
+ const oldId=f.eventId||`prom-${e.yearKey}`;
+ const legacy=S.calendar.find(v=>v.type==='prom'&&v.id===oldId&&!isTerminal(v.status));
+ const canonical=S.calendar.find(v=>v.type==='prom'&&v.id===identity.eventId);
+ if(legacy&&canonical&&legacy!==canonical)setCalendarStatus(legacy,'Cancelled','Duplicate prom identity');
+ else if(legacy&&!canonical)legacy.id=identity.eventId;
+ const venue=promApprovedVenue6A1(e.schoolId);
+ pr.venue=venue;
+ const announceDate=addDays(pr.dateISO,-28),deadline=addDays(pr.dateISO,-7);
+ // Persist registration once; do not infer registration from a legacy ticket, plan or date.
+ Object.assign(f,{schemaVersion:PROM_FOUNDATION_SCHEMA_6A1,eventId:identity.eventId,
+  schoolId:e.schoolId,yearKey:e.yearKey,grade:e.grade,announceDate,registrationDeadline:deadline,
+  registrationStatus:['not_registered','registered','declined','missed'].includes(f.registrationStatus)?f.registrationStatus:'not_registered',
+  announcementSent:!!f.announcementSent});
+ pr.foundation6A1=f;
+ // A resolved season cannot be re-opened by a migrated clock or a rerender.
+ if(!f.announcementSent&&currentDate()>=announceDate&&currentDate()<=deadline&&currentDate()<pr.dateISO){
+  f.announcementSent=true;pr.status='Season';
+  notify(`${pr.junior?'Junior Prom':'Prom'} registration open`,
+   `${formatDate(pr.dateISO)} • ${venue}. Register by ${formatDate(deadline)}; attendance is optional.`,
+   {sourceType:'promRegistration',sourceId:`${f.eventId}:registration`,tab:'home'});
+  if(!SIM.skipping){const th=thread('prom',f.eventId,'Prom season');threadStep(th,'Prom announced',`${formatDate(pr.dateISO)} at ${venue}`);
+   log('💃 Prom announced',`${formatDate(pr.dateISO)} at ${venue}. Registration closes ${formatDate(deadline)}.`,true)}
+ }
+ if(currentDate()>=announceDate&&currentDate()<=pr.dateISO&&pr.status==='Upcoming')pr.status='Season';
+ if(f.registrationStatus==='not_registered'&&(currentDate()>deadline||currentDate()>=pr.dateISO)){
+  f.registrationStatus='missed';f.registrationClosedDate=currentDate();
+  resolveNotificationsFor(`${f.eventId}:registration`);
+ }
+ if(f.registrationStatus!=='not_registered')resolveNotificationsFor(`${f.eventId}:registration`);
+ const found=S.calendar.find(v=>v.id===f.eventId&&v.type==='prom');
+ const ev=found||createCalendarEvent({id:f.eventId,type:'prom',title:pr.junior?'Junior Prom':'Prom',
+  dateISO:pr.dateISO,startMinute:1140,endMinute:1380,graceMinute:1230,location:venue,
+  schoolId:e.schoolId,payload:{year:e.yearKey,grade:e.grade,schoolId:e.schoolId,promSeasonId:f.eventId},required:false,source:'school'});
+ if(ev&&!isTerminal(ev.status)){
+  ev.location=venue;ev.dateISO=pr.dateISO;ev.schoolId=e.schoolId;
+  ev.payload={...ev.payload,year:e.yearKey,grade:e.grade,schoolId:e.schoolId,promSeasonId:f.eventId};
+ }
+ if(typeof reconcilePromCommittee6A2==='function')reconcilePromCommittee6A2(pr);
+ if(typeof promDateReconcile6A3==='function')promDateReconcile6A3(pr);
+ if(typeof reconcilePromCourt6A4==='function')reconcilePromCourt6A4(pr);
+ if(typeof reconcilePromSocial6A5==='function')reconcilePromSocial6A5(pr);
+ if(typeof reconcilePromUi6A6==='function')reconcilePromUi6A6(pr);
+ if(typeof reconcilePromNight6B1==='function')reconcilePromNight6B1(pr);
+ return pr;
+}
+function reconcilePromSeason6A1(){
+ if(!S?.school){if(S&&typeof promUiNoticeCleanup6A6==='function')promUiNoticeCleanup6A6(null);return;}
+ const pr=ensureProm6A1();if(!pr&&typeof promUiNoticeCleanup6A6==='function')promUiNoticeCleanup6A6(null);
+}
+function promRegistrationDecision6A1(decision){
+ const pr=ensureProm6A1(),f=pr?.foundation6A1;
+ if(!pr||!f)return {ok:false,reason:'not_eligible'};
+ if(!['register','decline'].includes(decision))return {ok:false,reason:'invalid_action'};
+ if(f.registrationStatus!=='not_registered')return {ok:false,reason:'already_decided'};
+ if(!promRegistrationOpen6A1(pr))return {ok:false,reason:'registration_closed'};
+ f.registrationStatus=decision==='register'?'registered':'declined';
+ f.registrationDecisionDate=currentDate();f.attendanceIntent=decision==='register'?'attend':'skip';
+ if(decision==='decline')pr.plan='skip';
+ resolveNotificationsFor(`${f.eventId}:registration`);
+ log('Prom registration',decision==='register'?`You registered for ${pr.junior?'Junior Prom':'Prom'} on ${formatDate(pr.dateISO)}. You can attend with a date, friends or alone.`:'You declined this year’s prom invitation.');
+ return {ok:true,status:f.registrationStatus,eventId:f.eventId};
+}
+function promFoundationHtml6A1(pr){
+ const f=pr.foundation6A1;if(!f)return '';
+ const reg=f.registrationStatus;
+ const headline=reg==='registered'?'Registered':reg==='declined'?'Declined':reg==='missed'?'Registration closed':'Registration is open';
+ return `<div class="prom-registration-6a1"><p class="muted-text">${esc(headline)} • Sign-up deadline ${formatDate(f.registrationDeadline)} • ${esc(pr.venue)}</p>`+
+  (promRegistrationOpen6A1(pr)?`<div class="inline-actions"><button class="small primary" data-prom-register6a1="register">Register for prom</button><button class="small ghost" data-prom-register6a1="decline">Do not participate</button></div>`:'')+
+  (reg==='registered'?'<p class="muted-text">You can choose a date, attend with friends or go alone. Committee applications are separate from guest registration.</p>':'')+
+  (typeof promCommitteeHtml6A2==='function'?promCommitteeHtml6A2(pr):'')+(typeof promCourtSummaryHtml6A4==='function'?promCourtSummaryHtml6A4(pr):'')+
+  (typeof promSocialHtml6A5==='function'?promSocialHtml6A5(pr):'')+'</div>';
+}
+function promFoundationClick6A1(b){
+ const action=b?.dataset?.promRegister6a1;if(!action)return false;
+ const result=promRegistrationDecision6A1(action);
+ if(!result.ok)toast(result.reason==='already_decided'?'Prom registration was already decided.':'Prom registration is unavailable.');
+ save();render();return true;
+}
+// PHASE 6A.2 — school-approved Prom committee and preparation, scoped to canonical Prom.
+// Organizer membership is a real 4B.1 school-organization membership, not a new council.
+const PROM_COMMITTEE_SCHEMA_6A2=1;
+const PROM_COMMITTEE_ROLES_6A2={decor:'Decorations',music:'Music & programme',logistics:'Venue logistics',publicity:'Publicity'};
+const PROM_COMMITTEE_THEMES_6A2={starlight:'Starlight',garden:'Garden Evening',classic:'Classic Formal'};
+const PROM_COMMITTEE_DECOR_6A2={simple:{label:'Reuse school decorations',cost:15},lights:{label:'Warm lights and fabric',cost:70},flowers:{label:'Paper flowers and backdrop',cost:45}};
+const PROM_COMMITTEE_TASKS_6A2={posters:{label:'Prepare school-approved posters',cost:15,role:'publicity'},playlist:{label:'Review music requests',cost:0,role:'music'},floorplan:{label:'Check seating and safe exits',cost:0,role:'logistics'},decorations:{label:'Set up approved decorations',cost:20,role:'decor'}};
+function promCommitteeDates6A2(pr){return {applicationDeadline:addDays(pr.dateISO,-18),decisionDate:addDays(pr.dateISO,-17),preparationDeadline:addDays(pr.dateISO,-2)}}
+function promCommitteeIdentity6A2(pr){return pr?.foundation6A1?.eventId||null}
+function promCommitteeOrganization6A2(pr){const sid=pr?.foundation6A1?.schoolId;return sid?ensureOrganization4B1({schoolId:sid,name:'Prom Planning Committee',type:'school_committee',memberIds:[],roles:[]}):null}
+function ensurePromCommittee6A2(pr=S.school?.prom){
+ const id=promCommitteeIdentity6A2(pr);if(!id||['Done','Skipped'].includes(pr.status))return null;
+ let c=pr.committee6A2;
+ if(!c||c.eventId!==id){c={schemaVersion:PROM_COMMITTEE_SCHEMA_6A2,eventId:id,schoolId:pr.foundation6A1.schoolId,status:'not_applied',applicationDate:null,rolePreference:null,assignedRole:null,decisionDateActual:null,noticeSent:false,decisionNoticeSent:false,decisionLocked:false,work:[],theme:null,decor:null,budgetAllocated:100,budgetSpent:0};pr.committee6A2=c}
+ const dates=promCommitteeDates6A2(pr);
+ Object.assign(c,{schemaVersion:PROM_COMMITTEE_SCHEMA_6A2,applicationDeadline:dates.applicationDeadline,decisionDate:dates.decisionDate,preparationDeadline:dates.preparationDeadline});
+ c.work=Array.isArray(c.work)?c.work:[];c.budgetAllocated=100;
+ c.budgetSpent=c.work.reduce((sum,w)=>sum+(PROM_COMMITTEE_TASKS_6A2[w.key]?.cost||0),0)+(PROM_COMMITTEE_DECOR_6A2[c.decor]?.cost||0);
+ return c;
+}
+function promCommitteeRoleContext6A2(){
+ const existing=typeof promOrganizationEligibility4B4==='function'?promOrganizationEligibility4B4():{ok:false};
+ // The 4B.4 check has no 6A.2 approval shortcut until there is a committee appointment.
+ const roles=typeof currentSchoolRoles4B4==='function'?currentSchoolRoles4B4('player'):[];
+ const priority=roles.some(x=>{const o=schoolOrganizationById4B1(x.organizationId);return o?.type==='student_council'||/event committee/i.test(o?.name||'')});
+ return {priority,source:priority?'school_leadership':existing.source||null};
+}
+function promCommitteeApplicationOpen6A2(pr){const c=ensurePromCommittee6A2(pr);return !!c&&c.status==='not_applied'&&currentDate()>=pr.foundation6A1.announceDate&&currentDate()<=c.applicationDeadline&&currentDate()<pr.dateISO}
+function promCommitteeScore6A2(priority){
+ const r=typeof ensureRep==='function'?ensureRep():{},behavior=Number(S.school?.behavior??70),attendance=Number(S.school?.attendance??96),teacher=teacherOpinion4B4();
+ return Math.round(behavior*.27+attendance*.18+teacher*.22+Math.min(100,Number(r.leadership||0))*.13+Math.min(100,Number(r.kindness||0))*.10+Math.min(100,Number(r.social||0))*.10+(priority?22:0)-Math.min(30,Number(r.troublemaker||0)*.2));
+}
+function applyPromCommittee6A2(role){
+ const pr=ensureProm6A1(),c=pr&&ensurePromCommittee6A2(pr);
+ if(!c)return {ok:false,reason:'no_eligible_prom'};
+ if(!PROM_COMMITTEE_ROLES_6A2[role])return {ok:false,reason:'invalid_role'};
+ if(!promCommitteeApplicationOpen6A2(pr))return {ok:false,reason:'application_closed_or_already_applied'};
+ const ctx=promCommitteeRoleContext6A2();c.status='applied';c.applicationDate=currentDate();c.rolePreference=role;c.applicationScore=promCommitteeScore6A2(ctx.priority);c.leadershipPriority=ctx.priority;c.leadershipSource=ctx.source;
+ resolveNotificationsFor(`${c.eventId}:committee_signup`);
+ if(!SIM.skipping)log('Prom planning application',`You apply for the ${PROM_COMMITTEE_ROLES_6A2[role]} team. The faculty adviser will decide on ${formatDate(c.decisionDate)}.`);
+ return {ok:true,status:c.status,decisionDate:c.decisionDate};
+}
+function declinePromCommittee6A2(){
+ const pr=ensureProm6A1(),c=pr&&ensurePromCommittee6A2(pr);
+ if(!c||!promCommitteeApplicationOpen6A2(pr))return {ok:false,reason:'application_unavailable'};
+ c.status='declined';c.applicationDate=currentDate();resolveNotificationsFor(`${c.eventId}:committee_signup`);
+ return {ok:true,status:c.status};
+}
+function promCommitteeApproved6A2(pr=S.school?.prom){const c=pr?.committee6A2,f=pr?.foundation6A1;return !!c&&!!f&&c.eventId===f.eventId&&c.schoolId===playerCurrentSchoolId4A2()&&c.status==='approved'&&c.decisionLocked&&currentDate()<=c.preparationDeadline&&currentDate()<pr.dateISO}
+function closePromCommittee6A2(pr,reason='Prom season ended'){
+ const c=pr?.committee6A2;if(!c||c.eventId!==pr?.foundation6A1?.eventId)return;
+ if(c.status==='approved'){c.status='closed';c.closedDate=c.closedDate||currentDate();c.closedReason=c.closedReason||reason}
+ const org=c.organizationId&&schoolOrganizationById4B1(c.organizationId);
+ if(org)org.memberIds=org.memberIds.filter(id=>id!=='player');
+ resolveNotificationsFor(`${c.eventId}:committee_signup`);
+}
+function reconcilePromCommittee6A2(pr=S.school?.prom){
+ const c=ensurePromCommittee6A2(pr);if(!c)return null;
+ const now=currentDate(),signupSource=`${c.eventId}:committee_signup`;
+ if(c.status==='not_applied'&&now>=pr.foundation6A1.announceDate&&now<=c.applicationDeadline&&!c.noticeSent){
+  c.noticeSent=true;notify('Prom planning committee applications',`Apply by ${formatDate(c.applicationDeadline)} for a faculty-approved planning role. Joining is optional.`,{sourceType:'promCommittee',sourceId:signupSource,tab:'home'});
+ }
+ if(c.status==='not_applied'&&now>c.applicationDeadline){c.status='missed';c.closedDate=now;resolveNotificationsFor(signupSource)}
+ if(c.status!=='not_applied')resolveNotificationsFor(signupSource);
+ if(c.status==='applied'&&!c.decisionLocked&&now>=c.decisionDate){
+  c.decisionLocked=true;c.decisionDateActual=now;
+  // One adviser decision from application-time school context. Reload cannot reroll it.
+  const approved=c.applicationScore>=63 || (c.leadershipPriority&&c.applicationScore>=50);
+  c.status=approved?'approved':'rejected';
+  if(approved){c.assignedRole=c.rolePreference;const org=promCommitteeOrganization6A2(pr);if(org&&!org.memberIds.includes('player'))org.memberIds.push('player');c.organizationId=org?.organizationId||null}
+ }
+ if(['approved','rejected'].includes(c.status)&&!c.decisionNoticeSent){
+  c.decisionNoticeSent=true;notify(c.status==='approved'?'Prom committee appointment approved':'Prom committee application not selected',c.status==='approved'?`The faculty adviser approved your ${PROM_COMMITTEE_ROLES_6A2[c.assignedRole]} role. Attend after-school planning sessions by ${formatDate(c.preparationDeadline)}.`:'The faculty adviser filled the available planning roles this year.',{sourceType:'promCommitteeDecision',sourceId:`${c.eventId}:committee_result`,tab:'home'});
+ }
+ if(c.status==='approved'&&(now>c.preparationDeadline||now>=pr.dateISO))closePromCommittee6A2(pr,'Preparation deadline passed')
+ return c;
+}
+function promCommitteeSessionGate6A2(pr=S.school?.prom){
+ const c=pr&&reconcilePromCommittee6A2(pr);
+ if(!c||!promCommitteeApproved6A2(pr))return {ok:false,reason:'Only faculty-approved current committee members may organize Prom before the preparation deadline.'};
+ const day=schoolDayState4C1();
+ if(!day.isSchoolDay||!day.afterSchoolWindow||!day.campusOpen||!day.atSchool)return {ok:false,reason:'Committee sessions take place at school after classes on an open school day.'};
+ if(currentMinute()+45>day.hours.campusClose)return {ok:false,reason:'There is not enough time before campus closes.'};
+ if(c.work.some(w=>w.dateISO===currentDate())||c.themeDate===currentDate()||c.decorDate===currentDate())return {ok:false,reason:'Only one committee responsibility per school day.'};
+ const conflict=timedSchoolConflict4C4(currentDate(),currentMinute(),currentMinute()+45,c.eventId);
+ if(conflict)return {ok:false,reason:`Planning conflicts with ${conflict.title}.`};
+ return {ok:true,committee:c};
+}
+function promCommitteeWork6A2(key){
+ const pr=ensureProm6A1(),cfg=PROM_COMMITTEE_TASKS_6A2[key],gate=promCommitteeSessionGate6A2(pr);
+ if(!cfg)return {ok:false,reason:'invalid_task'};if(!gate.ok)return gate;
+ const c=gate.committee;
+ if(c.work.some(w=>w.key===key))return {ok:false,reason:'already_completed'};
+ if(c.work.length>=3)return {ok:false,reason:'work_limit_reached'};
+ if(key==='decorations'&&!c.decor)return {ok:false,reason:'Choose an approved decoration plan first.'};
+ if(c.budgetSpent+cfg.cost>c.budgetAllocated)return {ok:false,reason:'School budget is insufficient.'};
+ c.work.push({key,dateISO:currentDate(),minutes:45,cost:cfg.cost,schoolId:c.schoolId,role:c.assignedRole});
+ c.budgetSpent+=cfg.cost;pr.committee=Math.max(Number(pr.committee)||0,c.work.length);
+ advanceTime(45,{silent:true});addRep('leadership',cfg.role===c.assignedRole?2:1);if(!SIM.skipping)log('Prom committee',`${cfg.label}. The ${PROM_COMMITTEE_ROLES_6A2[c.assignedRole]} team checks the results with the adviser.`);
+ return {ok:true,task:key,completed:c.work.length,budgetRemaining:c.budgetAllocated-c.budgetSpent};
+}
+function promCommitteeProposal6A2(kind,value){
+ const pr=ensureProm6A1(),gate=promCommitteeSessionGate6A2(pr);if(!gate.ok)return gate;
+ const c=gate.committee;
+ if(kind==='theme'){
+  if(!PROM_COMMITTEE_THEMES_6A2[value])return {ok:false,reason:'theme_not_school_approved'};
+  if(c.theme)return {ok:false,reason:'theme_already_selected'};
+  c.theme=value;c.themeDate=currentDate();
+ }else if(kind==='decor'){
+  const opt=PROM_COMMITTEE_DECOR_6A2[value];if(!opt)return {ok:false,reason:'decor_not_school_approved'};
+  if(c.decor)return {ok:false,reason:'decor_already_selected'};
+  if(c.budgetSpent+opt.cost>c.budgetAllocated)return {ok:false,reason:'school_budget_exceeded'};
+  c.decor=value;c.decorDate=currentDate();c.budgetSpent+=opt.cost;
+ }else return {ok:false,reason:'invalid_proposal'};
+ advanceTime(45,{silent:true});addRep('leadership',1);
+ if(!SIM.skipping)log('School-approved Prom planning',kind==='theme'?`The faculty adviser approves the ${PROM_COMMITTEE_THEMES_6A2[value]} theme.`:`The faculty adviser approves ${PROM_COMMITTEE_DECOR_6A2[value].label.toLowerCase()}.`);
+ return {ok:true,kind,value,budgetRemaining:c.budgetAllocated-c.budgetSpent};
+}
+function promCommitteeHtml6A2(pr){
+ const c=pr&&reconcilePromCommittee6A2(pr);if(!c)return '';
+ const status={not_applied:'Applications open',applied:'Awaiting faculty decision',approved:'Approved member',rejected:'Not selected',declined:'Declined',missed:'Application closed',closed:'Preparations closed'}[c.status]||c.status;
+ const selectButtons=c.status==='not_applied'&&promCommitteeApplicationOpen6A2(pr)?`<div class="inline-actions">${Object.entries(PROM_COMMITTEE_ROLES_6A2).map(([key,label])=>`<button class="small ghost" data-prom-committee6a2="apply:${key}">Apply: ${esc(label)}</button>`).join('')}<button class="small ghost" data-prom-committee6a2="decline">Do not apply</button></div>`:'';
+ let controls='';if(promCommitteeApproved6A2(pr)){
+  const gate=promCommitteeSessionGate6A2(pr);controls=`<p class="muted-text">Role: ${esc(PROM_COMMITTEE_ROLES_6A2[c.assignedRole]||'Member')} • School budget remaining ${money(c.budgetAllocated-c.budgetSpent)} • Sessions: after classes at school, one per day, by ${formatDate(c.preparationDeadline)}</p>`;
+  if(!c.theme)controls+=`<div class="inline-actions">${Object.entries(PROM_COMMITTEE_THEMES_6A2).map(([k,label])=>`<button class="small ghost" data-prom-committee6a2="theme:${k}">${esc(label)} theme</button>`).join('')}</div>`;
+  if(!c.decor)controls+=`<div class="inline-actions">${Object.entries(PROM_COMMITTEE_DECOR_6A2).map(([k,v])=>`<button class="small ghost" data-prom-committee6a2="decor:${k}">${esc(v.label)} • ${money(v.cost)}</button>`).join('')}</div>`;
+  controls+=`<div class="inline-actions">${Object.entries(PROM_COMMITTEE_TASKS_6A2).filter(([key])=>!c.work.some(w=>w.key===key)).map(([key,v])=>`<button class="small ghost" data-prom-committee6a2="work:${key}">${esc(v.label)}</button>`).join('')}</div>`;
+  if(!gate.ok)controls+=`<small class="muted-text">${esc(gate.reason)}</small>`;
+ }
+ return `<div class="prom-committee-6a2"><h4>School Prom committee • ${esc(status)}</h4><p class="muted-text">Faculty selection ${formatDate(c.decisionDate)} • Application deadline ${formatDate(c.applicationDeadline)} • Committee work closes ${formatDate(c.preparationDeadline)}. Organizing is not automatic.</p>${selectButtons}${controls}${c.work.length?`<small class="muted-text">Completed: ${c.work.map(w=>esc(PROM_COMMITTEE_TASKS_6A2[w.key]?.label||w.key)).join(' · ')}</small>`:''}</div>`;
+}
+function promCommitteeClick6A2(b){const action=b?.dataset?.promCommittee6a2;if(!action)return false;
+ const [kind,value]=action.split(':');let r;
+ if(kind==='apply')r=applyPromCommittee6A2(value);
+ else if(kind==='decline')r=declinePromCommittee6A2();
+ else if(kind==='theme'||kind==='decor')r=promCommitteeProposal6A2(kind,value);
+ else if(kind==='work')r=promCommitteeWork6A2(value);
+ else r={ok:false,reason:'invalid_action'};
+ if(!r.ok)toast(String(r.reason||'Prom committee action unavailable.').replaceAll('_',' '));save();render();return true;
+}
+// PHASE 6A.3 — Prom date invitations / consent / RSVP.
+// Extends S.school.prom asked[] / received[] and Phase 3B People; no parallel romance or calendar.
+const PROM_DATE_SCHEMA_6A3=1;
+function promDateEvent6A3(pr=S.school?.prom){return pr?.foundation6A1?.eventId||null}
+function promDateWindow6A3(pr=S.school?.prom){return !!pr&&pr.status==='Season'&&promRegistered6A1(pr)&&currentDate()>=pr.foundation6A1.announceDate&&currentDate()<=pr.dateISO&&(currentDate()<pr.dateISO||currentMinute()<1140)}
+function promDateStudent6A3(p){
+ if(!p||!S?.school||isFamilyPerson(p)||p.movedAway||!S.people?.some(x=>x.id===p.id))return false;
+ const age=personAge(p);if(!Number.isFinite(age)||age<13||age>18||Math.abs(age-S.age)>2)return false;
+ const n=p.npcId&&npcById(p.npcId);if(n&&(n.movedAway||npcEffectiveGradeNumber4A3(n)<8||npcEffectiveGradeNumber4A3(n)>12))return false;
+ return true;
+}
+function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&ensureRomanceProfile(p).romanceOpen&&!p.boundaries?.includes('notReady'));}
+function promDateBusyReason6A3(p,pr=S.school?.prom){
+ if(!promDateStudent6A3(p))return 'Not an eligible school-age guest';
+ const other=personPromWith(p);
+ if(other&&other!==S.name)return 'Already going with someone else';
+ if(p.datingNpc)return 'Dating someone else';
+ if(p.notGoingProm)return 'Not attending prom';
+ if(p.promUnavailableDateISO===pr.dateISO)return 'A conflicting family or school commitment';
+ return null;
+}
+function promDateStatus6A3(pr=S.school?.prom){return pr?.date6A3?.eventId===promDateEvent6A3(pr)?pr.date6A3:null;}
+function promDateClearPerson6A3(p,id){
+ if(!p)return;
+ if(p.promWith===S.name&&(p.promEventId6A3===id||!p.promEventId6A3))p.promWith=null;
+ if(p.promEventId6A3===id)p.promEventId6A3=null;
+ const n=p.npcId&&npcById(p.npcId);
+ if(n&&n.promWith===S.name&&(n.promEventId6A3===id||!n.promEventId6A3))n.promWith=null;
+ if(n&&n.promEventId6A3===id)n.promEventId6A3=null;
+}
+function promDateReconcile6A3(pr=S.school?.prom){
+ const id=promDateEvent6A3(pr);if(!id)return null;
+ // Pairings created in past school years do not reserve a student forever.
+ for(const o of [...(S.people||[]),...(S.npcs||[])]){
+  if(o.promEventId6A3&&o.promEventId6A3!==id){o.promEventId6A3=null;o.promWith=null;}
+ }
+ if(!pr.date6A3||pr.date6A3.eventId!==id){
+  pr.date6A3={schemaVersion:PROM_DATE_SCHEMA_6A3,eventId:id,partnerId:pr.partnerId||null,
+   mode:pr.partnerId?(pr.asFriends?'friends':'date'):null,changes:[],lastDecisionDate:null};
+ }
+ const d=pr.date6A3;d.schemaVersion=PROM_DATE_SCHEMA_6A3;d.changes=Array.isArray(d.changes)?d.changes:[];
+ pr.asked=Array.isArray(pr.asked)?pr.asked:[];pr.received=Array.isArray(pr.received)?pr.received:[];
+ for(const rec of [...pr.asked,...pr.received]){
+  // Old genuine records inherit only the current Prom identity; no decisions are synthesized.
+  if(!rec.eventId)rec.eventId=id;
+  if(!rec.requestId)rec.requestId=`${id}:${pr.asked.includes(rec)?'out':'in'}:${rec.personId}:${rec.dateISO||'legacy'}`;
+ }
+ if(pr.partnerId&&!personById(pr.partnerId)){
+  d.changes.push({dateISO:currentDate(),action:'date_unavailable',personId:pr.partnerId});pr.partnerId=null;pr.asFriends=false;d.partnerId=null;d.mode=null;
+ }
+ // Retire orphaned/open offers from a previous school/cohort, including after a transfer.
+ for(const e of S.events||[]){
+  if(e.type==='promInvite'&&e.status==='Open'&&e.payload?.promEventId&&e.payload.promEventId!==id)
+   supersedeEvent(e,'Prom school or school year changed');
+ }
+ // Pending RSVP must track the canonical event lifecycle, not stay actionable after expiry.
+ for(const r of pr.received){
+  if(r.status!=='Pending')continue;
+  const ev=r.eventResponseId&&(S.events||[]).find(e=>e.id===r.eventResponseId);
+  if(ev&&(ev.status!=='Open'||eventExpired(ev))){r.status='Expired';r.reason='Invitation expired unanswered';if(ev.status==='Open')supersedeEvent(ev,'Invitation expired');}
+ }
+ // Delayed answers and outstanding offers expire, without accepting or fabricating any reply.
+ if(!promDateWindow6A3(pr)){
+  for(const r of pr.asked)if(r.result==='Pending'){r.result='Expired';r.reason='Prom invitations are closed';}
+  for(const r of pr.received)if(['Pending','Waiting'].includes(r.status)){r.status='Expired';r.reason='Prom invitations are closed';}
+ }else{
+  for(const r of pr.received)if(r.status==='Waiting'&&r.deadline&&currentDate()>r.deadline){r.status='Expired';r.reason='The response window passed';}
+ }
+ // Persist the existing actual companion, never construct a relationship from mere RSVP.
+ d.partnerId=pr.partnerId||null;d.mode=pr.partnerId?(pr.asFriends?'friends':'date'):d.mode;
+ return d;
+}
+function promDateCommit6A3(pr,p,mode,source){
+ const d=promDateReconcile6A3(pr),id=promDateEvent6A3(pr);
+ if(!promDateWindow6A3(pr)||pr.partnerId||!promDateStudent6A3(p)||promDateBusyReason6A3(p,pr))return {ok:false,reason:'date_no_longer_available'};
+ pr.partnerId=p.id;pr.plan='date';pr.asFriends=mode==='friends';setPromWithPerson(p,S.name);
+ // One confirmed date: any competing outstanding requests lose their actionable status.
+ for(const r of pr.asked)if(r.result==='Pending'&&r.personId!==p.id){r.result='Withdrawn';r.reason='You confirmed another date';}
+ for(const r of pr.received)if(r.status==='Pending'&&r.personId!==p.id){r.status='Declined';r.reason='You already confirmed another date';const ev=(S.events||[]).find(e=>e.id===r.eventResponseId&&e.status==='Open');if(ev)supersedeEvent(ev,'Already accepted a different date');}
+ d.partnerId=p.id;d.mode=mode;d.lastDecisionDate=currentDate();
+ d.changes.push({dateISO:currentDate(),action:'accepted',personId:p.id,mode,source});
+ p.rel=clamp((p.rel||0)+(mode==='friends'?2:4));
+ rememberPerson(p,`Agreed to attend ${pr.junior?'Junior Prom':'Prom'} together${mode==='friends'?' as friends':''}.`,2);
+ const th=thread('prom',id,'Prom season');threadStep(th,mode==='friends'?'Going with a friend':'Got a prom date',displayName(p));
+ if(!SIM.skipping)log('Prom RSVP confirmed',`${displayName(p)} agreed to go ${mode==='friends'?'as friends':'as your date'}.`,true);
+ return {ok:true,status:'accepted',personId:p.id,mode};
+}
+function promCancelDate6A3(){
+ const pr=S.school?.prom,d=promDateStatus6A3(pr),p=pr?.partnerId&&personById(pr.partnerId);
+ if(!d||!promDateWindow6A3(pr)||!p)return {ok:false,reason:'no_changeable_date'};
+ const id=d.eventId,oldMode=pr.asFriends?'friends':'date';
+ promDateClearPerson6A3(p,id);pr.partnerId=null;pr.asFriends=false;pr.plan='wait';d.partnerId=null;d.mode=null;
+ d.changes.push({dateISO:currentDate(),action:'cancelled',personId:p.id,mode:oldMode});
+ p.rel=clamp((p.rel||0)-3);p.trust=clamp((p.trust??50)-2);
+ rememberPerson(p,'You explained you needed to change your Prom plans.',2);
+ if(!SIM.skipping)log('Prom plans changed',`You respectfully tell ${firstName(p)} you cannot go together after all. You can still go alone or with friends.`);
+ return {ok:true,personId:p.id};
+}
+function promDatePlan6A3(plan){
+ const pr=S.school?.prom;if(!['friends','alone','wait','skip'].includes(plan)||!promDateWindow6A3(pr))return {ok:false,reason:'unavailable'};
+ if(pr.partnerId){const result=promCancelDate6A3();if(!result.ok)return result;}
+ pr.plan=plan;const d=promDateStatus6A3(pr);if(d)d.changes.push({dateISO:currentDate(),action:'plan',plan});
+ if(!SIM.skipping)log('Prom plan',({friends:'You plan to attend with friends. No date is required.',alone:'You plan to enjoy prom solo.',wait:'You will wait and see.',skip:'You decide not to go to prom.'})[plan]);
+ return {ok:true,plan};
+}
+function promDateAskTarget6A3(personId){
+ if(String(personId).startsWith('npc:')){
+  const n=npcById(String(personId).slice(4));
+  if(!n||n.movedAway||npcAge(n)<13||npcAge(n)>18||Math.abs(npcAge(n)-S.age)>2||npcEffectiveGradeNumber4A3(n)<8)return null;
+  return addNeighborPerson(n,'neighbor');
+ }
+ return personById(personId);
+}
+function promDateCanAsk6A3(p,pr=S.school?.prom){
+ if(!promDateWindow6A3(pr))return {ok:false,reason:'Prom registration or invitation window is closed'};
+ if(!promDateStudent6A3(p))return {ok:false,reason:'Ineligible person'};
+ if(pr.partnerId)return {ok:false,reason:'You already have a date; change plans first'};
+ if(pr.asked.some(a=>a.personId===p.id))return {ok:false,reason:'Already asked this student for this Prom'};
+ if(pr.asked.some(a=>a.result==='Pending'))return {ok:false,reason:'Wait for the outstanding answer'};
+ if(pr.received.some(r=>r.personId===p.id&&r.status==='Pending'))return {ok:false,reason:'They already invited you; answer that invitation'};
+ return {ok:true};
+}
+function promDateAskModal6A3(personId){
+ const pr=S.school?.prom;if(!promDateWindow6A3(pr)){toast('Register for this Prom before inviting someone.');return;}
+ const p=promDateAskTarget6A3(personId),v=promDateCanAsk6A3(p,pr);
+ if(!v.ok){toast(v.reason);return}
+ openModal(`Ask ${displayName(p)} to prom`,`<p class="muted-text">They can say yes, suggest going as friends, ask for time, or decline. You do not need a romantic match to invite a friend.</p><div class="modal-action-grid">${Object.entries(PROM_APPROACH).filter(([k])=>k!=='text'||canUsePhone()).map(([k,l])=>`<button data-prom-approach="${k}" data-person-id="${esc(p.id)}">${esc(l)}${k==='gift'?` • ${money(8)}`:k==='promposal'?` • ${money(10)}`:''}</button>`).join('')}<button class="ghost" data-close-modal="1">Not yet</button></div>`);
+}
+function promDateAsk6A3(personId,approach){
+ const pr=ensureProm6A1();if(!promDateWindow6A3(pr))return {ok:false,reason:'Prom registration or invitation window is closed'};
+ const p=promDateAskTarget6A3(personId),v=promDateCanAsk6A3(p,pr);
+ if(!v.ok)return v;if(!PROM_APPROACH[approach])return {ok:false,reason:'unknown_approach'};
+ if(approach==='text'&&!canUsePhone())return {ok:false,reason:'phone_required'};
+ if(['gift','promposal'].includes(approach)&&!spendOwn(approach==='gift'?8:10))return {ok:false,reason:'insufficient_funds'};
+ closeChoiceModal();ensureRomanceProfile(p);
+ const id=promDateEvent6A3(pr),busy=promDateBusyReason6A3(p,pr),traits=p.traits||[],c=romanceCompatibility(p),romance=promRomancePossible6A3(p);
+ let result='Rejected',reason='Not interested',mode=null;
+ if(busy)reason=busy;
+ else if(approach==='public'&&(traits.includes('Shy')||p.boundaries?.includes('noPublicAffection')))reason='Uncomfortable with a public invitation';
+ else if((p.conflict||0)>28)reason='A recent disagreement';
+ else if((p.rel||0)<35)reason='Not close enough yet';
+ else{
+  const bonus=approach==='private'&&traits.includes('Shy')?10:approach==='public'&&traits.includes('Outgoing')?8:approach==='promposal'?5:0;
+  const score=(p.rel||0)*.43+(p.trust??50)*.2+(romance?(c.score||0)*.28:10)+bonus-(p.conflict||0)*.3;
+  const roll=hashOf(`${id}:${p.id}:${approach}:answer`)%27;
+  if(romance&&S.romance?.partnerId===p.id){result='Accepted';reason='Already together';mode='date'}
+  else if(romance&&score+roll>=77){result='Accepted';reason='Mutual interest and availability';mode='date'}
+  else if((p.rel||0)>=50&&score+roll>=51){result='Accepted as friends';reason=romance?'Would rather go as friends':'Happy to attend as friends';mode='friends'}
+  else if(traits.includes('Shy')||p.boundaries?.includes('needsTime')){result='Pending';reason='Needs time to decide'}
+  else reason=romance?'Not ready for a prom date':'Already has other plans with friends';
+ }
+ const rec={eventId:id,requestId:`${id}:out:${p.id}`,personId:p.id,dateISO:currentDate(),approach,result,reason};
+ if(result==='Pending'){
+  rec.deadline=addDays(currentDate(),2);scheduleFollowUp('promAnswer',{eventId:id,personId:p.id,requestId:rec.requestId},{days:2,minute:1020});
+ }
+ pr.asked.push(rec);
+ if(mode){const done=promDateCommit6A3(pr,p,mode,'player_invitation');if(!done.ok){rec.result='Rejected';rec.reason=done.reason;result='Rejected'}}
+ if(result==='Rejected'){p.rel=clamp((p.rel||0)-1);rememberPerson(p,`You invited them to Prom. They declined: ${rec.reason}.`,1)}
+ else if(result==='Pending')rememberPerson(p,'You invited them to Prom. They asked for time to consider.',1);
+ const th=thread('prom',id,'Prom season');threadStep(th,result,`${displayName(p)} — ${rec.reason}`);
+ recordOutcome('Prom',`Invited ${displayName(p,'formal')} (${PROM_APPROACH[approach]})`,result,rec.reason);
+ advanceTime(20);if(!SIM.skipping)log(`Prom invitation: ${result}`,`${firstName(p)} ${result==='Pending'?'wants time to decide':result==='Rejected'?'declines politely':mode==='friends'?'agrees to go as a friend':'accepts your invitation'}. ${rec.reason}.`,!!mode);
+ return {ok:true,eventId:id,personId:p.id,result,reason:rec.reason};
+}
+function npcAsksToProm(p){
+ const pr=S.school?.prom;if(!promDateWindow6A3(pr)||!promDateStudent6A3(p)||(!promRomancePossible6A3(p)&&(p.rel||0)<55)||pr.partnerId||promDateBusyReason6A3(p,pr)||pr.received.some(r=>r.personId===p.id)||pr.received.length>=3||pr.received.some(r=>r.status==='Pending'))return null;
+ const id=promDateEvent6A3(pr),rec={eventId:id,requestId:`${id}:in:${p.id}`,personId:p.id,dateISO:currentDate(),status:'Pending'};
+ const e=queueEvent({type:'promInvite',title:`${displayName(p)} asks about prom`,text:`${firstName(p)} asks whether you would like to go to ${pr.junior?'Junior Prom':'Prom'} together. You can also suggest going as friends.`,participants:[p.id],payload:{promEventId:id,requestId:rec.requestId},priority:4,expiresDays:2,choices:[...(promRomancePossible6A3(p)?[{id:'accept',label:'Accept as a date'}]:[]),{id:'friends',label:'Suggest going as friends'},{id:'time',label:'Ask for time'},{id:'decline',label:'Politely decline'},...(pr.partnerId?[{id:'have',label:'I already have a date'}]:[])]});
+ if(!e)return null;rec.eventResponseId=e.id;pr.received.push(rec);return e;
+}
+function handlePromInvite(e,choice){
+ const pr=S.school?.prom,id=promDateEvent6A3(pr),p=personById(e?.participants?.[0]);
+ if(!e||e.type!=='promInvite'||!p||!id)return true;
+ const rec=pr.received.find(r=>r.personId===p.id&&r.eventId===id&&r.requestId===e.payload?.requestId);
+ if(!rec||rec.status!=='Pending'||e.payload?.promEventId!==id||rec.eventResponseId!==e.id||!promDateWindow6A3(pr)||eventExpired(e))return true;
+ if(!['accept','friends','time','decline','have'].includes(choice))return true;
+ if(['accept','friends'].includes(choice)){
+  if(pr.partnerId||promDateBusyReason6A3(p,pr)){rec.status='Declined';rec.reason='A date is no longer available';return true}
+  // A romantic RSVP is never converted into an automatic platonic yes.
+  if(choice==='accept'&&!promRomancePossible6A3(p)){
+   rec.status='Declined';rec.reason='Romantic compatibility or consent is missing';
+   if(!SIM.skipping)log('Prom RSVP',`${firstName(p)} is not available for a romantic Prom date. Going together as friends is a separate choice.`);
+   return true;
+  }
+  const mode=choice==='accept'?'date':'friends';
+  const saved=promDateCommit6A3(pr,p,mode,'npc_invitation');rec.status=saved.ok?(mode==='friends'?'Accepted as friends':'Accepted'):'Declined';rec.reason=saved.ok?'Mutual invitation':saved.reason;
+ }else if(choice==='time'){
+  rec.status='Waiting';rec.deadline=addDays(currentDate(),2);scheduleFollowUp('promTimeout',{eventId:id,personId:p.id,requestId:rec.requestId},{days:2,minute:1080});
+  if(!SIM.skipping)log('Prom RSVP deferred',`You ask ${firstName(p)} for time. They can make other plans after ${formatDate(rec.deadline)}.`);
+ }else{
+  rec.status='Declined';rec.reason=choice==='have'?'Already going with someone':'Politely declined';p.rel=clamp((p.rel||0)-1);
+  rememberPerson(p,'You respectfully declined their Prom invitation.',1);
+  if(!SIM.skipping)log('Prom invitation declined',`You thank ${firstName(p)} for asking and explain that you will not go together.`);
+ }
+ rec.decisionDate=currentDate();return true;
+}
+function promFollowUp6A3(f){
+ if(!['promTimeout','promAnswer'].includes(f?.type))return false;
+ const pr=S.school?.prom,id=promDateEvent6A3(pr),p=personById(f.payload?.personId);
+ if(!pr||!id||!p||f.payload?.eventId&&f.payload.eventId!==id||!promDateWindow6A3(pr))return true;
+ const list=f.type==='promAnswer'?pr.asked:pr.received;
+ const rec=list.find(r=>r.personId===p.id&&r.eventId===id&&(!f.payload?.requestId||r.requestId===f.payload.requestId)&&(!f.payload?.eventId?f.createdDate===r.dateISO:true)&&r[f.type==='promAnswer'?'result':'status']===(f.type==='promAnswer'?'Pending':'Waiting'));
+ if(!rec)return true;
+ if(f.type==='promTimeout'){
+  rec.status='Expired';rec.reason='The reply deadline passed';if(!SIM.skipping)log('Prom invitation expired',`${firstName(p)} made other plans after the reply window closed.`);return true;
+ }
+ const reason=promDateBusyReason6A3(p,pr),canAccept=!pr.partnerId&&!reason;
+ const friendshipPossible=(p.rel||0)>=45;
+ // Pending does not guarantee a yes. Original compatibility, trust and agency still count.
+ const romantic=promRomancePossible6A3(p),score=(p.rel||0)*.43+(p.trust??50)*.2+(romantic?romanceCompatibility(p).score*.28:10);
+ const yes=canAccept&&(score+hashOf(`${id}:${p.id}:delayed`)%21>=75);
+ const asFriends=canAccept&&!yes&&friendshipPossible&&(score+hashOf(`${id}:${p.id}:friends`)%23>=62);
+ if(yes||asFriends){const committed=promDateCommit6A3(pr,p,yes?'date':'friends','delayed_response');rec.result=committed.ok?(yes?'Accepted':'Accepted as friends'):'Rejected';rec.reason=committed.ok?'Accepted after thinking it over':committed.reason;}
+ else{rec.result='Rejected';rec.reason=reason||'Decided not to go together';}
+ if(!SIM.skipping)log('Prom invitation answered',`${firstName(p)} ${rec.result==='Rejected'?'says no':'says yes'}. ${rec.reason}.`,rec.result!=='Rejected');return true;
+}
+function promDateSummaryHtml6A3(pr=S.school?.prom){
+ const d=promDateStatus6A3(pr);if(!d||!promRegistered6A1(pr))return '';
+ const p=pr.partnerId&&personById(pr.partnerId),pending=pr.asked.find(a=>a.result==='Pending');
+ return `<div class="prom-date-6a3"><h4>Prom invitations & RSVP</h4>`+
+  `<p class="muted-text">${p?`Confirmed ${pr.asFriends?'friend':'date'}: ${esc(displayName(p))}`:pending?`Waiting for ${esc((personById(pending.personId)?displayName(personById(pending.personId)):'a student'))} to answer by ${formatDate(pending.deadline)}.`:pr.plan==='friends'?'Going with your friends; no date needed.':pr.plan==='alone'?'Going alone; no date needed.':'No date confirmed. You can still attend.'}</p>`+
+  (p&&promDateWindow6A3(pr)?'<button class="small ghost" data-prom-date6a3="cancel">Cancel this date respectfully / change plans</button>':'')+
+  (pr.asked.length?`<details><summary>Invitations sent (${pr.asked.length})</summary>${pr.asked.map(a=>`<p class="muted-text">${esc(personById(a.personId)?displayName(personById(a.personId)):a.personId)}: ${esc(a.result)}${a.reason?' — '+esc(a.reason):''}</p>`).join('')}</details>`:'')+
+  (pr.received.length?`<details><summary>Invitations received (${pr.received.length})</summary>${pr.received.map(a=>`<p class="muted-text">${esc(personById(a.personId)?displayName(personById(a.personId)):a.personId)}: ${esc(a.status)}</p>`).join('')}</details>`:'')+'</div>';
+}
+function promDateClick6A3(b){if(b?.dataset?.promDate6a3!=='cancel')return false;const r=promCancelDate6A3();if(!r.ok)toast('No current confirmed Prom date to cancel.');save();render();return true;}
+// Preserve original preparation and panel markup; append only checkpoint-specific RSVP details.
+function promHtml(){const html=promHtmlLegacy6A3();return html&&promRegistered6A1(S.school?.prom)?html.replace(/<\/div>$/,promDateSummaryHtml6A3()+'</div>'):html;}
+function promAskTarget(id){return promDateAskTarget6A3(id)}
+function promAskModal(id){return promDateAskModal6A3(id)}
+function askToProm(id,approach){const result=promDateAsk6A3(id,approach);if(!result.ok)toast(result.reason);return result;}
+function setPromPlan(plan){if(plan==='committee'){toast('Only approved committee members may organize Prom.');return;}const r=promDatePlan6A3(plan);if(!r.ok)toast(r.reason);return r;}
+function promClick(b){if(promDateClick6A3(b))return true;return promClickLegacy6A3(b)}
+
+function setPromWithNpc(npcId,name){
+ setPromWithNpcLegacy6A3(npcId,name);
+ const id=promDateEvent6A3();if(!id)return;
+ const n=npcById(npcId);if(n)n.promEventId6A3=id;
+ for(const p of S.people||[])if(p.npcId===npcId)p.promEventId6A3=id;
+}
+function setPromWithPerson(p,name){
+ setPromWithPersonLegacy6A3(p,name);
+ const id=promDateEvent6A3();if(id&&p)p.promEventId6A3=id;
+}
+// PHASE 6A.4 — event-bound Prom Court, on existing school/prom/calendar/NPC records.
+// This is a school ballot, not a replacement for the Phase 4B Student Council elections.
+const PROM_COURT_SCHEMA_6A4=1;
+const PROM_COURT_CATEGORIES_6A4={king:'Prom King',queen:'Prom Queen',royalty:'Prom Royalty'};
+function promCourtCategory6A4(g){const x=String(g||'').toLowerCase();return /female|girl|woman/.test(x)?'queen':/male|boy|man/.test(x)?'king':'royalty'}
+function promCourtDates6A4(pr){return {nominationOpen:addDays(pr.dateISO,-21),nominationClose:addDays(pr.dateISO,-15),ballotOpen:addDays(pr.dateISO,-14),ballotClose:addDays(pr.dateISO,-4),resultDate:addDays(pr.dateISO,-3)}}
+function promCourtSchoolPeer6A4(n,pr){
+ if(!n||n.movedAway||!n.id||!pr?.foundation6A1)return false;
+ // NPC school enrollment is the existing 4A.3 authority; never infer from name/age alone.
+ return n.currentSchoolId===pr.foundation6A1.schoolId&&gradeNumberFromLabel4A3(n.schoolGrade)===pr.foundation6A1.grade&&npcAge(n)>=13&&npcAge(n)<=18;
+}
+function promCourtPlayerEligible6A4(pr){
+ const f=pr?.foundation6A1,r=ensureRep();
+ return !!f&&f.schoolId===playerCurrentSchoolId4A2()&&promSeasonEligibility6A1().ok&&promSeasonEligibility6A1().grade===f.grade
+  &&promRegistered6A1(pr)&&S.school.behavior>=55&&S.school.attendance>=65&&(r.troublemaker||0)<70&&pr.plan!=='skip';
+}
+function promCourtPlayerStrength6A4(){const r=ensureRep(),friends=(S.people||[]).filter(p=>!isFamilyPerson(p)&&p.rel>=65&&schoolRelationNow4A4(p)!=='differentSchool').length;
+ return Math.round(clamp(13+(r.social||0)*.28+(r.leadership||0)*.07+(r.kindness||0)*.08-(r.troublemaker||0)*.20+(S.looks??50)*.15+schoolAverage()*.06+(S.smart??50)*.03+(S.school.behavior??70)*.08+(S.school.attendance??85)*.05+Math.min(9,friends*1.5)));
+}
+function promCourtNpcStrength6A4(n){const tr=n.traits||[];return Math.round(clamp(20+(n.reputation??35)*.48+(n.looks??50)*.17+(n.smart??50)*.06+(tr.includes('Outgoing')?7:0)+(tr.includes('Kind')?5:0)+(tr.includes('Ambitious')?4:0)-(tr.includes('Troublemaker')?9:0),0,100))}
+function promCourtRoster6A4(pr){return (S.npcs||[]).filter(n=>promCourtSchoolPeer6A4(n,pr)).sort((a,b)=>String(a.id).localeCompare(String(b.id)))}
+function promCourtEnsurePeers6A4(pr){
+ let pool=promCourtRoster6A4(pr),attempt=0;
+ // Reuse existing household / NPC-school generator. Peers persist as real NPCs.
+ while(attempt++<16&&(pool.filter(n=>promCourtCategory6A4(n.gender)==='king').length<3||pool.filter(n=>promCourtCategory6A4(n.gender)==='queen').length<3)){
+  generateHousehold({kids:1,childAge:S.age,schoolId:pr.foundation6A1.schoolId,schoolGrade:S.school.grade,schoolClass:S.school.className});
+  pool=promCourtRoster6A4(pr);
+ }
+ return pool;
+}
+function promCourtRecord6A4(pr=S?.school?.prom){return pr?.foundation6A1&&pr.court6A4?.eventId===pr.foundation6A1.eventId?pr.court6A4:null}
+function ensurePromCourt6A4(pr=S?.school?.prom){
+ const f=pr?.foundation6A1;if(!f||['Done','Skipped'].includes(pr.status))return promCourtRecord6A4(pr);
+ const id=f.eventId;if(!pr.court6A4||pr.court6A4.eventId!==id){
+  pr.court6A4={schemaVersion:PROM_COURT_SCHEMA_6A4,eventId:id,schoolId:f.schoolId,grade:f.grade,nominationRequested:false,nominationRequestDate:null,
+   nominees:[],rosterIds:[],ballots:[],results:null,nominationsLocked:false,ballotLocked:false,nominationNotified:false,voteNotified:false};
+ }
+ const c=pr.court6A4;Object.assign(c,{schemaVersion:PROM_COURT_SCHEMA_6A4,...promCourtDates6A4(pr)});
+ c.nominees=Array.isArray(c.nominees)?c.nominees:[];c.ballots=Array.isArray(c.ballots)?c.ballots:[];
+ c.rosterIds=Array.isArray(c.rosterIds)?c.rosterIds:[];
+ return c;
+}
+function promCourtRequest6A4(){
+ const pr=ensureProm6A1(),c=pr&&ensurePromCourt6A4(pr);
+ if(!c||c.nominationsLocked||c.nominationRequested)return {ok:false,reason:'already_closed_or_requested'};
+ if(currentDate()<c.nominationOpen||currentDate()>c.nominationClose)return {ok:false,reason:'nomination_window_closed'};
+ if(!promCourtPlayerEligible6A4(pr))return {ok:false,reason:'school_conduct_or_registration'};
+ c.nominationRequested=true;c.nominationRequestDate=currentDate();c.nominationStrength=promCourtPlayerStrength6A4();
+ resolveNotificationsFor(`${c.eventId}:court_nominations`);
+ return {ok:true,status:'requested',category:promCourtCategory6A4(playerGender())};
+}
+function promCourtFreezeNominations6A4(pr,c){
+ if(c.nominationsLocked)return;
+ const peers=promCourtEnsurePeers6A4(pr),category=promCourtCategory6A4(playerGender());
+ const candidates=[];
+ for(const cat of ['king','queen','royalty']){
+  // Prom Royalty is an inclusive open ballot only if a nonbinary player/peer needs a category.
+  if(cat==='royalty'&&category!=='royalty'&&!peers.some(n=>promCourtCategory6A4(n.gender)==='royalty'))continue;
+  const options=(cat==='royalty'?peers.filter(n=>!candidates.some(x=>x.personId===n.id)):peers.filter(n=>promCourtCategory6A4(n.gender)===cat))
+   .map(n=>({personId:n.id,name:n.fullName,category:cat,score:promCourtNpcStrength6A4(n),schoolId:c.schoolId,grade:c.grade}))
+   .sort((a,b)=>b.score-a.score||a.personId.localeCompare(b.personId));
+  if(c.nominationRequested&&cat===category&&promCourtPlayerEligible6A4(pr)){
+   options.push({personId:'player',name:S.name,category:cat,score:c.nominationStrength,schoolId:c.schoolId,grade:c.grade});
+   options.sort((a,b)=>b.score-a.score||a.personId.localeCompare(b.personId));
+  }
+  // Requires competition; an uncontested crown is not awarded.
+  if(options.length>=2)candidates.push(...options.slice(0,3));
+ }
+ c.nominees=candidates;c.nominationsLocked=true;c.nominationsLockedDate=currentDate();
+ c.rosterIds=[...new Set(peers.map(n=>n.id))];
+ // An optional school-calendar ballot deadline, not a second calendar engine.
+ createCalendarEvent({id:`${c.eventId}:court-ballot`,type:'promCourtBallot',title:'Prom Court ballot deadline',dateISO:c.ballotClose,startMinute:930,endMinute:960,graceMinute:960,location:pr.venue,schoolId:c.schoolId,payload:{promSeasonId:c.eventId,schoolId:c.schoolId,grade:c.grade},required:false,source:'school'});
+ resolveNotificationsFor(`${c.eventId}:court_nominations`);
+}
+function promCourtVoterValid6A4(pr,id){
+ const c=promCourtRecord6A4(pr);if(!c?.nominationsLocked)return false;
+ return id==='player'?!!promSeasonEligibility6A1().ok&&playerCurrentSchoolId4A2()===c.schoolId&&gradeNumber()===c.grade
+  :c.rosterIds.includes(id);
+}
+function promCourtVoteWindow6A4(pr,c){return !!c&&c.nominationsLocked&&!c.ballotLocked&&currentDate()>=c.ballotOpen&&currentDate()<=c.ballotClose;}
+function promCourtCast6A4(category,candidateId){
+ const pr=ensureProm6A1(),c=pr&&ensurePromCourt6A4(pr);
+ if(!promCourtVoteWindow6A4(pr,c))return {ok:false,reason:'ballot_closed'};
+ if(!promCourtVoterValid6A4(pr,'player'))return {ok:false,reason:'not_eligible_voter'};
+ if(!PROM_COURT_CATEGORIES_6A4[category]||!c.nominees.some(n=>n.category===category&&n.personId===candidateId))return {ok:false,reason:'not_on_ballot'};
+ if(candidateId==='player')return {ok:false,reason:'no_self_voting'};
+ if(c.ballots.some(b=>b.voterId==='player'&&b.category===category))return {ok:false,reason:'already_voted'};
+ c.ballots.push({voterId:'player',category,candidateId,dateISO:currentDate(),source:'player'});
+ resolveNotificationsFor(`${c.eventId}:court_voting`);
+ return {ok:true,category,candidateId};
+}
+function promCourtNpcVotes6A4(pr,c){
+ // One deterministic sealed NPC ballot per actual same-cohort pupil and category.
+ for(const voterId of c.rosterIds){
+  const voter=npcById(voterId);if(!promCourtSchoolPeer6A4(voter,pr))continue;
+  for(const category of [...new Set(c.nominees.map(n=>n.category))]){
+   if(c.ballots.some(b=>b.voterId===voterId&&b.category===category))continue;
+   const options=c.nominees.filter(n=>n.category===category&&n.personId!==voterId);
+   if(!options.length)continue;
+   const ranked=options.map(n=>{
+    const p=(S.people||[]).find(x=>x.npcId===voterId),sameCircle=p&&n.personId==='player'?(p.rel||40)*.10-(p.conflict||0)*.13:0;
+    const support=(n.personId==='player'&&pr.social6A5?.eventId===c.eventId&&pr.social6A5.supporters?.includes(voterId))?8:0;
+    const jitter=(hashOf(`${c.eventId}|${voterId}|${category}|${n.personId}`)%2500)/100-12.5;
+    return {id:n.personId,weight:n.score*.55+sameCircle+support+jitter};
+   }).sort((a,b)=>b.weight-a.weight||a.id.localeCompare(b.id));
+   c.ballots.push({voterId,category,candidateId:ranked[0].id,dateISO:c.ballotOpen,source:'npc'});
+  }
+ }
+}
+function promCourtTally6A4(pr,c){
+ if(c.ballotLocked)return c.results;
+ if(!c.nominationsLocked)promCourtFreezeNominations6A4(pr,c);
+ promCourtNpcVotes6A4(pr,c);
+ const winners={},totals={};
+ for(const category of [...new Set(c.nominees.map(n=>n.category))]){
+  const options=c.nominees.filter(n=>n.category===category);
+  const count=Object.fromEntries(options.map(n=>[n.personId,0]));
+  for(const b of c.ballots)if(b.category===category&&Object.hasOwn(count,b.candidateId))count[b.candidateId]++;
+  const sorted=[...options].sort((a,b)=>count[b.personId]-count[a.personId]||b.score-a.score||a.personId.localeCompare(b.personId));
+  totals[category]=count;if(sorted.length>=2)winners[category]=sorted[0].personId;
+ }
+ c.results={winners,totals,dateISO:currentDate(),tiePolicy:'higher_frozen_nomination_score_then_id'};
+ c.ballotLocked=true;c.ballotLockedDate=currentDate();
+ const ballotEv=(S.calendar||[]).find(e=>e.id===`${c.eventId}:court-ballot`);if(ballotEv&&!isTerminal(ballotEv.status))setCalendarStatus(ballotEv,'Completed','Ballot closed and counted');
+ resolveNotificationsFor(`${c.eventId}:court_voting`);
+ return c.results;
+}
+function reconcilePromCourt6A4(pr=S?.school?.prom){
+ const c=ensurePromCourt6A4(pr);if(!c)return null;
+ const today=currentDate();
+ if(today>=c.nominationOpen&&today<=c.nominationClose&&!c.nominationNotified){
+  c.nominationNotified=true;notify('Prom Court nominations',`You can request consideration until ${formatDate(c.nominationClose)}. Academic standing, conduct and reputation matter.`,{sourceType:'promCourt',sourceId:`${c.eventId}:court_nominations`,tab:'home'});
+ }
+ if(today>c.nominationClose&&!c.nominationsLocked)promCourtFreezeNominations6A4(pr,c);
+ if(today>c.nominationClose)resolveNotificationsFor(`${c.eventId}:court_nominations`);
+ if(c.nominationsLocked&&today>=c.ballotOpen&&today<=c.ballotClose)promCourtNpcVotes6A4(pr,c);
+ if(c.nominationsLocked&&today>=c.ballotOpen&&today<=c.ballotClose&&!c.voteNotified){
+  c.voteNotified=true;notify('Prom Court school ballot',`One vote per award. School voting closes ${formatDate(c.ballotClose)}.`,{sourceType:'promCourt',sourceId:`${c.eventId}:court_voting`,tab:'home'});
+ }
+ if(today>c.ballotClose&&!c.ballotLocked)promCourtTally6A4(pr,c);
+ if(c.ballotLocked)resolveNotificationsFor(`${c.eventId}:court_voting`);
+ return c;
+}
+function promCourtSummaryHtml6A4(pr){
+ const c=promCourtRecord6A4(pr);if(!c)return '';
+ const chosen=c.nominees.some(n=>n.personId==='player');
+ let html=`<section class="prom-court-6a4"><h4>Prom Court</h4><p class="muted-text">Nominations ${formatDate(c.nominationOpen)}–${formatDate(c.nominationClose)} • Student ballot ${formatDate(c.ballotOpen)}–${formatDate(c.ballotClose)}</p>`;
+ if(!c.nominationsLocked){html+=`<p>${c.nominationRequested?'Nomination requested — the school will shortlist candidates.':'The school will choose nominees based on school standing.'}</p>`;
+  if(currentDate()>=c.nominationOpen&&currentDate()<=c.nominationClose&&!c.nominationRequested&&promCourtPlayerEligible6A4(pr))html+='<button class="small" data-prom-court6a4="nominate">Request nomination</button>';
+ }else{
+  html+=`<p class="muted-text">${chosen?'You made the shortlist.':'Nominees are announced; you are not on the shortlist.'} Voting is optional and does not require a prom date.</p>`;
+  for(const cat of [...new Set(c.nominees.map(n=>n.category))]){
+   html+=`<div class="prom-court-ballot"><b>${PROM_COURT_CATEGORIES_6A4[cat]}</b>`;
+   const myVote=c.ballots.find(b=>b.voterId==='player'&&b.category===cat);
+   if(c.ballotLocked){html+='<p class="muted-text">School ballots counted. Winners will be presented at Prom Night.</p>'}
+   else if(myVote)html+='<p class="muted-text">Ballot submitted. Your vote is final.</p>';
+   else if(promCourtVoteWindow6A4(pr,c)&&promCourtVoterValid6A4(pr,'player'))html+=c.nominees.filter(n=>n.category===cat&&n.personId!=='player').map(n=>`<button class="small ghost" data-prom-court6a4="vote" data-court-category="${cat}" data-court-candidate="${esc(n.personId)}">Vote ${esc(n.name)}</button>`).join('');
+   else html+='<p class="muted-text">Ballot not currently open.</p>';
+   html+='</div>';
+  }
+ }
+ return html+'</section>';
+}
+function promCourtClick6A4(b){const act=b?.dataset?.promCourt6a4;if(!act)return false;
+ const result=act==='nominate'?promCourtRequest6A4():act==='vote'?promCourtCast6A4(b.dataset.courtCategory,b.dataset.courtCandidate):{ok:false,reason:'unknown_action'};
+ if(!result.ok)toast(`Prom Court: ${result.reason}`);
+ save();render();return true;
+}
+function promCourtNight6A4(sc){const pr=S?.school?.prom,c=promCourtRecord6A4(pr);
+ if(!c||!c.ballotLocked||!c.results)return {title:'Prom Court',text:'The school has not confirmed this year’s ballot results.',choices:[{id:'ok',label:'Continue',primary:true}]};
+ const cat=promCourtCategory6A4(playerGender()),win=c.results.winners[cat];
+ sc.data.court=win==='player';sc.data.courtAward=win==='player'?PROM_COURT_CATEGORIES_6A4[cat]:null;
+ const summary=Object.entries(c.results.winners).map(([type,id])=>`${PROM_COURT_CATEGORIES_6A4[type]}: ${id==='player'?S.name:(c.nominees.find(n=>n.personId===id)?.name||'Student')}`).join(' • ');
+ return {title:'Prom Court',text:`Official school ballot results: ${summary||'No awards this year'}. ${sc.data.court?'Your name is called!':'You applaud the winners.'}`,choices:[{id:'ok',label:sc.data.court?'Receive your award':'Applaud',primary:true}]};
+}
+// PHASE 6A.5 — event-scoped school Prom Court social interactions.
+// Builds on 6A.4 immutable nominees/ballots and existing People/reputation state.
+const PROM_SOCIAL_SCHEMA_6A5=1;
+function promSocialRecord6A5(pr=S?.school?.prom){return pr?.foundation6A1&&pr.social6A5?.eventId===pr.foundation6A1.eventId?pr.social6A5:null}
+function ensurePromSocial6A5(pr=S?.school?.prom){
+ const f=pr?.foundation6A1;
+ if(!f||['Done','Skipped'].includes(pr.status))return promSocialRecord6A5(pr);
+ if(!pr.social6A5||pr.social6A5.eventId!==f.eventId){
+  pr.social6A5={schemaVersion:PROM_SOCIAL_SCHEMA_6A5,eventId:f.eventId,schoolId:f.schoolId,grade:f.grade,
+   actions:[],supporters:[],rivalEncounters:[],resultApplied:false,consequences:[]};
+ }
+ const s=pr.social6A5;s.schemaVersion=PROM_SOCIAL_SCHEMA_6A5;
+ for(const key of ['actions','supporters','rivalEncounters','consequences'])if(!Array.isArray(s[key]))s[key]=[];
+ return s;
+}
+function promSocialCampaignGate6A5(pr=S?.school?.prom){
+ const c=promCourtRecord6A4(pr),s=promSocialRecord6A5(pr);
+ if(!c||!s||!promCourtPlayerEligible6A4(pr)||!c.nominationRequested)return {ok:false,reason:'Only registered students requesting Prom Court consideration may campaign.'};
+ if(c.nominationsLocked||currentDate()<c.nominationOpen||currentDate()>c.nominationClose)return {ok:false,reason:'The campaign window is closed.'};
+ if(s.actions.length>=4)return {ok:false,reason:'You have completed the available campaign activities.'};
+ const day=schoolDayState4C1();
+ if(!day.isSchoolDay||!day.atSchool||!day.afterSchoolWindow||!day.campusOpen||currentMinute()+30>day.hours.campusClose)
+  return {ok:false,reason:'Campaign activities require a supervised after-school period on campus.'};
+ if(s.actions.some(a=>a.dateISO===currentDate()))return {ok:false,reason:'Only one campaign activity per school day.'};
+ const conflict=timedSchoolConflict4C4(currentDate(),currentMinute(),currentMinute()+30,c.eventId);
+ if(conflict)return {ok:false,reason:`Conflicts with ${conflict.title}.`};
+ return {ok:true,court:c,social:s};
+}
+function promSocialKnownPeer6A5(pr,personId){
+ const p=personById(personId),c=promCourtRecord6A4(pr),n=p?.npcId&&npcById(p.npcId);
+ return p&&!isFamilyPerson(p)&&n&&c&&promCourtSchoolPeer6A4(n,pr)&&p.movedAway!==true?p:null;
+}
+function promSocialCampaign6A5(kind,personId){
+ const pr=S?.school?.prom,gate=promSocialCampaignGate6A5(pr);if(!gate.ok)return gate;
+ const {court:c,social:s}=gate;
+ if(!['volunteer','support','bribe'].includes(kind))return {ok:false,reason:'invalid_action'};
+ if(kind==='bribe')return {ok:false,reason:'Buying votes is forbidden by school rules.'};
+ let p=null,n=null,accepted=false,reason='';
+ if(kind==='support'){
+  p=promSocialKnownPeer6A5(pr,personId);if(!p)return {ok:false,reason:'Only known students in your own school cohort can be asked for support.'};
+  n=npcById(p.npcId);
+  if(s.actions.some(a=>a.kind==='support'&&a.personId===p.id))return {ok:false,reason:'This student already answered.'};
+  const threshold=40+(p.conflict||0)*.35;
+  const score=(p.rel||0)*.6+(p.trust??50)*.3+hashOf(`${c.eventId}|support|${n.id}`)%23-10;
+  accepted=score>=threshold;
+  reason=accepted?'They agree to tell classmates they support your candidacy.':'They prefer not to take sides this year.';
+  if(accepted){s.supporters.push(n.id);p.rel=clamp((p.rel||0)+1);p.trust=clamp((p.trust??50)+1)}
+  else p.rel=clamp((p.rel||0)-1);
+  rememberPerson(p,`Prom Court: you asked for support. ${reason}`,1);
+ }else{
+  if(s.actions.some(a=>a.kind==='volunteer'))return {ok:false,reason:'You already completed the school service effort.'};
+  accepted=true;reason='You distribute faculty-issued Prom Court information without pressuring anyone to vote.';
+  addRep('kindness',2);addRep('leadership',1);
+ }
+ s.actions.push({kind,personId:p?.id||null,npcId:n?.id||null,dateISO:currentDate(),accepted,reason});
+ // Campaign helps, but a top-three nomination and every ballot are still competitive.
+ if(accepted)c.nominationStrength=Math.min(100,(Number(c.nominationStrength)||0)+(kind==='volunteer'?3:2));
+ advanceTime(30,{silent:true});
+ if(!SIM.skipping)log('Prom Court campaign',reason);
+ return {ok:true,accepted,reason,actions:s.actions.length};
+}
+function promSocialRivalGate6A5(pr=S?.school?.prom){
+ const c=promCourtRecord6A4(pr),s=promSocialRecord6A5(pr);
+ if(!c||!s||!c.nominationsLocked||c.ballotLocked||currentDate()<c.ballotOpen||currentDate()>c.ballotClose)
+  return {ok:false,reason:'The Prom Court candidate period has closed.'};
+ if(!promCourtPlayerEligible6A4(pr)||!c.nominees.some(n=>n.personId==='player'))return {ok:false,reason:'Only official Prom Court candidates may join candidate discussions.'};
+ if(s.rivalEncounters.length>=2)return {ok:false,reason:'You have already had two candidate conversations.'};
+ const day=schoolDayState4C1();if(!day.isSchoolDay||!day.atSchool||!day.afterSchoolWindow||!day.campusOpen||currentMinute()+20>day.hours.campusClose)
+  return {ok:false,reason:'Candidate discussions happen at school after classes.'};
+ if(s.rivalEncounters.some(a=>a.dateISO===currentDate()))return {ok:false,reason:'Only one candidate discussion each day.'};
+ return {ok:true,court:c,social:s};
+}
+function promSocialRival6A5(kind,npcId){
+ const pr=S?.school?.prom,gate=promSocialRivalGate6A5(pr);if(!gate.ok)return gate;
+ const {court:c,social:s}=gate;
+ if(!['respect','rumor'].includes(kind))return {ok:false,reason:'invalid_action'};
+ const opponent=c.nominees.find(x=>x.personId===npcId&&x.personId!=='player'&&x.category===promCourtCategory6A4(playerGender()));
+ if(!opponent||!promCourtSchoolPeer6A4(npcById(npcId),pr))return {ok:false,reason:'The student is not a valid rival nominee.'};
+ if(s.rivalEncounters.some(x=>x.npcId===npcId))return {ok:false,reason:'You have already had this conversation.'};
+ const p=(S.people||[]).find(x=>x.npcId===npcId)||null;
+ const reason=kind==='respect'?`You congratulate ${opponent.name} and agree to respect the ballot.`:`You spread an unkind rumor about ${opponent.name}; classmates question your fairness.`;
+ s.rivalEncounters.push({kind,npcId,dateISO:currentDate(),reason});
+ if(kind==='respect'){addRep('kindness',2);addRep('social',1);if(p){p.rel=clamp((p.rel||0)+2);p.trust=clamp((p.trust??50)+1)}}
+ else{addRep('troublemaker',4);addRep('kindness',-4);addRep('social',-3);if(p){p.rel=clamp((p.rel||0)-4);p.conflict=clamp((p.conflict||0)+3)}}
+ if(p)rememberPerson(p,`Prom Court: ${reason}`,1);
+ advanceTime(20,{silent:true});if(!SIM.skipping)log('Prom Court candidates',reason);
+ return {ok:true,kind,npcId};
+}
+function reconcilePromSocial6A5(pr=S?.school?.prom){
+ const s=ensurePromSocial6A5(pr),c=promCourtRecord6A4(pr);if(!s||!c||s.resultApplied||!c.ballotLocked||!c.results)return s;
+ // Keep official awards sealed until Prom Night begins; no advance-result spoilers.
+ if(currentDate()<pr.dateISO||(currentDate()===pr.dateISO&&currentMinute()<1140))return s;
+ // Election reactions are applied once after the official result is sealed; never roll the election again.
+ s.resultApplied=true;s.resultDate=currentDate();
+ const category=promCourtCategory6A4(playerGender()),win=c.results.winners[category];
+ const nominated=c.nominees.some(n=>n.personId==='player');
+ const outcome=win==='player'?'win':nominated?'loss':c.nominationRequested?'not_shortlisted':'observer';
+ s.outcome=outcome;
+ if(outcome==='win'){addRep('leadership',3);addRep('social',2)}
+ else if(outcome==='loss'){addRep('leadership',1)}
+ else if(outcome==='not_shortlisted')addRep('kindness',1);
+ if(outcome!=='observer'){
+  const msg=outcome==='win'?'The school has counted the ballots. You will be recognized at Prom Night.':outcome==='loss'?'You were not chosen, but your school community respects a fair campaign.':'You did not make the official shortlist this year.';
+  s.consequences.push({type:'official_result',dateISO:currentDate(),outcome,message:msg});
+  const t=thread('prom',`${s.eventId}:social`,'Prom Court social season');threadStep(t,'Court outcome recorded',msg,{resolve:true});
+  recordOutcome('Prom Court',`School Court campaign ${s.eventId}`,outcome,msg);
+ }
+ // Only genuinely known, supportive school People are recorded as reacting; no synthetic romance milestones.
+ for(const npcId of s.supporters){
+  const p=(S.people||[]).find(x=>x.npcId===npcId);
+  if(!p||!promSocialKnownPeer6A5(pr,p.id))continue;
+  const msg=outcome==='win'?'They congratulate you on the Prom Court result.':outcome==='loss'?'They encourage you after the vote.':'They appreciate your effort in the school campaign.';
+  p.rel=clamp((p.rel||0)+1);rememberPerson(p,`Prom Court: ${msg}`,1);
+  s.consequences.push({type:'supporter_reaction',dateISO:currentDate(),personId:p.id,npcId,message:msg});
+ }
+ return s;
+}
+function promSocialHtml6A5(pr){
+ const s=promSocialRecord6A5(pr),c=promCourtRecord6A4(pr);if(!s||!c)return '';
+ const campaign=promSocialCampaignGate6A5(pr),rival=promSocialRivalGate6A5(pr);
+ let html='<section class="prom-social-6a5"><h4>Prom Court • classmates & campaign</h4>';
+ html+=`<p class="muted-text">${s.actions.length} campaign activity/activities · ${s.supporters.length} confirmed peer supporter(s) · ${s.rivalEncounters.length} candidate conversation(s). Fair play matters.</p>`;
+ if(campaign.ok){
+  if(!s.actions.some(a=>a.kind==='volunteer'))html+='<button class="small ghost" data-prom-social6a5="volunteer">Share official Court notices</button>';
+  for(const p of (S.people||[]).filter(p=>promSocialKnownPeer6A5(pr,p.id)&&!s.actions.some(x=>x.personId===p.id)).slice(0,8))
+   html+=`<button class="small ghost" data-prom-social6a5="support" data-prom-peer="${esc(p.id)}">Ask ${esc(displayName(p))} for support</button>`;
+ }
+ if(rival.ok)for(const n of c.nominees.filter(n=>n.personId!=='player'&&n.category===promCourtCategory6A4(playerGender())&&!s.rivalEncounters.some(x=>x.npcId===n.personId)))
+  html+=`<div class="inline-actions"><small>${esc(n.name)}</small><button class="small ghost" data-prom-social6a5="respect" data-prom-peer="${esc(n.personId)}">Congratulate respectfully</button><button class="small ghost" data-prom-social6a5="rumor" data-prom-peer="${esc(n.personId)}">Spread a rumor (risk)</button></div>`;
+ if(s.resultApplied&&s.outcome!=='observer')html+=`<p class="muted-text">The official court season outcome has been recorded. Awards are presented at Prom Night.</p>`;
+ if(s.actions.length||s.rivalEncounters.length)html+=`<details><summary>Campaign and classmate interactions</summary>${[...s.actions,...s.rivalEncounters].map(x=>`<p class="muted-text">${esc(x.dateISO)} — ${esc(x.reason)}</p>`).join('')}</details>`;
+ return html+'</section>';
+}
+function promSocialClick6A5(b){const k=b?.dataset?.promSocial6a5;if(!k)return false;
+ const r=['volunteer','support'].includes(k)?promSocialCampaign6A5(k,b.dataset.promPeer):promSocialRival6A5(k,b.dataset.promPeer);
+ if(!r.ok)toast(`Prom Court: ${r.reason}`);save();render();return true;
+}
+// PHASE 6A.6 — presentation and notification integration for existing Prom Season.
+// No parallel Prom ledger, calendar engine, votes, communication, or relationships.
+const PROM_UI_MILESTONES_6A6=[
+ ['Registration',p=>p.foundation6A1?.registrationDeadline],
+ ['Committee application',p=>p.committee6A2?.applicationDeadline],
+ ['Court nominations',p=>p.court6A4?.nominationClose],
+ ['Court ballot',p=>p.court6A4?.ballotClose],
+ ['Committee preparation',p=>p.committee6A2?.preparationDeadline]
+];
+function promUiEligibleEvent6A6(){
+ const p=S?.school?.prom,f=p?.foundation6A1;
+ if(!f||!f.eventId||p.status==='Done'||p.status==='Skipped'||!promSeasonEligibility6A1().ok)return null;
+ if(f.schoolId!==playerCurrentSchoolId4A2()||f.eventId!==promIdentity6A1()?.eventId)return null;
+ // UI draws from the canonical calendar; a stale orphan must not be advertised.
+ const ev=(S.calendar||[]).find(x=>x.id===f.eventId&&x.type==='prom');
+ return ev&&!['Cancelled','Expired'].includes(ev.status)?p:null;
+}
+function promUiStatus6A6(pr){
+ const f=pr.foundation6A1,c=pr.committee6A2,court=pr.court6A4;
+ const date=pr.partnerId?personById(pr.partnerId):null;
+ const invitation=(pr.asked||[]).some(x=>x.result==='Pending');
+ const reg={registered:'Registered',declined:'Declined',missed:'Closed',not_registered:promRegistrationOpen6A1(pr)?'Open':'Not open'}[f.registrationStatus]||'Not open';
+ const com={not_applied:'Not applied',applied:'Awaiting approval',approved:'Approved',rejected:'Not selected',declined:'Declined',missed:'Closed',closed:'Closed'}[c?.status]||'Not open';
+ const rsvp=date?`${pr.asFriends?'Friends':'Date'}: ${displayName(date)}`:invitation?'Invitation pending':pr.plan==='friends'?'With friends':pr.plan==='alone'?'Going alone':'No date required';
+ const courtText=court?.ballotLocked?'Votes sealed':court?.nominationsLocked?'Ballot phase':court?.nominationRequested?'Requested nomination':'Not nominated';
+ return [{label:'Attendance',value:reg},{label:'Committee',value:com},{label:'Prom company',value:rsvp},{label:'Prom Court',value:courtText}];
+}
+function promUiHeader6A6(pr,{compact=false}={}){
+ const f=pr.foundation6A1,days=daysBetween(currentDate(),pr.dateISO),title=pr.junior?'Junior Prom':'Senior Prom';
+ const count=days===0?'Today':days>0?`${days} days away`:'Event passed';
+ const all=promUiStatus6A6(pr);
+ const next=PROM_UI_MILESTONES_6A6.map(([name,fn])=>({name,date:fn(pr)})).filter(x=>x.date&&x.date>=currentDate()&&x.date<=pr.dateISO).sort((a,b)=>a.date.localeCompare(b.date));
+ return `<div class="prom-ui-head-6a6" data-prom-season-id="${esc(f.eventId)}"><div class="prom-ui-topline"><div><strong>💃 ${title}</strong><small>${formatDate(pr.dateISO)} · ${esc(pr.venue)} · ${esc(S.school.name||'School')}</small></div><span class="prom-ui-countdown">${count}</span></div>`+
+ `<div class="prom-ui-status-6a6">${all.map(s=>`<div class="prom-ui-status-item"><small>${esc(s.label)}</small><b>${esc(s.value)}</b></div>`).join('')}</div>`+
+ `<p class="prom-ui-deadlines-6a6"><b>Next deadline:</b> ${next.length?`${esc(next[0].name)} · ${formatDate(next[0].date)}`:'No remaining registration or voting deadlines'}</p>`+
+ (compact?'<button class="small ghost" data-tab-jump="home">Open Prom actions</button>':'')+'</div>';
+}
+function promUiSchoolHtml6A6(){
+ const pr=promUiEligibleEvent6A6();if(!pr)return '';
+ const controls=pr.status==='Season'?promHtml():'';
+ return `<section class="card wide prom-school-6a6" data-prom-school6a6="1"><h3>Prom season</h3>${promUiHeader6A6(pr)}`+
+ (controls?`<div class="prom-ui-actions-6a6">${controls}</div>`:'<p class="muted-text">School announcements, registration and applications open closer to Prom.</p>')+promNightHtml6B1(pr)+'</section>';
+}
+function promUiHomeHtml6A6(){
+ // Keep an actual post-Prom debrief visible briefly AFTER canonical Calendar completion.
+ // Old Done/Skipped saves never gain retrospective attendance or a fictional after-party.
+ const done=S?.school?.prom,night=typeof promNightRecord6B1==='function'?promNightRecord6B1(done):null;
+ if(done?.status==='Done'&&night?.status==='completed'&&night?.after6B6?.checkout&&
+    typeof promAfterRecord6B6==='function'&&promAfterRecord6B6(done)&&
+    daysBetween(night.dateISO,currentDate())>=0&&daysBetween(night.dateISO,currentDate())<=1){
+  return `<section class="card wide prom-home-6a6" data-prom-home6a6="1"><h3>Prom Night memories</h3>${promNightHtml6B1(done)}</section>`;
+ }
+ const pr=promUiEligibleEvent6A6();if(!pr||pr.status!=='Season')return '';
+ const controls=promHtml();if(!controls)return '';
+ return `<section class="card wide prom-home-6a6" data-prom-home6a6="1"><h3>Prom season</h3>${promUiHeader6A6(pr)}<div class="prom-ui-actions-6a6">${controls}</div>${promNightHtml6B1(pr)}</section>`;
+}
+function promUiCalendarHtml6A6(){
+ const pr=promUiEligibleEvent6A6();if(!pr)return '';
+ const f=pr.foundation6A1,ev=(S.calendar||[]).find(x=>x.id===f.eventId&&x.type==='prom');if(!ev)return '';
+ const days=daysBetween(currentDate(),ev.dateISO),dates=PROM_UI_MILESTONES_6A6.map(([label,fn])=>({label,date:fn(pr)})).filter(x=>x.date&&x.date>=currentDate()&&x.date<=pr.dateISO).sort((a,b)=>a.date.localeCompare(b.date));
+ return `<section class="card wide prom-calendar-6a6" data-sub="month" data-prom-calendar6a6="1"><h3>School Prom · ${days===0?'Today':days+' days remaining'}</h3><p class="muted-text">${formatDate(ev.dateISO)} · ${timeLabel(ev.startMinute)} · ${esc(ev.location)} · ${esc(f.registrationStatus)}</p>`+
+ `<div class="prom-ui-calendar-dates">${dates.map(x=>`<div><b>${esc(x.label)}</b><small>${formatDate(x.date)} · ${daysBetween(currentDate(),x.date)}d</small></div>`).join('')||'<p class="muted-text">Registration and ballot deadlines have passed.</p>'}</div><button class="small ghost" data-tab-jump="school">See Prom at school</button></section>`;
+}
+function promUiNoticeCleanup6A6(pr){
+ const f=pr?.foundation6A1,live=f?.eventId;
+ for(const note of S.notifications||[]){
+  if(!['Unread','Read'].includes(note.status)||!note.sourceId||!note.sourceId.startsWith('prom-'))continue;
+  const id=note.sourceId;
+  // Only known Prom lifecycle sources; never touch other notifications or historical memories.
+  const known=/(?:registration|committee_signup|committee_result|court_nominations|court_voting)$/.test(id);
+  if(!known)continue;
+  const current=!!live&&id.startsWith(live+':');
+  const suffix=id.substring(id.lastIndexOf(':')+1);
+  const stale=!current||pr?.status==='Done'||pr?.status==='Skipped'||!!pr?.dateISO&&currentDate()>pr.dateISO;
+  const closed=!!pr&&(suffix==='registration'&&!!f&&f.registrationStatus!=='not_registered'||
+   suffix==='committee_signup'&&pr.committee6A2?.status!=='not_applied'||
+   suffix==='court_nominations'&&!!pr.court6A4?.nominationsLocked||
+   suffix==='court_voting'&&!!pr.court6A4?.ballotLocked||
+   suffix==='committee_result'&&currentDate()>pr.committee6A2?.preparationDeadline);
+  if(stale||closed){note.status='Resolved';note.read=true;note.resolvedDate=currentDate()}
+ }
+}
+function reconcilePromUi6A6(pr){promUiNoticeCleanup6A6(pr)}
+// Keep Education's existing page structure intact; insert one Prom section.
+const originalSchoolPanel6A6=schoolPanel;
+schoolPanel=function(){
+ const html=originalSchoolPanel6A6();const panel=promUiSchoolHtml6A6();
+ return panel?html.replace(/<\/div>\s*$/,panel+'</div>'):html;
+};
+// PHASE 6A.7 acceptance-only runtime harness.
+// Called exclusively by the existing __LIFE_SIM_TEST__ test interface;
+// no gameplay menu, persistent field, or separate Prom system is added.
+function promFuzzEpisode6A7(seed,steps=50){
+ let randomSeed=(Number(seed)||6072026)>>>0;
+ const draw=()=>{randomSeed=(Math.imul(1664525,randomSeed)+1013904223)>>>0;return randomSeed/4294967296};
+ const pick=a=>a[Math.floor(draw()*a.length)];
+ const violations=[],push=(reason,i)=>{if(violations.length<16)violations.push(`${i}: ${reason}`)};
+ const prom=ensureProm(),id=prom?.foundation6A1?.eventId,schoolId=prom?.foundation6A1?.schoolId,date=prom?.dateISO;
+ if(!prom)return {steps:0,violations:['No eligible Prom']};
+ let sealed=null,completed=0;
+ for(let i=0;i<steps;i++){
+  // Forward-only progression with repeated days to stress reconciliation and UI idempotence.
+  const offset=-24+Math.floor(i*26/steps);
+  S.clock.dateISO=addDays(date,offset);S.clock.minute=pick([600,900,960,1020,1200]);S.location=pick(['Home','School']);
+  try{
+   ensureProm();const before=S.school.prom,oldCourt=before.court6A4;
+   switch(pick(['ensure','nominate','vote','committee','campaign','plan','invalid','register','approve','reconcile'])){
+    case 'ensure':ensureProm();ensureProm();break;
+    case 'nominate':promCourtRequest6A4();break;
+    case 'vote':{
+     const possible=(oldCourt?.nominees||[]).filter(n=>n.personId!=='player');
+     if(possible.length){const option=pick(possible);promCourtCast6A4(option.category,option.personId)}break;
+    }
+    case 'committee':promCommitteeWork6A2(pick(['posters','playlist','floorplan','decorations']));break;
+    case 'campaign':promSocialCampaign6A5('volunteer');break;
+    case 'plan':promDatePlan6A3(pick(['friends','alone','wait']));break;
+    case 'invalid':promCourtCast6A4('bogus','fake');break;
+    case 'register':promRegistrationDecision6A1(pick(['register','decline']));break;
+    case 'approve':promCommitteeApproved6A2();break;
+    case 'reconcile':reconcilePromUi6A6(before);break;
+   }
+   const pr=ensureProm(),f=pr.foundation6A1,c=pr.court6A4,com=pr.committee6A2,so=pr.social6A5;
+   if(f.eventId!==id||f.schoolId!==schoolId)push('Event identity drift',i);
+   if(S.calendar.filter(x=>x.id===id&&x.type==='prom').length!==1)push('Duplicate/missing Prom calendar',i);
+   const pairs=c.ballots.map(v=>v.voterId+'|'+v.category);
+   if(new Set(pairs).size!==pairs.length)push('Duplicate ballot',i);
+   const nominees=c.nominees.map(n=>n.personId+'|'+n.category);
+   if(new Set(nominees).size!==nominees.length)push('Duplicate nominee',i);
+   if(c.ballots.some(v=>v.voterId!=='player'&&!c.rosterIds.includes(v.voterId)))push('Invalid NPC voter',i);
+   if(c.ballots.some(v=>!c.nominees.some(n=>n.personId===v.candidateId&&n.category===v.category)))push('Unknown candidate',i);
+   if(c.results&&(!c.ballotLocked||Object.entries(c.results.winners).some(([cat,w])=>!c.nominees.some(n=>n.category===cat&&n.personId===w))))push('Unsealed or invalid results',i);
+   if(sealed!==null&&JSON.stringify(c.results)!==sealed)push('Re-rolled sealed results',i);
+   if(c.ballotLocked)sealed=JSON.stringify(c.results);
+   if(com.budgetSpent<0||com.budgetSpent>com.budgetAllocated)push('Committee budget violation',i);
+   if(new Set(com.work.map(w=>w.key)).size!==com.work.length)push('Duplicate committee work',i);
+   if(so.actions.length>4)push('Campaign farm',i);
+   if(!['not_registered','registered','declined','missed'].includes(f.registrationStatus))push('Invalid RSVP',i);
+   const sources=(S.notifications||[]).map(x=>x.sourceId).filter(x=>typeof x==='string'&&x.startsWith(id+':')&&/(registration|committee_signup|committee_result|court_nominations|court_voting)$/.test(x));
+   if(new Set(sources).size!==sources.length)push('Duplicate lifecycle notice',i);
+   completed++;
+  }catch(e){push(`Runtime exception: ${String(e?.message||e)}`,i);break;}
+ }
+ return {steps:completed,violations,eventId:id,schoolId,registrationStatus:S.school.prom?.foundation6A1?.registrationStatus||null};
+}
+// PHASE 6B.1 — Canonical Prom Night lifecycle; owns only attendance/venue/roster.
+// Existing 6A season, Court, RSVP, Calendar, NPC IDs and school travel remain authoritative.
+const PROM_NIGHT_SCHEMA_6B1=1;
+function promNightEvent6B1(pr=S?.school?.prom){
+ const f=pr?.foundation6A1;
+ if(!f?.eventId)return null;
+ return (S.calendar||[]).find(e=>e.type==='prom'&&e.id===f.eventId)||null;
+}
+function promNightRecord6B1(pr=S?.school?.prom){
+ return pr?.foundation6A1&&pr.night6B1?.eventId===pr.foundation6A1.eventId?pr.night6B1:null;
+}
+function promNightWindow6B1(pr=S?.school?.prom){
+ const ev=promNightEvent6B1(pr);
+ return ev?{start:ev.startMinute,cutoff:ev.graceMinute,end:ev.endMinute,dateISO:ev.dateISO,venue:ev.location}:null;
+}
+function promNightAvailable6B1(pr=S?.school?.prom){
+ const w=promNightWindow6B1(pr);
+ return !!w&&currentDate()===w.dateISO&&currentMinute()>=w.start&&currentMinute()<=w.cutoff;
+}
+function promNightPeerEligible6B1(n,pr){
+ return !!n&&promCourtSchoolPeer6A4(n,pr)&&!n.notGoingProm&&n.promUnavailableDateISO!==pr.dateISO;
+}
+function promNightRoster6B1(pr=S?.school?.prom){
+ const f=pr?.foundation6A1;
+ if(!f)return {attendeeIds:[],companionId:null,companionStatus:'none',reason:null};
+ // Stable deterministic participation from EXISTING enrolled student records only.
+ // A school ballot voter or candidate is not automatically a Prom attendee.
+ const attendees=(S.npcs||[]).filter(n=>promNightPeerEligible6B1(n,pr))
+  .filter(n=>n.promWith||hashOf(`${f.eventId}|prom-night|${n.id}`)%100<62)
+  .map(n=>n.id).sort();
+ let companionId=null,companionStatus='none',reason=null;
+ const p=pr.partnerId?personById(pr.partnerId):null;
+ if(pr.partnerId){
+  if(!p||!promDateStudent6A3(p)||p.notGoingProm||p.promUnavailableDateISO===pr.dateISO){companionStatus='unavailable';reason=p?.promUnavailableDateISO===pr.dateISO?'Conflicting school or family commitment':'Companion no longer available';}
+  else if(p.npcId){
+   const n=npcById(p.npcId);
+   if(n&&promNightPeerEligible6B1(n,pr)){companionId=n.id;companionStatus='expected';if(!attendees.includes(n.id))attendees.push(n.id);attendees.sort();}
+   else {companionStatus='unavailable';reason='Companion is not enrolled in the eligible cohort';}
+  }else { // A known person without a linked enrolled NPC is not added as an invented student.
+   companionStatus='unverified';reason='Companion school attendance could not be verified';
+  }
+ }
+ return {attendeeIds:attendees,companionId,companionStatus,reason};
+}
+function ensurePromNight6B1(pr=S?.school?.prom){
+ const f=pr?.foundation6A1,ev=promNightEvent6B1(pr);if(!f||!ev||ev.dateISO!==pr.dateISO||ev.schoolId!==f.schoolId||ev.location!==pr.venue)return null;
+ if(promNightRecord6B1(pr))return pr.night6B1;
+ // Never backfill past attendance, legacy Done/Skipped Prom or historical memories.
+ if(['Done','Skipped'].includes(pr.status)||isTerminal(ev.status)||currentDate()>pr.dateISO)return null;
+ const w=promNightWindow6B1(pr);
+ pr.night6B1={schemaVersion:PROM_NIGHT_SCHEMA_6B1,eventId:f.eventId,schoolId:f.schoolId,yearKey:f.yearKey,grade:f.grade,
+  dateISO:pr.dateISO,venue:pr.venue,startMinute:w.start,entryCutoffMinute:w.cutoff,endMinute:w.end,
+  status:'scheduled',enteredAt:null,leftAt:null,attendeeIds:[],companionId:null,companionStatus:'none',attendanceRecorded:false};
+ return pr.night6B1;
+}
+function promNightConflict6B1(pr,from,to){
+ const f=pr.foundation6A1;
+ const committed=new Set(['schoolDay','exam','clubSession','schoolEvent','tryout','plan','workDay','program','wedding','trip','election','leadershipSelection','conference']);
+ return (S.calendar||[]).find(e=>e.id!==f.eventId&&e.dateISO===pr.dateISO&&!isTerminal(e.status)&&committed.has(e.type)
+  &&Number.isFinite(Number(e.startMinute))&&Number.isFinite(Number(e.endMinute))&&from<Number(e.endMinute)&&Number(e.startMinute)<to)||null;
+}
+function promNightEntryGate6B1(){
+ const pr=S?.school?.prom,f=pr?.foundation6A1,n=promNightRecord6B1(pr),ev=promNightEvent6B1(pr);
+ if(!pr||!f||!ev||!n)return {ok:false,reason:'no_current_prom'};
+ const e=promSeasonEligibility6A1(),id=promIdentity6A1(e);
+ if(!e.ok||!id||id.eventId!==f.eventId||e.schoolId!==n.schoolId||e.grade!==n.grade)return {ok:false,reason:'school_or_grade_ineligible'};
+ if(n.status==='attending')return {ok:false,reason:'already_attending'};
+ if(['completed','missed','cancelled'].includes(n.status)||isTerminal(ev.status)||['Done','Skipped'].includes(pr.status))return {ok:false,reason:'event_closed'};
+ if(!promRegistered6A1(pr)||f.attendanceIntent==='skip'||pr.plan==='skip')return {ok:false,reason:'not_registered_or_declined'};
+ if(!pr.ticketBought)return {ok:false,reason:'ticket_or_waiver_required'};
+ if(currentDate()!==pr.dateISO||currentMinute()<ev.startMinute)return {ok:false,reason:'entry_not_open'};
+ if(currentMinute()>ev.graceMinute)return {ok:false,reason:'entry_closed'};
+ if(!['Home','School'].includes(S.location))return {ok:false,reason:'finish_existing_outing_first'};
+ if(S.location==='School'&&typeof playerCurrentSchoolId4A2==='function'&&playerCurrentSchoolId4A2()!==f.schoolId)return {ok:false,reason:'wrong_school'};
+ // Special event admission, not ordinary school-day travel after campus closes.
+ const travel=S.location==='Home'?20:0;
+ if(currentMinute()+travel>ev.graceMinute)return {ok:false,reason:'cannot_arrive_before_cutoff'};
+ const conf=promNightConflict6B1(pr,currentMinute(),ev.endMinute);
+ if(conf)return {ok:false,reason:'calendar_conflict',conflictId:conf.id};
+ return {ok:true,eventId:f.eventId,travelMinutes:travel,venue:ev.location};
+}
+function enterPromNight6B1(){
+ let pr=S?.school?.prom;ensurePromNight6B1(pr);const g=promNightEntryGate6B1();if(!g.ok)return g;
+ const ev=promNightEvent6B1(pr),n=promNightRecord6B1(pr);
+ const roster=promNightRoster6B1(pr);n.attendeeIds=roster.attendeeIds;n.companionId=roster.companionId;n.companionStatus=roster.companionStatus;
+ n.companionReason=roster.reason;n.status='attending';n.enteredAt={dateISO:currentDate(),minute:currentMinute()+g.travelMinutes};n.attendanceRecorded=true;
+ setCalendarStatus(ev,'Attending','Checked in at '+n.venue);
+ if(typeof setPlayerLocation4C1==='function')setPlayerLocation4C1('School',{schoolId:n.schoolId,reason:'School Hall Prom entry'});else S.location='School';
+ if(g.travelMinutes)advanceTime(g.travelMinutes,{silent:true});
+ if(typeof initializePromArrival6B3==='function')initializePromArrival6B3(pr);
+ log('Prom Night arrival',`Checked in at ${n.venue} (${timeLabel(currentMinute())}).`);
+ return {ok:true,status:n.status,eventId:n.eventId,rosterCount:n.attendeeIds.length};
+}
+function leavePromNight6B1(reason='left_early'){
+ const pr=S?.school?.prom,n=promNightRecord6B1(pr),ev=promNightEvent6B1(pr);
+ if(!n||n.status!=='attending'||!ev||ev.status!=='Attending')return {ok:false,reason:'not_attending'};
+ if(typeof finalizePromAfter6B6==='function')finalizePromAfter6B6(reason);
+ n.status='completed';n.leftAt={dateISO:currentDate(),minute:currentMinute()};n.exitReason=reason;
+ pr.status='Done';setCalendarStatus(ev,'Attended',reason==='event_ended'?'Stayed until venue closing':'Left school hall');
+ if(typeof setPlayerLocation4C1==='function')setPlayerLocation4C1('Home',{reason:'Left Prom venue'});else S.location='Home';
+ if(typeof promAfterRecord6B6==='function'&&promAfterRecord6B6(pr)?.checkout)advanceTime(PROM_AFTER_TRAVEL_MINUTES_6B6,{silent:true});
+ // The 6B.1 record means physical attendance only; no fabricated awards, photos, dances or social rewards.
+ log('Prom Night departure',reason==='event_ended'?'Prom has closed for the night.':'You checked out of Prom and returned home.');
+ return {ok:true,eventId:n.eventId,status:n.status};
+}
+function missPromNight6B1(ev,reason='entry_window_expired'){
+ const pr=S?.school?.prom,n=promNightRecord6B1(pr);
+ if(!pr||!ev||ev.type!=='prom'||!n||ev.id!==n.eventId)return {ok:false,reason:'invalid_event'};
+ if(n.status==='attending')return leavePromNight6B1('event_ended');
+ if(currentDate()<n.dateISO||currentDate()===n.dateISO&&currentMinute()<=n.entryCutoffMinute)return {ok:false,reason:'entry_window_not_expired'};
+ if(['completed','missed','cancelled'].includes(n.status)||isTerminal(ev.status))return {ok:false,reason:'already_resolved'};
+ const skip=pr.plan==='skip'||!promRegistered6A1(pr);
+ n.status=skip?'cancelled':'missed';n.leftAt=null;pr.status=skip?'Skipped':'Done';
+ setCalendarStatus(ev,skip?'Completed':'Missed',skip?'Prom was declined':'Did not attend Prom');
+ resolveNotificationsFor(ev.id);return {ok:true,status:n.status};
+}
+function reconcilePromNight6B1(pr=S?.school?.prom){
+ let n=promNightRecord6B1(pr);
+ if(!n){if(pr?.status==='Done'||pr?.status==='Skipped')return null;n=ensurePromNight6B1(pr)}
+ if(!n)return null;
+ const ev=promNightEvent6B1(pr),e=promSeasonEligibility6A1(),id=promIdentity6A1(e);
+ if(!ev||!e.ok||!id||id.eventId!==n.eventId||n.schoolId!==e.schoolId){
+  if(!['completed','missed','cancelled'].includes(n.status)){n.status='cancelled';n.exitReason='school_or_event_changed';}
+  return n;
+ }
+ if(['completed','missed','cancelled'].includes(n.status))return n;
+ if(n.status==='attending'){
+  if(ev.status!=='Attending'){if(isTerminal(ev.status)){n.status='completed';n.exitReason='calendar_resolved';}else setCalendarStatus(ev,'Attending','Reconciled active Prom check-in');}
+  if(currentDate()>n.dateISO||currentDate()===n.dateISO&&currentMinute()>=n.endMinute)leavePromNight6B1('event_ended');
+  else if(typeof reconcilePromArrival6B3==='function'){
+   if(typeof initializePromArrival6B3==='function')initializePromArrival6B3(pr);
+   reconcilePromArrival6B3(pr);
+  }
+ }else if(currentDate()>n.dateISO||currentDate()===n.dateISO&&currentMinute()>n.entryCutoffMinute)missPromNight6B1(ev);
+ else n.status=promNightAvailable6B1(pr)?'entry_open':currentDate()===n.dateISO?'preparation_available':'scheduled';
+ return n;
+}
+function promNightHtml6B1(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);if(!n)return '';
+ const g=promNightEntryGate6B1();const label=n.status==='attending'?'At the School Hall':n.status==='completed'?'Attended':n.status==='missed'?'Missed':n.status==='cancelled'?'Cancelled':currentDate()===n.dateISO?'Prom day':'Upcoming';
+ return `<div class="prom-night-6b1" data-prom-night6b1="${esc(n.eventId)}"><h4>Prom Night · ${esc(label)}</h4><p class="muted-text">${esc(n.venue)} · ${timeLabel(n.startMinute)}–${timeLabel(n.endMinute)} · Check-in closes ${timeLabel(n.entryCutoffMinute)}.</p>`+
+ (typeof promGettingReadyHtml6B2==='function'?promGettingReadyHtml6B2(pr):'')+
+ (n.status==='attending'?`${typeof promArrivalHtml6B3==='function'?promArrivalHtml6B3(pr):''}${typeof promMomentsHtml6B4==='function'?promMomentsHtml6B4(pr):''}${typeof promCeremonyHtml6B5==='function'?promCeremonyHtml6B5(pr):''}${typeof promAfterHtml6B6==='function'?promAfterHtml6B6(pr):''}<button class="small" data-prom-night-action6b1="leave">Leave Prom / Go Home</button>`:
+ n.status==='completed'?(typeof promAfterHtml6B6==='function'?promAfterHtml6B6(pr):''):
+ g.ok?`<button class="small" data-prom-night-action6b1="enter">Enter School Hall</button>`:
+ `<p class="muted-text">${esc({entry_not_open:'Doors open at 7:00 PM.',entry_closed:'Check-in is closed.',ticket_or_waiver_required:'Arrange your Prom ticket or waiver.',not_registered_or_declined:'Only registered students can attend.',calendar_conflict:'Resolve the overlapping commitment before attending.'}[g.reason]||'Entry is unavailable right now.')}</p>`)+`</div>`;
+}
+function promNightClick6B1(b){const k=b?.dataset?.promNightAction6b1;if(!k)return false;
+ const r=k==='enter'?enterPromNight6B1():k==='leave'?leavePromNight6B1():{ok:false,reason:'unknown_action'};
+ if(!r.ok)toast(`Prom entry: ${r.reason}`);save();render();return true;
+}
+// PHASE 6B.2 — Event-scoped Prom preparation, using existing Calendar/Inventory/family.
+// No awards, NPC encounters, photos, attendance, fake purchased goods, or romance outcomes.
+const PROM_PREP_SCHEMA_6B2=1;
+function promReadyRecord6B2(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),r=n?.gettingReady6B2;
+ return r?.eventId===n.eventId?r:null;
+}
+function ensurePromReady6B2(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);if(!n)return null;
+ if(promReadyRecord6B2(pr))return n.gettingReady6B2;
+ if(['completed','missed','cancelled'].includes(n.status))return null;
+ n.gettingReady6B2={schemaVersion:PROM_PREP_SCHEMA_6B2,eventId:n.eventId,outfitItemId:null,
+  outfitSelectedAt:null,makeup:null,hair:null,helperDecisions:{},preparationMinutes:0};
+ return n.gettingReady6B2;
+}
+function promReadyWindow6B2(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);
+ if(!n||!promRegistered6A1(pr)||pr.plan==='skip'||['completed','missed','cancelled','attending'].includes(n.status))return {ok:false,reason:'not_available'};
+ if(S.location!=='Home')return {ok:false,reason:'prepare_at_home'};
+ const eligible=promSeasonEligibility6A1(),identity=promIdentity6A1(eligible),ev=promNightEvent6B1(pr);
+ if(!eligible.ok||!identity||identity.eventId!==n.eventId||!ev||isTerminal(ev.status))return {ok:false,reason:'school_or_event_ineligible'};
+ const days=daysBetween(currentDate(),n.dateISO);
+ if(days<0||days>7)return {ok:false,reason:'preparation_window_closed'};
+ if(days===0&&currentMinute()>=n.entryCutoffMinute)return {ok:false,reason:'too_late'};
+ return {ok:true};
+}
+function promReadyTimeBudget6B2(pr,minutes){const n=promNightRecord6B1(pr);return currentDate()!==n.dateISO||currentMinute()+minutes<=n.entryCutoffMinute?{ok:true}:{ok:false,reason:'not_enough_time_before_checkin'};}
+function promWearableOptions6B2(){
+ return (S.inventoryItems||[]).filter(i=>i&&!i.stored&&i.condition>0&&i.lifecycleType==='wearable'&&
+   catalogItem(i.key)?.category==='Clothes'&&!!catalogItem(i.key)?.slot);
+}
+function promOutfitQuality6B2(it){
+ if(!it)return 0;const d=catalogItem(it.key);
+ return Math.round(Math.max(1,Math.min(100,(['promSuit','promDress'].includes(it.key)?70:30)+
+   Math.min(15,Number(d?.style||0))+Math.round((it.condition||0)/10))));
+}
+function promOutfitChoice6B2(itemId){
+ const pr=S?.school?.prom,g=promReadyWindow6B2(pr);if(!g.ok)return g;
+ const it=promWearableOptions6B2().find(i=>i.id===itemId);
+ if(!it)return {ok:false,reason:'item_not_owned_or_wearable'};
+ const t=promReadyTimeBudget6B2(pr,12);if(!t.ok)return t;
+ const r=ensurePromReady6B2(pr);if(!r)return {ok:false,reason:'no_active_prom'};
+ if(r.outfitItemId===it.id)return {ok:false,reason:'already_selected'};
+ const d=catalogItem(it.key),old=equippedIn(d.slot);
+ if(old&&old!==it)old.equipped=false;
+ it.equipped=true;it.stored=false;
+ r.outfitItemId=it.id;r.outfitSelectedAt={dateISO:currentDate(),minute:currentMinute()};
+ r.outfitQualityAtSelection=promOutfitQuality6B2(it);
+ r.preparationMinutes+=12;
+ if(pr.prep)pr.prep.outfit='existing'; // legacy display only: backed by actual selected inventory ID
+ advanceTime(12,{silent:true});log('Prom outfit chosen',`You prepare ${it.name} from your own wardrobe. No new item was created.`);
+ return {ok:true,itemId:it.id,quality:r.outfitQualityAtSelection};
+}
+function promDayOnly6B2(pr){const n=promNightRecord6B1(pr);return n&&currentDate()===n.dateISO&&currentMinute()>=720?{ok:true}:{ok:false,reason:'prom_day_preparation_only'};}
+function promMakeupKit6B2(){return (S.inventoryItems||[]).find(i=>i.key==='makeup'&&!i.stored&&i.lifecycleType==='finite'&&Number(i.remaining)>=3.3)||null}
+function promHelperCandidates6B2(){
+ if(!livesWithParents())return [];
+ return (S.people||[]).filter(p=>p&&p.id&&inHousehold(p)&&!p.deceased&&p.gender==='Female'&&
+  (p.role==='parent'&&p.relation==='mother'||p.role==='aunt'||
+  isSibling(p)&&personAge(p)>=16&&personAge(p)>S.age));
+}
+function promHelperQuality6B2(p){
+ // Use genuine recorded skills if present, otherwise a modest baseline, not an invented skill record.
+ const recorded=[p.makeupSkill,p.skills?.makeup,p.skills?.style,p.style].find(x=>Number.isFinite(Number(x))&&x!==null&&x!==undefined);
+ const skill=recorded==null?45:Number(recorded);
+ return Math.round(Math.max(25,Math.min(90,28+skill*.48+(Number(p.looks)||50)*.09)));
+}
+function promMakeupSelf6B2(){
+ const pr=S?.school?.prom,g=promReadyWindow6B2(pr);if(!g.ok)return g;
+ const t=promReadyTimeBudget6B2(pr,25);if(!t.ok)return t;
+ const r=ensurePromReady6B2(pr);if(!r)return {ok:false,reason:'no_active_prom'};
+ const day=promDayOnly6B2(pr);if(!day.ok)return day;
+ if(r.makeup)return {ok:false,reason:'makeup_already_prepared'};
+ if(S.age<13)return {ok:false,reason:'independent_makeup_age_restricted'};
+ const it=promMakeupKit6B2();if(!it)return {ok:false,reason:'makeup_kit_required'};
+ // Existing finite-item lifecycle: opened item ID, consumption and used count, not a fictional kit.
+ const used=openOne(it);
+ if(Number(used.remaining)<3.3)return {ok:false,reason:'insufficient_makeup'};
+ used.remaining=Math.max(0,Math.round((used.remaining-3.3)*100)/100);
+ used.timesUsed=(used.timesUsed||0)+1;
+ const quality=Math.round(Math.max(25,Math.min(85,39+(Number(S.skills?.style)||0)*.5+(Number(S.looks)||50)*.12)));
+ r.makeup={method:'self',itemId:used.id,quality,dateISO:currentDate(),minute:currentMinute()};
+ if(pr.prep)pr.prep.makeup='done';r.preparationMinutes+=25;
+ advanceTime(25,{silent:true});log('Prom makeup',`You apply your own makeup using ${used.name}.`);
+ return {ok:true,method:'self',itemId:used.id,quality,remaining:used.remaining};
+}
+function promMakeupHelper6B2(personId){
+ const pr=S?.school?.prom,g=promReadyWindow6B2(pr);if(!g.ok)return g;
+ const t=promReadyTimeBudget6B2(pr,30);if(!t.ok)return t;
+ const r=ensurePromReady6B2(pr);if(!r)return {ok:false,reason:'no_active_prom'};
+ const day=promDayOnly6B2(pr);if(!day.ok)return day;
+ if(r.makeup)return {ok:false,reason:'makeup_already_prepared'};
+ const p=promHelperCandidates6B2().find(p=>p.id===personId);
+ if(!p)return {ok:false,reason:'helper_not_eligible_or_at_home'};
+ if(r.helperDecisions[p.id]==='declined')return {ok:false,reason:'previously_declined'};
+ if(p.available===false||p.busyUntilDateISO&&p.busyUntilDateISO>=currentDate()||p.promUnavailableDateISO===currentDate())return {ok:false,reason:'helper_unavailable'};
+ // Refusal is deterministic, persistent and cannot be rerolled by repeated clicking.
+ if(Number(p.rel??p.trust??50)<15){r.helperDecisions[p.id]='declined';return {ok:false,reason:'helper_declined'};}
+ r.helperDecisions[p.id]='accepted';const quality=promHelperQuality6B2(p);
+ r.makeup={method:'family',helperId:p.id,quality,dateISO:currentDate(),minute:currentMinute()};
+ if(pr.prep)pr.prep.makeup='family';r.preparationMinutes+=30;
+ advanceTime(30,{silent:true});log('Family Prom makeup',`${displayName(p)} helps you with a Prom look at home.`);
+ return {ok:true,method:'family',helperId:p.id,quality};
+}
+function promHair6B2(){
+ const pr=S?.school?.prom,g=promReadyWindow6B2(pr);if(!g.ok)return g;
+ const t=promReadyTimeBudget6B2(pr,20);if(!t.ok)return t;
+ const r=ensurePromReady6B2(pr);if(!r)return {ok:false,reason:'no_active_prom'};
+ const day=promDayOnly6B2(pr);if(!day.ok)return day;
+ if(r.hair)return {ok:false,reason:'hair_already_prepared'};
+ r.hair={method:'home',dateISO:currentDate(),minute:currentMinute(),quality:Math.min(75,35+Math.round((Number(S.skills?.style)||0)*.35))};
+ if(pr.prep)pr.prep.hair='diy';r.preparationMinutes+=20;
+ advanceTime(20,{silent:true});log('Prom hair',`You style your hair at home.`);return {ok:true,hair:r.hair};
+}
+function promReadySummary6B2(pr=S?.school?.prom){
+ const r=promReadyRecord6B2(pr);if(!r)return null;
+ const outfit=(S.inventoryItems||[]).find(i=>i.id===r.outfitItemId);
+ return {eventId:r.eventId,outfitId:outfit?.id||null,outfitName:outfit?.name||null,
+  outfitValid:!!outfit&&!outfit.stored&&outfit.condition>0&&outfit.equipped,
+  outfitQuality:outfit?.equipped?promOutfitQuality6B2(outfit):0,
+  makeupMethod:r.makeup?.method||null,makeupQuality:r.makeup?.quality||0,
+  hairPrepared:!!r.hair,minutes:r.preparationMinutes};
+}
+function promGettingReadyHtml6B2(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);if(!n)return '';
+ const r=promReadyRecord6B2(pr),s=promReadySummary6B2(pr),g=promReadyWindow6B2(pr);
+ if(!r&&!g.ok)return '';
+ const wear=promWearableOptions6B2();const done=n.status==='attending'||['completed','missed','cancelled'].includes(n.status);
+ const kit=promMakeupKit6B2();const helpers=promHelperCandidates6B2();
+ return `<div class="prom-ready-6b2" data-prom-ready6b2="${esc(n.eventId)}"><h4>Getting ready · School Prom</h4>`+
+  `<p class="muted-text">${s?.outfitValid?`Outfit: ${esc(s.outfitName)}`:s?.outfitName?'Your chosen outfit is no longer equipped or usable.':'No outfit chosen yet.'} · Makeup: ${esc(s?.makeupMethod||'none')} · Hair: ${s?.hairPrepared?'styled':'not styled'}. Makeup is optional.</p>`+
+  (g.ok?`<div class="prom-ready-options-6b2"><b>Choose clothes you actually own</b><div class="inline-actions">${wear.map(i=>`<button class="small ghost" data-prom-ready-action6b2="outfit" data-item-id="${esc(i.id)}">${esc(i.name)} (${Math.round(i.condition)}%)</button>`).join('')||'<small>No usable clothing in Inventory. Visit the Store for clothes, including formal dress or suit.</small>'}</div>`+
+  `<p class="muted-text">Formalwear is available in the normal Store. Ordinary clothing is allowed, but may be less suitable.</p>`+
+  (!r?.makeup?`<div class="inline-actions">${S.age>=13?`<button class="small ghost" data-prom-ready-action6b2="self" ${kit?'':'disabled'}>Apply own makeup${kit?'':' · makeup kit required'}</button>`:''}${helpers.map(p=>`<button class="small ghost" data-prom-ready-action6b2="helper" data-person-id="${esc(p.id)}">Ask ${esc(displayName(p))} for makeup help</button>`).join('')}</div>`:'')+
+  (!r?.hair?`<button class="small ghost" data-prom-ready-action6b2="hair">Style hair at home</button>`:'')+'</div>':`<small class="muted-text">${done?'Preparation is closed for this Prom.':'Prepare at home during the final seven days before Prom.'}</small>`)+`</div>`;
+}
+function promReadyClick6B2(b){
+ const action=b?.dataset?.promReadyAction6b2;if(!action)return false;
+ const r=action==='outfit'?promOutfitChoice6B2(b.dataset.itemId):action==='self'?promMakeupSelf6B2():
+  action==='helper'?promMakeupHelper6B2(b.dataset.personId):action==='hair'?promHair6B2():{ok:false,reason:'unknown_action'};
+ if(!r.ok)toast('Prom preparation: '+r.reason.replaceAll('_',' '));save();render();return true;
+}
+// Legacy preparation shortcuts must not create or consume phantom formalwear/cosmetics.
+const oldPromPrep6B2=promPrep;
+promPrep=function(key){
+ if(['outfitBuy','outfitOwn','outfitBorrow','makeup','hairDiy','hairSalon'].includes(key))return {ok:false,reason:'use_inventory_prom_preparation'};
+ return oldPromPrep6B2(key);
+};
+// PHASE 6B.3 — School Hall arrival, real student encounters and date presence.
+// Extends the 6B.1 attendance record; never creates ballot votes, romance or Prom awards.
+const PROM_ARRIVAL_SCHEMA_6B3=1;
+function promArrivalRecord6B3(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=n?.arrivals6B3;
+ return a?.eventId===n.eventId?a:null;
+}
+function promArrivalAbsence6B3(n,pr){
+ if(!promCourtSchoolPeer6A4(n,pr))return 'No longer enrolled in this Prom cohort';
+ if(n.notGoingProm)return 'Declined to attend Prom';
+ if(n.promUnavailableDateISO===pr.dateISO)return 'Another school or family commitment';
+ if(n.available===false||n.busyUntilDateISO&&n.busyUntilDateISO>=pr.dateISO)return 'Unavailable due to an existing commitment';
+ return null;
+}
+function promArrivalMinute6B3(n,defaultMinute){
+ const v=Number(n?.promArrivalMinute);
+ // Only a pre-existing, explicit NPC schedule may delay arrival; never randomize a no-show.
+ return Number.isFinite(v)&&v>=0&&v<1440?v:defaultMinute;
+}
+function promArrivalCompanion6B3(pr,a){
+ const person=pr?.partnerId?personById(pr.partnerId):null;
+ if(!pr?.partnerId)return {personId:null,npcId:null,status:'none',reason:null};
+ if(!person||!promDateStudent6A3(person))return {personId:pr.partnerId,npcId:null,status:'unavailable',reason:'Confirmed companion is no longer eligible'};
+ if(person.notGoingProm||person.promUnavailableDateISO===pr.dateISO||person.available===false||person.busyUntilDateISO&&person.busyUntilDateISO>=pr.dateISO)
+  return {personId:person.id,npcId:person.npcId||null,status:'no_show',reason:person.promUnavailableDateISO===pr.dateISO?'A family or school commitment':'Companion is unavailable'};
+ const npc=person.npcId&&npcById(person.npcId);
+ if(!npc)return {personId:person.id,npcId:null,status:'unverified',reason:'Cannot verify this student in the school roster'};
+ const reason=promArrivalAbsence6B3(npc,pr);
+ if(reason)return {personId:person.id,npcId:npc.id,status:'no_show',reason};
+ if(a.attendeeIds.includes(npc.id))return {personId:person.id,npcId:npc.id,status:'present',reason:null};
+ if(a.expectedIds.includes(npc.id))return {personId:person.id,npcId:npc.id,status:'expected_later',reason:'Arriving later according to their schedule'};
+ return {personId:person.id,npcId:npc.id,status:'unverified',reason:'Companion is not recorded at the venue'};
+}
+function initializePromArrival6B3(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),ev=promNightEvent6B1(pr);
+ if(!n||n.status!=='attending'||!n.attendanceRecorded||!ev||ev.id!==n.eventId||
+   S.location!=='School'||currentDate()!==n.dateISO||currentMinute()>=n.endMinute||
+   ev.status!=='Attending'||playerCurrentSchoolId4A2()!==n.schoolId||
+   ev.location!==n.venue||ev.schoolId!==n.schoolId)return null;
+ if(promArrivalRecord6B3(pr))return promArrivalRecord6B3(pr);
+ const now=currentMinute(),original=[...new Set(n.attendeeIds||[])];
+ const intended=pr.partnerId&&personById(pr.partnerId);
+ const companionMissing=intended&&(intended.notGoingProm||intended.promUnavailableDateISO===pr.dateISO||intended.available===false||intended.busyUntilDateISO&&intended.busyUntilDateISO>=pr.dateISO);
+ const verified=[],expected=[],absent=[];
+ for(const id of original){
+  const npc=npcById(id),reason=companionMissing&&intended.npcId===id?'Companion has an existing commitment':promArrivalAbsence6B3(npc,pr);
+  if(reason){absent.push({npcId:id,reason});continue}
+  const minute=promArrivalMinute6B3(npc,n.startMinute);
+  if(minute>n.endMinute){absent.push({npcId:id,reason:'Scheduled arrival after the event ends'});continue}
+  if(minute>now)expected.push(id);else verified.push(id);
+ }
+ // The previously accepted companion must be a REAL eligible enrolled NPC.
+ const partner=pr.partnerId&&personById(pr.partnerId),npc=partner?.npcId&&npcById(partner.npcId);
+ if(npc&&!companionMissing&&promCourtSchoolPeer6A4(npc,pr)&&!original.includes(npc.id)){
+  const reason=promArrivalAbsence6B3(npc,pr);
+  if(reason)absent.push({npcId:npc.id,reason});
+  else if(promArrivalMinute6B3(npc,n.startMinute)>now)expected.push(npc.id);
+  else verified.push(npc.id);
+ }
+ const a={schemaVersion:PROM_ARRIVAL_SCHEMA_6B3,eventId:n.eventId,schoolId:n.schoolId,venue:n.venue,
+  recordedAt:{dateISO:currentDate(),minute:now},attendeeIds:[...new Set(verified)].sort(),expectedIds:[...new Set(expected)].sort(),
+  absent,companion:null,greetings:[],arrivalDescription:null};
+ n.arrivals6B3=a;n.attendeeIds=[...a.attendeeIds];
+ a.companion=promArrivalCompanion6B3(pr,a);
+ n.companionStatus=a.companion.status;n.companionReason=a.companion.reason;
+ // Outfit can affect later reactions, but this is not a guaranteed social bonus.
+ const ready=promReadySummary6B2(pr),quality=(ready?.outfitValid?ready.outfitQuality:0);
+ a.arrivalDescription=quality>=75?'Your carefully chosen outfit feels right for the school hall.':
+  quality>=40?'You arrive in an outfit you chose for tonight.':'The hall is dressed for Prom; you step inside as you are.';
+ return a;
+}
+function reconcilePromArrival6B3(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);
+ if(!a||n.status!=='attending'||S.location!=='School'||currentDate()!==n.dateISO||currentMinute()>=n.endMinute)return a;
+ if(a.schoolId!==n.schoolId||a.venue!==n.venue)return a;
+ const intended=pr.partnerId&&personById(pr.partnerId);
+ const companionMissing=intended&&(intended.notGoingProm||intended.promUnavailableDateISO===pr.dateISO||intended.available===false||intended.busyUntilDateISO&&intended.busyUntilDateISO>=pr.dateISO);
+ const remaining=[];
+ for(const id of a.expectedIds){
+  const npc=npcById(id),reason=companionMissing&&intended.npcId===id?'Companion has an existing commitment':promArrivalAbsence6B3(npc,pr);
+  if(reason){if(!a.absent.some(x=>x.npcId===id))a.absent.push({npcId:id,reason});continue}
+  if(currentMinute()>=promArrivalMinute6B3(npc,n.startMinute)){
+   if(!a.attendeeIds.includes(id))a.attendeeIds.push(id);
+  }else remaining.push(id);
+ }
+ a.expectedIds=remaining;a.attendeeIds.sort();n.attendeeIds=[...a.attendeeIds];
+ a.companion=promArrivalCompanion6B3(pr,a);n.companionStatus=a.companion.status;n.companionReason=a.companion.reason;
+ return a;
+}
+function promArrivalGate6B3(){
+ const pr=S?.school?.prom,n=promNightRecord6B1(pr),ev=promNightEvent6B1(pr),a=promArrivalRecord6B3(pr);
+ if(!n||n.status!=='attending'||!n.attendanceRecorded||!ev||ev.status!=='Attending'||!a||a.eventId!==n.eventId)return {ok:false,reason:'not_checked_in'};
+ if(currentDate()!==n.dateISO||currentMinute()>=n.endMinute)return {ok:false,reason:'event_ended'};
+ if(S.location!=='School'||locationSchoolId4C1()!==n.schoolId||ev.location!==a.venue)return {ok:false,reason:'not_at_approved_school_hall'};
+ const e=promSeasonEligibility6A1(),id=promIdentity6A1(e);
+ if(!e.ok||id?.eventId!==n.eventId)return {ok:false,reason:'school_changed'};
+ return {ok:true};
+}
+function promArrivalGreet6B3(npcId){
+ const g=promArrivalGate6B3();if(!g.ok)return g;
+ const pr=S.school.prom,a=reconcilePromArrival6B3(pr),n=npcById(npcId);
+ if(!n||!a.attendeeIds.includes(npcId)||!promCourtSchoolPeer6A4(n,pr))return {ok:false,reason:'student_not_present'};
+ if(a.greetings.some(x=>x.npcId===npcId))return {ok:false,reason:'already_greeted'};
+ if(currentMinute()+5>promNightRecord6B1(pr).endMinute)return {ok:false,reason:'not_enough_time'};
+ let p=(S.people||[]).find(x=>x.npcId===npcId),introduced=false;
+ if(!p){
+  if((S.people||[]).filter(x=>!isFamilyPerson(x)).length>=50)return {ok:false,reason:'people_limit_reached'};
+  p=addNeighborPerson(n,'met at School Prom');introduced=true;
+  // Record factual provenance for this introduction; never claim a prior connection.
+  p.metAt=pr.venue;p.metVia='School Prom';
+  // New acquaintance: the actual introduction is the primary meeting context.
+  if(p.schoolSocial?.meeting)p.schoolSocial.meeting.sourceType='schoolEvent';
+  recordMeetingProvenance4A4(p,{sourceType:'schoolEvent',eventId:a.eventId,schoolId:a.schoolId,grade:pr.foundation6A1.grade,metAt:pr.venue,metVia:'School Prom'});
+ }
+ const companion=a.companion?.npcId===npcId&&a.companion.status==='present';
+ const ready=promReadySummary6B2(pr),dressed=!!ready?.outfitValid&&ready.outfitQuality>=65;
+ const greeting=companion?'Your Prom companion meets you by the entrance.':
+  introduced?'You introduce yourselves beside the decorated entrance.':
+  dressed?'They notice your outfit and say hello.':'You exchange a friendly greeting at the hall.';
+ a.greetings.push({npcId,personId:p.id,dateISO:currentDate(),minute:currentMinute(),kind:companion?'companion':introduced?'introduction':'greeting',text:greeting});
+ // A brief hello, not an automatic dance, kiss, relationship promotion, photo or vote.
+ p.rel=clamp((p.rel??48)+1);
+ rememberPerson(p,`Met at ${pr.venue} during Prom: ${greeting}`,1);
+ advanceTime(5,{silent:true});log('Prom arrival',`${displayName(p)}: ${greeting}`);
+ return {ok:true,personId:p.id,npcId,kind:companion?'companion':introduced?'introduction':'greeting'};
+}
+function promArrivalHtml6B3(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);if(!n||n.status!=='attending'||!a)return '';
+ const g=promArrivalGate6B3(),comp=a.companion||{status:'none'};
+ const status={none:'Going solo or with friends',present:'Your confirmed companion is here',expected_later:'Companion expected later',no_show:'Companion cannot attend',unavailable:'Companion unavailable',unverified:'Companion not verified in the school roster'}[comp.status]||'Companion status unconfirmed';
+ const all=a.attendeeIds.filter(id=>!!npcById(id)&&promCourtSchoolPeer6A4(npcById(id),pr));
+ return `<section class="prom-arrival-6b3" data-prom-arrival6b3="${esc(a.eventId)}"><h4>Inside ${esc(n.venue)}</h4>`+
+  `<p class="muted-text">${esc(a.arrivalDescription||'You have checked in at the school hall.')} ${esc(status)}${comp.reason?' · '+esc(comp.reason):''}. ${all.length} classmates are present.</p>`+
+  (a.expectedIds.length?`<p class="muted-text">${a.expectedIds.length} student(s) are expected later according to their schedules.</p>`:'')+
+  `<div class="prom-arrival-people-6b3">${all.slice(0,12).map(id=>{const npc=npcById(id),known=(S.people||[]).find(p=>p.npcId===id),met=a.greetings.some(x=>x.npcId===id);
+   return `<div class="prom-arrival-person-6b3"><span>${esc(npc.fullName||'Classmate')}${a.companion?.npcId===id?' · Companion':''}${known?' · Known':' · New'}</span>${met?'<small>Greeted</small>':g.ok?`<button class="small ghost" data-prom-arrival-action6b3="greet" data-npc-id="${esc(id)}">${known?'Say hello':'Introduce yourself'}</button>`:''}</div>`}).join('')||'<p class="muted-text">No other students have been verified here yet.</p>'}</div>`+
+  `<p class="muted-text">Arrivals and introductions only. Dancing, photos and the award ceremony arrive in later checkpoints.</p></section>`;
+}
+function promArrivalClick6B3(b){if(!b?.dataset?.promArrivalAction6b3)return false;
+ const r=b.dataset.promArrivalAction6b3==='greet'?promArrivalGreet6B3(b.dataset.npcId):{ok:false,reason:'unknown_action'};
+ if(!r.ok)toast('Prom arrival: '+r.reason.replaceAll('_',' '));save();render();return true;
+}
+// PHASE 6B.4 — School Prom dancing and bounded interactive activities.
+// All actions extend the actual B1/B3 venue attendance. No award or romance inference.
+const PROM_MOMENTS_SCHEMA_6B4=1;
+const PROM_MOMENTS_COST_6B4={solo:15,dance:15,talk:10,break:10,refresh:8,moment:12};
+function promMomentsRecord6B4(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),m=n?.moments6B4;
+ return n&&m?.eventId===n.eventId&&m.schoolId===n.schoolId&&m.venue===n.venue?m:null;
+}
+function ensurePromMoments6B4(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);
+ if(!n||!a||a.eventId!==n.eventId||!n.attendanceRecorded)return null;
+ if(promMomentsRecord6B4(pr))return n.moments6B4;
+ // Backfill ONLY the empty activity ledger for real checked-in events, not historical Prom claims.
+ if(n.status!=='attending'||!promArrivalGate6B3().ok)return null;
+ n.moments6B4={schemaVersion:PROM_MOMENTS_SCHEMA_6B4,eventId:n.eventId,schoolId:n.schoolId,venue:n.venue,
+  activities:[],danceAttempts:[],talkedNpcIds:[],soloCount:0,breakCount:0,refreshCount:0,momentCount:0};
+ return n.moments6B4;
+}
+function promMomentsGate6B4(kind,npcId=null){
+ const g=promArrivalGate6B3();if(!g.ok)return g;
+ const pr=S.school.prom,n=promNightRecord6B1(pr),a=reconcilePromArrival6B3(pr),m=ensurePromMoments6B4(pr);
+ if(!m||m.eventId!==a.eventId)return {ok:false,reason:'activity_not_available'};
+ if(!Object.hasOwn(PROM_MOMENTS_COST_6B4,kind))return {ok:false,reason:'unknown_activity'};
+ const cost=PROM_MOMENTS_COST_6B4[kind];
+ if(currentMinute()+cost>n.endMinute)return {ok:false,reason:'not_enough_time'};
+ if(kind==='solo'&&m.soloCount>=2||kind==='break'&&m.breakCount>=2||kind==='refresh'&&m.refreshCount>=2||kind==='moment'&&m.momentCount>=2)return {ok:false,reason:'activity_limit'};
+ let npc=null,person=null;
+ if(kind==='dance'||kind==='talk'){
+  npc=npcById(npcId);
+  if(!npc||!a.attendeeIds.includes(npcId)||!promCourtSchoolPeer6A4(npc,pr))return {ok:false,reason:'student_not_present'};
+  // Introduce yourself first; no ungrounded social connections or fabricated People entries.
+  person=(S.people||[]).find(p=>p.npcId===npcId&&!isFamilyPerson(p));
+  if(!person||!a.greetings.some(x=>x.npcId===npcId))return {ok:false,reason:'greet_first'};
+  if(kind==='dance'&&m.danceAttempts.some(x=>x.npcId===npcId))return {ok:false,reason:'already_asked_to_dance'};
+  if(kind==='talk'&&m.talkedNpcIds.includes(npcId))return {ok:false,reason:'already_talked'};
+ }
+ return {ok:true,pr,n,a,m,npc,person,cost};
+}
+function promMomentsDanceConsent6B4(g){
+ const p=g.person,n=g.npc,comp=g.a.companion?.status==='present'&&g.a.companion.npcId===n.id;
+ // A companion still has agency. Trust, closeness and documented temperament influence the response.
+ if(p.available===false||n.available===false||n.promDeclinesDance===true)return {accepted:false,reason:'They politely decline to dance.'};
+ const closeness=Number(p.rel??45),trust=Number(p.trust??45);
+ const disposition=(n.traits||[]).includes('Shy')?-14:(n.traits||[]).includes('Outgoing')?9:0;
+ const likelihood=Math.max(12,Math.min(94,30+closeness*.36+trust*.17+(comp?17:0)+disposition));
+ const roll=hashOf(`${g.m.eventId}|dance|${n.id}`)%100;
+ return roll<likelihood?{accepted:true,reason:comp?'Your companion agrees to share a dance.':'They smile and agree to dance.'}:
+  {accepted:false,reason:comp?'Your companion would rather rest for this song.':'They politely decline this dance.'};
+}
+function promMomentsAction6B4(kind,npcId=null){
+ const g=promMomentsGate6B4(kind,npcId);if(!g.ok)return g;
+ const {m,person,npc,cost}=g,at={dateISO:currentDate(),minute:currentMinute()};
+ let accepted=true,description='',effects={fun:0,social:0,energy:0,hunger:0};
+ if(kind==='dance'){
+  const consent=promMomentsDanceConsent6B4(g);accepted=consent.accepted;description=consent.reason;
+  m.danceAttempts.push({npcId,personId:person.id,accepted,reason:description,...at});
+  effects=accepted?{fun:9,social:7,energy:-7,hunger:0}:{fun:-1,social:0,energy:-2,hunger:0};
+  if(accepted){person.rel=clamp((person.rel??48)+2);person.trust=clamp((person.trust??40)+1);rememberPerson(person,`You danced together at ${g.pr.venue} during Prom.`,2)}
+ }else if(kind==='talk'){
+  m.talkedNpcIds.push(npcId);description=`You catch up with ${displayName(person)} about the music and school year.`;
+  person.rel=clamp((person.rel??48)+2);effects={fun:3,social:8,energy:-2,hunger:0};
+  rememberPerson(person,'You chatted together at your school Prom.',1);
+ }else if(kind==='solo'){
+  m.soloCount++;description='You join the dance floor for a favorite song, enjoying your own company.';
+  effects={fun:10,social:3,energy:-6,hunger:0};
+ }else if(kind==='break'){
+  m.breakCount++;description='You find a seat at the edge of the decorated hall and take a breather.';
+  effects={fun:2,social:0,energy:6,hunger:0};
+ }else if(kind==='refresh'){
+  m.refreshCount++;description='You enjoy a glass of water and a small snack from the school event table.';
+  effects={fun:3,social:1,energy:2,hunger:-9};
+ }else if(kind==='moment'){
+  const scenes=['A familiar song comes on and the hall breaks into a singalong.',
+   'A decoration drifts down, making your table laugh before staff put it back.',
+   'You and nearby students share a laugh over an unexpectedly energetic DJ announcement.'];
+  description=scenes[hashOf(`${m.eventId}|moment|${m.momentCount}`)%scenes.length];
+  m.momentCount++;effects={fun:6,social:2,energy:-3,hunger:0};
+ }
+ const record={kind,npcId:kind==='dance'||kind==='talk'?npcId:null,personId:person?.id||null,accepted,description,...at,cost};
+ m.activities.push(record);
+ // Canonical time progression owns routine needs changes; bounded contextual adjustments.
+ advanceTime(cost,{silent:true});
+ if(S.needs){S.needs.fun=clamp((S.needs.fun??50)+effects.fun);S.needs.social=clamp((S.needs.social??50)+effects.social);
+  S.needs.hunger=clamp((S.needs.hunger??50)+effects.hunger)}
+ S.energy=clamp((S.energy??50)+effects.energy);
+ log('Prom Night · '+kind,description);
+ return {ok:true,kind,accepted,description,eventId:m.eventId,minutes:cost};
+}
+function promMomentsHtml6B4(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);
+ if(!n||n.status!=='attending'||!a)return '';
+ const m=ensurePromMoments6B4(pr),g=promArrivalGate6B3();if(!m)return '';
+ const allow=(kind,id)=>g.ok&&promMomentsGate6B4(kind,id).ok;
+ const options=a.attendeeIds.filter(id=>a.greetings.some(x=>x.npcId===id))
+  .map(id=>({id,npc:npcById(id),p:(S.people||[]).find(x=>x.npcId===id&&!isFamilyPerson(x))})).filter(x=>x.npc&&x.p);
+ const btn=(kind,label)=>`<button class="small ghost" data-prom-moment6b4="${kind}" ${allow(kind)?'':'disabled'}>${label}</button>`;
+ return `<section class="prom-moments-6b4" data-prom-moments6b4="${esc(m.eventId)}"><h4>Prom Night · Dance floor & lounge</h4>`+
+ `<p class="muted-text">Your choices take real time. Classmates may decline dances. Nothing here changes Court ballots or grants automatic romance.</p>`+
+ `<div class="prom-moment-actions-6b4">${btn('solo','Dance on your own · 15 min')}${btn('break','Take a break · 10 min')}${btn('refresh','Water & snacks · 8 min')}${btn('moment','Enjoy the atmosphere · 12 min')}</div>`+
+ `<div class="prom-moment-people-6b4">${options.slice(0,12).map(x=>`<div class="prom-moment-person-6b4"><span>${esc(displayName(x.p))}${a.companion?.npcId===x.id?' · Prom companion':''}</span><div class="inline-actions"><button class="small ghost" data-prom-moment6b4="talk" data-npc-id="${esc(x.id)}" ${allow('talk',x.id)?'':'disabled'}>Talk</button><button class="small ghost" data-prom-moment6b4="dance" data-npc-id="${esc(x.id)}" ${allow('dance',x.id)?'':'disabled'}>Ask to dance</button></div></div>`).join('')||'<p class="muted-text">Greet an attendee above to unlock conversations or dance invitations.</p>'}</div>`+
+ `<p class="muted-text">Recorded activities: ${m.activities.length} · Solo dances: ${m.soloCount}/2 · Breaks: ${m.breakCount}/2 · Refreshments: ${m.refreshCount}/2</p>`+
+ (m.activities.length?`<div class="prom-moment-history-6b4">${m.activities.slice(-3).reverse().map(x=>`<p class="muted-text">${esc(x.description)}</p>`).join('')}</div>`:'')+'</section>';
+}
+function promMomentsClick6B4(b){const k=b?.dataset?.promMoment6b4;if(!k)return false;
+ const r=promMomentsAction6B4(k,b.dataset.npcId||null);
+ if(!r.ok)toast('Prom activity: '+r.reason.replaceAll('_',' '));save();render();return true;
+}
+// PHASE 6B.5 — Official school Prom Court ceremony and factual photograph album.
+// Only uses already-locked Phase 6A ballots and actual Phase 6B.3 Hall attendees.
+const PROM_CEREMONY_SCHEMA_6B5=1;
+const PROM_CEREMONY_START_6B5=1260; // 21:00 school-approved stage presentation
+const PROM_CEREMONY_MINUTES_6B5=20;
+const PROM_PHOTO_COST_6B5={solo:8,paired:10,group:12};
+function promCeremonyRecord6B5(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),r=n?.ceremony6B5;
+ return n&&r?.eventId===n.eventId&&r.schoolId===n.schoolId&&r.venue===n.venue?r:null;
+}
+function ensurePromCeremony6B5(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);
+ if(!n?.attendanceRecorded||!a||a.eventId!==n.eventId)return null;
+ if(promCeremonyRecord6B5(pr))return n.ceremony6B5;
+ // Do not infer past ceremony/photo events for completed or transferred saves.
+ if(n.status!=='attending'||!promArrivalGate6B3().ok)return null;
+ n.ceremony6B5={schemaVersion:PROM_CEREMONY_SCHEMA_6B5,eventId:n.eventId,schoolId:n.schoolId,venue:n.venue,
+  ceremony:null,photos:[],photoIds:[],awardMilestoneRecorded:false,photoMilestoneRecorded:false};
+ return n.ceremony6B5;
+}
+function promCeremonyGate6B5(action,ids=[]){
+ const v=promArrivalGate6B3();if(!v.ok)return v;
+ const pr=S.school.prom,n=promNightRecord6B1(pr),a=reconcilePromArrival6B3(pr),r=ensurePromCeremony6B5(pr);
+ if(!r||r.eventId!==n.eventId)return {ok:false,reason:'no_active_prom_ledger'};
+ const c=promCourtRecord6A4(pr);
+ if(action==='ceremony'){
+  if(r.ceremony)return {ok:false,reason:'ceremony_already_attended'};
+  if(currentMinute()<PROM_CEREMONY_START_6B5)return {ok:false,reason:'ceremony_not_started'};
+  if(currentMinute()+PROM_CEREMONY_MINUTES_6B5>n.endMinute)return {ok:false,reason:'not_enough_time'};
+  if(!c||!c.ballotLocked||!c.results?.winners||c.eventId!==n.eventId)return {ok:false,reason:'official_ballot_not_final'};
+  return {ok:true,pr,n,a,r,c,cost:PROM_CEREMONY_MINUTES_6B5};
+ }
+ if(!Object.hasOwn(PROM_PHOTO_COST_6B5,action))return {ok:false,reason:'unknown_photo_type'};
+ const cost=PROM_PHOTO_COST_6B5[action];
+ if(currentMinute()+cost>n.endMinute)return {ok:false,reason:'not_enough_time'};
+ if(r.photos.length>=4)return {ok:false,reason:'photo_limit'};
+ if(!Array.isArray(ids))return {ok:false,reason:'invalid_participants'};
+ const normalized=[...new Set(ids)].sort();
+ if(normalized.length!==ids.length)return {ok:false,reason:'duplicate_participant'};
+ if(action==='solo'&&normalized.length!==0||action==='paired'&&normalized.length!==1||action==='group'&&(normalized.length<2||normalized.length>4))return {ok:false,reason:'invalid_participants'};
+ for(const id of normalized){
+  const npc=npcById(id);
+  if(!npc||!a.attendeeIds.includes(id)||!promCourtSchoolPeer6A4(npc,pr))return {ok:false,reason:'student_not_present'};
+  const known=(S.people||[]).some(p=>p.npcId===id&&!isFamilyPerson(p));
+  const companion=a.companion?.status==='present'&&a.companion.npcId===id;
+  if(!known||!a.greetings.some(x=>x.npcId===id)&&!companion)return {ok:false,reason:'introduce_first'};
+ }
+ const key=action+'|'+normalized.join('|');
+ if(r.photoIds.includes(key))return {ok:false,reason:'photo_already_taken'};
+ return {ok:true,pr,n,a,r,c,cost,ids:normalized,key};
+}
+function promCeremonyPresent6B5(){
+ const g=promCeremonyGate6B5('ceremony');if(!g.ok)return g;
+ const {pr,n,a,r,c,cost}=g;
+ // Read-only view of the persisted Phase 6A winners. NEVER call tally or alter ballots.
+ const results=Object.entries(c.results.winners).map(([category,id])=>{
+  const nominee=c.nominees.find(x=>x.category===category&&x.personId===id);
+  const attendee=id==='player'||a.attendeeIds.includes(id);
+  return {category,award:PROM_COURT_CATEGORIES_6A4[category]||category,personId:id,name:id==='player'?S.name:(nominee?.name||'Student'),present:attendee};
+ });
+ const win=results.filter(x=>x.personId==='player');
+ r.ceremony={dateISO:currentDate(),minute:currentMinute(),duration:cost,schoolId:n.schoolId,venue:n.venue,
+  ballotEventId:c.eventId,officialResultsDate:c.results.dateISO||null,results,playerAwards:win.map(x=>x.award),
+  response:win.length?'accepted_school_award':'applauded'};
+ if(win.length&&!r.awardMilestoneRecorded){
+  S.milestones=S.milestones||[];
+  const key=`${n.eventId}:court-ceremony`;
+  if(!S.milestones.some(m=>m.promEventKey===key))S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'🏅 Prom Court',text:`Received ${win.map(x=>x.award).join(', ')} at ${n.venue}, following the official school ballot.`,promEventKey:key});
+  r.awardMilestoneRecorded=true;
+ }
+ advanceTime(cost,{silent:true});
+ log('Prom Court ceremony',win.length?`The school announces the counted ballot winners. You receive ${win.map(x=>x.award).join(', ')}.`:
+  'You applaud as the school presents the official Prom Court results.');
+ return {ok:true,results,playerAwards:r.ceremony.playerAwards,eventId:n.eventId,minutes:cost};
+}
+function promPhotoTake6B5(kind,ids=[]){
+ const g=promCeremonyGate6B5(kind,ids);if(!g.ok)return g;
+ const {n,r,cost}=g;
+ const photo={id:`${n.eventId}:photo:${r.photos.length+1}`,eventId:n.eventId,dateISO:currentDate(),minute:currentMinute(),
+  schoolId:n.schoolId,venue:n.venue,kind,studentNpcIds:[...g.ids],personIds:g.ids.map(id=>(S.people||[]).find(p=>p.npcId===id&&!isFamilyPerson(p))?.id).filter(Boolean)};
+ r.photos.push(photo);r.photoIds.push(g.key);
+ // Record factual People memories only for genuine participants; no relationship bonus or romantic milestone.
+ for(const personId of photo.personIds){const p=personById(personId);if(p)rememberPerson(p,`Took a ${kind==='group'?'group':'shared'} photo at the school Prom Hall.`,1)}
+ if(!r.photoMilestoneRecorded){
+  S.milestones=S.milestones||[];const key=`${n.eventId}:first-photo`;
+  if(!S.milestones.some(m=>m.promEventKey===key))S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'📷 Prom photograph',text:`Took a real ${kind==='solo'?'solo':kind==='paired'?'two-person':'group'} photograph at ${n.venue}.`,promEventKey:key});
+  r.photoMilestoneRecorded=true;
+ }
+ advanceTime(cost,{silent:true});log('Prom photograph',kind==='solo'?'A photographer takes your portrait.':`You take a ${kind} photograph with actual classmates.`);
+ return {ok:true,photo,eventId:n.eventId,minutes:cost};
+}
+function promCeremonyHtml6B5(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),a=promArrivalRecord6B3(pr);
+ if(n?.status!=='attending'||!a)return '';
+ const r=ensurePromCeremony6B5(pr);if(!r)return '';
+ const ceremonyGate=promCeremonyGate6B5('ceremony');
+ const full=!!r.ceremony;
+ const label=x=>x.personId==='player'?'You':x.name;
+ const present=r.ceremony?.results||[];
+ const candidates=a.attendeeIds.filter(id=>a.greetings.some(x=>x.npcId===id)||a.companion?.status==='present'&&a.companion.npcId===id)
+  .map(id=>({id,npc:npcById(id)})).filter(x=>x.npc).slice(0,12);
+ const available=kind=>promCeremonyGate6B5(kind,[]).ok;
+ // Individual/group photos require known real classmates; generic photos are always an option.
+ const paired=candidates.map(x=>`<button class="small ghost" data-prom-photo6b5="paired" data-photo-npcs="${esc(x.id)}" ${promCeremonyGate6B5('paired',[x.id]).ok?'':'disabled'}>Photo with ${esc(x.npc.fullName||x.npc.name||'student')}</button>`).join('');
+ const groupIds=candidates.slice(0,3).map(x=>x.id);
+ return `<section class="prom-ceremony-6b5" data-prom-ceremony6b5="${esc(r.eventId)}"><h4>Prom Court Ceremony & Photos</h4>`+
+  `<p class="muted-text">School ceremony at 9:00 PM · Official ballots are final. Photos use only classmates at the School Hall.</p>`+
+  (full?`<p class="prom-ceremony-outcome-6b5">${present.map(x=>`${esc(x.award)}: ${esc(label(x))}${x.present?'':' (not present to receive)'}`).join(' · ')||'No Court awards this year.'}</p>`:
+   `<button class="small" data-prom-ceremony-action6b5="present" ${ceremonyGate.ok?'':'disabled'}>Attend Court ceremony · 20 min</button>`+
+   `<p class="muted-text">${currentMinute()<PROM_CEREMONY_START_6B5?'Ceremony begins at 9:00 PM.':ceremonyGate.ok?'The school is ready to present its official results.':'Ceremony is unavailable: '+esc(ceremonyGate.reason.replaceAll('_',' '))}</p>`)+
+  `<div class="prom-ceremony-photos-6b5"><button class="small ghost" data-prom-photo6b5="solo" ${available('solo')?'':'disabled'}>Solo portrait · 8 min</button>${paired}`+
+  (groupIds.length>=2?`<button class="small ghost" data-prom-photo6b5="group" data-photo-npcs="${esc(groupIds.join(','))}" ${promCeremonyGate6B5('group',groupIds).ok?'':'disabled'}>Group photo · 12 min</button>`:'')+`</div>`+
+  `<p class="muted-text">Actual photos recorded: ${r.photos.length}/4${r.photos.length?' · '+r.photos.map(x=>esc(x.kind)).join(', '):''}</p></section>`;
+}
+function promCeremonyClick6B5(b){
+ const k=b?.dataset?.promCeremonyAction6b5,photo=b?.dataset?.promPhoto6b5;
+ if(!k&&!photo)return false;
+ const r=k==='present'?promCeremonyPresent6B5():photo?promPhotoTake6B5(photo,b.dataset.photoNpcs?b.dataset.photoNpcs.split(','):[]):{ok:false,reason:'unknown_action'};
+ if(!r.ok)toast('Prom ceremony: '+String(r.reason).replaceAll('_',' '));save();render();return true;
+}
+// PHASE 6B.6 — Factual Prom farewells, checkout, and at-home reflection.
+// Extends the *same* Phase 6A/6B Night record: no parallel social, family, Calendar or travel engine.
+const PROM_AFTER_SCHEMA_6B6=1;
+const PROM_AFTER_TRAVEL_MINUTES_6B6=20;
+function promAfterRecord6B6(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr),r=n?.after6B6;
+ return n&&r?.eventId===n.eventId&&r.schoolId===n.schoolId&&r.venue===n.venue?r:null;
+}
+function ensurePromAfter6B6(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);
+ if(!n?.attendanceRecorded)return null;
+ if(promAfterRecord6B6(pr))return n.after6B6;
+ // No retrospective reconstruction for completed/missed/transferred Prom saves.
+ if(n.status!=='attending'||!promArrivalRecord6B3(pr))return null;
+ n.after6B6={schemaVersion:PROM_AFTER_SCHEMA_6B6,eventId:n.eventId,schoolId:n.schoolId,venue:n.venue,
+  farewells:[],checkout:null,homeResponse:null,firstPromRecorded:false};
+ return n.after6B6;
+}
+function promFarewellGate6B6(npcId){
+ const g=promArrivalGate6B3();if(!g.ok)return g;
+ const pr=S.school.prom,n=promNightRecord6B1(pr),a=reconcilePromArrival6B3(pr),r=ensurePromAfter6B6(pr);
+ if(!r)return {ok:false,reason:'no_active_prom'};
+ const npc=npcById(npcId);
+ if(!npc||!a.attendeeIds.includes(npcId)||!promCourtSchoolPeer6A4(npc,pr))return {ok:false,reason:'student_not_present'};
+ const hello=a.greetings.some(x=>x.npcId===npcId),companion=a.companion?.status==='present'&&a.companion.npcId===npcId;
+ const p=(S.people||[]).find(x=>x.npcId===npcId&&!isFamilyPerson(x));
+ if(!p||!hello&&!companion)return {ok:false,reason:'introduce_first'};
+ if(r.farewells.some(x=>x.npcId===npcId))return {ok:false,reason:'already_said_goodbye'};
+ if(currentMinute()+5>n.endMinute)return {ok:false,reason:'not_enough_time'};
+ return {ok:true,pr,n,r,p,npcId,companion};
+}
+function promFarewell6B6(npcId){
+ const g=promFarewellGate6B6(npcId);if(!g.ok)return g;
+ const {r,p,companion}=g;
+ const text=companion?'You thank your confirmed Prom companion for spending the evening together.':'You say goodbye to your classmate at the school hall.';
+ r.farewells.push({npcId,personId:p.id,eventId:r.eventId,dateISO:currentDate(),minute:currentMinute(),kind:companion?'companion':'classmate',text});
+ // A respectful goodbye is a factual memory, not a date, kiss, commitment or romance milestone.
+ if((p.rel??0)>=35)p.rel=clamp(p.rel+1);
+ rememberPerson(p,`Said goodbye at School Prom (${g.n.venue}).`,1);
+ advanceTime(5,{silent:true});log('Prom farewell',`${displayName(p)}: ${text}`);
+ return {ok:true,personId:p.id,eventId:r.eventId};
+}
+function finalizePromAfter6B6(reason='left_early'){
+ const pr=S?.school?.prom,n=promNightRecord6B1(pr),r=ensurePromAfter6B6(pr);
+ if(!n||n.status!=='attending'||!r||r.checkout)return null;
+ const a=promArrivalRecord6B3(pr),m=n.moments6B4,c=n.ceremony6B5;
+ const actions=Array.isArray(m?.actions)?m.actions:Array.isArray(m?.activities)?m.activities:[];
+ const greetings=Array.isArray(a?.greetings)?a.greetings.length:0;
+ const photos=Array.isArray(c?.photos)?c.photos.length:0;
+ const familyAtHome=typeof livesWithParents==='function'&&livesWithParents()&&S.age<18;
+ const cf=familyAtHome&&typeof curfewMinute==='function'?curfewMinute():null;
+ const leaveMinute=currentMinute(),homeMinute=leaveMinute+PROM_AFTER_TRAVEL_MINUTES_6B6;
+ // A registered school event is permitted through the official venue end, plus travel;
+ // only exceptional lateness beyond this window can prompt a bounded family consequence.
+ const allowed=Math.max(cf??0,n.endMinute)+PROM_AFTER_TRAVEL_MINUTES_6B6+15;
+ const seriouslyLate=familyAtHome&&cf!=null&&homeMinute>allowed;
+ const caregiver=seriouslyLate&&typeof householdCaregivers==='function'?householdCaregivers()[0]:null;
+ r.checkout={eventId:n.eventId,venue:n.venue,dateISO:currentDate(),minute:leaveMinute,reason,
+  travelMinutes:PROM_AFTER_TRAVEL_MINUTES_6B6,arrivalExpectedMinute:homeMinute,
+  greetings,activities:actions.length,photos,ceremonyAttended:!!c?.ceremony,
+  farewellPersonIds:r.farewells.map(x=>x.personId),companionStatus:a?.companion?.status||'none',
+  curfew:{applicable:cf!=null,extendedForSchoolEvent:true,lateConcern:!!(seriouslyLate&&caregiver),caregiverId:caregiver?.id||null}};
+ if(seriouslyLate&&caregiver){
+  S.family.tension=clamp((S.family.tension??0)+1);
+  log('Late return from Prom',`${firstName(caregiver)} is concerned because you returned later than the approved school event and travel window.`);
+ }
+ // First-Prom milestone requires a meaningful activity that really occurred, never just a check-in.
+ const meaningful=greetings>0||actions.length>0||photos>0||!!c?.ceremony||r.farewells.length>0;
+ if(meaningful&&!(S.milestones||[]).some(x=>x.promKind6B6==='first_attended_prom')){
+  S.milestones=S.milestones||[];
+  S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'First school Prom',text:`Attended ${n.venue} and took part in the evening.`,promKind6B6:'first_attended_prom',promEventKey:`${n.eventId}:first-attended-prom`});
+  r.firstPromRecorded=true;
+ }
+ return r.checkout;
+}
+function promHomeResponseGate6B6(kind){
+ const pr=S?.school?.prom,n=promNightRecord6B1(pr),r=promAfterRecord6B6(pr);
+ if(!r?.checkout||n?.status!=='completed'||pr?.status!=='Done')return {ok:false,reason:'prom_not_completed'};
+ if(S.location!=='Home')return {ok:false,reason:'return_home_first'};
+ if(r.homeResponse)return {ok:false,reason:'already_reflected'};
+ const days=daysBetween(n.dateISO,currentDate());
+ if(days<0||days>1||days===1&&currentMinute()>1260)return {ok:false,reason:'reflection_window_closed'};
+ if(!['share','quiet'].includes(kind))return {ok:false,reason:'unknown_response'};
+ if(kind==='share'){
+  if(typeof livesWithParents!=='function'||!livesWithParents())return {ok:false,reason:'independent_household'};
+  const cg=typeof householdCaregivers==='function'?householdCaregivers().find(x=>!x.deceased&&!x.movedAway):null;
+  if(!cg)return {ok:false,reason:'no_available_caregiver'};
+  if(currentMinute()<420||currentMinute()>1260)return {ok:false,reason:'caregiver_asleep'};
+  return {ok:true,n,r,caregiver:cg};
+ }
+ return {ok:true,n,r};
+}
+function promHomeResponse6B6(kind){
+ const g=promHomeResponseGate6B6(kind);if(!g.ok)return g;
+ const {n,r,caregiver}=g;const snap=r.checkout;
+ let story;
+ if(kind==='share'){
+  const detail=snap.photos?`You show ${snap.photos} photograph${snap.photos===1?'':'s'}.`:snap.ceremonyAttended?'You describe the school ceremony.':'You talk about your time at the school hall.';
+  story=`You tell ${firstName(caregiver)} how Prom went. ${detail}`;
+  S.family.closeness=clamp((S.family.closeness??50)+1);
+ }else story='You take a quiet moment at home to remember the parts of Prom you actually experienced.';
+ r.homeResponse={kind,dateISO:currentDate(),minute:currentMinute(),caregiverId:caregiver?.id||null,text:story};
+ advanceTime(10,{silent:true});log('After Prom',story);
+ return {ok:true,eventId:n.eventId,kind};
+}
+function promAfterHtml6B6(pr=S?.school?.prom){
+ const n=promNightRecord6B1(pr);if(!n?.attendanceRecorded)return '';
+ const r=n.status==='attending'?ensurePromAfter6B6(pr):promAfterRecord6B6(pr);
+ if(!r)return '';
+ if(n.status==='attending'){
+  const a=promArrivalRecord6B3(pr),ids=(a?.attendeeIds||[]).filter(id=>{
+   const p=(S.people||[]).find(x=>x.npcId===id&&!isFamilyPerson(x));
+   return p&&(a.greetings.some(x=>x.npcId===id)||a.companion?.status==='present'&&a.companion.npcId===id);
+  }).slice(0,10);
+  return `<section class="prom-after-6b6" data-prom-after6b6="${esc(n.eventId)}"><h4>Leaving the School Hall</h4>`+
+   `<p class="muted-text">Say goodbye to people actually here, or head home when you are ready. A goodbye takes five minutes.</p><div class="prom-after-actions-6b6">`+
+   ids.map(id=>{const p=(S.people||[]).find(x=>x.npcId===id),g=promFarewellGate6B6(id);return `<button class="small ghost" data-prom-after-action6b6="farewell" data-npc-id="${esc(id)}" ${g.ok?'':'disabled'}>${r.farewells.some(x=>x.npcId===id)?'Goodbye said':'Say goodbye to '+esc(p?firstName(p):'classmate')}</button>`}).join('')+`</div></section>`;
+ }
+ if(n.status!=='completed'||!r.checkout)return '';
+ const x=r.checkout,share=promHomeResponseGate6B6('share'),quiet=promHomeResponseGate6B6('quiet');
+ return `<section class="prom-after-6b6" data-prom-after6b6="${esc(n.eventId)}"><h4>After Prom · Home</h4>`+
+  `<p class="muted-text">Your actual evening: ${x.greetings} greetings · ${x.activities} activities · ${x.photos} photographs${x.ceremonyAttended?' · Court ceremony':''} · ${r.farewells.length} goodbyes. Returned home after checking out.</p>`+
+  (r.homeResponse?`<p>${esc(r.homeResponse.text)}</p>`:`<div class="prom-after-actions-6b6"><button class="small ghost" data-prom-after-action6b6="share" ${share.ok?'':'disabled'}>Tell family about Prom · 10 min</button><button class="small ghost" data-prom-after-action6b6="quiet" ${quiet.ok?'':'disabled'}>Reflect quietly · 10 min</button></div>`)+`</section>`;
+}
+function promAfterClick6B6(b){
+ const k=b?.dataset?.promAfterAction6b6;if(!k)return false;
+ const result=k==='farewell'?promFarewell6B6(b.dataset.npcId):promHomeResponse6B6(k);
+ if(!result.ok)toast('After Prom: '+String(result.reason).replaceAll('_',' '));save();render();return true;
+}
+// PHASE 6B.7 — QA-only browser fuzz harness. No gameplay UI or persisted new state.
+function promNightFuzz6B7(initialSeed,steps=60){
+
+let nSteps=0,problems=[],actions={},seed=Number(initialSeed)||620260;
+const rnd=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return seed>>>0};
+const pick=x=>x[rnd()%x.length];
+const pid=S.school.prom.foundation6A1.eventId;
+const safe=(fn)=>{try {const result=fn();return result;}catch(e){problems.push('exception '+String(e));return null;}};
+const verify=()=>{
+ const pr=S.school.prom,n=pr?.night6B1;
+ if(!pr||!n||pr.foundation6A1.eventId!==pid||n.eventId!==pid)problems.push('lost canonical identity');
+ if(!n)return;
+ const a=n.arrivals6B3,m=n.moments6B4,c=n.ceremony6B5,x=n.after6B6;
+ if(n.schoolId!==pr.foundation6A1.schoolId||n.venue!==pr.venue)problems.push('wrong school/venue');
+ if(a){if(new Set(a.attendeeIds).size!==a.attendeeIds.length)problems.push('duplicate attendee');for(const id of a.attendeeIds){if(!S.npcs.some(z=>z.id===id))problems.push('imaginary NPC');}}
+ if(m){if(m.soloCount>2||m.breakCount>2||m.refreshCount>2||m.momentCount>2)problems.push('activity farm');if(new Set(m.danceAttempts.map(z=>z.npcId)).size!==m.danceAttempts.length)problems.push('repeat dance coercion');if(new Set(m.talkedNpcIds).size!==m.talkedNpcIds.length)problems.push('repeat conversation');}
+ if(c){if(c.photos.length>4||new Set(c.photoIds).size!==c.photoIds.length)problems.push('duplicate photos');if(c.ceremony&&c.ceremony.ballotEventId!==pid)problems.push('wrong Court results');}
+ if(x){if(new Set(x.farewells.map(z=>z.npcId)).size!==x.farewells.length)problems.push('farewell farm');if(x.checkout&&n.status!=='completed')problems.push('checkout but not completed');}
+ if(S.milestones.filter(z=>z.promKind6B6==='first_attended_prom').length>1)problems.push('repeated first-Prom milestone');
+ if(n.status==='completed'&&S.location==='School')problems.push('completed still at school');
+ if(n.status==='completed'&&S.calendar.some(z=>z.id===pid&&z.status==='Attending'))problems.push('stale attending calendar');
+};
+for(let i=0;i<steps;i++){
+ if(i===0){S.clock.dateISO=S.school.prom.dateISO;S.clock.minute=1020;S.location='Home';}
+ if(i===8){S.clock.minute=1140;S.location='Home';safe(()=>ensureProm());}
+ if(i===35){S.clock.minute=1260;safe(()=>ensureProm());}
+ if(i===50){safe(()=>leavePromNight6B1());}
+ const pr=S.school.prom, night=pr.night6B1,a=night.arrivals6B3,ids=a?.attendeeIds||[];
+ const candidate=ids.length?pick(ids):'not-a-student';
+ const options=[
+ ['reconcile',()=>reconcilePromNight6B1()],
+ ['tryEntry',()=>enterPromNight6B1()],
+ ['greet',()=>promArrivalGreet6B3(candidate)],
+ ['talk',()=>promMomentsAction6B4('talk',candidate)],
+ ['dance',()=>promMomentsAction6B4('dance',candidate)],
+ ['solo',()=>promMomentsAction6B4('solo')],
+ ['rest',()=>promMomentsAction6B4('break')],
+ ['refresh',()=>promMomentsAction6B4('refresh')],
+ ['atmosphere',()=>promMomentsAction6B4('moment')],
+ ['photoSolo',()=>promPhotoTake6B5('solo',[])],
+ ['photoPair',()=>promPhotoTake6B5('paired',[candidate])],
+ ['ceremony',()=>promCeremonyPresent6B5()],
+ ['farewell',()=>promFarewell6B6(candidate)],
+ ['hair',()=>promHair6B2()],
+ ['makeup',()=>promMakeupSelf6B2()],
+ ['homeResponse',()=>promHomeResponse6B6('quiet')],
+ ];
+ let [name,fn]=pick(options);
+ if(i===9) [name,fn]=options[1];
+ if(i===36) [name,fn]=options[11];
+ if(i===52) [name,fn]=options[15];
+ const result=safe(fn);actions[name]=(actions[name]||0)+1;nSteps++;
+ if(result&&typeof result==='object'&&result.ok===false&&result.reason==='unknown_action')problems.push('unknown operation '+name);
+ verify();
+}
+return {steps:nSteps,violations:problems.slice(0,25),actions,status:S.school.prom.night6B1.status,
+ eventId:pid,ceremony:!!S.school.prom.night6B1.ceremony6B5?.ceremony,photos:S.school.prom.night6B1.ceremony6B5?.photos.length||0,
+ milestones:S.milestones.filter(z=>z.promKind6B6==='first_attended_prom').length};
+
+}
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}
@@ -9155,7 +11840,7 @@ window.__LIFE_SIM_TEST__={
  eventChoice:(id,choice)=>resolveEventChoice(id,choice),
  reconcile:()=>{reconcileState('test');render();save()},
  todayWarnings:()=>todayWarnings(),
- call:(name,...args)=>{const f={seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
+ call:(name,...args)=>{const f={promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
 };
 
 if(new URLSearchParams(location.search).get('smoke')==='1')setTimeout(()=>{try{$('c-name').value='Smoke Test';initializeNewLife();document.body.dataset.smoke=(!$('game').classList.contains('hidden')&&S)?'pass':'fail'}catch(e){console.error(e);document.body.dataset.smoke='fail';document.body.dataset.smokeError=e.message}},30);
