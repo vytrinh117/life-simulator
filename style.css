@@ -337,6 +337,33 @@ body.planner-open .planner-close{display:inline-flex}
 .occasion6c7 select,.occasion6c7 input{max-width:175px;min-width:88px;padding:7px;border:1px solid var(--border, currentColor);border-radius:8px;background:var(--card, transparent);color:inherit}
 .occasion6c7 button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:560px){.occasion6c7 .occ-row,.occasion6c7 .occ-controls{align-items:stretch}.occasion6c7 .occ-controls label{width:100%}.occasion6c7 select,.occasion6c7 input{max-width:100%}}
+/* H2: partner-first Prom invitations and compact preparation; inherit established tokens. */
+.prom-h2-invitations,.prom-h2-preparation,.prom-h2-plans{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;min-width:0}
+.prom-h2-invitations h4,.prom-h2-preparation h4,.prom-h2-plans h4{margin:0 0 8px}
+.prom-h2-partner{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card,transparent)}
+.prom-h2-partner h5,.prom-h2-group h5{margin:0 0 8px;font-size:.86rem}
+.prom-h2-person{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);min-width:0}
+.prom-h2-featured{border-top:0}.prom-h2-person-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;overflow-wrap:anywhere}
+.prom-h2-person-info b{font-size:.9rem}.prom-h2-person-info small{font-size:.76rem;color:var(--muted)}
+.prom-h2-person-info .prom-h2-warning{color:var(--muted)}.prom-h2-person button{flex-shrink:0}
+.prom-h2-pill{font-size:.74rem;color:var(--muted);text-align:right;max-width:36%;overflow-wrap:anywhere}
+.prom-h2-search-label{display:block;font-size:.82rem;font-weight:600;margin-bottom:5px}
+.prom-h2-invitations input[type=search]{display:block;width:100%;max-width:460px;padding:10px;border:1px solid var(--line);border-radius:9px;margin:0 0 9px;background:var(--panel,transparent);color:inherit}
+.prom-h2-group{border-bottom:1px solid var(--line);padding:8px 0;min-width:0}
+.prom-h2-group summary,.prom-h2-prep-group summary{cursor:pointer;font-weight:600;font-size:.85rem;padding:7px 1px}
+.prom-h2-prep-group{padding:6px 0;border-bottom:1px solid var(--line)}.prom-h2-prep-group .prom-prep{padding:7px 0}
+[data-prom-h2-candidate][hidden]{display:none!important}
+@media(max-width:540px){.prom-h2-person{flex-wrap:wrap;gap:8px}.prom-h2-person button{width:100%}.prom-h2-pill{max-width:100%;text-align:left}}
+
+/* Cross-phase H3: compact, accessible guest admission and external school-event steps. */
+.prom-h3-guest {border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:var(--card2);}
+.prom-h3-guest h5 {margin:0 0 8px;font-size:1rem;}
+.prom-h3-guest p {margin:6px 0;line-height:1.5;}
+.schoolguest-h3 {min-width:0;}
+.schoolguest-h3 .holiday-acts {display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.schoolguest-h3 .prom-h3-guest {margin-top:14px;}
+.schoolguest-h3 button:focus-visible,.prom-h3-guest button:focus-visible {outline:3px solid var(--accent);outline-offset:2px;}
+@media(max-width:600px){.schoolguest-h3 .holiday-acts button,.prom-h3-guest .holiday-acts button {max-width:100%;white-space:normal;}}
 
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}

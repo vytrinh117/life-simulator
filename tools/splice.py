@@ -92,6 +92,8 @@ rep("call:(name,...args)=>{const f={addExamRecord,","call:(name,...args)=>{const
 
 # H1 QA read-only inspection hooks (existing test bridge; not a gameplay control).
 rep("const f={occasionReleaseFuzz6C8,", "const f={migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,")
+# H2 browser QA hooks for Prom invitation/finance invariants only.
+rep("const f={migrateRomance3B1,", "const f={schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,")
 rep("html=homePanel()}$('panel-host').innerHTML=html}","html=homePanel()}$('panel-host').innerHTML=html;applySubTabs()}")
 rep("function render(){if(!S)return;renderHeader();renderPanel();renderLog()}","function render(){if(!S)return;renderHeader();renderPanel();renderLog();renderPlanner()}")
 rep("function maybeRandomEvent(force=false){if(!force&&!chance(16))return;","function maybeRandomEvent(force=false){if(!force&&!chance(16))return;if(currentMinute()<390||currentMinute()>=1290)return;if(atSchool()&&!force)return;")
@@ -190,6 +192,8 @@ core+=open(ROOT+'/src/modules/occasionsurprise6c5.js').read()
 core+=open(ROOT+'/src/modules/occasiontraditions6c6.js').read()
 core+=open(ROOT+'/src/modules/occasionui6c7.js').read()
 core+=open(ROOT+'/src/modules/occasionqa6c8.js').read()
+core+=open(ROOT+'/src/modules/promhotfixh2.js').read()
+core+=open(ROOT+'/src/modules/schoolguesth3.js').read()
 marker="// ---------- UI helpers ----------"
 assert s.count(marker)==1
 s=s.replace(marker,core+"\n"+marker)
