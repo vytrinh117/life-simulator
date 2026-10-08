@@ -1,3 +1,27 @@
+## Phase 5C.5.2 — Cross-system plan/permission/payment audit (2026-10-08)
+- **No new save schema or migration.** Existing seasonal plan `dateISO`/`startMinute`, Calendar event ID and H3 Decision Ledger remain the only authorities. Execution reuses the original plan's permission context and ignores only its own Calendar record for schedule overlap.
+- Previously permitted direct minor scuba without H3 is now rejected unless the canonical real guardian decision approves. Existing historical decisions are not generated, changed or discarded by migration. Historical outings, payments and RSVP are not retroactively revised.
+- Base seasonal costs are deducted once upon successful execution for minors and adults, independently of temporary rental charges. No rent-to-ownership conversion, automatic equipment grants, repairs or fabricated purchase history.
+- Save/reload of a cancelled overnight camping plan preserves explicit plan, equipment and history. Existing loader can normalize an absent item `slot` to `null`; integration regression compares Inventory ownership/conditions by semantic identity while leaving production normalization unchanged.
+
+## Phase 5C.4.6 — Final migration / save-integrity verification (2026-10-08)
+
+- No new save schema, top-level keys, global ownership container, inferred purchases, fabricated gear, reconstructed rental history or manufactured H3 outcome at this final acceptance.
+- Verified real Inventory instance IDs, quantity, remaining consumable uses, condition and purchase receipts across repeated migration and save/reload; actual 5C.2 rentals remain non-owning, returned/expired transactions are not reopened, and 5C.3 outdoor history/People/Calendar remain governed by earlier completed modules.
+- Existing load-time Inventory normalizer can add an absent optional `slot` with a `null` value. 5C.4.6 fuzz explicitly treats missing vs null slot as semantically equivalent; all other item identity, ownership, condition, quantity, funds, decisions and rental ledger state must match exactly. No historical item data was edited simply to satisfy a byte-for-byte assertion.
+- 24/24 acceptance plus 25/25 (200 operations) fuzz passed; original read-only catalog `D.catalog` is never reassigned by 5C.4.6. Phase 5C.5 final all-game migration sign-off remains reserved.
+
+## Phase 5C.3.6 — Final save-integrity audit (2026-10-08)
+
+- No new top-level schema, persistent data container, save key or inferred prior activities. Existing `migrateOutdoorIntegration5C35()` remains the migration path; it normalizes only explicit outdoor plans and existing stored IDs.
+- Repeated migration and save/reload preserve accepted plans, stable participant RSVP IDs/status, H3 decision records, equipment access without Inventory ownership, camping interval/Calendar hold and outdoor first-experience markers/memories. H3 decisions are never rerolled on load.
+- Fix for previously saved generic cancellation statuses: an existing terminal seasonal camping plan marked `Cancelled by them`, `Cancelled by you` or `No-show` now settles its legacy overnight Calendar reservation as `Cancelled` rather than leaving a phantom scheduled hold. Existing valid historical data remains untouched.
+- On a new player-triggered cancel, the canonical Plan/Calendar path immediately releases the overnight hold. The old random NPC cancellation is no longer run on player-hosted seasonal outings during load/tick.
+- Dedicated acceptance 21/21 and deterministic outdoor fuzz 21/21 (200 operations), plus all 5C focused and upstream acceptance/fuzz regression: 513/513 PASS across 30 suites.
+
+## Phase 5C.3.2 checkpoint (2026-10-08)
+No new top-level schema or fabricated gear/history; existing plan records may have explicit `endDateISO`, `durationMinutes` and `gearAccess`; original saves remain readable.
+
 
 ## Phase 4D.4 event calendar migration
 
@@ -433,3 +457,74 @@ Repeated migration deduplicates explicit RSVP/history records deterministically 
 
 ## Phase 5C.2 migration
 `migrateSeasonalActivities5C2()` initializes only explicit 5C.2 runtime state (`rentals`, `sunLog`) and registers the canonical sunscreen catalog entry. It does not fabricate prior outings, sunburns, rentals, skills, permission outcomes, romantic memories, or permanent equipment ownership. Repeated migration deduplicates temporary rental records and reaches a fixed point.
+
+## Phase 5C.3.1 migration / save compatibility
+
+5C.3.1 deliberately adds no new top-level seasonal state container. `migrateSeasonalActivities5C31()` only validates optional explicit camping supervision references already present on canonical seasonal plan records; it does not infer or fabricate supervisors, outings, permission outcomes, attendance, equipment, weather, RSVP state, memories or history.
+
+New optional `supervisorId` / `supervisionSource` fields on explicit camping plans use stable People IDs and survive normal save/load. Missing legacy supervision fields are left missing rather than guessed. H3 permission records remain authoritative and are not recreated by migration.
+
+
+## Phase 5C.3.3 — 2026-10-08
+
+5C.3.3: Conservative idempotent outdoor social migration. Preserve canonical RSVP and plan records, normalize explicit outdoor participants and invitation cooldowns only; never create historic invitations or attendance.
+
+### Phase 5C.3.5 — Outdoor integration
+
+- `migrateOutdoorIntegration5C35()` follows existing 5C.1/5C.2/5C.3.1/5C.3.3 migrations. No new standalone persisted schema is introduced.
+- Existing outdoor plans retain IDs, attendance and RSVP state. An explicitly existing accepted camping plan with a valid Calendar plan event can recover a missing next-day reservation. Terminal plans retire existing reservations. Migration is idempotent.
+- It does not create historical outdoor records, permission decisions, rentals, Inventory items, social invitations, romantic milestones or People memory.
+
+## Phase 5C.4.1 — Conservative seasonal item migration
+
+`migrateSeasonalItems5C41()` runs after 5C.1–5C.3 migration and `normalizeInventory()` during canonical `migrate()`. It registers metadata on **existing individual entries** in `D.catalog` only, following `registerSeasonalCatalog5C2()` for the already-implemented sunscreen product. The frozen `D` / `window.LS_DATA` top-level reference is never reassigned.
+
+The method does **not** create product catalog entries for future seasonal gear, Inventory ownership, equipment rentals, purchase records, or H3 permission outcomes. It does **not** convert `S.seasonal5C2.rentals` or temporary camping gear access to owned Inventory. Known pre-existing seasonal owned instances retain ID, key, acquisition, source, ownership and quantity, except invalid quantity fields are clamped to at least one; finite remaining percentages and durable condition are bounded to 0–100, keeping legitimate depletion and breakage at zero. Unknown/legacy nonseasonal items are untouched by this new layer. Metadata is recomputed in-session and not stored as a separate `S` state machine. Fixed-point and save/reload verified by browser QA.
+
+
+## Phase 5C.4.2 — Additive catalog entries, no state migration
+- Added twenty unique catalog entries with stable string IDs to `data.js`. Four (`skiGear`, `scubaGear`, `tent`, `sleepingBag`) were already named by 5C.2/5C.3 gear eligibility checks; existing saved item records for these keys can now resolve canonical product data rather than being treated as unknown.
+- The existing idempotent `migrateSeasonalItems5C41()` only normalizes **already owned** recognized items, without adding Inventory records. Temporary ski/scuba rentals and the camping rental/provider mode remain separate from owned gear. No equipment is automatically bought, repaired, consumed, or fabricated.
+- Currency, purchase receipts, stable item IDs and H3 ledger remain in their pre-existing source containers.
+- New optional equipment metadata does not count as possession and does not override existing compulsory gear, season, safety or permission checks.
+
+
+## Phase 5C.4.3 — Item use compatibility
+
+No new migration/state container: the Inventory instance remains authoritative. Existing migrateSeasonalItems5C41()/normalizeInventory() preserve worn condition (including legitimate zero), stable IDs, quantity, remaining-use state and useLog on save/reload. Only successful outings receive equipmentUse5C43 records; old saves are not retroactively charged for use, gear ownership, repairs or rental. The 5C.4.4/5C.4.5 migrations/UX are deferred.
+
+
+## Phase 5C.4.4 — Rental/repair/replacement compatibility
+- No new `S` root schema or migration rewrite. Existing seasonal records stay in `S.seasonal5C2.rentals`, and age-dependent permissions stay in H3 `S.decisionLedger`.
+- Newly issued `rental44:` entries carry stable `(activityId,date,startMinute)` identifiers, temporary status, quoted charge, expiry and return lifecycle. Previously saved rental entries are preserved without fabricated return timestamps, equipment ownership or extra charge. Lazy expiry applies only to `rental44:` records that were actually issued and remain active beyond the recorded date.
+- Repairs/replacements are actions only: load/save does not auto-repair, auto-replace, deduct cash, create item instances or reconstruct past repair history. Real successful replacement uses existing `removeItem()`/`addItem()` and purchase history; H3 denial/approval reuses canonical request signatures.
+- Metadata and existing inventory instances remain compatible with conservative 5C.4.1 and 5C.4.3 normalization; no condition is reset on migration.
+
+
+## Phase 5C.4.5 — seasonal integration (2026-10-08)
+`migrateSeasonalIntegration5C45()` runs after 5C.4.1 normalization and existing 5C.1–5C.3 migrations. It ensures canonical catalog metadata only for catalog entries that exist, returns read-only audit counts, and leaves Inventory instances and rental/plan/story/H3 records intact. The function is idempotent and does not create historical equipmentBenefits5C45 records; only a genuine newly completed outing writes that field, at most once per record. It does not auto-purchase, auto-repair or convert rentals into permanent ownership. Outdated saved worn or broken equipment remains worn or broken.
+
+## Phase 5C.5.1 — Seasonal migration compatibility audit (2026-10-08)
+
+- Entry point: `tools/splice.py` canonical migration chain; core migrations precede `migrateSeasonalActivities5C1()`, `migrateSeasonalActivities5C2()`, `migrateSeasonalActivities5C31()`, `migrateOutdoorSocial5C33()`, `migrateOutdoorIntegration5C35()`, `migrateSeasonalItems5C41()`, and `migrateSeasonalIntegration5C45()` in exactly that order and once each.
+- **Confirmed defect:** `migrateOutdoorSocial5C33()` called `.filter()` on `p.participantIds || []`; a legacy/suspect saved outdoor plan with non-array truthy `participantIds` threw `TypeError`. Now strictly uses the existing array or `[]`, validates stable People IDs and deduplicates. Does not infer attendees or make RSVP decisions.
+- Existing canonical seasonal RSVP/history dedup, real overnight Calendar reservation reconciliation, temporary rental normalization, seasonal item metadata and Inventory ownership are retained. `D.catalog` is mutated only through the existing registered-entry mechanism, never rebound.
+- Save/load of a deliberately incomplete old outdoor plan may add existing canonical plan defaults and cross-date interval fields once; the next reload is a fixed point. Null/absent optional Inventory fields may also normalize. Functional owned item IDs, quantity, condition, remaining uses, rental IDs/cost/status, receipts, Calendar holds, H3 decisions, People and history are not fabricated.
+- No schema-breaking change; migration remains conservative and repeat-safe for tested legacy/current saves. Full cross-system QA, global regression and fuzz are explicitly reserved for 5C.5.2–5C.5.5.
+
+
+### 5C.5.4 — Save/load fuzz verification (2026-10-08)
+
+Canonical 5C migration and save/reload fixed-point checks passed. Existing load-time Calendar reconciliation can legitimately resolve overdue plans and archive old terminal events; future accepted seasonal plans persist. No schema or migration code modified; no fabricated ownership, activities, rental or H3 decisions.
+
+## Phase 5C.5.3 — Full Regression migration impact
+- No new save fields or migration functions. All existing 5C migration order, stable IDs, H3/RSVP/ownership/rental separation and historical records are preserved.
+- Regression issue fixed in an existing Shop button label only; no Inventory conversion or fabricated receipt, equipment, permission, participant or memory.
+- Complete exit-verified Phase 5C migration/seasonal integration QA was rerun as part of the 73-suite matrix. Final global release audit remains pending 5C.5.5.
+
+
+## Phase 5C.5.5 final release — migration fixed point verified (2026-10-08)
+
+- Full Phase 5C migration ordering and backward-compatible state preservation were rechecked using the existing `qa/t_5c5_1.py` and subsequent integration/fuzz suites in the fresh final 73-suite run; all tests passed. No new migration code/schema or special migration run is added by final sign-off.
+- Existing stable People IDs, accepted/declined RSVPs, real Calendar overnight reservations, H3 decisions, seasonal activity history, durable equipment/consumables, financial purchases, and time-limited rentals remain authoritative. No fabricated old events, ownership, permissions, receipts, rental return or romantic milestone.
+- Generated build SHA-256 unchanged from verified 5C.5.3 source: `game.js` `5d7788104f67b9382abfaf0e620c839d324c588c631f4358f08d24197bf136c4`. Source/build boundary retained; Phase 6 not started.

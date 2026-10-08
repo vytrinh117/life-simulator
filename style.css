@@ -225,6 +225,26 @@ body.planner-open .planner-close{display:inline-flex}
 @media(max-width:1080px){.cal-layout{grid-template-columns:1fr}.timetable{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:760px){.top-actions button{padding:7px 9px;font-size:11px}.planner-btn span{display:none}.timetable{grid-template-columns:repeat(2,minmax(0,1fr))}.cal-cell{min-height:44px}.agenda-item{grid-template-columns:50px minmax(0,1fr)}.agenda-item>.tag{grid-column:2}}
 
+/* Post-5C hotfix: one structured school-day overview (no gameplay rules). */
+.school-today-card{display:grid;gap:11px}
+.school-today-card>h3{margin-bottom:0}
+.school-today-head{display:grid;gap:7px}
+.school-today-head .session-head{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.school-today-head .session-head small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.school-today-head .mini-meta,.school-today-facility-meta{display:flex;gap:8px 15px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.school-today-travel{display:flex;gap:7px}
+.school-today-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.school-today-summary>span{min-width:0;padding:9px;border:1px solid var(--line);border-radius:9px;font-size:11px;overflow-wrap:anywhere}
+.school-today-summary b{display:block;color:var(--muted);font-size:10px;margin-bottom:3px}
+.school-today-action-group{display:grid;gap:7px}
+.school-today-action-group h4,.school-today-timetable h4{margin:2px 0 0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.school-today-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.school-today-facility-note,.school-today-session,.school-today-after{font-size:11px;color:var(--muted)}
+.school-today-current{font-size:12px}
+.school-today-timetable{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.school-today-timetable .timetable{margin:0}
+@media(max-width:700px){.school-today-summary{grid-template-columns:1fr}.school-today-head .session-head{flex-wrap:wrap}}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}

@@ -1303,3 +1303,16 @@ Added 275 seeded production-browser operations and targeted seasonal/Calendar/H3
 - Verified all source prerequisites; once-only migration order, stable catalog/ownership/rental separation, GitHub Pages relative paths and standard workflow. No new gameplay or migration schema code, no unrelated systems rewritten.
 - Two source builds byte-identical, JS syntax and CSS token audit clean. Tested real production JS/CSS through isolated Chromium; hosted GitHub Pages URL and direct HTTP navigation remain unverified because browser navigation is blocked by this execution environment.
 - Prior legacy `t_items.py` and intermittent 4A/5B cases are disclosed in QC Report; no claim that they were fixed in this checkpoint. Phase 6 not started.
+
+## 2026-10-08 — HOTFIX-SCHOOL-NAV (post-5C, UI wiring only)
+- Corrected School context Go Home and Go to School `data-*` attributes in `src/modules/schoolday4c1.js` to match existing `dataset` lookups (`home4c1` / `go4c1`). Canonical travel helpers untouched.
+- Added actual Playwright DOM-click regression `qa/t_hotfix_school_nav.py`; verified broken-before / fixed-after behavior.
+- Focused + relevant regression: 234/234 PASS across 11 suites. Phase 5C remains COMPLETE; Phase 6 not started. See `HOTFIX_SCHOOL_NAV_PROGRESS.md`.
+
+
+## 2026-10-08 — HOTFIX-SCHOOL-UI-INTEGRATION
+
+- Fixed nine School 4C.2/4C.3 rendered `data-*` attributes that did not match the existing `dataset` action handlers. Canonical gameplay functions unchanged.
+- Consolidated School-tab school-day/header, Current/Next/Attendance, Teacher/Facilities/Session actions, timetable and homework note into one responsive `Today at school` card; prevented duplicate School tab travel CTA and inert after-dismissal Skip/Leave-Early controls.
+- Added real rendered-button Chromium regression covering each relevant School action and prior school-nav flow; 5C regression remains passing. Details: `HOTFIX_SCHOOL_UI_INTEGRATION_PROGRESS.md`.
+- Phase 5C remains COMPLETE; Phase 6 NOT STARTED.

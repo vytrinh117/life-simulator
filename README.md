@@ -79,4 +79,39 @@ Phase 5B.4 — Summer Jobs / Shifts / Pay / Work-School Compatibility is complet
 Phase 5B is complete. Summer/after-school programs now use canonical scheduled enrollment, instructor/attendance/progression and social provenance; Summer academics/tutoring use subject-specific real schedules with a three-subject formal Summer cap; standard Summer employment begins at age 16 with four canonical job options, real shifts and pay-by-completed-shift; Fast Forward respects required program/tutoring/job obligations. Final 5B.5 acceptance is 26/26 and dedicated fuzz is 17/17 across 200 randomized operations. See `PHASE_5B_PROGRESS.md` for the full 50/50 acceptance closeout. Exact next development point: **Phase 5C — Seasonal Activities / Functional Store**.
 
 ## Phase 5C — Seasonal Activities / Functional Store
-Phase 5C is in progress. Checkpoint **5C.1 — Seasonal Activity Foundation** is complete: seasonal activities now have canonical stable IDs, real date/season and location eligibility, time/cost metadata, persistent non-rerolling RSVP hooks, H3 parent/guardian permission, Phase 3B partner eligibility, existing Plans/Calendar integration and conservative migration. Detailed Summer/Winter activity gameplay remains intentionally deferred to 5C.2. See `PHASE_5C_PROGRESS.md`. Exact next checkpoint: **5C.2 — Summer / Winter Activities**.
+Phase 5C is **COMPLETE** after 5C.5.5 final release audit. Its canonical seasonal activity foundation, Summer/Winter activities, Autumn camping/hiking and group RSVP, and functional seasonal Store/gear are implemented and verified with existing H3, People, Calendar, Inventory and save migration. See `PHASE_5C_PROGRESS.md` and `QC_REPORT.md`. Phase 6 has **not** been started.
+
+### Autumn outdoors (Phase 5C.3.5)
+
+Open **Daily Life → Activities → Autumn outdoors** to plan a camping weekend or day hike. Select the date, company, and gear access; planned outings remain in the existing Calendar/Plans lifecycle. Under-13 campers need a legitimate adult supervisor and overnight minors require H3 caregiver permission. Rentals are temporary outing access, never Inventory ownership.
+
+
+### Phase 5C.3 — Autumn outdoors COMPLETE (5C.3.6 final sign-off)
+
+Autumn camping and hiking use the existing Daily Life → Activities → Autumn outdoors interface, real Plans/Calendar, age/supervision/H3 decisions, equipment access/rental, weather, Friend Group RSVP, family/NPC invitations and bounded contextual memories. Source modules `src/modules/seasonal5c3_1.js` through `seasonal5c3_5.js` integrate with existing foundation; generated `game.js` remains authoritative only as build output.
+
+**Final QA:** `python3 qa/t_5c36_accept.py` (21/21), `python3 qa/t_5c36_fuzz.py` (21/21; 200 operations) plus full upstream/focused regression (**513/513 PASS** over 30 suites). See `PHASE_5C_PROGRESS.md`, `QC_REPORT.md`, and `qa/results_5c36/` for the final handoff and evidence. Build instructions remain in `BUILD.md`.
+
+**Phase 5C.4 and Phase 5C.5 final audit are both COMPLETE.**
+
+
+## Phase 5C.4 — Functional Store / Gear / Consumables / Equipment COMPLETE
+
+The existing Shop and Inventory now support functional winter/summer/camping/hiking gear: 20 seasonal SKUs, paid ownership/quantity caps, five-use sunscreen, actual wear on completed outings, honest broken-equipment eligibility, temporary rental/provider access, repairs/replacement, H3 guardian decisions, gear benefits and save-safe seasonal UI. No additional Store tab or alternate equipment state machine was introduced.
+
+**Final checkpoint 5C.4.6:** `python3 qa/t_5c46_accept.py` (24/24), `python3 qa/t_5c46_fuzz.py` (25/25 with 200 operations), `python3 qa/t_5c46_release.py` (10/10), plus independently rerun focused/upstream acceptance and fuzz: 37 suites / 686 accepted checks; total 38 suites / 696 accepted checks. Initial stochastic 5B.5 soft-event test failures are preserved alongside a clean rerun; see `QC_REPORT.md`. Rebuild sources with the unchanged `BUILD.md` procedure. Live hosting was not part of acceptance.
+
+**Historical handoff:** 5C.4.6 preceded Phase 5C.5; final global audit was subsequently completed at 5C.5.5.
+
+
+## Phase 5C — Final release (5C.5.5 COMPLETE; 2026-10-08)
+
+All 5C.1–5C.5 checkpoints have passed their recorded gates. The final freshly rerun 73-suite production regression passed **1,476/1,476 checks**, and the added static/isolated-Chromium release audit passed **24/24** (combined **74 suites / 1,500 PASS**). Build and release logs are in `qa/results_5c55/`; `BUILD.md` explains how to regenerate root assets from `src/`. The `game.js` and `style.css` builds are byte-identical across two passes.
+
+The archive is structured for GitHub Pages, but the hosted website has not been tested live from this environment: Chromium blocks direct URL navigation. Production runtime behavior was exercised by loading the actual generated JS/CSS bytes in an isolated browser and checking asset paths/workflow statically. Known legacy `t_items.py` and historical 4A/5B intermittent test caveats are in `QC_REPORT.md`.
+
+**Phase 5C COMPLETE. Next development phase: only on separate user authorization.**
+
+## School UI post-hotfix deployment verification
+
+The latest School UI verification bundle uses content-hash query strings in `index.html` for runtime assets so that refreshing an updated HTML page fetches the matching code rather than a cached older `game.js`. Deploy all root files together, not just `index.html`. Details and browser validation commands are in `HOTFIX_SCHOOL_DEPLOY_VERIFY_PROGRESS.md`. This does not establish that your hosted Pages site has been updated: verify the live marker and workflow success after deploying.

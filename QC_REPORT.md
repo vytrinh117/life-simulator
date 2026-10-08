@@ -1,3 +1,43 @@
+## Phase 5C.5.2 — Cross-System Integration QA (2026-10-08)
+- Production browser focused `qa/t_5c5_2.py`: **23/23 PASS**, 0 page/console errors.
+- Selected Phase 5C/H3 regression: **16 suites / 316/316 PASS**, and 3B.5 + 3C.5 + 5B.5 acceptance: **3 suites / 60/60 PASS**. Total **20 suites / 399/399 PASS**; all included suites had exit code 0 and corresponding `qa/results_5c52/*.log` or focused output. No fuzz, full 5C.5.3 matrix, or final release claim.
+- Confirmed production defects and fixes: self-calendar conflict of accepted summer plan, missing H3 check on direct minor scuba, free minor outings, double base charge potential on accepted adult plan. Tested denied replay, exact costs, weather cancellation, rental/ownership isolation, romance boundary, H3, Inventory and save/load semantics.
+- Original combined regression batch hit tool timeout after 11 verified successes; remainder executed separately and verified. No unverified test counted.
+- Known historical `qa/t_items.py` issues remain deferred; earlier 5B acceptance intermittent soft-event order observed in prior checkpoints, but selected 5B.5 acceptance passed this run.
+
+## Phase 5C.4.6 — Final Functional Store Acceptance (2026-10-08)
+
+- **Baseline:** full 5C.4.5 ZIP/progress verified byte-identical; `src/` authoritative. No final-acceptance gameplay code changes.
+- **New production-browser acceptance** `qa/t_5c46_accept.py`: **24/24 PASS**, including actual Store spending, canonical equipment IDs, camping weather/wear, finite sunscreen, temporary ski rental, repair/replacement, teen H3, save/load/migration and original UI. Browser page/console errors 0.
+- **New deterministic Store fuzz** `qa/t_5c46_fuzz.py`: **25/25 PASS / 200 operations**, across ages 10/15/18/25, validating uniqueness, bounds, no rental ownership, migration fixed point and semantic save integrity. Note legacy Inventory loader adds `slot:null` where `slot` is absent; this optional null is normalized only in the comparison, not by source changes.
+- **All relevant focused/upstream**: **37 suites / 686 of 686 accepted checks PASS**, including 5C.1–5C.4.6, 5A/5B, 4A–4D, 3B–3C and H3 acceptance/fuzz. Logs with verified exit codes and individual counts: `qa/results_5c46/status_verified.tsv`. **Static Pages release** `qa/t_5c46_release.py`: **10/10 PASS**. Total **38 suites / 696/696 accepted checks PASS**.
+- **Flaky prior upstream suite:** The first `t_5b5_accept.py` run and its first standalone rerun each printed **25/26**, failing fast-forward's required-obligation-priority assertion after an unrelated stochastic soft event. A later standalone rerun **26/26 PASS** with exit 0; no source changes. The original failures remain in `t_5b5_accept.log` and `t_5b5_accept_rerun.log`, the successful rerun in `t_5b5_accept_rerun2.log`. These failures are *not* claimed as passing. The old legacy `qa/t_items.py` assertions remain a prior known limitation and are not included in this matrix.
+- **Build:** two-pass byte-identical rebuild with root JS `e4463a03772fc864d3c913a997cb600f947347cc11b53a5fe83a6e2aeac169c0`, CSS `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`; `node --check` JS and data PASS; CSS tokens clean. GitHub Pages relative entry assets + workflow verified. This validates the static bundle, not live deployment.
+- **Scope:** 5C.4 COMPLETE only, **5C.5 NOT STARTED**. Source remains unchanged; reproducible QA and docs added. Build/ZIP integrity and progress consistency verified separately.
+
+## Phase 5C.3 — FINAL ACCEPTANCE VERIFIED (2026-10-08)
+
+**5C.3 COMPLETE / 5C.3.6 PASS: 30 suites / 513 checks passed / 0 failed.** All listed suites rerun after the final source fix; `qa/results_5c36/status_final.tsv` and individual `*_final.log` contain retained evidence.
+
+| Coverage | Check results |
+|---|---|
+| 5C.1 + 5C.2 + 5C.3.1–5C.3.5 | 102/102 PASS |
+| New 5C.3.6 browser acceptance | 21/21 PASS |
+| New 5C.3.6 deterministic outdoor fuzz | 21/21 PASS (200 operations; ages 10/15/18/22) |
+| Phase 5B.5, 5A.5, 4A.5–4D.5, 3B.5–3C.5, H3.0–H3.4 acceptance | 240/240 PASS |
+| 5B.5, 5A.5, 4A.5–4D.5, 3B.5–3C.5 fuzz | 129/129 PASS |
+
+The new 5C.3.6 fuzz initially caught a real load-time lifecycle bug (unexpected legacy `plansTick()` random cancellation on accepted seasonal plans). After source repair and added cancel/hold migration cases, **final acceptance 21/21 and final fuzz 21/21 passed**, and the full upstream/focused matrix passed again. Terminal status cleanup is conservative and idempotent.
+
+**Browser:** actual production `index.html`, generated `game.js` and `data.js` are loaded into isolated headless Chromium with real game functions. No uncaught JS/page errors in final suites. GitHub Pages index/workflow/assets are present; direct file-URL navigation is restricted by this browser environment and is not claimed as a successful route test.
+
+**Build:** `node --check` for game/data/relevant modules PASS; `tools/theme.py` PASS (zero literal hex outside tokens). Two consecutive authoritative builds byte-identical. Final SHA-256: game.js `e1e08de85d3c27bdd2c3c4fb2225477060d999b05d4dbeaeb81a8eebe43ff6de`; style.css `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`; qa/harness.py unchanged `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`.
+
+**Scope review:** 5C.4 Store and 5C.5 full Phase 5C audit explicitly remain unchecked. No unrelated feature expansion or parallel outdoor state machine. GitHub Pages deployment files retained.
+
+## Phase 5C.3.2 checkpoint (2026-10-08)
+5C.3.2 12/12, 5C.3.1 10/10, 5C.2 20/20, 5C.1 18/18, 5B 26/26, 5A 24/24, 4D 23/23, 3C 29/29, H3 50/50 = 212/212 pass. Full 5C.3.6 audit deferred.
+
 # Phase 3C — checkpoint 3C.1 QC
 
 Status: **3C.1 COMPLETE / Phase 3C INCOMPLETE**
@@ -725,3 +765,126 @@ Legacy/domain QA was also sampled through a temporary QA-only portable browser h
 - Phase 3B final acceptance: 5/5 PASS.
 - H3: 50/50 PASS.
 - Clean rebuild is byte-identical; `node --check game.js` passes and theme reports no literal-hex drift.
+
+## Phase 5C.3.1 QC
+
+- Recovery audit: supplied source is a clean **5C.2 COMPLETE** baseline; no persisted 5C.3 source/QA artifact was found.
+- `qa/t_5c31.py`: **10/10 PASS**.
+- 5C.2 regression: **20/20 PASS**; 5C.1 regression: **18/18 PASS**.
+- Phase 5B final acceptance/fuzz: **43/43 PASS** (200 randomized operations).
+- Phase 5A final acceptance: **24/24 PASS**.
+- Phase 4D.5: **23/23 PASS**; Phase 4C.5: **28/28 PASS**; Phase 4B.5: **23/23 PASS**; Phase 4A.5: **32/32 PASS**.
+- Phase 3C.5: **29/29 PASS**; Phase 3B.5: **5/5 PASS**; H3: **50/50 PASS**.
+- Fresh checkpoint + regression total: **305/305 PASS**.
+- `node --check game.js`, `seasonal5c1.js`, `seasonal5c2.js`, `seasonal5c3_1.js`: PASS.
+- `tools/theme.py`: PASS (`remaining literal hex outside tokens: []`).
+- Two consecutive authoritative rebuilds are byte-identical.
+- `game.js` SHA-256: `c968a9567847fa179292b7cd55dfd44b737160d03ab077ee4bb04417a1436b74`.
+- `style.css` SHA-256: `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+- shipped `qa/harness.py` remains unchanged: `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`.
+- Scope boundary verified: no 5C.3.2 execution/weather/equipment, no 5C.3.3 group RSVP/invitations, no 5C.3.4 stories/memories, no 5C.4 Store work.
+
+
+## Phase 5C.3.3 — 2026-10-08
+
+5C.3.3 focused 13/13 PASS; 5C.3.1 10/10; 5C.3.2 12/12; 5C.1 18/18; 5C.2 20/20; selected older acceptance 240/240 PASS; browser errors zero.
+
+
+## Phase 5C.3.4 checkpoint
+Outdoor activity execution now records bounded attendee-specific scenes, memories and deduplicated first-outing milestones without forced romance. Focused 12/12 and selected regression 175/175 PASS. UI and migration final integration reserved for 5C.3.5.
+
+### Phase 5C.3.5 — Focused integration verification
+
+- `qa/t_5c35.py`: **17/17 PASS** browser/runtime, UI/backend gating, save/load/migration fixed point, RSVP/plan/Calendar/overnight-weather lifecycle and People memory preservation.
+- Prior seasonal 5C.1–5C.3.4: **85/85 PASS**.
+- Selected 5B/5A/4A–4D/3B–3C/H3 acceptance: **240/240 PASS**.
+- Total completed suites: **342/342 PASS**.
+- 5B.5 fuzz interrupted by execution timeout and **not** counted. Comprehensive fuzz and final audit reserved for 5C.3.6.
+
+## Phase 5C.4.1 — Audit and canonical seasonal item metadata (2026-10-08)
+
+- Focused production browser QA: `qa/t_5c4_1.py` **21/21 PASS**; covers catalog stability, item IDs/ownership, save/reload, invalid numeric field normalization, sunscreen use, ski/scuba/camping temporary access, migration fixed point, real Store purchase accounting, browser errors.
+- Selected cross-system regressions (19 total suites including focused): **317/317 PASS**; seasonal 5C.1–5C.3.6 incl. 200-op 5C.3 fuzz, 5B.5 and 5A.5 acceptance, 4D.5 and 3C.5 acceptance, H3.0–H3.4. Logs/results: `qa/results_5c41/`.
+- Additional legacy `qa/t_items.py` exploratory run, adapted at test-runner level for sandbox Chromium/setContent/fixture paths (no production/harness changes): 48 PASS / 2 FAIL; original 5C.3.6 baseline runs 49 PASS / 1 FAIL with identical phone UI condition assertion failure. A sporadic `two separate books` assertion failed in the exploratory current run; independent 5C.4.1 real Store transaction test passed exact two books/two payments on a controlled fresh life. These older assertions are **not** counted as passed and need their own follow-up if a broader Store overhaul addresses them. Both `t_items` scripts exit 0 despite their `FAIL` check prints, so assertion output must be inspected rather than relying on process exit code.
+- Browser and syntax checks for the focused/selected passing suites are clean. No 5C.4.2 implementation or new gear catalog objects were added.
+
+
+## Phase 5C.4.2 — Seasonal Catalog QA (2026-10-08)
+- Focused production-browser suite `qa/t_5c4_2.py`: **31/31 PASS**, covering 20 real Store SKU IDs, metadata/age/permission/prices, zero auto-ownership, exact purchase debit/receipt, legal ownership and quantity cap, skiing/scuba/camping eligibility from truly owned gear, no rental fabrication, save/load, fixed-point migration, insufficient funds, minor H3 authority/anti-reroll, Shop category UI and real Buy button, browser runtime.
+- Previous audit suite updated for the now-registered SKUs: `qa/t_5c4_1.py`: **21/21 PASS**. Preserved legacy product prices, sunscreen and rentals.
+- Seasonal regression 5C.1–5C.3.6: **144/144 PASS**; includes 5C.3.6 200-operation fuzz.
+- Selected upstream regressions 5B.5 acceptance+fuzz, 5A.5 acceptance, 4D.5, 4C.5, 4B.5, 4A.5, 3C.5, 3B.5, H3.0–H3.4: **257/257 PASS** on verified completed runs. Total **453/453 unique verified tests PASS**; 5B.5 acceptance had one stochastic soft-event-first failure (25/26) and on a fresh rerun passed 26/26 with no source changes. A separate 5A fuzz log completed 10/10 tests but the wrapper timed out without confirming exit; excluded from verified totals.
+- Known legacy `qa/t_items.py` has a pre-existing phone UI text assertion and occasional book fixture mismatch, demonstrated in prior baseline comparison; not claimed as a passing regression.
+- Two-pass generated asset SHA-256 and archive integrity: see final handoff and `qa/results_5c42/`. No browser page errors in completed new suite.
+
+- **Final byte-identical SHA-256:** `game.js` `e9d611db69b415c37b9944cd1ee30ddeed2d1555764b653ce9e8e7d15f23b907`; `style.css` `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`; `qa/harness.py` `9b681b9e0f3f896c094a54b0d2258c192c34f370b12042cdaff8024bf68ce488`.
+
+
+## Phase 5C.4.3 — Checkpoint QA
+
+Production browser focused 23/23 PASS; 5C.4.1 21/21; 5C.4.2 31/31; 5C.1–5C.3.5 102/102; 5C.3.6 acceptance/fuzz 42/42; 5B.5 43/43; 5A.5 34/34; 4D.5 23/23; 3C.5 29/29; H3.0–H3.4 50/50. Total 23 suites, 398/398 PASS. Verified current browser pageerror/console errors: none in focused suite. Time-limited/baseline historical t_items.py assertions not represented as passing. Source syntax, two-pass deterministic rebuild and archive CRC verified separately.
+
+
+## Phase 5C.4.4 — Checkpoint acceptance (2026-10-08)
+- Verified input: Phase 5C.4.3 complete ZIP/progress and authoritative `src/` + `BUILD.md`. Previous completed systems kept.
+- Focused production-browser suite `qa/t_5c4_4.py`: **23/23 PASS**, including temporary ski/camp costs and return; no owned rental; duplicate charge guard; save/load; insufficient funds; adult paid repair; item-specific repairability; bounded condition; paid one-for-one replacement; child min-age; H3 minor repair/rental/replacement and repeated denial; Inventory real button click; no browser errors.
+- Selected regression: 5C.4.1–5C.4.3, 5C.1–5C.3.6, 5A/5B acceptance/fuzz, 4A–4D acceptance, 3B–3C acceptance and H3.0–H3.4. **28 suites / 509 of 509 checks PASS**, all 28 exit statuses 0. See `qa/results_5c44/*.status` and `.log`.
+- Known out-of-scope legacy QA issue: `t_items.py` contains previously identified phone UI assertion and stochastic book fixture behavior. This suite was not counted as passing.
+- This is checkpoint 5C.4.4 sign-off only; no claim for 5C.4.5, 5C.4.6, 5C.5 or all-game audit.
+
+
+## 5C.4.5 checkpoint QA — 2026-10-08
+- Focused production-browser `qa/t_5c4_5.py`: **26/26 PASS**; browser runtime errors 0.
+- Selected prior focused, acceptance and fuzz (23 suites): **411/411 PASS**. Total with 5C.4.5: **24 suites / 437 of 437 PASS**, zero verified failures. Raw outputs with exit statuses: `qa/results_5c45/status.tsv` and per-suite logs.
+- Confirmed idempotent migration and ownership/rental/relationship preservation, severe weather prevention, no unintended gear benefit on failure, no use of broken gear, and no item duplication.
+- `t_5a5_fuzz.py` standalone attempt interrupted by tool timeout/EPIPE; no positive exit code, so excluded from passing totals; 5A.5 acceptance passed 24/24 and earlier 5A acceptance remains intact. Historic legacy `t_items.py` assertions not counted as passing.
+- Source build run twice; output byte-identical, `node --check` clean, `tools/theme.py` audit reports no untokenized literal hex. ZIP CRC checked.
+- This is checkpoint 5C.4.5 QA, **not** 5C.4.6 final acceptance.
+
+## Phase 5C.5.1 — Focused migration and architecture QA (2026-10-08)
+
+- Recovered authoritative 5C.4.6 source and matching progress file; prerequisite phase trackers and build instructions inspected.
+- Reproduced `TypeError: (p.participantIds || []).filter is not a function` against production browser with a non-array legacy roster; narrow source fix in `src/modules/seasonal5c3_3.js`.
+- Focused browser `qa/t_5c5_1.py`: **30/30 PASS**. Coverage includes core-to-5C migration order, legacy/current save loads, idempotence, nonfabrication of participants/history/inventory/purchases, real overnight hold, H3 decision anti-reroll, real ski rental without ownership, quantity/condition preservation, catalog integrity and zero page errors.
+- Selected regression with confirmed exit code 0: 5C.1 18/18, 5C.2 20/20, 5C.3.1 10/10, 5C.3.3 13/13, 5C.3.5 17/17, 5C.3.6 acceptance 21/21, 5C.4.1 21/21, 5C.4.5 26/26, 5C.4.6 acceptance 24/24, H3.1 15/15; **185/185 PASS across 10 verified suites**. Focused plus confirmed regressions: **215/215 across 11 suites**.
+- A longer batch was interrupted after `t_5c4_2.py` printed 31/31 but before capturing its exit code; excluded from verified totals. Full regression and fuzz reserved for 5C.5.3–5C.5.4. Known legacy `t_items.py` assertions and 5B soft-event race remain outside this checkpoint; no claim of global remediation.
+
+
+### 5C.5.4 — Deterministic fuzz and selected regressions (2026-10-08)
+
+5C.5.4 41/41 PASS (275 seeded operations across ages 8/12/15/18/25); 11 selected existing suites 238/238 PASS, total 279/279 across 12 suites. Two-pass reproducible build, JS syntax, CSS token audit PASS. Browser page and console errors zero in focused checks. Full regression is expressly still pending at 5C.5.3; see qa/results_5c54 for exact logs and exit status.
+
+## Phase 5C.5.3 — Full regression evidence (2026-10-08)
+- Verified current ZIP/tracker and authoritative source, with 5C.5.4 completed out of order and 5C.5.3 previously unchecked.
+- Fresh, accepted regression: **73/73 suites, 1,476/1,476 checks PASS**: 5C 421, 5B 120, 5A 127, 4A–4D 533, 3B–3C 225, H3 50. Every accepted suite had a confirmed process exit code 0. See `qa/results_5c53/status_completed.tsv`, `suite_manifest.txt`, logs and runner scripts.
+- 5A.1 original 22/23 FAIL (existing workbook Shop label changed by seasonal UI); fixed one production label in `src/modules/invui72.js`, unchanged tests 23/23 PASS. Verified post-build 5A.1 23/23, 5C.4.2 31/31, 5C.4.6 acceptance 24/24, 5C.5.2 23/23 (exit 0).
+- 4A.5 acceptance original 30/32 FAIL during NPC movement/profile scenario, independent unchanged-source rerun 32/32 PASS; probable stochastic data-dependent behavior. Both logs retained; not declared permanently fixed.
+- A legacy `t_items.py` diagnostic aborted before executing assertions due to a hardcoded Chromium path absent in this runtime. Excluded from 73-suite matrix, not presented as PASS; older unrelated fixture assertions remain a known issue.
+- 5C.5.4 extra final-build rerun was interrupted; only its earlier complete exit-verified 41/41 run is included. No timeouts, incomplete attempts or failed first attempts were counted as passes.
+- `game.js` and `style.css` reproduced byte-identically in two source builds. Syntax PASS for `game.js` and `data.js`, CSS token audit PASS; hashes in `qa/results_5c53/hashes_pass1.sha256` and `hashes_pass2.sha256`.
+- 5C.5.5 final release audit/Phase 5C sign-off NOT performed.
+
+
+## Phase 5C.5.5 — Final Release Sign-off (2026-10-08)
+
+- **Fresh full regression:** 73/73 existing suites, 1,476/1,476 checks PASS with exit code 0 for each suite. Covers 5C.1–5C.4, 5C.5.1/2/4, 5A/5B, 4A–4D, 3B–3C and H3. Original 5C.5.3 runner copied for isolated final run; per-suite logs, manifest and verified exit report at `qa/results_5c55/full_regression/`.
+- **New final release static/production browser acceptance:** `qa/t_5c55_release.py` 24/24 PASS. **Grand total 74 suites / 1,500 checks PASS.** No reported fresh test failures. One initial HTTP-navigation test attempt failed at browser environment network policy (not an application assertion), and is preserved; replaced with approved existing QA pattern loading actual JS/CSS into isolated Chromium plus independent static Pages subpath validation.
+- **Build:** Two clean source builds byte-identical; syntax for `game.js` and `data.js` PASS; CSS `remaining literal hex outside tokens: []`. `game.js` SHA-256 `5d7788104f67b9382abfaf0e620c839d324c588c631f4358f08d24197bf136c4`; CSS SHA-256 `801ca0d091146469420d32800e274bd14f3f3b8968f7ac567609dbba7d61f16d`.
+- **Deployment:** GitHub Pages workflow, `.nojekyll`, root assets and relative runtime links verified. Not equivalent to hosted live URL testing. HTTP/file navigation is blocked in the instrumented browser by `ERR_BLOCKED_BY_ADMINISTRATOR`; no live deployment or real network load is claimed.
+- **Known external/legacy limitations:** `qa/t_items.py` relies on an unavailable absolute Chromium path and old inventory/UI assumptions; excluded from accepted 73-suite matrix. Previous intermittent 4A NPC current-school and 5B mandatory/soft-event priority tests are not asserted fixed; they passed in this fresh full run. These are transparently documented, not silently waived.
+- **Release decision:** **PHASE 5C COMPLETE — ACCEPTED** for the documented shipped static build and QA scope; no Phase 6 implementation.
+
+## HOTFIX-SCHOOL-NAV — 2026-10-08
+- Browser-reproduced School travel event attribute mismatch in `schoolday4c1.js`; corrected only two `data-*` names, leaving backend and school gameplay unchanged.
+- New actual button-click test: 17/17 PASS, rerun three times. School Phase 4C.1–4C.5 acceptance/fuzz: 132/132 PASS. Seasonal 5C.1, 5C.2, 5C.5.2, 5C.5.5 release: 85/85 PASS. **234/234 total.**
+- Two-pass build byte-identical; JS checks pass; CSS matches pre-hotfix. Full evidence in `HOTFIX_SCHOOL_NAV_PROGRESS.md` and `qa/results_hotfix_school_nav/`.
+- Phase 5C continues to be COMPLETE; Phase 6 not started. Existing unrelated known limitations unchanged.
+
+
+## HOTFIX-SCHOOL-UI-INTEGRATION — 2026-10-08
+
+Source: post-5C school-nav verified project. Root cause: data attributes such as `data-school-packed-4c3` became `dataset["schoolPacked-4c3"]`, but click dispatch checked `.dataset.schoolPacked4c3`. Nine exact attribute fixes; handlers unchanged. School panel now has one main Today at school card and one travel CTA.
+
+New actual DOM-click test: **58/58 PASS**, previous school-nav test **17/17 PASS**. Relevant 4C1–4C5 acceptance suites, 5C seasonal/migration/integration/release, 5A1 also passed with exit 0. Exit-verified total **345/345 PASS over 14 suites**, including **4C.5 fuzz 21/21 PASS, exit code 0, 800 randomized operations** on the final source (`t_4c5_fuzz_final.exit`). An earlier tool invocation timed out; its unverified exit was not counted separately.
+
+A first 4C.4 regression discovered the missing legacy label “After school & homework” (21/22). This was fixed in actual production markup; the untouched 4C.4 suite then passed 22/22. All focused test buttons were clicked in Chromium and had real effects; no page JavaScript errors. The project preserves Phases 5C and H3; Phase 6 not started. See `HOTFIX_SCHOOL_UI_INTEGRATION_PROGRESS.md`.
