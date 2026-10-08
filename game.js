@@ -106,7 +106,7 @@ function migrate(){
  S.weather=Object.assign(initialWeather(),S.weather||{});S.homeAmenities=Object.assign(initialAmenities(S.wealth||'Middle class'),S.homeAmenities||{});S.inventory=Object.assign({umbrella:0,raincoat:0,sweater:0,firewood:0,sunglasses:0,waterBottle:0},S.inventory||{});S.inventoryItems=Array.isArray(S.inventoryItems)?S.inventoryItems:[];S.possessions=Array.isArray(S.possessions)?S.possessions:[];S.purchaseHistory=Array.isArray(S.purchaseHistory)?S.purchaseHistory:[];
  S.phone=Object.assign({owned:false,model:null,price:600,condition:100,appsUnlocked:[]},S.phone||{});S.finance=Object.assign(initialFinance(),S.finance||{});S.permissions=Object.assign({stand:null,yardSale:null,dailyAccess:{}},S.permissions||{});S.permissions.dailyAccess=Object.assign({dateISO:currentDate(),tv:false,sharedDevice:false,phone:false,stove:false},S.permissions.dailyAccess||{});S.giftRequests=Array.isArray(S.giftRequests)?S.giftRequests:[];S.giftHistory=Array.isArray(S.giftHistory)?S.giftHistory:[];S.traditions=Object.assign(initialTraditions(S.place),S.traditions||{});S.familyEvents=Array.isArray(S.familyEvents)?S.familyEvents:[];S.choresDone=safeNum(S.choresDone,0,0);
  if(typeof S.career?.job==='string'&&S.career.job)S.career.job={title:S.career.job,pay:16,hours:4,performance:50};S.career=Object.assign(initialCareer(),S.career||{});S.healthState=Object.assign({fitness:50,sleep:80,illness:null},S.healthState||{});S.social=Object.assign({followers:0,reputation:50,posts:0,fame:0},S.social||{});S.romance=Object.assign({status:'Single',partner:null,history:[]},S.romance||{});S.travel=Object.assign({trips:0,lastTrip:null,passport:false},S.travel||{});S.location=S.location||'Home';S.current=S.current||{title:'Your life continues.',text:'The world is still moving.'};
- ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();migrateMicrobusiness5D1();migrateMicrobusiness5D4();migrateMicrobusiness5D5();migrateMicrobusiness5D6();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
+ ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();migrateMicrobusiness5D1();migrateMicrobusiness5D4();migrateMicrobusiness5D5();migrateMicrobusiness5D6();migrateOccasions6C1();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
 }
 
 function save(){if(!S)return;try{localStorage.setItem(KEY,JSON.stringify(S));const el=$('save-status');if(el)el.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){console.error('Save failed',e);toast('Could not save this life.')}}
@@ -181,7 +181,7 @@ function annualLifeTransition(){
  if(chance(20)){const text=rand(['A relative changes jobs.','A family member starts a new hobby.','Someone in the extended family moves.','Family routines shift as everyone gets older.']);S.familyEvents.unshift({dateISO:currentDate(),text})}
  if(S.career.job&&chance(18)){S.career.reputation=clamp(S.career.reputation+2);S.career.skills=safeNum(S.career.skills,0)+1}
 }
-function birthday(newAge){S.age=newAge;S.energy=clamp(Math.max(S.energy,75));S.stress=clamp(S.stress-5);S.people.forEach(p=>p.age=(p.age||S.age)+1);addStagePeople();resolveFutureGifts('Birthday');const cashGift=S.age>=5&&chance(45)?Math.round(10+Math.random()*Math.min(140,S.age*5)):0;if(cashGift){S.money+=cashGift;S.giftHistory.unshift({id:uid('gift'),dateISO:currentDate(),age:S.age,item:money(cashGift)+' birthday cash',occasion:'Birthday',reaction:null})}progressSchoolForAge();annualLifeTransition();setCurrentContext({sourceType:'birthday',priority:2,title:`Happy ${S.age}${S.age===1?'st':S.age===2?'nd':S.age===3?'rd':'th'} birthday`,text:'A new year of life begins. People, permissions, school, health and opportunities may all change.'});log('🎂 Birthday',`You turn ${S.age}.${cashGift?` You also receive ${money(cashGift)} in birthday money.`:''}`,true);setEmotion('Excited','It is your birthday.',65);if(S.age>=1&&chance(S.age<=18?68:35))queueEvent({type:'birthdayParty',title:'How do you want to celebrate?',text:S.age<13?'Your family asks what kind of birthday celebration sounds good.':'People close to you are making birthday plans.',choices:birthdayCelebrationOptions(S.age)});reconcileState('birthday')}
+function birthday(newAge){S.age=newAge;S.energy=clamp(Math.max(S.energy,75));S.stress=clamp(S.stress-5);advanceFamilyAgesOnPlayerBirthdayH1();addStagePeople();resolveFutureGifts('Birthday');const cashGift=S.age>=5&&chance(45)?Math.round(10+Math.random()*Math.min(140,S.age*5)):0;if(cashGift){S.money+=cashGift;S.giftHistory.unshift({id:uid('gift'),dateISO:currentDate(),age:S.age,item:money(cashGift)+' birthday cash',occasion:'Birthday',reaction:null})}progressSchoolForAge();annualLifeTransition();setCurrentContext({sourceType:'birthday',priority:2,title:`Happy ${S.age}${S.age===1?'st':S.age===2?'nd':S.age===3?'rd':'th'} birthday`,text:'A new year of life begins. People, permissions, school, health and opportunities may all change.'});log('🎂 Birthday',`You turn ${S.age}.${cashGift?` You also receive ${money(cashGift)} in birthday money.`:''}`,true);setEmotion('Excited','It is your birthday.',65);if(S.age>=1&&chance(S.age<=18?68:35))queueEvent({type:'birthdayParty',title:'How do you want to celebrate?',text:S.age<13?'Your family asks what kind of birthday celebration sounds good.':'People close to you are making birthday plans.',choices:birthdayCelebrationOptions(S.age)});reconcileState('birthday')}
 
 // ---------- Weather / needs ----------
 function needUrgency(k,v){return ['hunger','toilet'].includes(k)?v:100-v}
@@ -420,7 +420,7 @@ function expireCalendarEvent(ev,reason='Window passed'){setCalendarStatus(ev,'Ex
 
 // ---------- Central obligation processing ----------
 function processCalendar(){tierTick();curfewCallCheck();
- ensureLifecycleContainers();const now=nowStamp();
+ ensureLifecycleContainers();if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1('calendar');const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
   if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
@@ -1029,7 +1029,7 @@ function reconcileState(reason='tick'){
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}
  if(typeof reconcileSchoolDay4C1==='function')reconcileSchoolDay4C1(reason);if(typeof reconcileSchoolClasses4C2==='function')reconcileSchoolClasses4C2(reason);if(typeof reconcileSchoolFacilities4C3==='function')reconcileSchoolFacilities4C3(reason);if(typeof reconcileAfterSchool4C4==='function')reconcileAfterSchool4C4(reason);
- reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
+ reconcileExams();if(typeof reconcilePromSeason6A1==='function')reconcilePromSeason6A1(reason);if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1(reason);reconcileCalendar();if(typeof reconcileSchoolEvents4D1==='function')reconcileSchoolEvents4D1(reason);if(typeof reconcileSchoolEventDiscovery4D2==='function')reconcileSchoolEventDiscovery4D2(reason);if(typeof reconcileSchoolEventParticipation4D3==='function')reconcileSchoolEventParticipation4D3(reason);if(typeof reconcileSchoolEventCalendar4D4==='function')reconcileSchoolEventCalendar4D4(reason);expireEvents();reconcileNotifications();reconcileOffers();archiveOldRecords();clearCurrentContextIfSourceResolved()
 }
 function compactExam(e){return {id:e.id,subject:e.subject,type:e.type,dateISO:e.dateISO,minute:e.minute,status:e.status,score:e.score,reason:e.reason||null,makeupOf:e.makeupOf||null,makeupId:e.makeupId||null,replacedBy:e.replacedBy||null}}
 function closeSchoolYear(old,{leaving=false}={}){
@@ -1271,7 +1271,7 @@ function pendingHtml(){const p=pendingOpen();if(!p.length)return '<p class="mute
 function eventHtml(){const shown=S.current?.sourceType==='event'?S.current.sourceId:null,list=S.events.filter(x=>x.status==='Open'&&x.id!==shown&&!eventExpired(x));if(!list.length)return `<p class="muted-text">${shown?'The current moment is shown at the top of the page.':'No major interruption right now. Ordinary life is still moving.'}</p>`;return list.slice(0,3).map(e=>`<div class="event-card"><div class="event-kicker">WAITING FOR YOU${e.expiresAt?` • RESPOND BY ${esc(timeLabel(e.expiresAt.minute))}${e.expiresAt.dateISO!==currentDate()?' '+esc(formatDate(e.expiresAt.dateISO)):''}`:''}</div><h3>${esc(e.title)}</h3>${inviteMetaHtml(e)}<p>${esc(e.text)}</p><div class="event-actions">${e.choices.map(c=>`<button data-event-id="${e.id}" data-event-choice="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div></div>`).join('')}
 function notificationsHtml(){const n=activeNotifications().slice(0,6);if(!n.length)return '<p class="muted-text">No active notifications.</p>';return n.map(x=>`<button class="note-row ${x.status==='Unread'?'unread':''}" data-note-open="${x.id}"><b>${esc(x.title)}</b><small>${esc(x.text)} • ${formatDate(x.dateISO)}</small></button>`).join('')+`<div class="inline-actions"><button class="small ghost" data-notes-read="1">Mark all read</button></div>`}
 function agendaHtml(){const a=todayAgenda();if(!a.length)return '<p class="muted-text">Nothing scheduled today.</p>';return a.map(x=>`<div class="agenda-row ${x.done?'done':''}"><span>${x.icon}</span><b>${esc(x.title)}</b><small>${x.type==='homework'||x.type==='birthday'?esc(x.status||''):timeLabel(x.minute)}</small>${x.type!=='homework'&&x.type!=='birthday'&&x.status?statusTag(x.status):''}</div>`).join('')}
-function homePanel(){const q=quickContextActions(),gift=S.giftHistory.find(x=>!x.reaction);return `<div class="dashboard home-dashboard"><section class="card wide"><div class="section-heading"><div><h3>What needs your attention?</h3><p class="muted-text">The game surfaces context instead of making you hunt through menus.</p></div><span class="tag">${esc(S.emotion.current)}</span></div><div class="context-grid">${q.map(x=>`<button class="context-action" data-tab-jump="${x[0]}"><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></section><section class="card"><h3>Today • ${esc(weekday())}</h3>${agendaHtml()}${isGrounded()?`<p class="urgent-text">Grounded until ${formatDate(S.family.restrictions.groundedUntil)}.</p>`:''}</section><section class="card"><h3>Mood</h3>${moodHtml()}</section><section class="card"><h3>Notifications</h3>${notificationsHtml()}</section>${typeof promUiHomeHtml6A6==='function'?promUiHomeHtml6A6():''}${holidayWindow().length?`<section class="card wide"><h3>Holidays</h3>${holidayHtml()}</section>`:''}<section class="card wide"><h3>What's happening?</h3>${eventHtml()}</section><section class="card"><h3>Right now</h3>${statRow('Location',esc(S.location))}${statRow('Weather',`${weatherIcon(S.weather.type)} ${esc(S.weather.type)} • ${S.weather.temp}°C`)}${statRow('Emotion',esc(S.emotion.current))}<p class="muted-text">${esc(S.emotion.reason||weatherAdvice())}</p></section><section class="card"><h3>Pending decisions</h3>${pendingHtml()}</section>${gift?`<section class="card wide"><h3>🎁 A gift reaction is still yours to choose</h3><p>You received <b>${esc(gift.item)}</b> for ${esc(gift.occasion)}. Your private feeling and outward behavior do not have to match.</p><div class="inline-actions"><button data-act="giftThank">Say thank you</button><button data-act="giftExcited">Act excited</button><button data-act="giftHide">Hide disappointment</button><button data-act="giftHug">Hug giver</button><button class="ghost" data-act="giftComplain">Complain</button></div></section>`:''}</div>`}
+function homePanel(){const q=quickContextActions(),gift=S.giftHistory.find(x=>!x.reaction);return `<div class="dashboard home-dashboard"><section class="card wide"><div class="section-heading"><div><h3>What needs your attention?</h3><p class="muted-text">The game surfaces context instead of making you hunt through menus.</p></div><span class="tag">${esc(S.emotion.current)}</span></div><div class="context-grid">${q.map(x=>`<button class="context-action" data-tab-jump="${x[0]}"><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></section><section class="card"><h3>Today • ${esc(weekday())}</h3>${agendaHtml()}${isGrounded()?`<p class="urgent-text">Grounded until ${formatDate(S.family.restrictions.groundedUntil)}.</p>`:''}</section><section class="card"><h3>Mood</h3>${moodHtml()}</section>${typeof occasionSection6C7==='function'?occasionSection6C7('home'):''}<section class="card"><h3>Notifications</h3>${notificationsHtml()}</section>${typeof promUiHomeHtml6A6==='function'?promUiHomeHtml6A6():''}${holidayWindow().length?`<section class="card wide"><h3>Holidays</h3>${holidayHtml()}</section>`:''}<section class="card wide"><h3>What's happening?</h3>${eventHtml()}</section><section class="card"><h3>Right now</h3>${statRow('Location',esc(S.location))}${statRow('Weather',`${weatherIcon(S.weather.type)} ${esc(S.weather.type)} • ${S.weather.temp}°C`)}${statRow('Emotion',esc(S.emotion.current))}<p class="muted-text">${esc(S.emotion.reason||weatherAdvice())}</p></section><section class="card"><h3>Pending decisions</h3>${pendingHtml()}</section>${gift?`<section class="card wide"><h3>🎁 A gift reaction is still yours to choose</h3><p>You received <b>${esc(gift.item)}</b> for ${esc(gift.occasion)}. Your private feeling and outward behavior do not have to match.</p><div class="inline-actions"><button data-act="giftThank">Say thank you</button><button data-act="giftExcited">Act excited</button><button data-act="giftHide">Hide disappointment</button><button data-act="giftHug">Hug giver</button><button class="ghost" data-act="giftComplain">Complain</button></div></section>`:''}</div>`}
 function quickContextActions(){const a=[];const exam=nextExam();if(exam){const d=daysBetween(currentDate(),exam.dateISO);if(d<=3)a.push(['school','📝 '+exam.subject,d<=0?`Assessment today • ${timeLabel(exam.minute)}`:`Assessment in ${d} day${d===1?'':'s'} • prep ${Math.round(examSubject(exam)?.prep||0)}%`])}const sd=schoolDayEvent();if(sd&&!isTerminal(sd.status)&&currentMinute()<=SCHOOL_DAY.cutoff)a.push(['school','🏫 School today',schoolDayStatus()]);if(needsFormalSchool()){const hw=S.school.subjects.find(s=>s.homework?.status==='Late'||(s.homework?.status==='Assigned'&&daysBetween(currentDate(),s.homework.dueDate)<=1));if(hw)a.push(['school','📒 '+hw.name+' homework',homeworkLabel(hw.homework)])}if(S.needs.hunger>=60)a.push(['places','🍽️ Eat',S.age<=1?'Signal caregiver / be fed':'Take care of hunger']);if(S.needs.toilet>=65)a.push(['places','🚽 Bathroom',S.age<=4?'Age-appropriate toileting help':'Relieve yourself']);if(S.needs.sleep<=35||S.energy<=30)a.push(['places','😴 Sleep','You are running low on rest']);if(unreadMessages())a.push(['phone','💬 Messages',`${unreadMessages()} unread`]);if(pendingOpen().length)a.push(['calendar','⏳ Pending decision',`${pendingOpen().length} unresolved`]);if(!a.length)a.push(['places','🧭 Choose an activity','Your immediate needs are stable'],['people','👥 See someone','Relationships keep moving']);return a.slice(0,6)}
 function developmentPanel(){const k=S.development.kindergarten,p=S.pendingDecisions.find(x=>!x.resolved&&x.type==='kindergarten');return `<div class="dashboard"><section class="card"><h3>Development & autonomy</h3><p class="stage-note"><b>${lifeStage()}</b> • skills grow through actual care routines.</p>${Object.entries(S.development.skills).map(([key,v])=>`<div class="skill-line"><span>${esc(key.replace(/([A-Z])/g,' $1'))}</span><div class="progress"><i style="width:${clamp(v)}%"></i></div><b>${Math.round(v)}%</b></div>`).join('')}</section><section class="card"><h3>Early education</h3>${statRow('Kindergarten',esc(k.decision||(p?p.status:'Not decided')))}${p&&p.status==='Waiting for your preference'?`<p>Your family is discussing kindergarten. Your preference matters, but caregivers still make the final decision${p.autoDecideDate?` — by ${formatDate(p.autoDecideDate)} at the latest`:''}.</p><div class="inline-actions"><button data-act="kindergartenYes">I want to go</button><button class="ghost" data-act="kindergartenNo">I don't want to go</button></div>`:p?`<p class="muted-text">${esc(p.detail)}</p>`:''}<h4>Milestones</h4>${S.development.milestones.slice(0,6).map(x=>`<p>${esc(x)}</p>`).join('')||'<p class="muted-text">Milestones appear as skills develop.</p>'}</section></div>`}
 function examStatusLabel(e){const d=daysBetween(currentDate(),e.dateISO);if(e.status==='Completed')return `${e.score}%`;if(e.status==='Replaced by make-up')return 'Replaced';if(e.status==='Make-up scheduled'){const mk=S.exams.find(x=>x.id===e.makeupId);return mk?`Make-up ${formatDate(mk.dateISO)}`:'Make-up'}if(!examIsOpen(e))return e.status;return d===0?`TODAY ${timeLabel(e.minute)}`:`${d} day${d===1?'':'s'}`}
@@ -1291,6 +1291,7 @@ function schoolPanel(){
  return `<div class="dashboard"><section class="card wide school-today-card" data-school-today="1"><h3>Today at school</h3>${typeof schoolDayContextHtml4C1==='function'?schoolDayContextHtml4C1({embedded:true}):''}${typeof schoolClassContextHtml4C2==='function'?schoolClassContextHtml4C2({embedded:true}):''}${typeof schoolFacilitiesHtml4C3==='function'?schoolFacilitiesHtml4C3({embedded:true}):''}<div class="school-today-after muted-text"><b>After school & homework:</b> ${(S.school.subjects||[]).filter(s=>s.homework&&HW_OPEN.includes(s.homework.status)).length} active homework • Campus closes ${timeLabel(schoolHours4C1().campusClose)}${typeof nextAfterSchoolObligation4C4==='function'&&nextAfterSchoolObligation4C4()?` • Next after-school: ${esc(nextAfterSchoolObligation4C4().title)}`:''}</div>${schoolSessionHtml({embedded:true})}${stayHomeHtml()}<p class="muted-text">On time by ${timeLabel(SCHOOL_DAY.tardyAfter)}, absent after ${timeLabel(SCHOOL_DAY.cutoff)}. This year: ${rec.daysAttended} days • ${rec.absences} absent • ${rec.tardies} late${rec.classesSkipped?` • ${rec.classesSkipped} classes skipped`:''}.</p></section><section class="card"><h3>${esc(S.school.name)}</h3>${typeof playerSchoolIdentityRows4A2==='function'?playerSchoolIdentityRows4A2():''}${statRow('Grade',esc(S.school.grade))}${statRow('Semester',esc(semesterLabel()))}${statRow('Class',esc(S.school.className))}${statRow('Academic average',Math.round(schoolAverage())+'%')}${statRow('Attendance',Math.round(S.school.attendance)+'%')}${statRow('Behavior',Math.round(S.school.behavior)+'%')}${!primary&&S.school.gpa!=null?statRow('GPA',Number(S.school.gpa).toFixed(2)):''}</section><section class="card"><h3>School reputation</h3>${repHtml()}</section>${typeof schoolRecognitionHtml4B4==='function'?schoolRecognitionHtml4B4():''}<section class="card"><h3>Education history</h3>${educationHistoryHtml()}</section><section class="card wide"><h3>Subjects, teachers & homework</h3><div class="subject-grid">${subjectHtml}</div></section>${typeof advancedStudyPanel5A4==='function'?`<section class="card wide"><h3>Advanced Study</h3>${advancedStudyPanel5A4()}</section>`:''}<section class="card wide"><h3>Assessments</h3>${examHtml}</section>${attendanceHtml()}<section class="card wide"><div class="section-heading"><div><h3>Clubs & activities</h3><p class="muted-text">Sessions are weekly commitments. Missing them has consequences; telling the leader beforehand is understood.</p></div><button class="small" data-act="exploreClub">Explore activities</button></div>${electionHtml()}${typeof clubLeadershipHtml4B3==='function'?clubLeadershipHtml4B3():''}${tryoutsHtml()?`<h4>Tryouts & auditions</h4>${tryoutsHtml()}`:''}<h4>Offers</h4>${offerHtml}<h4>Your commitments</h4>${clubHtml}${removed.length?`<p class="muted-text">Removed: ${removed.map(c=>esc(c.name)).join(', ')}</p>`:''}</section><section class="card wide"><div class="section-heading"><div><h3>Competitions & school events</h3><p class="muted-text">Registering is not enough — you have to show up on the day.</p></div><button class="small" data-act="exploreContest">Find event</button></div>${eventHtml}</section></div>`
 }
 function handleLifecycleClick(b){
+ if(typeof occasionUiClick6C7==='function'&&occasionUiClick6C7(b))return true;
  if(typeof outdoorClick5C35==='function'&&outdoorClick5C35(b))return true;if(typeof workbook5a4Click==='function'&&workbook5a4Click(b))return true;if(typeof schoolDayClick4C1==='function'&&schoolDayClick4C1(b))return true;if(typeof communication3C4Click==='function'&&communication3C4Click(b))return true;if(typeof communication3C3Click==='function'&&communication3C3Click(b))return true;if(typeof communication3C2Click==='function'&&communication3C2Click(b))return true;if(typeof communication3C1Click==='function'&&communication3C1Click(b))return true;if(typeof romance3B2Click==='function'&&romance3B2Click(b))return true;if(handleInventoryClick(b))return true;if(promClick(b))return true;if(worldClick(b))return true;if(peopleHubClick(b))return true;if(people3a5Click(b))return true;if(narrativeClick(b))return true;if(friends3aClick(b))return true;if(people3aClick(b))return true;if(nurseClick(b))return true;if(healthClick(b))return true;if(ffClick(b))return true;if(eventsClick(b))return true;if(identClick(b))return true;if(majorClick(b))return true;if(campusClick(b))return true;if(oClick(b))return true;if(workClick(b))return true;if(uniClick(b))return true;if(bizClick(b))return true;if(rstClick(b))return true;if(lmpqClick(b))return true;if(knxClick(b))return true;if(handleSchoolClick(b))return true;if(hijClick(b))return true;if(handlePlanClick(b))return true;if(typeof schoolElectionClick4B2==='function'&&schoolElectionClick4B2(b))return true;if(typeof schoolLeadershipClick4B3==='function'&&schoolLeadershipClick4B3(b))return true;if(typeof schoolRecognitionClick4B4==='function'&&schoolRecognitionClick4B4(b))return true;if(handleClubClick(b))return true;if(handleUIClick(b))return true;
  const d=b.dataset;
  if(d.nextDayConfirm){performNextDay();return true}
@@ -1299,7 +1300,7 @@ function handleLifecycleClick(b){
  if(d.clubSkip){skipClubSession(d.clubSkip);save();render();return true}
  if(d.clubExcuse){excuseClubSession(d.clubExcuse);save();render();return true}
  if(d.contestAttend){attendContest(d.contestAttend);save();render();return true}
- if(d.noteOpen){const n=S.notifications.find(x=>x.id===d.noteOpen);if(n){n.read=true;if(n.status==='Unread')n.status='Read';if(n.tab)active=n.tab}save();render();return true}
+ if(d.noteOpen){const n=S.notifications.find(x=>x.id===d.noteOpen);if(n){n.read=true;if(n.status==='Unread')n.status='Read';if(n.tab)active=n.tab;if(n.sourceType==='occasion'&&typeof occasionRecord6C1==='function'){UI.subTab.calendar='upcoming';occasionOpen6C7=n.sourceId.replace(/:(prepare|day)$/,'');saveUI()}}save();render();return true}
  if(d.notesRead){for(const n of activeNotifications()){n.read=true;n.status='Read'}save();render();return true}
  return false
 }
@@ -2092,7 +2093,7 @@ function doHolidayActivity(key,arg){
  if(a.uses){const it=findUsable(a.uses);if(it){if(['finite','consumable'].includes(it.lifecycleType)){const u=openOne(it);u.remaining=clamp(u.remaining-(it.lifecycleType==='finite'?34:100));if(u.remaining<=.5)removeItem(u.id)}else if(it.lifecycleType==='perishable'||catalogItem(it.key)?.gift)removeItem(it.id,true);extra.push(`Your ${it.name.toLowerCase()} made it better.`);S.happiness=clamp(S.happiness+3)}}
  if(a.needsCostumeBonus){const c=findUsable('costume');if(c){fx.fun=(fx.fun||0)+6;extra.push(`Your ${c.name.toLowerCase()} gets compliments at every door.`);setItemCondition(c,c.condition-8)}else extra.push('You go without a costume; a few neighbors ask what you are supposed to be.')}
  if(a.needsNew){const recent=S.inventoryItems.find(i=>i.lifecycleType==='wearable'&&daysBetween(i.acquiredDate,currentDate())<=30);if(!recent){toast('You have nothing new to wear — you could buy something in the shop.');return}extra.push(`You wear your new ${recent.name.toLowerCase()}.`)}
- if(a.luckyMoney){const amt=S.age>=2?10+Math.floor(Math.random()*Math.max(25,Math.min(180,S.age*10+30))):0;if(amt){S.money+=amt;extra.push(`Red envelopes: ${money(amt)}.`)}}
+ if(a.luckyMoney){const amt=S.age>=2?10+Math.floor(Math.random()*Math.max(25,Math.min(180,S.age*10+30))):0;if(amt){S.money+=amt;if(S.finance)S.finance.earned=(Number(S.finance.earned)||0)+amt;extra.push(`Red envelopes: ${money(amt)}.`)}}
  if(a.crush){const p=S.people.filter(q=>!isFamilyPerson(q)&&q.age>=S.age-2&&q.age<=S.age+2).sort((m,n)=>n.rel-m.rel)[0];if(!p){story='There is nobody you would give a card to. That is completely fine.'}else{const ok=chance(30+(p.rel-50)*.6+(p.trust-50)*.3);p.rel=clamp(p.rel+(ok?5:-1));rememberPerson(p,ok?'You gave them a Valentine card and they liked it.':'You gave them a Valentine card; it was awkward.',2);story=ok?`You leave a card for ${firstName(p)}. Later they find you and say, a little shyly, "Thanks. I liked it."`:`You give ${firstName(p)} a card. They say thanks, kindly, but it is clear they do not feel the same way. It stings, and it is okay.`;setEmotion(ok?'Excited':'Embarrassed','A Valentine card moment.',55)}}
  if(a.partner){if(!S.romance?.partner){story='You do not have a partner right now, so you plan something for yourself instead.';fx.fun=6}}
  if(a.makes){addItem(a.makes,'handmade');const it=S.inventoryItems.filter(i=>i.key===a.makes).pop();if(it){it.origin=`Handmade for ${x.h.name} ${x.year}.`;it.sentimental=45;it.name=a.makes==='costume'?'Homemade costume':'Handmade gift'}}
@@ -2119,13 +2120,21 @@ function holidayTick(){
   const f=`holiday-${x.h.id}-${x.year}`;if(S.flags[f])continue;S.flags[f]=true;
   if(!SIM.skipping)log(`${x.h.icon} ${x.h.name}`,x.day===1?`${x.h.name} today. ${x.h.activities.some(a=>a.on)?'Check what you want to do — nothing is required.':''}`:`${x.h.name} continues.`);
   if(x.h.id==='christmas'){resolveFutureGifts('Christmas');if(chance(70)){const options=['book','artSupplies','toy','sweater','headphones','bicycle','boardGame','puzzle'].filter(k=>D.catalog[k]&&S.age>=D.catalog[k].minAge&&!ownsItem(k)),key=rand(options);if(key){addItem(key,'Christmas gift');S.giftHistory.unshift({id:uid('gift'),dateISO:today,age:S.age,item:D.catalog[key].name,occasion:'Christmas',reaction:null,requested:false});log('🎄 Christmas present',`You receive ${D.catalog[key].name}. You decide how honestly to show your reaction.`)}}}
-  if(x.h.id==='lunarNewYear'&&SIM.skipping&&S.age>=2){const amt=10+Math.floor(Math.random()*Math.max(25,Math.min(180,S.age*10+30)));S.money+=amt}
+  if(x.h.id==='lunarNewYear'&&SIM.skipping&&S.age>=2){const amt=10+Math.floor(Math.random()*Math.max(25,Math.min(180,S.age*10+30)));S.money+=amt;if(S.finance)S.finance.earned=(Number(S.finance.earned)||0)+amt}
  if(x.h.id==='valentines'&&S.age>=13&&S.age<18&&!S.romance?.partnerId&&!SIM.skipping&&chance(22)){const ad=S.people.filter(p=>eligibleRomance(p)).map(ensureRomanceProfile).filter(p=>p.attraction>=55)[0];if(ad)log('💌 A secret admirer',`An unsigned card is in your locker. The handwriting looks a little like ${firstName(ad)}'s…`)}
   if(x.h.id==='newYear')S.familyEvents.unshift({dateISO:today,text:'A new calendar year begins.'});
   if(x.h.id==='lunarNewYear'&&x.day===1)S.familyEvents.unshift({dateISO:today,text:'Family gathers for Lunar New Year.'});
  }
  // The day after a parent holiday: forgetting entirely is noticed (gently).
- for(const x of holidaysOn(addDays(today,-1))){const h=x.h;if(!h.parentDay||SIM.skipping||S.age<6)continue;const k=`${h.id}-${x.year}`,did=(S.holidayLog?.[k]||[]).length,f=`holiday-forgot-${k}`;if(did||S.flags[f])continue;S.flags[f]=true;const p=relTarget(h.parentDay==='father'?'father':'mother');if(p){p.rel=clamp(p.rel-2);rememberPerson(p,`You forgot ${h.name}.`);log(`Forgot ${h.name}`,`${firstName(p)} does not say much, but you can tell ${h.parentDay==='father'?'he':'she'} noticed nobody did anything yesterday.`)}}
+ for(const x of holidaysOn(addDays(today,-1))){const h=x.h;if(!h.parentDay||SIM.skipping||S.age<6)continue;const k=`${h.id}-${x.year}`,did=(S.holidayLog?.[k]||[]).length,f=`holiday-forgot-${k}`;if(did||S.flags[f])continue;S.flags[f]=true;const p=relTarget(h.parentDay==='father'?'father':'mother');
+  // Holidays are optional. Only a sufficiently close, present household
+  // relationship may have mild expectations; a 6C.6 promise takes priority.
+  const oi=typeof occasionId6C1==='function'?occasionRecord6C1(occasionId6C1('holiday',h.id,x.year)):null;
+  const promised=!!oi?.social6C6?.commitments?.some(c=>c.personId===p?.id);
+  if(p&&S.age>=10&&livesWithParents()&&inHousehold(p)&&(p.rel||0)>=65&&!promised){
+   p.rel=clamp(p.rel-1);rememberPerson(p,`You missed ${h.name} this year.`,1);
+   log(`Forgot ${h.name}`,`${firstName(p)} quietly noticed you did not celebrate together.`);
+  }}
 }
 function holidayHtml(){
  const w=holidayWindow();if(!w.length)return '';
@@ -2172,7 +2181,7 @@ function calendarPanel(){
  const recent=[...S.calendar].filter(e=>isTerminal(e.status)&&e.type!=='schoolDay').sort((a,b)=>stampOf(b.resolvedAt||{dateISO:b.dateISO}).localeCompare(stampOf(a.resolvedAt||{dateISO:a.dateISO}))).slice(0,10);
  const y=parseISO(currentDate()).getUTCFullYear(),hols=HOLIDAYS.filter(holidayObserved).map(h=>({h,d:holidayDate(h,y)})).filter(x=>x.d).sort((a,b)=>a.d.localeCompare(b.d));
  const filters=Object.keys(CAL_TONE).filter(c=>c!=='Other');
- return `<div class="dashboard">${typeof promUiCalendarHtml6A6==='function'?promUiCalendarHtml6A6():''}<section class="card wide" data-sub="month"><div class="cal-toolbar"><div class="cal-nav"><button class="small ghost" data-cal-month="-1" aria-label="Previous month">‹</button><h3>${esc(monthLabel(ym))}</h3><button class="small ghost" data-cal-month="1" aria-label="Next month">›</button><button class="small" data-cal-today="1">Today</button></div><div class="filter-row">${filters.map(c=>`<button class="filter-chip ${calFilter===c?'active':''}" data-cal-filter="${c}"><i class="dot-${CAL_TONE[c]}"></i>${c}</button>`).join('')}</div></div><div class="cal-layout">${monthGrid(ym)}<div class="cal-agenda">${agendaListHtml(sel)}</div></div></section>
+ return `<div class="dashboard">${typeof promUiCalendarHtml6A6==='function'?promUiCalendarHtml6A6():''}${typeof occasionSection6C7==='function'?occasionSection6C7('calendar'):''}<section class="card wide" data-sub="month"><div class="cal-toolbar"><div class="cal-nav"><button class="small ghost" data-cal-month="-1" aria-label="Previous month">‹</button><h3>${esc(monthLabel(ym))}</h3><button class="small ghost" data-cal-month="1" aria-label="Next month">›</button><button class="small" data-cal-today="1">Today</button></div><div class="filter-row">${filters.map(c=>`<button class="filter-chip ${calFilter===c?'active':''}" data-cal-filter="${c}"><i class="dot-${CAL_TONE[c]}"></i>${c}</button>`).join('')}</div></div><div class="cal-layout">${monthGrid(ym)}<div class="cal-agenda">${agendaListHtml(sel)}</div></div></section>
  <section class="card" data-sub="today"><h3>Today • ${esc(weekday())}</h3>${agendaListHtml(currentDate())}</section><section class="card" data-sub="today"><h3>Now</h3>${statRow('Time',timeLabel(currentMinute()))}${statRow('School',esc(schoolDayStatus()))}${statRow('Bedtime',S.age<18?timeLabel(bedtimeMinute()):'Your choice')}${statRow('Calendar profile',esc(calendarProfile().region))}<h4>Pending decisions</h4>${pendingHtml()}</section>
  <section class="card wide" data-sub="upcoming"><h3>Upcoming</h3>${up.map(e=>{const d=daysBetween(currentDate(),e.dateISO);return `<div class="calendar-row"><div><b>${e.icon||typeIcon(e.type)} ${esc(e.title)}</b><small>${formatDate(e.dateISO)}${e.minute!=null&&e.type!=='homework'?` • ${timeLabel(e.minute)}`:''}${e.location?` • ${esc(e.location)}`:''}${e.required?' • required':''}</small></div><div class="inline-actions">${e.status&&e.status!=='Scheduled'?statusTag(e.status):''}<span class="countdown">${d===0?'TODAY':d===1?'TOMORROW':`${d} days`}</span></div></div>`}).join('')||'<p class="muted-text">Nothing scheduled.</p>'}</section>
  <section class="card" data-sub="history"><h3>Recently resolved</h3>${recent.map(e=>`<div class="calendar-row"><div><b>${typeIcon(e.type)} ${esc(e.title)}</b><small>${formatDate(e.dateISO)}${e.resolutionReason?` • ${esc(e.resolutionReason)}`:''}</small></div>${statusTag(e.status)}</div>`).join('')||'<p class="muted-text">Nothing resolved recently.</p>'}</section><section class="card" data-sub="history"><h3>Holidays this year (${calendarProfile().region})</h3>${hols.map(x=>`<div class="calendar-row"><div><b>${x.h.icon} ${esc(x.h.name)}</b><small>${formatDate(x.d)}</small></div><span class="countdown">${x.d<currentDate()?'passed':daysBetween(currentDate(),x.d)+'d'}</span></div>`).join('')}</section></div>`
@@ -2614,7 +2623,7 @@ function offerButtons(o){const i=clubInfo(o.name);if(o.status!=='Offered')return
 //  • Adult intimacy requires mutual consent each time, fades to black, and
 //    respecting "no" is never punished.
 // =====================================================================
-function personAge(p){const n=npcById(p?.npcId);return n?npcAge(n):(p?.age??S.age)}
+function personAge(p){const n=npcById(p?.npcId);if(n)return npcAge(n);const born=p&&isSibling(p)&&(validFamilyDateH1(p.born)?p.born:validFamilyDateH1(p.dob)?p.dob:null);return born?familyAgeFromBirthH1(born):(p?.age??S.age)}
 function eligibleRomance(p){if(!p||isFamilyPerson(p)||S.age<13||S.romance?.optOut)return false;const a=personAge(p);if(S.age<18)return a>=13&&a<18&&Math.abs(a-S.age)<=2;return a>=18}
 function adultRomance(p){return S.age>=18&&personAge(p)>=18}
 const BOUNDARIES={noPublicAffection:'does not like public displays of affection',noExpensiveGifts:'is uncomfortable with expensive gifts',needsTime:'needs time before anything serious',noParties:'does not enjoy big parties',notReady:'is not ready for a relationship right now'};
@@ -4899,7 +4908,8 @@ function stayHomeHtml(){const t=canAskStayHome('today'),n=canAskStayHome('tomorr
 // ---------- K40. Named relationship tiers ----------
 const FRIEND_TIERS=[[0,'Acquaintance'],[40,'Friend'],[60,'Good Friend'],[75,'Close Friend'],[88,'Best Friend']];
 const TIER_RANK={Stranger:0,Acquaintance:0,Contact:0,'Former Friend':0,'Old Friend':1,Friend:2,'Good Friend':2,'Casual Friend':2,'Close Friend':3,'Best Friend':4,Dating:3,Serious:4};
-function friendTier(p){if(!p||isFamilyPerson(p))return null;if(S.romance?.partnerId===p.id)return p.romanceStage==='partner'?'Serious':'Dating';return friendStatusLabel(p)||friendshipTier(p)}
+// Romance and friendship have separate ladders. Dating/Serious are NEVER friendship tiers.
+function friendTier(p){if(!p||isFamilyPerson(p))return null;return friendStatusLabel(p)||friendshipTier(p)}
 function tierRank(p){return TIER_RANK[friendTier(p)]??-1}
 function tierTick(){
  for(const p of S.people||[]){const t=friendTier(p);if(!t)continue;if(p.tier&&p.tier!==t&&!SIM.skipping){const up=(TIER_RANK[t]||0)>(TIER_RANK[p.tier]||0);if(up)friendshipMilestone(p,t);else if((TIER_RANK[p.tier]||0)>=3&&(TIER_RANK[t]||0)<=1)noteSeparation(p);
@@ -5018,7 +5028,7 @@ function npcBirthdayInvite(p,partyDay=null){const yk=(partyDay||addDays(currentD
 // N47. The player's own birthday: surprise party, gifts, invitations, partner
 function playerBirthdayExtras(){
  if(S.age<4)return;const friends=S.people.filter(p=>!isFamilyPerson(p)&&tierRank(p)>=1&&!p.movedAway),close=friends.filter(p=>tierRank(p)>=2);
- if(needsFormalSchool()&&isSchoolDay()&&friends.length>=2&&chance(45))scheduleFollowUp('surpriseParty',{ids:friends.slice(0,5).map(p=>p.id)},{minute:705});
+ // 6C.5: surprise birthday initiative belongs to the Occasion ledger, not an unverified school follow-up.
  for(const p of close)if(chance(60)){const k=giftFor(p);if(k){addItem(k,`from ${displayName(p,'formal')}`);if(!SIM.skipping)log(`🎁 From ${firstName(p)}`,`${firstName(p)} gives you a ${D.catalog[k].name.toLowerCase()} for your birthday.`)}}
  if(canUsePhone())for(const p of friends.filter(p=>typeof canDirectCommunicate3C1!=='function'||canDirectCommunicate3C1(p,'message')).slice(0,4))chatAdd(p.id,'them',rand(['Happy birthday!! 🎉','HBD!!! 🥳 have the best day','happy birthday!! old now lol']),'bdayWish');
  const inv=close.filter(p=>chance(35)).slice(0,2);for(const p of inv)if(!SIM.skipping)npcInvitesPlayer(p);
@@ -5098,12 +5108,12 @@ function knxFollowUp(f){
  if(f.type==='incomingMsg'){const p=personById(f.payload.personId);let k=f.payload.kind;if(k==='parent'&&!livesWithParents())k='parentSocial';if(p&&!SIM.skipping)incomingMessage(p,k,{committed:true});return true}
  if(f.type==='incomingCall'){const p=personById(f.payload.personId);if(p&&!SIM.skipping&&(typeof canDirectCommunicate3C1!=='function'||canDirectCommunicate3C1(p,'call')))incomingCall(p,f.payload.why);return true}
  if(f.type==='npcReply'){const p=personById(f.payload.personId);if(p&&!SIM.skipping)incomingMessage(p,'chitchat');return true}
- if(f.type==='surpriseParty'){if(SIM.skipping||!atSchool())return true;const ps=(f.payload.ids||[]).map(personById).filter(Boolean);queueEvent({type:'surpriseParty',title:'🎉 SURPRISE!',text:`At lunch, ${ps.map(firstName).join(', ')} jump out with a cake and a terrible handmade banner.`,participants:ps.map(p=>p.id),priority:5,expiresDays:1,choices:[{id:'hug',label:'Laugh and hug everyone'},{id:'shy',label:'Turn bright red'},{id:'speech',label:'Make a dramatic speech'}]});return true}
+ if(f.type==='surpriseParty'){return true} // retired: old queued follow-ups cannot invent guests or cakes
  return false
 }
 function knxEventChoice(e,id){
  if(e.type==='incomingCall')return handleIncomingCall(e,id);
- if(e.type==='surpriseParty'){const ps=(e.participants||[]).map(personById).filter(Boolean);ps.forEach(p=>{p.rel=clamp(p.rel+4);rememberPerson(p,'Threw you a surprise birthday party at school.',3)});S.happiness=clamp(S.happiness+8);S.needs.social=clamp(S.needs.social+20);addRep('social',2);log('Surprise party',{hug:'You laugh, hug everyone and get frosting on your sleeve. Best lunch of the year.',shy:'You go bright red. Everyone loves it.',speech:'You give a dramatic speech thanking "the academy". Your friends will quote it for weeks.'}[id]||'A great surprise.',true);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'🎉 Surprise party',text:`Your friends surprised you at school on your ${ordinal(S.age)} birthday.`});return true}
+ if(e.type==='surpriseParty'){return true} // legacy unverified event: no fabricated participants/rewards
  if(e.type==='invitation'&&id==='busy'){const plan=S.plans.find(x=>x.id===e.payload?.planId),p=personById(e.participants?.[0]);if(plan){plan.status='Declined';const free=freeBlocks(plan.dateISO).some(b=>b.from<=plan.startMinute&&b.to>=plan.startMinute+60);if(free){S.whiteLies=(S.whiteLies||[]);S.whiteLies.push({personId:p?.id,dateISO:plan.dateISO,start:plan.startMinute,end:plan.endMinute})}}if(p)p.rel=clamp(p.rel-.5);log("You said you're busy",`You tell ${p?firstName(p):'them'} you already have plans.`);return true}
  if(e.type==='birthdayParty'||e.type==='birthdayAlt')return ownBirthdayChoice(id,e);
  return false
@@ -5269,7 +5279,7 @@ function familyOuting(){
  log(`Family outing • ${o.name}`,`${rand(['Someone gets a sunburn, someone gets ice cream, everyone gets tired.','Your family argues about directions for ten minutes, then has a great day.','You come home exhausted and happy.'])} (${Math.round(o.min/60)} hours • energy −18)`)}
 const DESTS={near:[{name:'the lake cabin',t:['car','camper']},{name:'a campsite in the hills',t:['camping','camper']},{name:'the coast',t:['car','camper']},{name:'Grandma\'s hometown',t:['car']}],far:[{name:'the mountains',t:['plane','car']},{name:'a beach resort',t:['plane']},{name:'the capital city',t:['plane','car']}],abroad:[{name:'Japan',t:['plane']},{name:'Italy',t:['plane']},{name:'a Caribbean cruise',t:['cruise']},{name:'Thailand',t:['plane']},{name:'Australia',t:['plane']}]};
 function vacationTick(){
- if(SIM.skipping||S.age<3||S.age>=18||S.trip&&S.trip.end>=currentDate())return;const f=S.family;f.anniversary=f.anniversary||randomMD();const last=f.lastTripOffer||'1900-01-01';if(daysBetween(last,currentDate())<120)return;
+ if(SIM.skipping||S.age<3||S.age>=18||S.trip&&S.trip.end>=currentDate())return;const f=S.family;const last=f.lastTripOffer||'1900-01-01';if(daysBetween(last,currentDate())<120)return;
  const t=currentDate(),md=t.slice(5),fam=S.people.filter(p=>isFamilyPerson(p)&&p.bday);let reason=null;
  if(md===f.anniversary)reason='your parents\' wedding anniversary';else if(fam.some(p=>p.bday===md&&p.role!=='grandparent')&&chance(25))reason=`${displayName(fam.find(p=>p.bday===md))}'s birthday`;else if(sameMonthDay(S.dob,t)&&chance(15))reason='your birthday';else{const a=academicInfo();if(a.breaks.some(b=>daysBetween(t,b.from)===10)&&chance(30))reason='the upcoming break';else if(daysBetween(t,addDays(a.end,1))===14&&chance(55))reason='summer vacation';else if(chance(.4))reason='time off work'}
  if(!reason)return;f.lastTripOffer=t;proposeVacation(reason)
@@ -5349,7 +5359,7 @@ function nextLoveStep(p){const L=ensureLove(p),i=LOVE_IDX[L.stage],adult=adultRo
  if(L.stage==='engaged')return adult?{id:'wedding',label:'Plan the wedding'}:null;
  if(L.stage==='married')return adult&&L.progress>=50?{id:'family',label:'Talk about starting a family'}:null;
  return null}
-function consent(p,base){return p.romanceOpen!==false&&chance(clamp(base+(p.rel-60)*.6+(p.trust-55)*.5+(ensureLove(p).progress-60)*.3-(p.conflict||0)*.6-(p.boundaries?.includes('needsTime')?15:0),5,96))}
+function consent(p,base){return (isEstablishedPartner(p)||p.romanceOpen!==false)&&chance(clamp(base+(p.rel-60)*.6+(p.trust-55)*.5+(ensureLove(p).progress-60)*.3-(p.conflict||0)*.6-(p.boundaries?.includes('needsTime')?15:0),5,96))}
 function loveStep(personId,step){
  const p=personById(personId);if(!p||!eligibleRomance(p))return;if(step==='official'&&typeof romanceOfficialConversation3B3==='function'){romanceOfficialConversation3B3(p,'player');return}closeChoiceModal();const fn=firstName(p),L=ensureLove(p);
  if(step==='official'){if(consent(p,55)){setLoveStage(p,'official','made it official');p.rel=clamp(p.rel+4);log('💗 Official',`You ask. ${fn} says yes before you even finish the sentence.`,true)}else{L.progress=clamp(L.progress-20);log('Not yet',`"I really like you — can we keep going like this a little longer?" ${fn} asks. You agree.`)}}
@@ -6447,7 +6457,37 @@ function householdMembers(){return livesWithParents()?S.people.filter(p=>isFamil
 function householdCaregivers(){return S.people.filter(p=>inHousehold(p)&&(['parent','grandparent','aunt','uncle'].includes(p.role)||(SIB_ROLES.includes(p.role)&&personAge(p)>=16&&personAge(p)>S.age)))}
 function householdCaregiver(){const h=householdCaregivers();return h.find(p=>p.role==='parent')||h[0]||S.people.find(p=>p.role==='parent')||null}
 function isSibling(p){return !!p&&SIB_ROLES.includes(p.role)}
-function siblingLabel(p){const a=personAge(p),g=p.gender||'',noun=g==='Female'?'Sister':g==='Male'?'Brother':'Sibling';if(a===S.age&&p.role==='sibling')return noun;const older=a>S.age||(a===S.age&&p.role==='older sibling');return `${older?'Older':'Younger'} ${noun}`}
+// H1: birth order is an immutable family identity, not a mutable displayed age.
+// A known birth date takes priority; otherwise preserve the creator's explicit
+// older/younger role. Only legacy ambiguous "sibling" records use the age snapshot.
+const FAMILY_BIRTH_ORDER_SCHEMA_H1=1;
+function validFamilyDateH1(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v}
+// The exact age of a documented newborn changes on THEIR birthday, not the
+// player's birthday. Legacy age-only relatives retain annual advancement.
+function familyAgeFromBirthH1(born,at=currentDate()){
+ if(!validFamilyDateH1(born)||!validFamilyDateH1(at))return null;
+ const years=Number(at.slice(0,4))-Number(born.slice(0,4));
+ return Math.max(0,years-(at.slice(5)<born.slice(5)?1:0));
+}
+function advanceFamilyAgesOnPlayerBirthdayH1(){
+ for(const p of S.people||[]){const birth=isSibling(p)?(validFamilyDateH1(p.born)?p.born:validFamilyDateH1(p.dob)?p.dob:null):null;
+  const actual=birth?familyAgeFromBirthH1(birth):null;
+  p.age=actual!=null?actual:Math.max(0,Number.isFinite(Number(p.age))?Number(p.age):Math.max(0,S.age-1))+1;
+ }
+}
+function ensureSiblingBirthOrderH1(p){
+ if(!isSibling(p))return null;
+ if(p.birthOrderH1?.schemaVersion===FAMILY_BIRTH_ORDER_SCHEMA_H1&&['older','younger','same','unknown'].includes(p.birthOrderH1.relative))return p.birthOrderH1;
+ let relative='unknown',basis='unverified';
+ const born=validFamilyDateH1(p.born)?p.born:(validFamilyDateH1(p.dob)?p.dob:null);
+ if(born&&validFamilyDateH1(S.dob)){relative=born<S.dob?'older':born>S.dob?'younger':'same';basis='recorded birth date'}
+ else if(p.role==='older sibling'||p.role==='younger sibling'){relative=p.role==='older sibling'?'older':'younger';basis='saved sibling role'}
+ else if(Number.isFinite(Number(p.age))&&Number.isFinite(Number(S.age))){relative=p.age>S.age?'older':p.age<S.age?'younger':'same';basis='legacy age snapshot'}
+ p.birthOrderH1={schemaVersion:FAMILY_BIRTH_ORDER_SCHEMA_H1,relative,basis};
+ if(born){const actual=familyAgeFromBirthH1(born);if(actual!=null&&p.age!==actual){p.birthOrderH1.previousSavedAge=p.age;p.age=actual}}
+ return p.birthOrderH1;
+}
+function siblingLabel(p){const r=ensureSiblingBirthOrderH1(p)?.relative||'unknown',g=p.gender||'',noun=g==='Female'?'Sister':g==='Male'?'Brother':'Sibling';return r==='older'?`Older ${noun}`:r==='younger'?`Younger ${noun}`:r==='same'?noun:noun}
 // NOTE: runs while the new life's state is being built (S may still be null) — use the creator's inputs, never S here
 function creatorContext(){const country=(typeof document!=='undefined'&&document.getElementById('c-country')?.value)||(S&&S.birthCountry)||'',wealth=(typeof document!=='undefined'&&document.getElementById('c-wealth')?.value)||(S&&S.wealth)||'Middle class';const k={Vietnam:'VN','South Korea':'KR',Japan:'JP',China:'CN',France:'FR',Thailand:'TH',Singapore:'CN'}[country]||(S?poolKey():'EN');return {k,wealth}}
 function grandCoResidenceChance(ctx=creatorContext()){let c=['VN','KR','JP','CN','TH'].includes(ctx.k)?32:9;if(ctx.wealth==='Struggling')c+=10;if(['Wealthy','Extremely wealthy'].includes(ctx.wealth))c-=4;return Math.max(3,c)}
@@ -6465,7 +6505,7 @@ function generateFamily(age){
 // maternal relatives carry the mother's family name, not the player's (only where both are generated)
 function applyBranchSurnames(){if(S.familyBranchNamed)return;const mom=familyByRelation('mother');if(!mom?.fullName)return;S.familyBranchNamed=true;const key=poolKey(),fam=S.familyName||'',momSur=(mom.surname&&mom.surname!==fam)?mom.surname:rand(((NAME_POOLS[key]||NAME_POOLS.EN).last).filter(x=>x!==fam));
  for(const p of S.people)if(p.branch==='maternal'&&p.firstName&&p.fullName){p.surname=momSur;p.fullName=composeName(p.firstName,momSur,key)}}
-function migrateFamily(){migrateDev();if(!S.people)return;migrateRelations();migrateFriendTiers();for(const q of S.people)if(typeof migrateMilestones==='function')migrateMilestones(q);S.family=S.family||{};if(!S.family.sizePref)S.family.sizePref=rollSiblingCount.lastPref||rand(['small','medium','medium','large']);for(const p of S.people){if(p.residence==null&&isFamilyPerson(p))p.residence=defaultResidence(p);if(isSibling(p)&&!p.gender){const first=p.firstName||String(p.name).split(/[ •]/)[0];p.gender=nameGender(first)||(hashOf(p.id)%2?'Female':'Male')}}applyBranchSurnames()}
+function migrateFamily(){migrateDev();if(!S.people)return;migrateRelations();migrateFriendTiers();for(const q of S.people)if(typeof migrateMilestones==='function')migrateMilestones(q);S.family=S.family||{};if(!S.family.sizePref)S.family.sizePref=rollSiblingCount.lastPref||rand(['small','medium','medium','large']);for(const p of S.people){if(p.residence==null&&isFamilyPerson(p))p.residence=defaultResidence(p);if(isSibling(p)&&!p.gender){const first=p.firstName||String(p.name).split(/[ •]/)[0];p.gender=nameGender(first)||(hashOf(p.id)%2?'Female':'Male')}if(isSibling(p))ensureSiblingBirthOrderH1(p)}applyBranchSurnames()}
 // ---------- 2B.2 Family UI ----------
 function familyPersonLine(p){const where=inHousehold(p)?'':' • lives elsewhere';const label=isSibling(p)?siblingLabel(p):(p.roleLabel||p.role);return `<div class="fam-row"><button class="linklike" data-person-open="${p.id}">${esc(p.fullName||p.name)}</button><small>${esc(cap(label))} • ${personAge(p)}${where}</small></div>`}
 function familyTreeHtml(){const fam=S.people.filter(isFamilyPerson),home=fam.filter(inHousehold),away=fam.filter(p=>!inHousehold(p));
@@ -6478,8 +6518,8 @@ function familyTarget(){return {small:2,medium:3,large:4}[S.family?.sizePref]||2
 function babyEligible(){const mom=familyByRelation('mother'),dad=familyByRelation('father');if(!mom||!dad||!livesWithParents()||S.family.expecting)return false;const ma=personAge(mom);if(ma<22||ma>43)return false;if(childrenAtHome()>=familyTarget())return false;const ages=[S.age,...S.people.filter(isSibling).map(personAge)];if(Math.min(...ages)<2)return false;if(S.family.lastBaby&&daysBetween(S.family.lastBaby,currentDate())<730)return false;return true}
 function babyChancePct(){let c=3.5;if(S.wealth==='Struggling')c*=.6;if((S.family.tension??0)>60)c*=.5;return c}
 function announceBaby(){const due=addDays(currentDate(),200+Math.floor(Math.random()*40));S.family.expecting={due,announced:currentDate()};if(!SIM.skipping)log('Big family news',`${familyByRelation('mother')?.firstName||'Mom'} and ${familyByRelation('father')?.firstName||'Dad'} sit you down at dinner, smiling: "You're going to be a big ${S.gender&&/girl|woman/i.test(S.gender)?'sister':'brother'}." The baby is due around ${formatDate(due)}.`,true);return due}
-function siblingBabyArrives(){const g=chance(50)?'Female':'Male',p=famPerson(`Baby ${g==='Female'?'sister':'brother'}`,'younger sibling',0,{gender:g,residence:'home',relation:'sibling',roleLabel:`younger ${g==='Female'?'sister':'brother'}`,rel:70,trust:60,born:currentDate()});S.people.push(p);S.family.expecting=null;S.family.lastBaby=currentDate();S.happiness=clamp(S.happiness+6);S.family.closeness=clamp(S.family.closeness+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:`👶 A new ${g==='Female'?'sister':'brother'}`,text:'The family grows.'});if(!SIM.skipping)log(`👶 Your baby ${g==='Female'?'sister':'brother'} is born`,'Tiny fingers, a lot of crying, and everyone suddenly whispering.',true);return p}
-function familyGrowthTick(){S.family=S.family||{};const t=currentDate();if(S.family.expecting){if(t>=S.family.expecting.due)siblingBabyArrives();return}if(t.slice(8)!=='01')return;if(babyEligible()&&chance(babyChancePct()))announceBaby()}
+function siblingBabyArrives(){const g=chance(50)?'Female':'Male',p=famPerson(`Baby ${g==='Female'?'sister':'brother'}`,'younger sibling',0,{gender:g,residence:'home',relation:'sibling',roleLabel:`younger ${g==='Female'?'sister':'brother'}`,rel:70,trust:60,born:currentDate(),birthOrderH1:{schemaVersion:1,relative:'younger',basis:'recorded birth date'}});S.people.push(p);S.family.expecting=null;S.family.lastBaby=currentDate();S.happiness=clamp(S.happiness+6);S.family.closeness=clamp(S.family.closeness+4);S.milestones.unshift({dateISO:currentDate(),age:S.age,title:`👶 A new ${g==='Female'?'sister':'brother'}`,text:'The family grows.'});if(!SIM.skipping)log(`👶 Your baby ${g==='Female'?'sister':'brother'} is born`,'Tiny fingers, a lot of crying, and everyone suddenly whispering.',true);return p}
+function familyGrowthTick(){S.family=S.family||{};const t=currentDate();for(const p of (S.people||[]).filter(isSibling)){const born=validFamilyDateH1(p.born)?p.born:null;if(born){const age=familyAgeFromBirthH1(born,t);if(age!=null)p.age=age}}if(S.family.expecting){if(t>=S.family.expecting.due)siblingBabyArrives();return}if(t.slice(8)!=='01')return;if(babyEligible()&&chance(babyChancePct()))announceBaby()}
 // ---------- 2B.4 — Younger-sibling requests with negotiation ----------
 const SIB_TRAITS=['Kind','Calm','Cheerful','Clingy','Stubborn','Dramatic','Shy'];
 function sibTraits(p){if(!p.traits?.length||!p.traits.some(t=>SIB_TRAITS.includes(t)))p.traits=[...(p.traits||[]),SIB_TRAITS[hashOf(p.id)%SIB_TRAITS.length]];return p.traits}
@@ -8101,12 +8141,12 @@ function ensureLove(p){
  // formerPartner is historical identity, not the current romance state.  It may
  // help migrate a truly legacy record with no canonical state, but must never
  // force a reconciled/active relationship back to Ex.
- if(p.romanceStage==='ex'||(p.formerPartner&&!ROMANCE_CANONICAL_STAGES.has(old.stage)&&!['crush','dating','partner'].includes(p.romanceStage)))stage='ex';
+ if((p.romanceStage==='ex'&&!(S.romance?.partnerId===p.id&&ROMANCE_CANONICAL_STAGES.has(old.stage)&&old.stage!=='ex'))||(p.formerPartner&&!ROMANCE_CANONICAL_STAGES.has(old.stage)&&!['crush','dating','partner'].includes(p.romanceStage)))stage='ex';
  else if(p.romanceStage==='partner'&&(!ROMANCE_CANONICAL_STAGES.has(old.stage)||LOVE_IDX[stage]<LOVE_IDX.official))stage='official';
  else if(p.romanceStage==='dating'&&(!ROMANCE_CANONICAL_STAGES.has(old.stage)||LOVE_IDX[stage]<LOVE_IDX.goingOut))stage='goingOut';
  // A legacy romanceStage="crush" alone is one-sided. Mutuality requires an
  // already-explicit mutual stage or an actual established relationship.
- const established=S.romance?.partnerId===p.id||['goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(stage);
+ const established=(S.romance?.partnerId===p.id&&stage!=='ex')||['goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(stage);
  const explicitMutual=old.stage==='crushMutual'||established;
  const playerCrush=old.playerCrush!=null?!!old.playerCrush:(p.romanceStage==='crush'||stage==='crushOne'||stage==='crushMutual'||established);
  const legacyAttraction=Number(p.attraction);
@@ -8118,9 +8158,26 @@ function ensureLove(p){
  p.romanceStage=stage==='ex'?'ex':stage==='crushOne'||stage==='crushMutual'?'crush':stage==='goingOut'?'dating':LOVE_IDX?.[stage]>=LOVE_IDX?.official?'partner':'none';
  return p.love;
 }
+// H1 — A current partnership is keyed by the canonical Person ID, not by a
+// stale romance initiation flag or by a similarly named world NPC.
+function isEstablishedPartner(pOrId){
+ const id=typeof pOrId==='string'?pOrId:pOrId?.id,p=typeof pOrId==='string'?(S.people||[]).find(x=>x.id===id):pOrId;
+ if(!p||!id||isFamilyPerson(p)||S.romance?.partnerId!==id)return false;
+ const stage=p.love?.stage,legacy=p.romanceStage;
+ // An explicit breakup is not undone merely because an old partnerId survived.
+ if(stage==='ex'||(legacy==='ex'&&!ROMANCE_CANONICAL_STAGES.has(stage)))return false;
+ return ['official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(stage)||legacy==='partner'||S.romance?.status==='In a relationship';
+}
+function relationshipStatus(pOrId){
+ const p=typeof pOrId==='string'?(S.people||[]).find(x=>x.id===pOrId):pOrId;
+ if(!p)return {kind:'unknown',personId:null};
+ const current=isEstablishedPartner(p),stage=p.love?.stage||canonicalRomanceStageFromLegacy(p);
+ return {kind:current?'official':stage==='ex'||p.romanceStage==='ex'?'ex':stage==='goingOut'?'dating':'single',personId:p.id,stage,currentPartner:current};
+}
+function partnerBoundaryH1(p,boundary){return !!p?.boundaries?.includes(boundary)}
 function romanceCompatibility(p){
  if(!p||isFamilyPerson(p))return {eligible:false,reason:'family'};
- const ageOK=eligibleRomance(p),orientationOK=ageOK&&npcInterestedInPlayer(p);
+ const ageOK=eligibleRomance(p),orientationOK=ageOK&&(isEstablishedPartner(p)||npcInterestedInPlayer(p));
  const committedElsewhere=!!p.datingNpc||!!(p.npcId&&partnerNpcOf(p.npcId));
  const conflict=clamp(p.conflict||0),trust=clamp(p.trust??50),close=clamp(p.rel??0),looks=clamp(S.looks??50);
  const traits=p.traits||[],shared=Array.isArray(p.interests)&&Array.isArray(S.interests)?p.interests.filter(x=>S.interests.includes(x)).length:0;
@@ -8130,7 +8187,7 @@ function romanceCompatibility(p){
 }
 function romanceActualAvailability(p){
  if(!p)return 'Unknown';
- if(S.romance?.partnerId===p.id){const st=ensureLove(p).stage;if(st==='married'||S.romance?.married?.personId===p.id)return 'Married';if(st==='engaged')return 'Engaged';return 'In a relationship'}
+ if(isEstablishedPartner(p)){const st=ensureLove(p).stage;if(st==='married'||S.romance?.married?.personId===p.id)return 'Married';if(st==='engaged')return 'Engaged';return 'In a relationship'}
  if(p.datingNpc||p.npcId&&partnerNpcOf(p.npcId))return 'In a relationship';
  const st=ensureLove(p).stage;if(st==='goingOut')return 'Seeing someone';if(st==='crushMutual'||st==='crushOne')return 'Single';return 'Single';
 }
@@ -8164,18 +8221,41 @@ function syncLoveAfterRomance(p,kind,before){if(!p||!eligibleRomance(p))return;c
 function ensureRomanceProfile(p){
  if(!p)return p;const first=!p.romanceInit;p.romanceInit=true;const L=ensureLove(p);
  p.romanceOpen=p.romanceOpen??(dayHash(p.id+'open')>=18);
- const c=romanceCompatibility(p);if(loveInterestVisible(p)&&p.id!==S.romance?.partnerId&&!c.orientationOK){p.romanceOpen=false;p.orientationMismatch=true;L.npcInterest='incompatible';L.mutual=false}
+ const c=romanceCompatibility(p);if(loveInterestVisible(p)&&!isEstablishedPartner(p)&&!c.orientationOK){p.romanceOpen=false;p.orientationMismatch=true;L.npcInterest='incompatible';L.mutual=false}
  else if(p.orientationMismatch&&c.orientationOK){p.orientationMismatch=false}
  if(!p.boundaries){const t=p.traits||[],b=[];if(t.includes('Shy')||t.includes('Quiet'))b.push('noPublicAffection');if(t.includes('Generous')||dayHash(p.id+'giftBoundary')<20)b.push('noExpensiveGifts');if(dayHash(p.id+'timeBoundary')<25)b.push('needsTime');if(t.includes('Shy')||dayHash(p.id+'partyBoundary')<15)b.push('noParties');if(!p.romanceOpen)b.push('notReady');p.boundaries=[...new Set(b)]}
  if(first&&L.playerCrush)addPersonMilestone(p,'firstCrush','A crush began to develop.');return p
 }
-function relationshipDescriptor(p){if(!p)return '';if(S.romance?.partnerId===p.id){const st=ensureLove(p).stage;if(st==='married')return 'Spouse';if(st==='engaged')return 'Fiancé/Fiancée';const g=personIdentity(p).gender;return g==='Male'?'Boyfriend':g==='Female'?'Girlfriend':'Partner'}if(ensureLove(p).stage==='ex'||p.formerPartner)return 'Ex';if(isFamilyPerson(p))return familyRelationLabel(p);const status=friendStatusLabel(p),tier=friendTier(p);return status||tier||'Acquaintance'}
+function relationshipDescriptor(p){if(!p)return '';if(isEstablishedPartner(p)){const st=ensureLove(p).stage;if(st==='married')return 'Spouse';if(st==='engaged')return 'Fiancé/Fiancée';const g=personIdentity(p).gender;return g==='Male'?'Boyfriend':g==='Female'?'Girlfriend':'Partner'}if(ensureLove(p).stage==='ex'||p.formerPartner)return 'Ex';if(isFamilyPerson(p))return familyRelationLabel(p);const status=friendStatusLabel(p),tier=friendTier(p);return status||tier||'Acquaintance'}
+function migrateCanonicalIdentityH1(){
+ if(!S||S.crossPhaseH1Version>=1)return;
+ for(const p of S.people||[]){
+  if(isSibling(p))ensureSiblingBirthOrderH1(p);
+  // Old friendTier() returned romantic "Dating"/"Serious" and caused false
+  // downgrade notifications. Restore the actual friendship tier silently.
+  if(isEstablishedPartner(p)&&['Dating','Serious'].includes(p.tier))p.tier=friendStatusLabel(p)||friendshipTier(p);
+  for(const m of p.milestones||[]){
+   if(m.type==='holdingHands'&&m.text==='Your first kiss together.')m.text='You held hands for the first time.';
+  }
+ }
+ S.crossPhaseH1Version=1;
+}
 function migrateRomance3B1(){
  if(!S)return;S.romance=Object.assign({status:'Single',partner:null,partnerId:null,history:[]},S.romance||{});S.romance.history=Array.isArray(S.romance.history)?S.romance.history:[];
  Object.assign(MILESTONE_TYPES,{firstCrush:'First crush',mutualAttraction:'Mutual attraction discovered',breakup:'Breakup'});
- if(!S.romance.partnerId&&S.romance.partner){const hit=(S.people||[]).find(p=>displayName(p,'formal')===S.romance.partner||p.name===S.romance.partner);if(hit)S.romance.partnerId=hit.id}
+ // Legacy name-only saves: recover a missing ID only from ONE unambiguous
+ // matching Person in a non-single relationship. Never arbitrarily assign
+ // the first of several NPCs who happen to share the same display name.
+ if(!S.romance.partnerId&&S.romance.partner&&S.romance.status!=='Single'){
+  const matches=(S.people||[]).filter(p=>displayName(p,'formal')===S.romance.partner||p.name===S.romance.partner);
+  if(matches.length===1&&!isFamilyPerson(matches[0]))S.romance.partnerId=matches[0].id;
+ }
+ // Explicitly ended partner + Single status: retire only the stale pointer.
+ // Never change their historical milestones or reconstruct a new relationship.
+ const stale=S.romance.partnerId&&(S.people||[]).find(p=>p.id===S.romance.partnerId);
+ if(stale&&(stale.love?.stage==='ex'||(stale.romanceStage==='ex'&&!stale.love))&&S.romance.status==='Single'){S.romance.partnerId=null;S.romance.partner=null}
  for(const p of S.people||[]){const L=ensureLove(p);ensureRomanceProfile(p);if(S.romance.partnerId===p.id){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true;if(LOVE_IDX[L.stage]<LOVE_IDX.goingOut)L.stage=S.romance.status==='In a relationship'?'official':'goingOut'}if(L.stage==='ex')p.formerPartner=true}
- S.romance3B1Migrated=true;if(typeof migrateRomance3B2==='function')migrateRomance3B2();
+ migrateCanonicalIdentityH1();S.romance3B1Migrated=true;if(typeof migrateRomance3B2==='function')migrateRomance3B2();
 }
 // =====================================================================
 // PHASE 3B.2 — Ask Out / NPC Initiative / Scheduling / Date Lifecycle
@@ -8356,7 +8436,7 @@ function romanceDateProgress3B3(p,tier,plan){
 function romanceAffectionContext3B3(p,action){const L=ensureLove(p),last=(L.dateHistory||[]).at(-1);return {kind:'romanceAffection',action,stage:L.stage,location:S.location||'Home',afterDate:!!(last&&last.dateISO===currentDate())}}
 function affectionGate3B3(p,action){
  const a=ROMANCE_AFFECTION[action],L=ensureLove(p);if(!a||!eligibleRomance(p))return {ok:false,why:'That is not appropriate right now.'};
- if(L.stage==='ex')return {ok:false,why:'You are not currently together.'};if(loveStageIndex3B3(L.stage)<loveStageIndex3B3(a.minStage))return {ok:false,why:'The relationship is not at that point yet.'};
+ if(L.stage==='ex')return {ok:false,why:'You are not currently together.'};if(a.physical&&partnerBoundaryH1(p,'noPublicAffection')&&S.location!=='Home')return {ok:false,why:'They do not feel comfortable with affection in public.'};if(loveStageIndex3B3(L.stage)<loveStageIndex3B3(a.minStage))return {ok:false,why:'The relationship is not at that point yet.'};
  if(['firstKiss','kiss','cheekKiss','goodbyeKiss'].includes(action)&&(p.trust??0)<45)return {ok:false,why:'There is not enough trust for that right now.'};
  if(action==='goodbyeKiss'){const last=(L.dateHistory||[]).at(-1);if(!last||last.dateISO!==currentDate())return {ok:false,why:'A goodbye kiss only makes sense around a date or romantic outing.'}}
  if(action==='firstKiss'&&hasMs(p,'firstKiss'))return {ok:false,why:'You already had your first kiss together.'};if(action==='kiss'&&!hasMs(p,'firstKiss'))return {ok:false,why:'Your first kiss has not happened yet.'};
@@ -8379,7 +8459,7 @@ function romanceAffectionResponse3B3(p,action){
 }
 function romanceAffection3B3(p,action){
  const a=ROMANCE_AFFECTION[action],r=romanceAffectionResponse3B3(p,action);if(!a){return false}closeChoiceModal();if(r.kind==='blocked'){toast(r.why);return false}if(r.reused){log(r.kind==='yes'?'A familiar moment':'Their answer has not changed',r.why);return r.kind==='yes'}
- advanceTime(a.minutes,{silent:true});if(r.kind==='yes'){p.rel=clamp(p.rel+(a.physical?2:1));p.trust=clamp(p.trust+(a.physical?1:0));if(action==='flirt')setPlayerCrush(p,true);if(a.milestone)addPersonMilestone(p,a.milestone,action==='holdingHands'?'You held hands for the first time.':action==='cheekKiss'?'Your first cheek kiss.':'Your first kiss together.');romanceDailyProgress3B3(p,action,a.gain);if(action==='firstKiss')rememberPerson(p,'Your first kiss together.',3);else if(action==='holdingHands')rememberPerson(p,'You held hands for the first time.',2);log(a.label,r.why,true)}
+ advanceTime(a.minutes,{silent:true});if(r.kind==='yes'){p.rel=clamp(p.rel+(a.physical?2:1));p.trust=clamp(p.trust+(a.physical?1:0));if(action==='flirt')setPlayerCrush(p,true);if(a.milestone)addPersonMilestone(p,a.milestone,action==='holdHands'?'You held hands for the first time.':action==='cheekKiss'?'Your first cheek kiss.':'Your first kiss together.');romanceDailyProgress3B3(p,action,a.gain);if(action==='firstKiss')rememberPerson(p,'Your first kiss together.',3);else if(action==='holdHands')rememberPerson(p,'You held hands for the first time.',2);log(a.label,r.why,true)}
  else{if(r.kind==='no'&&a.physical)p.trust=clamp(p.trust+1);log(r.kind==='hesitate'?'Not right now':'They say no',r.why)}return r.kind==='yes'
 }
 function romanceCompliment3B3(p){if(!p||!eligibleRomance(p))return false;closeChoiceModal();advanceTime(10,{silent:true});const fresh=romanceDailyProgress3B3(p,'compliment',2);if(fresh){p.rel=clamp(p.rel+1);if((p.traits||[]).includes('Shy'))log('A compliment',`${firstName(p)} looks away, smiling despite themself.`);else log('A compliment',`${firstName(p)} grins. "Okay, that was smooth."`)}else log('A compliment',`You say something sweet. ${firstName(p)} smiles, but you already had this kind of moment today.`);return true}
@@ -10161,7 +10241,7 @@ function promDateStudent6A3(p){
  const n=p.npcId&&npcById(p.npcId);if(n&&(n.movedAway||npcEffectiveGradeNumber4A3(n)<8||npcEffectiveGradeNumber4A3(n)>12))return false;
  return true;
 }
-function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&ensureRomanceProfile(p).romanceOpen&&!p.boundaries?.includes('notReady'));}
+function promRomancePossible6A3(p){return !!(promDateStudent6A3(p)&&eligibleRomance(p)&&romanceCompatibility(p).eligible&&(!partnerBoundaryH1(p,'noParties'))&&(isEstablishedPartner(p)||(ensureRomanceProfile(p).romanceOpen&&!partnerBoundaryH1(p,'notReady'))));}
 function promDateBusyReason6A3(p,pr=S.school?.prom){
  if(!promDateStudent6A3(p))return 'Not an eligible school-age guest';
  const other=personPromWith(p);
@@ -11707,6 +11787,776 @@ return {steps:nSteps,violations:problems.slice(0,25),actions,status:S.school.pro
  milestones:S.milestones.filter(z=>z.promKind6B6==='first_attended_prom').length};
 
 }
+// =====================================================================
+// PHASE 6C.1 — UNIVERSAL OCCASION FOUNDATION
+// Stable occurrence identity + canonical-source references + lifecycle.
+// This is orchestration only: no gift, RSVP, party, budget or reward flow.
+// =====================================================================
+const OCCASION6C1_SCHEMA=1;
+const OCCASION6C1_TERMINAL=new Set(['Completed','Declined','Missed','Cancelled','Expired']);
+const OCCASION6C1_TRANSITIONS={
+ 'Upcoming':new Set(['Preparation open','Planned','Active','Declined','Cancelled','Expired']),
+ 'Preparation open':new Set(['Planned','Active','Declined','Cancelled','Expired']),
+ 'Planned':new Set(['Preparation open','Active','Completed','Missed','Cancelled','Expired']),
+ 'Active':new Set(['Completed','Missed','Cancelled','Expired']),
+ 'Completed':new Set(), 'Declined':new Set(), 'Missed':new Set(), 'Cancelled':new Set(), 'Expired':new Set()
+};
+function occasionState6C1(){
+ if(!S.occasions6C1||typeof S.occasions6C1!=='object'||Array.isArray(S.occasions6C1))S.occasions6C1={schemaVersion:OCCASION6C1_SCHEMA,occurrences:{}};
+ S.occasions6C1.schemaVersion=OCCASION6C1_SCHEMA;
+ if(!S.occasions6C1.occurrences||typeof S.occasions6C1.occurrences!=='object'||Array.isArray(S.occasions6C1.occurrences))S.occasions6C1.occurrences={};
+ return S.occasions6C1
+}
+function occasionSafeKey6C1(v){return String(v??'none').replace(/[^a-zA-Z0-9._-]+/g,'_')}
+function occasionId6C1(type,sourceKey,year){return `occ6c1:${occasionSafeKey6C1(type)}:${occasionSafeKey6C1(sourceKey)}:${Number(year)}`}
+function occasionYear6C1(dateISO){return Number(String(dateISO).slice(0,4))}
+function occasionAnnualDate6C1(monthDayOrISO,year){
+ const md=String(monthDayOrISO||'').slice(-5),m=Number(md.slice(0,2)),d=Number(md.slice(3,5));if(!m||!d)return null;
+ return isoDate(new Date(Date.UTC(Number(year),m-1,d)))
+}
+function occasionDefinitionCatalog6C1(){
+ return {
+  birthday:{recurrence:'annual',defaultPreparationDays:14,allowedParticipantModes:['family','friends','partner','school_when_permitted'],allowedLocations:['Home','School when permitted','legitimate venue']},
+  holiday:{recurrence:'annual',defaultPreparationDays:7,allowedParticipantModes:['family','friends','partner','school_when_applicable','neighborhood_when_applicable'],allowedLocations:['Home','School when applicable','Community','legitimate venue']},
+  dating_anniversary:{recurrence:'annual',defaultPreparationDays:7,allowedParticipantModes:['established_partner'],allowedLocations:['Home','legitimate venue']},
+  wedding_anniversary:{recurrence:'annual',defaultPreparationDays:14,allowedParticipantModes:['spouse','family','friends'],allowedLocations:['Home','legitimate venue']},
+  parents_anniversary:{recurrence:'annual',defaultPreparationDays:14,allowedParticipantModes:['existing_family'],allowedLocations:['Home','legitimate venue']}
+ }
+}
+function occasionPermissionContext6C1(){return S.age<18?{authority:'H3',requiredWhen:'spending_venue_travel_or_supervision_requires_it',adultIndependent:false}:{authority:'self',requiredWhen:null,adultIndependent:true}}
+function occasionPreparationDays6C1(type,source=null){
+ const base=occasionDefinitionCatalog6C1()[type]?.defaultPreparationDays||7;
+ if(type==='holiday'&&source?.activities?.length)return Math.max(base,...source.activities.map(a=>Number(a.days)||0));
+ return base
+}
+function occasionCalendarReference6C1(type,sourceKey,extra={}){
+ if(type==='holiday')return {authority:'HOLIDAYS',holidayId:sourceKey,region:calendarProfile().region};
+ if(type==='birthday')return extra.player?{authority:'PlayerDOB'}:{authority:'People',personId:sourceKey};
+ if(type==='dating_anniversary'||type==='wedding_anniversary')return {authority:'Romance',personId:sourceKey,relationshipDate:extra.relationshipDate||null};
+ if(type==='parents_anniversary')return {authority:'Family',field:'parentsAnniversaryDate'};
+ return {authority:'Calendar'}
+}
+function occasionStatusForDate6C1(rec){
+ const today=currentDate();if(today<rec.preparationWindow.opensISO)return 'Upcoming';
+ if(today<rec.dateISO)return 'Preparation open';
+ if(today<=rec.endDateISO)return 'Active';
+ return 'Expired'
+}
+function occasionTransition6C1(id,next,reason=''){
+ const rec=occasionState6C1().occurrences[id];if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(rec.status===next)return {ok:false,reason:'already_'+String(next).toLowerCase().replace(/\s+/g,'_'),occasion:rec};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal',occasion:rec};
+ if(!OCCASION6C1_TRANSITIONS[rec.status]?.has(next))return {ok:false,reason:'invalid_transition',occasion:rec};
+ rec.history=Array.isArray(rec.history)?rec.history:[];rec.history.push({from:rec.status,to:next,dateISO:currentDate(),minute:currentMinute(),reason:reason||''});if(rec.history.length>16)rec.history.shift();
+ rec.status=next;if(OCCASION6C1_TERMINAL.has(next))rec.resolvedAt={dateISO:currentDate(),minute:currentMinute(),reason:reason||''};return {ok:true,occasion:rec}
+}
+function occasionEvidenceCompleted6C1(rec){
+ if(typeof occasionMeaningfulSocial6C6==='function'&&occasionMeaningfulSocial6C6(rec))return true;
+ if(rec.occasionType==='holiday')return !!(S.holidayLog?.[`${rec.sourceKey}-${rec.occurrenceYear}`]||[]).length;
+ if(rec.occasionType==='birthday'&&rec.celebrantPersonId){const p=personById(rec.celebrantPersonId);return !!p&&typeof birthdayAcknowledged==='function'&&birthdayAcknowledged(p,String(rec.occurrenceYear))}
+ if(rec.occasionType==='birthday'&&rec.celebrantKind==='player')return rec.endDateISO<currentDate()&&ageFromDate(S.dob,rec.endDateISO)>=Number(rec.metadata?.turningAge||0);
+ return false
+}
+function occasionNormalizePersonRefs6C1(rec){
+ rec.participantPersonIds=Array.isArray(rec.participantPersonIds)?rec.participantPersonIds.filter((id,i,a)=>!!personById(id)&&a.indexOf(id)===i):[];
+ if(rec.hostPersonId&&!personById(rec.hostPersonId))rec.hostPersonId=null;
+ if(rec.celebrantPersonId&&!personById(rec.celebrantPersonId)&&!OCCASION6C1_TERMINAL.has(rec.status))occasionTransition6C1(rec.occasionId,'Cancelled','Celebrant no longer exists in People');
+}
+function occasionUpsert6C1(spec){
+ const st=occasionState6C1(),id=occasionId6C1(spec.occasionType,spec.sourceKey,spec.occurrenceYear),existing=st.occurrences[id],prepDays=Math.max(0,Number(spec.preparationDays)||0),endDateISO=spec.endDateISO||spec.dateISO;
+ const canonical={schemaVersion:OCCASION6C1_SCHEMA,occasionId:id,occasionType:spec.occasionType,sourceKey:String(spec.sourceKey),occurrenceYear:Number(spec.occurrenceYear),title:spec.title||'Occasion',celebrantKind:spec.celebrantKind||null,celebrantPersonId:spec.celebrantPersonId||null,hostPersonId:spec.hostPersonId||null,participantPersonIds:Array.isArray(spec.participantPersonIds)?spec.participantPersonIds:[],dateISO:spec.dateISO,endDateISO,location:spec.location||null,recurrence:'annual',preparationWindow:{days:prepDays,opensISO:addDays(spec.dateISO,-prepDays)},preparationDeadline:{dateISO:spec.dateISO,minute:0},deadline:{dateISO:endDateISO,minute:1439},allowedParticipantModes:[...(spec.allowedParticipantModes||[])],allowedLocations:[...(spec.allowedLocations||[])],ageRules:spec.ageRules||{minAge:0},permissionContext:occasionPermissionContext6C1(),calendarReference:spec.calendarReference||null,metadata:spec.metadata||{},status:'Upcoming',history:[]};
+ canonical.status=occasionStatusForDate6C1(canonical);
+ if(!existing){st.occurrences[id]=canonical;return canonical}
+ // Future/current metadata may follow its canonical source. Never rewrite a terminal historical occurrence.
+ if(!OCCASION6C1_TERMINAL.has(existing.status)){
+  const preserve={status:existing.status,history:existing.history||[],resolvedAt:existing.resolvedAt,createdAt:existing.createdAt,hostPersonId:existing.hostPersonId,participantPersonIds:existing.participantPersonIds||[],location:existing.location};
+  Object.assign(existing,canonical,preserve);existing.permissionContext=occasionPermissionContext6C1()
+ }
+ occasionNormalizePersonRefs6C1(existing);return existing
+}
+function occasionNextYearFor6C1(resolveDate,endForYear=null){
+ const today=currentDate(),y=Number(today.slice(0,4));let d=resolveDate(y),end=endForYear?endForYear(y,d):d;
+ if(!d||end<today){d=resolveDate(y+1);return {year:y+1,dateISO:d}}
+ return {year:y,dateISO:d}
+}
+function occasionAddHoliday6C1(h){
+ if(!holidayObserved(h))return null;const n=occasionNextYearFor6C1(y=>holidayDate(h,y),(y,d)=>addDays(d,(h.durationDays||1)-1));if(!n.dateISO)return null;
+ const def=occasionDefinitionCatalog6C1().holiday;return occasionUpsert6C1({occasionType:'holiday',sourceKey:h.id,occurrenceYear:n.year,title:h.name,dateISO:n.dateISO,endDateISO:addDays(n.dateISO,(h.durationDays||1)-1),preparationDays:occasionPreparationDays6C1('holiday',h),allowedParticipantModes:def.allowedParticipantModes,allowedLocations:h.school?['Home','School when permitted','Community']:def.allowedLocations,ageRules:{minAge:0},calendarReference:occasionCalendarReference6C1('holiday',h.id),metadata:{holidayId:h.id,region:calendarProfile().region,durationDays:h.durationDays||1,school:!!h.school}})
+}
+function occasionAddPlayerBirthday6C1(){
+ const n=occasionNextYearFor6C1(y=>occasionAnnualDate6C1(S.dob,y));if(!n.dateISO)return null;const def=occasionDefinitionCatalog6C1().birthday;
+ return occasionUpsert6C1({occasionType:'birthday',sourceKey:'player',occurrenceYear:n.year,title:`${S.name}'s birthday`,celebrantKind:'player',dateISO:n.dateISO,preparationDays:def.defaultPreparationDays,allowedParticipantModes:def.allowedParticipantModes,allowedLocations:def.allowedLocations,ageRules:{minAge:0},calendarReference:occasionCalendarReference6C1('birthday','player',{player:true}),metadata:{turningAge:ageFromDate(S.dob,n.dateISO)}})
+}
+function occasionAddPersonBirthday6C1(p){
+ if(!p?.id||!p.bday)return null;const n=occasionNextYearFor6C1(y=>occasionAnnualDate6C1(p.bday,y));if(!n.dateISO)return null;const def=occasionDefinitionCatalog6C1().birthday;
+ return occasionUpsert6C1({occasionType:'birthday',sourceKey:p.id,occurrenceYear:n.year,title:`${displayName(p)}'s birthday`,celebrantKind:'person',celebrantPersonId:p.id,dateISO:n.dateISO,preparationDays:def.defaultPreparationDays,allowedParticipantModes:def.allowedParticipantModes,allowedLocations:def.allowedLocations,ageRules:{minAge:0},calendarReference:occasionCalendarReference6C1('birthday',p.id),metadata:{personRole:p.role||null}})
+}
+function occasionRelationshipDate6C1(p){return p?.love?.relationshipStartDate||S.romance?.relationshipStartDate||null}
+function occasionWeddingDate6C1(p){
+ if(!p)return null;const direct=S.romance?.married?.personId===p.id&&/^\d{4}-\d{2}-\d{2}$/.test(S.romance.married.dateISO||'')?S.romance.married.dateISO:null;const ms=(p.milestones||[]).filter(m=>m.type==='married'&&/^\d{4}-\d{2}-\d{2}$/.test(m.dateISO||'')).sort((a,b)=>a.dateISO.localeCompare(b.dateISO));return direct||ms[0]?.dateISO||null
+}
+function occasionAddRelationshipAnniversaries6C1(){
+ const pid=S.romance?.partnerId,p=pid&&personById(pid);if(!p)return;const stage=p.love?.stage||p.romanceStage||'';
+ const start=occasionRelationshipDate6C1(p);if(start&&['goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family','dating','partner'].includes(stage)){
+  const n=occasionNextYearFor6C1(y=>occasionAnnualDate6C1(start,y)),def=occasionDefinitionCatalog6C1().dating_anniversary;
+  if(n.dateISO)occasionUpsert6C1({occasionType:'dating_anniversary',sourceKey:p.id,occurrenceYear:n.year,title:`Anniversary with ${displayName(p)}`,celebrantKind:'relationship',celebrantPersonId:p.id,dateISO:n.dateISO,preparationDays:def.defaultPreparationDays,allowedParticipantModes:def.allowedParticipantModes,allowedLocations:def.allowedLocations,ageRules:{minAge:13},calendarReference:occasionCalendarReference6C1('dating_anniversary',p.id,{relationshipDate:start}),metadata:{relationshipStartDate:start}})
+ }
+ const wed=occasionWeddingDate6C1(p);if(wed&&['married','family'].includes(stage)){
+  const n=occasionNextYearFor6C1(y=>occasionAnnualDate6C1(wed,y)),def=occasionDefinitionCatalog6C1().wedding_anniversary;
+  if(n.dateISO)occasionUpsert6C1({occasionType:'wedding_anniversary',sourceKey:p.id,occurrenceYear:n.year,title:`Wedding anniversary with ${displayName(p)}`,celebrantKind:'relationship',celebrantPersonId:p.id,dateISO:n.dateISO,preparationDays:def.defaultPreparationDays,allowedParticipantModes:def.allowedParticipantModes,allowedLocations:def.allowedLocations,ageRules:{minAge:18},calendarReference:occasionCalendarReference6C1('wedding_anniversary',p.id,{relationshipDate:wed}),metadata:{weddingDate:wed}})
+ }
+}
+function occasionAddKnownParentsAnniversary6C1(){
+ // Legacy builds could synthesize S.family.anniversary for vacation flavor. 6C.1
+ // preserves that field but does not promote an unverifiable date into an occasion.
+ const iso=S.family?.parentsAnniversaryDate||null;if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||''))return null;
+ const n=occasionNextYearFor6C1(y=>occasionAnnualDate6C1(iso,y)),def=occasionDefinitionCatalog6C1().parents_anniversary;if(!n.dateISO)return null;
+ return occasionUpsert6C1({occasionType:'parents_anniversary',sourceKey:'parents',occurrenceYear:n.year,title:"Parents' anniversary",celebrantKind:'family',dateISO:n.dateISO,preparationDays:def.defaultPreparationDays,allowedParticipantModes:def.allowedParticipantModes,allowedLocations:def.allowedLocations,ageRules:{minAge:0},calendarReference:occasionCalendarReference6C1('parents_anniversary','parents'),metadata:{knownDate:iso}})
+}
+function migrateOccasions6C1(){occasionState6C1();return S.occasions6C1}
+function reconcileOccasions6C1(reason='reconcile'){
+ if(!S)return null;migrateOccasions6C1();
+ for(const h of HOLIDAYS)occasionAddHoliday6C1(h);occasionAddPlayerBirthday6C1();for(const p of S.people||[])occasionAddPersonBirthday6C1(p);occasionAddRelationshipAnniversaries6C1();occasionAddKnownParentsAnniversary6C1();
+ for(const rec of Object.values(S.occasions6C1.occurrences)){
+  occasionNormalizePersonRefs6C1(rec);if(typeof occasionReconcileSurprise6C5==='function')occasionReconcileSurprise6C5(rec);if(OCCASION6C1_TERMINAL.has(rec.status)){if(typeof occasionReconcileConsequences6C6==='function')occasionReconcileConsequences6C6(rec);continue;}
+  const desired=occasionStatusForDate6C1(rec);
+  if(desired==='Expired')occasionTransition6C1(rec.occasionId,occasionEvidenceCompleted6C1(rec)?'Completed':'Expired',occasionEvidenceCompleted6C1(rec)?'Existing source recorded participation':'Occasion window passed without recorded participation');
+  else if(desired!==rec.status&&!(rec.status==='Planned'&&['Upcoming','Preparation open'].includes(desired)))occasionTransition6C1(rec.occasionId,desired,`Canonical date lifecycle (${reason})`)
+  if(typeof occasionReconcileConsequences6C6==='function')occasionReconcileConsequences6C6(rec);
+  if(typeof occasionNpcInitiative6C5==='function'&&rec.occasionType==='birthday'&&rec.celebrantKind==='player'&&!OCCASION6C1_TERMINAL.has(rec.status))occasionNpcInitiative6C5(rec.occasionId);
+ }
+ if(typeof occasionNotify6C7==='function')occasionNotify6C7();
+ return S.occasions6C1
+}
+function occasionPreparationGate6C1(id){
+ const rec=occasionState6C1().occurrences[id];if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ const now=nowStamp(),open=stamp(rec.preparationWindow.opensISO,0),deadline=stamp(rec.preparationDeadline.dateISO,rec.preparationDeadline.minute);
+ if(now<open)return {ok:false,reason:'preparation_not_open',opensISO:rec.preparationWindow.opensISO};if(now>=deadline)return {ok:false,reason:'preparation_deadline_passed'};
+ if(!['Preparation open','Planned'].includes(rec.status))return {ok:false,reason:'preparation_not_available'};return {ok:true,occasion:rec}
+}
+function occasionRecord6C1(id){return occasionState6C1().occurrences[id]||null}
+function occasionRecords6C1(){return Object.values(occasionState6C1().occurrences).sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||a.occasionId.localeCompare(b.occasionId))}
+// PHASE 6C.2 — event-scoped occasion planning; no gifts, RSVP, or party outcomes.
+const OCC6C2_CHOICES={quiet:{minutes:15,cost:0},small_gathering:{minutes:35,cost:0},family_dinner:{minutes:30,cost:0},cake_prepare:{minutes:45,cost:0},cake_buy:{minutes:25,cost:25},decorate:{minutes:30,cost:12},invitations_prepare:{minutes:20,cost:0},food_select:{minutes:15,cost:0}};
+function occasionPlan6C2(id){return occasionRecord6C1(id)?.planning6C2||null}
+function occasionPlanningGate6C2(id,action='plan',option=null){
+ const gate=occasionPreparationGate6C1(id);if(!gate.ok)return gate;
+ const rec=gate.occasion,choice=OCC6C2_CHOICES[action],plan=rec.planning6C2;
+ if(action!=='plan'&&action!=='budget'&&action!=='venue'&&action!=='cancel'&&!choice)return {ok:false,reason:'unknown_action'};
+ if(S.age<5)return {ok:false,reason:'age_restricted'};
+ if((action==='venue'||action==='small_gathering'||action==='family_dinner'||action==='decorate'||action==='cake_prepare'||action==='cake_buy')&&S.location!=='Home')return {ok:false,reason:'must_be_home'};
+ if(action==='venue'&&!['Home','School when permitted','legitimate venue'].includes(option))return {ok:false,reason:'unsupported_venue'};
+ if(action==='venue'&&option!=='Home')return {ok:false,reason:'venue_authorization_not_implemented'};
+ if(action==='cancel'&&!plan)return {ok:false,reason:'no_plan'};
+ if(choice&&plan?.steps?.some(s=>s.action===action))return {ok:false,reason:'already_prepared'};
+ if(choice&&S.age<13&&action!=='quiet'&&action!=='invitations_prepare'&&action!=='food_select')return {ok:false,reason:'age_restricted'};
+ // A paid action by a minor is denied until an explicit H3 approval workflow exists.
+ if(choice?.cost&&S.age<18)return {ok:false,reason:'h3_approval_required'};
+ if((action==='small_gathering'||action==='venue')&&S.age<18)return {ok:false,reason:'h3_approval_required'};
+ if(choice?.cost&&S.money<choice.cost)return {ok:false,reason:'insufficient_funds'};
+ if(choice&&stamp(currentDate(),currentMinute()+choice.minutes)>=stamp(rec.preparationDeadline.dateISO,rec.preparationDeadline.minute))return {ok:false,reason:'insufficient_time'};
+ return {ok:true,occasion:rec,choice};
+}
+function occasionPrepare6C2(id,action,option=null){
+ const gate=occasionPlanningGate6C2(id,action,option);if(!gate.ok)return gate;const rec=gate.occasion;
+ if(action==='budget'&&(!Number.isSafeInteger(option)||option<0||option>10000000))return {ok:false,reason:'invalid_budget'};
+ const plan=rec.planning6C2||(rec.planning6C2={schemaVersion:1,budget:0,estimatedCost:0,actualCost:0,steps:[],venue:null,choice:null,cancelled:false});
+ if(action==='budget'){if(option<plan.actualCost)return {ok:false,reason:'below_actual_cost'};plan.budget=option;return {ok:true,plan}}
+ if(action==='venue'){plan.venue=option;return {ok:true,plan}}
+ if(action==='cancel'){plan.cancelled=true;plan.cancelledAt={dateISO:currentDate(),minute:currentMinute()};occasionTransition6C1(id,'Cancelled','Player cancelled preparation');return {ok:true,plan}}
+ if(action==='plan')return {ok:true,plan};
+ const c=gate.choice;
+ if(c.cost&&plan.actualCost+c.cost>plan.budget)return {ok:false,reason:'over_budget'};
+ if(c.cost){S.money-=c.cost;if(S.finance)S.finance.spent=(Number(S.finance.spent)||0)+c.cost;}
+ plan.steps.push({action,dateISO:currentDate(),minute:currentMinute(),minutes:c.minutes,paid:c.cost});
+ plan.actualCost+=c.cost;plan.estimatedCost=Math.max(plan.estimatedCost,plan.actualCost);
+ if(!plan.choice&&['quiet','small_gathering','family_dinner'].includes(action))plan.choice=action;
+ if(rec.status==='Preparation open')occasionTransition6C1(id,'Planned','Player began occasion preparation');
+ advanceTime(c.minutes);return {ok:true,plan};
+}
+// PHASE 6C.3 — occasion-scoped gifts; existing Inventory, Store and People own transfers.
+function occasionGiftLedger6C3(rec){return rec.gifts6C3||(rec.gifts6C3={schemaVersion:1,selected:[],transfers:[],received:[]})}
+function occasionGiftGate6C3(id,personId=null,mode='prepare'){
+ const rec=occasionRecord6C1(id);if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ if(personId!==null){const recipient=personById(personId);if(!recipient)return {ok:false,reason:'missing_person'};if(recipient.deceased||recipient.movedAway)return {ok:false,reason:'recipient_unavailable'};}
+ if(mode==='prepare'){const gate=occasionPreparationGate6C1(id);if(!gate.ok)return gate}
+ else if(currentDate()<rec.dateISO||currentDate()>rec.endDateISO)return {ok:false,reason:'not_occasion_day'};
+ if(S.age<5)return {ok:false,reason:'age_restricted'};
+ return {ok:true,occasion:rec};
+}
+function occasionSelectGift6C3(id,itemId,personId){
+ const gate=occasionGiftGate6C3(id,personId);if(!gate.ok)return gate;
+ const it=S.inventoryItems.find(x=>x.id===itemId);if(!it||it.stored)return {ok:false,reason:'item_not_owned_or_available'};
+ if(it.equipped)return {ok:false,reason:'unequip_first'};
+ if(it.opened&&['consumable','finite','perishable'].includes(it.lifecycleType))return {ok:false,reason:'used_item'};
+ if(S.age<18&&(catalogItem(it.key)?.price||0)>=100)return {ok:false,reason:'h3_approval_required'};
+ const ledger=occasionGiftLedger6C3(gate.occasion);
+ if(ledger.transfers.some(t=>t.itemId===itemId))return {ok:false,reason:'already_transferred'};
+ if(ledger.selected.some(t=>t.itemId===itemId))return {ok:false,reason:'already_selected'};
+ ledger.selected.push({itemId,personId,key:it.key,dateISO:currentDate()});return {ok:true,itemId,personId};
+}
+function occasionWrapGift6C3(id,itemId,paper='gift'){
+ const gate=occasionGiftGate6C3(id);if(!gate.ok)return gate;
+ const ledger=occasionGiftLedger6C3(gate.occasion),selection=ledger.selected.find(s=>s.itemId===itemId);
+ if(!selection)return {ok:false,reason:'gift_not_selected'};
+ const it=S.inventoryItems.find(x=>x.id===itemId);if(!it||it.stored)return {ok:false,reason:'item_not_owned'};
+ if(it.wrapped)return {ok:false,reason:'already_wrapped'};
+ if((it.quantity||1)>1)return {ok:false,reason:'split_stack_first'};
+ if(!['gift','heart'].includes(paper))return {ok:false,reason:'invalid_paper'};
+ if(!findUsable(paper==='heart'?'heartWrap':'giftWrap')&&!findUsable('giftWrap')&&!findUsable('heartWrap'))return {ok:false,reason:'wrapping_paper_required'};
+ wrapItem(itemId,paper);return {ok:!!it.wrapped,paper:it.wrapped?.paper};
+}
+// 6C.8 release integrity: the same eligibility determines UI state and backend transfer.
+function occasionGiftDeliveryGate6C8(id,itemId,personId){
+ const gate=occasionGiftGate6C3(id,personId,'give');if(!gate.ok)return gate;
+ const rec=gate.occasion,ledger=rec.gifts6C3;
+ const selection=ledger?.selected?.find(s=>s.itemId===itemId&&s.personId===personId);
+ if(!selection)return {ok:false,reason:'gift_not_selected_for_recipient'};
+ if(ledger.transfers.some(t=>t.itemId===itemId))return {ok:false,reason:'already_transferred'};
+ const it=S.inventoryItems.find(x=>x.id===itemId);
+ if(!it||it.stored||it.equipped)return {ok:false,reason:'item_not_available'};
+ if((it.quantity||1)>1)return {ok:false,reason:'split_stack_first'};
+ if(S.age<18&&(catalogItem(it.key)?.price||0)>=100)return {ok:false,reason:'h3_approval_required'};
+ if(S.location!=='Home'&&S.location!=='School')return {ok:false,reason:'invalid_location'};
+ // School cannot assume proximity merely because the recipient appears in People.
+ if(S.location==='School')return {ok:false,reason:'school_recipient_presence_unverified'};
+ if(!occasionSurpriseHomeActor6C5(personId,currentDate(),currentMinute())
+   &&!(rec.guests6C4?.attendance||[]).some(x=>x.personId===personId&&x.dateISO===currentDate()
+     &&currentMinute()>=x.minute&&currentMinute()<=x.minute+180&&npcStatusAt(personById(personId),currentDate(),currentMinute()).free))
+   return {ok:false,reason:'recipient_not_present'};
+ if(currentMinute()+10>1439)return {ok:false,reason:'insufficient_time'};
+ return {ok:true,occasion:rec,ledger,item:it,person:personById(personId)};
+}
+function occasionGiveGift6C3(id,itemId,personId){
+ const gate=occasionGiftDeliveryGate6C8(id,itemId,personId);if(!gate.ok)return gate;
+ const rec=gate.occasion,ledger=gate.ledger,it=gate.item,p=gate.person;
+ const d=catalogItem(it.key)||{},gift=removeItem(itemId,true);
+ if(!gift)return {ok:false,reason:'transfer_failed'};
+ const reaction=npcGiftReaction(p,gift,d),tier=reaction.tier;
+ // Existing reaction authority handles preferences; effects are bounded and no forced romance.
+ p.rel=clamp((p.rel||0)+Math.max(-2,Math.min(7,reaction.rel||0)));
+ p.trust=clamp((p.trust||0)+Math.max(-1,Math.min(3,reaction.trust||0)));
+ p.giftsReceived=[...(p.giftsReceived||[]),gift.key].slice(-12);
+ const receipt={itemId,key:gift.key,personId,dateISO:currentDate(),minute:currentMinute(),occasionId:id,reaction:tier,reason:reaction.why,wrapped:gift.wrapped?.paper||null};
+ ledger.transfers.push(receipt);rememberPerson(p,`Received ${gift.name} from you for ${rec.title} (${tier}).`,1);
+ advanceTime(10);return {ok:true,receipt};
+}
+// PHASE 6C.4 — invitation ledger layered over existing occasion, People and Plans authorities.
+// RSVP never manufactures a Plan/calendar entry or attendance.
+function occasionGuestLedger6C4(id){return occasionRecord6C1(id)?.guests6C4||null}
+function occasionGuestGate6C4(id,personId,minute=1080){
+ const base=occasionPreparationGate6C1(id);if(!base.ok)return base;
+ const rec=base.occasion,p=personById(personId),m=Number(minute);
+ if(!p)return {ok:false,reason:'missing_person'};
+ if(p.deceased||p.movedAway)return {ok:false,reason:'recipient_unavailable'};
+ if(!Number.isInteger(m)||m<420||m>1320)return {ok:false,reason:'invalid_time'};
+ if(rec.celebrantPersonId===personId&&rec.occasionType==='birthday')return {ok:false,reason:'celebrant_not_guest'};
+ if(S.age<6)return {ok:false,reason:'age_restricted'};
+ if(S.age<18&&((rec.planning6C2?.venue&&rec.planning6C2.venue!=='Home')||m>Math.min(1200,curfewMinute()??1200)))return {ok:false,reason:'h3_approval_required'};
+ if(rec.metadata?.school&&rec.planning6C2?.venue==='School when permitted')return {ok:false,reason:'school_authorization_required'};
+ if((rec.guests6C4?.invitations||[]).some(x=>x.personId===personId))return {ok:false,reason:'already_invited'};
+ return {ok:true,occasion:rec,person:p,minute:m};
+}
+function occasionInvite6C4(id,personId,minute=1080){
+ const gate=occasionGuestGate6C4(id,personId,minute);if(!gate.ok)return gate;
+ const rec=gate.occasion,p=gate.person,day=rec.dateISO,m=gate.minute;
+ // The existing NPC availability routine remains the scheduling authority.
+ const available=npcStatusAt(p,day,m);
+ const conflicts=(S.plans||[]).some(x=>x.personId===personId&&x.dateISO===day&&['Accepted','Attending','Attended'].includes(x.status)&&m>=x.startMinute-120&&m<=x.endMinute);
+ const status=(!available.free||conflicts)?'Unavailable':p.boundaries?.includes('noParties')&&rec.planning6C2?.choice==='small_gathering'?'Declined':
+ (dayHash(`${rec.occasionId}|${personId}|rsvp`)<Math.max(8,Math.min(92,Math.round((p.rel??45)*.55+(p.trust??50)*.3-(p.conflict??0)*.4))))?'Accepted':'Declined';
+ const ledger=rec.guests6C4||(rec.guests6C4={schemaVersion:1,invitations:[],attendance:[]});
+ const record={personId,status,dateISO:day,startMinute:m,invitedAt:{dateISO:currentDate(),minute:currentMinute()},reason:status==='Unavailable'?(conflicts?'existing_plan_conflict':available.why||'busy'):status==='Declined'?'npc_declined':null,attended:false};
+ ledger.invitations.push(record);
+ return {ok:true,invitation:record};
+}
+function occasionAttendanceGate6C4(id,personId){
+ const rec=occasionRecord6C1(id),entry=rec?.guests6C4?.invitations.find(x=>x.personId===personId);
+ if(!rec||!entry)return {ok:false,reason:'not_invited'};
+ if(entry.status!=='Accepted')return {ok:false,reason:'not_accepted'};
+ if(entry.attended)return {ok:false,reason:'already_attended'};
+ if(currentDate()!==rec.dateISO||currentMinute()<entry.startMinute||currentMinute()>Math.min(1439,entry.startMinute+180))return {ok:false,reason:'outside_event_window'};
+ if(!personById(personId))return {ok:false,reason:'missing_person'};
+ if(personById(personId).deceased||personById(personId).movedAway)return {ok:false,reason:'recipient_unavailable'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ const a=npcStatusAt(personById(personId),rec.dateISO,currentMinute());if(!a.free)return {ok:false,reason:'npc_unavailable'};
+ if((S.plans||[]).some(x=>x.personId===personId&&x.dateISO===rec.dateISO&&['Accepted','Attending'].includes(x.status)&&currentMinute()>=x.startMinute&&currentMinute()<=x.endMinute))return {ok:false,reason:'existing_plan_conflict'};
+ if(rec.planning6C2?.venue&&rec.planning6C2.venue!=='Home')return {ok:false,reason:'venue_not_verified'};
+ if(S.location!=='Home')return {ok:false,reason:'wrong_location'};
+ return {ok:true,occasion:rec,invitation:entry};
+}
+function occasionConfirmAttendance6C4(id,personId){
+ const g=occasionAttendanceGate6C4(id,personId);if(!g.ok)return g;
+ const rec=g.occasion,entry=g.invitation;entry.attended=true;entry.attendedAt={dateISO:currentDate(),minute:currentMinute()};
+ rec.guests6C4.attendance.push({personId,dateISO:currentDate(),minute:currentMinute()});
+ if(!rec.participantPersonIds.includes(personId))rec.participantPersonIds.push(personId);
+ return {ok:true,attendance:entry};
+}
+// PHASE 6C.5 — event-scoped, verified surprise celebrations.
+// Canonical Occasion, People, NPC availability, 6C.2 planner, 6C.4 guest attendance;
+// no duplicate calendar, checkout, inventory, money, attendance or romance authority.
+const OCC6C5_REACTIONS=new Set(['happy','grateful','embarrassed','overwhelmed','disappointed']);
+function occasionSurpriseRecord6C5(id){return occasionRecord6C1(id)?.surprise6C5||null}
+function occasionSurpriseConflict6C5(personId,day,minute){
+ return (S.plans||[]).some(p=>p.personId===personId&&p.dateISO===day&&p.location!=='Home'&&['Accepted','Attending'].includes(p.status)&&minute>=Number(p.startMinute||0)-60&&minute<=Number(p.endMinute||0));
+}
+function occasionSurpriseAvailable6C5(personId,day,minute){
+ const p=personById(personId);
+ if(!p||p.movedAway||p.deceased)return false;
+ return !!npcStatusAt(p,day,minute).free&&!occasionSurpriseConflict6C5(personId,day,minute);
+}
+function occasionSurpriseHomeVisit6C5(personId,day,minute,acceptedOnly=false){
+ return (S.plans||[]).some(p=>p.personId===personId&&p.dateISO===day&&p.location==='Home'&&
+ (acceptedOnly?['Accepted','Attending'].includes(p.status):p.status==='Attending')&&
+ minute>=Number(p.startMinute||0)&&minute<=Number(p.endMinute||0));
+}
+function occasionSurpriseHomeActor6C5(personId,day,minute){
+ const p=personById(personId);
+ if(!p||!occasionSurpriseAvailable6C5(personId,day,minute))return false;
+ if(livesWithParents()&&inHousehold(p))return true;
+ // A non-household organizer must have a real, already-arrived Home plan.
+ // Never treat mere acceptance as physical attendance at the reveal.
+ return S.age>=18&&occasionSurpriseHomeVisit6C5(personId,day,minute);
+}
+function occasionSurpriseOtherPartyGate6C5(id){
+ const prep=occasionPreparationGate6C1(id);if(!prep.ok)return prep;
+ const rec=prep.occasion;
+ if(rec.occasionType!=='birthday'||rec.celebrantKind!=='person'||!personById(rec.celebrantPersonId))return {ok:false,reason:'not_npc_birthday'};
+ if(S.age<18)return {ok:false,reason:'h3_approval_required'};
+ if(!occasionSurpriseHomeActor6C5(rec.celebrantPersonId,rec.dateISO,1140)&&!(occasionSurpriseAvailable6C5(rec.celebrantPersonId,rec.dateISO,1140)&&occasionSurpriseHomeVisit6C5(rec.celebrantPersonId,rec.dateISO,1140,true)))return {ok:false,reason:'celebrant_home_unverified'};
+ if(!rec.planning6C2||rec.planning6C2.cancelled||rec.planning6C2.choice!=='small_gathering')return {ok:false,reason:'gathering_plan_required'};
+ if(rec.planning6C2.venue!=='Home'||S.location!=='Home')return {ok:false,reason:'home_venue_required'};
+ if(rec.surprise6C5)return {ok:false,reason:'surprise_already_decided'};
+ if(currentMinute()+20>=1440||stamp(currentDate(),currentMinute()+20)>=stamp(rec.preparationDeadline.dateISO,0))return {ok:false,reason:'insufficient_preparation_time'};
+ return {ok:true,occasion:rec};
+}
+function occasionPlanSurprise6C5(id,minute=1140){
+ const g=occasionSurpriseOtherPartyGate6C5(id);if(!g.ok)return g;
+ if(!Number.isInteger(minute)||minute<720||minute>1200)return {ok:false,reason:'invalid_start_minute'};
+ const rec=g.occasion;
+ // Only the player's actual home can be booked at this checkpoint; 6C.7 may
+ // expand verified school/other-home/venue permissions later.
+ const plan={schemaVersion:1,occasionId:id,kind:'player_for_npc',organizer:'player',celebrantPersonId:rec.celebrantPersonId,venue:'Home',startMinute:minute,status:'secret_planned',secret:true,createdAt:{dateISO:currentDate(),minute:currentMinute()},invitedPersonIds:[],actualAttendeeIds:[],outcome:null,actualCost:0};
+ rec.surprise6C5=plan;advanceTime(20);return {ok:true,surprise:plan};
+}
+function occasionNpcSurpriseCandidates6C5(day,minute){
+ // An autonomous home event must have a verifiable co-resident organizer.
+ // Friends and partners living elsewhere require independently verified plans;
+ // they cannot simply appear in the player's house.
+ return (S.people||[]).filter(p=>{
+  if(p.movedAway||p.deceased||personAge(p)<16||p.rel<35||(p.conflict||0)>=60||!occasionSurpriseAvailable6C5(p.id,day,minute))return false;
+  if(isFamilyPerson(p))return livesWithParents()&&inHousehold(p);
+  // Friend/established partner initiative requires a real accepted Home plan.
+  // A remotely acquainted NPC does not gain access to a player's home.
+  const establishedPartner=S.romance?.partnerId===p.id;
+  return S.age>=18&&personAge(p)>=18&&(establishedPartner||tierRank(p)>=2)&&occasionSurpriseHomeVisit6C5(p.id,day,minute,true);
+ }).sort((a,b)=>(b.rel+(b.trust||0)*.25)-(a.rel+(a.trust||0)*.25)||a.id.localeCompare(b.id));
+}
+function occasionNpcInitiative6C5(id){
+ const rec=occasionRecord6C1(id);if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(rec.occasionType!=='birthday'||rec.celebrantKind!=='player')return {ok:false,reason:'not_player_birthday'};
+ if(rec.surprise6C5)return {ok:true,reused:true,surprise:rec.surprise6C5};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ if(currentDate()<rec.preparationWindow.opensISO||currentDate()>rec.dateISO)return {ok:false,reason:'outside_initiative_window'};
+ if(rec.dateISO===currentDate()&&currentMinute()>=1140)return {ok:false,reason:'planning_window_passed'};
+ const host=occasionNpcSurpriseCandidates6C5(rec.dateISO,1140)[0];
+ // A deterministic single decision per birthday, independent of rerenders.
+ const wealth=S.wealth==='Struggling'?-13:['Wealthy','Extremely wealthy'].includes(S.wealth)?8:0;
+ const threshold=host?Math.max(5,Math.min(62,Math.round(18+(host.rel||40)*.26+(host.trust||40)*.12-(host.conflict||0)*.3+wealth))):0;
+ const decided=!!host&&dayHash(`${id}|npc-initiative-6c5`)<threshold;
+ const plan={schemaVersion:1,occasionId:id,kind:'npc_for_player',organizerPersonId:decided?host.id:null,celebrantKind:'player',venue:decided?'Home':null,startMinute:1140,status:decided?'secret_planned':'not_planned',secret:decided,createdAt:{dateISO:currentDate(),minute:currentMinute()},actualAttendeeIds:[],outcome:null,actualCost:0,decisionScore:dayHash(`${id}|npc-initiative-6c5`)};
+ rec.surprise6C5=plan;return {ok:true,surprise:plan};
+}
+function occasionSurpriseEventGate6C5(id,kind){
+ const rec=occasionRecord6C1(id),plan=rec?.surprise6C5;
+ if(!rec||!plan)return {ok:false,reason:'no_surprise_plan'};
+ if(plan.kind!==kind)return {ok:false,reason:'wrong_surprise_kind'};
+ if(plan.status!=='secret_planned'&&!(kind==='npc_for_player'&&plan.status==='discovered_early'))return {ok:false,reason:'surprise_not_pending'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ if(currentDate()!==rec.dateISO||currentMinute()<plan.startMinute||currentMinute()>Math.min(plan.startMinute+120,1439))return {ok:false,reason:'outside_event_window'};
+ if(S.location!=='Home'||plan.venue!=='Home')return {ok:false,reason:'wrong_venue'};
+ if(currentMinute()+20>1439)return {ok:false,reason:'insufficient_event_time'};
+ if(kind==='npc_for_player'){
+  if(!occasionSurpriseHomeActor6C5(plan.organizerPersonId,rec.dateISO,currentMinute()))return {ok:false,reason:'organizer_unavailable'};
+ }else{
+  if(S.age<18)return {ok:false,reason:'h3_approval_required'};
+  if(!personById(plan.celebrantPersonId))return {ok:false,reason:'missing_celebrant'};
+  // The celebrant must genuinely live at this address; unavailable visitors
+  // cannot be conjured into a surprise venue.
+  if(!occasionSurpriseHomeActor6C5(plan.celebrantPersonId,rec.dateISO,currentMinute()))return {ok:false,reason:'celebrant_not_at_venue'};
+  if(rec.planning6C2?.cancelled)return {ok:false,reason:'plan_cancelled'};
+ }
+ return {ok:true,occasion:rec,surprise:plan};
+}
+function occasionDiscoverSurprise6C5(id){
+ const rec=occasionRecord6C1(id),plan=rec?.surprise6C5;
+ if(!plan||plan.kind!=='npc_for_player'||plan.status!=='secret_planned')return {ok:false,reason:'no_hidden_surprise'};
+ if(currentDate()>=rec.dateISO||currentDate()<rec.preparationWindow.opensISO)return {ok:false,reason:'not_discovery_window'};
+ if(S.location!=='Home'||S.age<7)return {ok:false,reason:'cannot_investigate_here'};
+ if(!occasionSurpriseHomeActor6C5(plan.organizerPersonId,rec.dateISO,plan.startMinute))return {ok:false,reason:'organizer_unavailable'};
+ if(plan.discoveryAttempted)return {ok:false,reason:'already_investigated'};
+ if(currentMinute()+10>1439)return {ok:false,reason:'insufficient_time'};
+ plan.discoveryAttempted=true;
+ const discovered=dayHash(`${id}|${plan.organizerPersonId}|early-clue`)<32;
+ if(discovered){plan.status='discovered_early';plan.secret=false;plan.discoveredAt={dateISO:currentDate(),minute:currentMinute()}}
+ advanceTime(10);return {ok:true,discovered,surprise:plan};
+}
+function occasionCancelSurprise6C5(id){
+ const rec=occasionRecord6C1(id),plan=rec?.surprise6C5;
+ if(!rec||!plan)return {ok:false,reason:'no_surprise_plan'};
+ if(plan.kind!=='player_for_npc')return {ok:false,reason:'not_player_organized'};
+ if(plan.status!=='secret_planned'||OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'surprise_not_pending'};
+ plan.status='cancelled';plan.outcome='cancelled';plan.cancelledAt={dateISO:currentDate(),minute:currentMinute()};return {ok:true,surprise:plan};
+}
+function occasionResolveSurprise6C5(id,reaction='happy'){
+ if(!OCC6C5_REACTIONS.has(reaction))return {ok:false,reason:'invalid_reaction'};
+ const rec=occasionRecord6C1(id),plan=rec?.surprise6C5;if(!plan)return {ok:false,reason:'no_surprise_plan'};
+ const gate=occasionSurpriseEventGate6C5(id,plan.kind);if(!gate.ok)return gate;
+ const guests=(rec.guests6C4?.attendance||[]).filter(x=>x.dateISO===rec.dateISO&&personById(x.personId)&&x.personId!==rec.celebrantPersonId)
+ .map(x=>x.personId).filter((v,i,a)=>a.indexOf(v)===i);
+ // Only previously confirmed 6C.4 guests count. In the NPC case a real
+ // co-resident host alone can arrange a small surprise at Home.
+ const hostId=plan.kind==='npc_for_player'?plan.organizerPersonId:null;
+ const participants=(hostId?[hostId]:[]).concat(guests.filter(pid=>occasionSurpriseAvailable6C5(pid,rec.dateISO,currentMinute())));
+ const actual=[...new Set(participants)].filter(pid=>pid===hostId?occasionSurpriseHomeActor6C5(pid,rec.dateISO,currentMinute()):occasionSurpriseAvailable6C5(pid,rec.dateISO,currentMinute()));
+ // A player-arranged party without a verified second person besides its
+ // celebrant is a private surprise rather than a fabricated group gathering.
+ const surpriseSeed=dayHash(`${id}|${plan.celebrantPersonId||'player'}|surprise-reveal`);
+ const outcome=plan.status==='discovered_early'?'discovered_early':
+  plan.kind==='player_for_npc'?(actual.length?(surpriseSeed<17?'discovered_early':surpriseSeed<30?'partially_spoiled':'celebrated'):(surpriseSeed<17?'discovered_early':'small_private_surprise')):'celebrated';
+ if(rec.status!=='Active'){
+  const started=occasionTransition6C1(id,'Active','Verified occasion-day arrival at Home');if(!started.ok)return started;
+ }
+ const transition=occasionTransition6C1(id,'Completed','Verified 6C.5 home surprise');if(!transition.ok)return transition;
+ plan.status='completed';plan.secret=false;plan.outcome=outcome;plan.reaction=reaction;plan.actualAttendeeIds=actual;plan.resolvedAt={dateISO:currentDate(),minute:currentMinute()};
+ if(plan.kind==='npc_for_player'){
+  const host=personById(hostId);if(host){host.rel=clamp((host.rel||0)+({happy:2,grateful:2,embarrassed:1,overwhelmed:0,disappointed:-1}[reaction]));rememberPerson(host,`Organized a small surprise at home for your birthday; you felt ${reaction}.`,1)}
+  S.happiness=clamp((S.happiness||0)+({happy:3,grateful:3,embarrassed:1,overwhelmed:0,disappointed:-2}[reaction]));
+ }else{
+  const celebrant=personById(plan.celebrantPersonId);if(celebrant){celebrant.rel=clamp((celebrant.rel||0)+({happy:2,grateful:2,embarrassed:1,overwhelmed:0,disappointed:-1}[reaction]));rememberPerson(celebrant,`You organized a ${outcome==='celebrated'?'surprise gathering':'quiet surprise'} for their birthday; their reaction was ${reaction}.`,1)}
+ }
+ advanceTime(20);return {ok:true,outcome,surprise:plan};
+}
+
+function occasionReconcileSurprise6C5(rec){
+ const plan=rec?.surprise6C5;
+ if(!plan||!['secret_planned','discovered_early'].includes(plan.status))return;
+ if(currentDate()>rec.endDateISO||(currentDate()===rec.endDateISO&&currentMinute()>plan.startMinute+120)){
+  plan.status='missed';plan.outcome='missed';plan.resolvedAt={dateISO:currentDate(),minute:currentMinute()};
+ }
+}
+// PHASE 6C.6 — Canonical holiday bridge, real-person anniversary gestures,
+// and bounded consequences only for explicit, witnessed commitments.
+// No parallel HOLIDAYS/Calendar, dates, Store/Inventory, People, RSVP or romance.
+const OCC6C6_DAY_ACTIONS=new Set(['acknowledge','give_card','share_meal','reflect']);
+const OCC6C6_PREP_ACTIONS=new Set(['prepare_card','promise']);
+function occasionSocialLedger6C6(rec){return rec.social6C6||(rec.social6C6={schemaVersion:1,actions:[],commitments:[],consequenceProcessed:false})}
+function occasionMeaningfulSocial6C6(rec,personId=null){
+ const a=rec.social6C6?.actions||[];
+ if(a.some(x=>x.kind!=='prepare_card'&&x.kind!=='promise'&&(personId===null||x.personId===personId)))return true;
+ if((rec.gifts6C3?.transfers||[]).some(x=>personId===null||x.personId===personId))return true;
+ if((rec.guests6C4?.attendance||[]).some(x=>personId===null||x.personId===personId))return true;
+ if(rec.occasionType==='holiday'&&(S.holidayLog?.[`${rec.sourceKey}-${rec.occurrenceYear}`]||[]).length)return true;
+ return rec.surprise6C5?.status==='completed'&&(!personId||rec.surprise6C5.celebrantPersonId===personId||rec.surprise6C5.actualAttendeeIds?.includes(personId));
+}
+function occasionValidSocialPerson6C6(rec,personId){
+ const p=personById(personId);if(!p||p.deceased||p.movedAway)return false;
+ if(rec.occasionType==='dating_anniversary'||rec.occasionType==='wedding_anniversary')return rec.celebrantPersonId===personId&&S.romance?.partnerId===personId&&
+  (rec.occasionType!=='wedding_anniversary'||!!occasionWeddingDate6C1(p));
+ if(rec.occasionType==='parents_anniversary')return !!S.family?.parentsAnniversaryDate&&isFamilyPerson(p)&&['mother','father'].includes(p.relation);
+ if(rec.occasionType==='birthday')return rec.celebrantPersonId?rec.celebrantPersonId===personId:
+  isFamilyPerson(p)||(rec.guests6C4?.attendance||[]).some(x=>x.personId===personId);
+ if(rec.occasionType!=='holiday'||!HOLIDAYS.some(h=>h.id===rec.sourceKey&&holidayObserved(h)))return false;
+ if(rec.sourceKey==='mothersDay')return p.relation==='mother';
+ if(rec.sourceKey==='fathersDay')return p.relation==='father';
+ if(['womensDay','vnWomensDay'].includes(rec.sourceKey))return p.gender==='Female'&&isFamilyPerson(p);
+ if(rec.sourceKey==='valentines')return S.romance?.partnerId===personId&&!!occasionRelationshipDate6C1(p);
+ if(rec.sourceKey==='teachersDay')return false; // Existing School/Holiday teacher action is authoritative.
+ return isFamilyPerson(p)||(rec.guests6C4?.attendance||[]).some(x=>x.personId===personId);
+}
+function occasionSocialPresence6C6(personId){
+ if(S.location!=='Home')return false;
+ // Real co-resident family or an already accepted, actually present Home Plan.
+ return occasionSurpriseHomeActor6C5(personId,currentDate(),currentMinute());
+}
+function occasionSocialGate6C6(id,kind,personId=null){
+ const rec=occasionRecord6C1(id);if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ if(!OCC6C6_DAY_ACTIONS.has(kind)&&!OCC6C6_PREP_ACTIONS.has(kind))return {ok:false,reason:'invalid_action'};
+ if(S.age<(kind==='prepare_card'?5:kind==='promise'?7:3))return {ok:false,reason:'age_restricted'};
+ const day=OCC6C6_DAY_ACTIONS.has(kind);
+ if(day&&(currentDate()<rec.dateISO||currentDate()>rec.endDateISO))return {ok:false,reason:'not_occasion_day'};
+ if(!day){const g=occasionPreparationGate6C1(id);if(!g.ok)return g}
+ if(kind==='reflect'&&!['dating_anniversary','wedding_anniversary','parents_anniversary'].includes(rec.occasionType))return {ok:false,reason:'anniversary_only'};
+ if(kind!=='reflect'&&!occasionValidSocialPerson6C6(rec,personId))return {ok:false,reason:'invalid_celebrant_or_relationship'};
+ if(S.location!=='Home')return {ok:false,reason:'must_be_home'};
+ if(['promise','give_card','acknowledge','share_meal'].includes(kind)&&!occasionSocialPresence6C6(personId))return {ok:false,reason:'person_not_present'};
+ const ledger=rec.social6C6;
+ if(kind==='promise'&&ledger?.commitments?.some(x=>x.personId===personId))return {ok:false,reason:'already_promised'};
+ if(kind==='give_card'&&!ledger?.actions?.some(x=>x.kind==='prepare_card'&&x.personId===personId))return {ok:false,reason:'card_not_prepared'};
+ if(kind==='give_card'&&ledger?.actions?.some(x=>x.kind==='give_card'&&x.personId===personId))return {ok:false,reason:'card_already_given'};
+ if(kind!=='promise'&&ledger?.actions?.some(x=>x.kind===kind&&x.personId===personId))return {ok:false,reason:'already_done'};
+ const minutes={promise:5,prepare_card:25,give_card:10,acknowledge:10,share_meal:60,reflect:15}[kind];
+ if(currentMinute()+minutes>1439)return {ok:false,reason:'insufficient_time'};
+ if(!day&&stamp(currentDate(),currentMinute()+minutes)>=stamp(rec.preparationDeadline.dateISO,0))return {ok:false,reason:'preparation_deadline_passed'};
+ return {ok:true,occasion:rec,minutes};
+}
+function occasionSocialAction6C6(id,kind,personId=null){
+ const gate=occasionSocialGate6C6(id,kind,personId);if(!gate.ok)return gate;
+ const rec=gate.occasion,ledger=occasionSocialLedger6C6(rec),p=personId?personById(personId):null;
+ const entry={kind,personId:personId||null,dateISO:currentDate(),minute:currentMinute(),minutes:gate.minutes};
+ ledger.actions.push(entry);
+ if(kind==='promise')ledger.commitments.push({personId,dateISO:currentDate(),minute:currentMinute(),status:'promised'});
+ if(p&&['acknowledge','give_card','share_meal'].includes(kind)){
+  const delta=p.rel>=35&&p.conflict<70?kind==='share_meal'?2:1:0;
+  if(delta)p.rel=clamp((p.rel||0)+delta);
+  rememberPerson(p,`${rec.title}: ${kind==='give_card'?'received your handmade card':kind==='share_meal'?'spent time together at home':'received your personal wishes'}.`,1);
+ }
+ if(rec.status==='Preparation open'&&['promise','prepare_card'].includes(kind))occasionTransition6C1(id,'Planned','Explicit social preparation');
+ advanceTime(gate.minutes);
+ return {ok:true,action:entry};
+}
+function occasionHolidayAction6C6(id,activityId){
+ const rec=occasionRecord6C1(id);if(!rec)return {ok:false,reason:'occasion_not_found'};
+ if(rec.occasionType!=='holiday')return {ok:false,reason:'not_holiday'};
+ if(OCCASION6C1_TERMINAL.has(rec.status))return {ok:false,reason:'occasion_terminal'};
+ const holiday=HOLIDAYS.find(h=>h.id===rec.sourceKey&&holidayObserved(h));
+ if(!holiday||holidayDate(holiday,rec.occurrenceYear)!==rec.dateISO)return {ok:false,reason:'holiday_authority_mismatch'};
+ const x=holidayWindow().find(y=>y.h.id===holiday.id&&y.year===rec.occurrenceYear);
+ if(!x)return {ok:false,reason:'outside_holiday_window'};
+ const a=availableActivities(x).find(a=>a.id===activityId);
+ if(!a)return {ok:false,reason:'activity_unavailable'};
+ // This compatibility bridge must not turn school or unverifiable social scenes
+ // into claimed participation, or circumvent H3 spending authorization.
+ if(holiday.school||a.teacher)return {ok:false,reason:'school_authorization_required'};
+ if(a.cost&&S.age<18)return {ok:false,reason:'h3_approval_required'};
+ if(a.rel?.target==='friend'||a.crush||a.meet)return {ok:false,reason:'unverified_social_participant'};
+ if(a.family&&!S.people.some(p=>isFamilyPerson(p)&&inHousehold(p)&&occasionSurpriseAvailable6C5(p.id,currentDate(),currentMinute())))return {ok:false,reason:'family_not_present'};
+ // Navigation-only actions do not establish participation; existing People/romance
+ // gift and dating interfaces remain their own authorities.
+ if(a.jump||a.giftTarget||a.scene)return {ok:false,reason:'use_existing_interface'};
+ const before=(S.holidayLog?.[`${holiday.id}-${x.year}`]||[]).length;
+ doHolidayActivity(`${holiday.id}:${activityId}`);
+ const after=(S.holidayLog?.[`${holiday.id}-${x.year}`]||[]).length;
+ if(after!==before+1)return {ok:false,reason:'holiday_action_not_completed'};
+ return {ok:true,holidayId:holiday.id,activityId,occasionId:id,authority:'holidayLog'};
+}
+function occasionReconcileConsequences6C6(rec){
+ const ledger=rec.social6C6;
+ if(!ledger||ledger.consequenceProcessed||!OCCASION6C1_TERMINAL.has(rec.status))return;
+ if(currentDate()<=rec.endDateISO)return; // No premature penalties on the day.
+ ledger.consequenceProcessed=true;
+ for(const commitment of ledger.commitments||[]){
+  if(commitment.status!=='promised')continue;
+  const p=personById(commitment.personId);
+  if(occasionMeaningfulSocial6C6(rec,commitment.personId)){
+   commitment.status='honored';continue;
+  }
+  if(rec.status==='Cancelled'||rec.status==='Declined'||!p||p.movedAway||p.deceased||p.rel<60||p.conflict>=60||!occasionSurpriseAvailable6C5(p.id,rec.dateISO,1080)){
+   commitment.status='excused';continue;
+  }
+  // The only omission penalty is a *player-made promise*, once, bounded,
+  // to a real available person who was close enough to have expectations.
+  p.trust=clamp((p.trust||0)-1);
+  commitment.status='missed';
+  rememberPerson(p,`You had promised to acknowledge ${rec.title}, but did not follow through.`,1);
+ }
+}
+// PHASE 6C.7 — UI, lifecycle notifications and action wiring for the canonical occasions.
+// Presentation-only selections are ephemeral; gameplay state remains in S.occasions6C1.
+let occasionOpen6C7=null;
+const OCC6C7_LABEL={quiet:'Celebrate quietly',small_gathering:'Plan small gathering',family_dinner:'Plan family dinner',cake_prepare:'Prepare a cake',cake_buy:'Buy cake ($25)',decorate:'Decorate ($12)',invitations_prepare:'Prepare invitations',food_select:'Choose food'};
+function occasionNotify6C7(){
+ if(!S?.occasions6C1?.occurrences)return;
+ const today=currentDate();
+ for(const rec of occasionRecords6C1()){
+  const refs=[`${rec.occasionId}:prepare`,`${rec.occasionId}:day`];
+  if(OCCASION6C1_TERMINAL.has(rec.status)||today>rec.endDateISO){for(const ref of refs)resolveNotificationsFor(ref);continue}
+  // Do not backfill expired reminders or historical events during migration.
+  if(today<rec.preparationWindow.opensISO)continue;
+  const ledger=rec.notices6C7||(rec.notices6C7={schemaVersion:1,prepareSent:false,daySent:false});
+  if(today<rec.dateISO&&!ledger.prepareSent){
+   ledger.prepareSent=true;
+   notify('Occasion coming up',`${rec.title} • ${formatDate(rec.dateISO)}. Preparation is available.`,{sourceId:refs[0],sourceType:'occasion',tab:'calendar'});
+  }
+  if(today===rec.dateISO&&!ledger.daySent){
+   ledger.daySent=true;resolveNotificationsFor(refs[0]);
+   notify('Occasion today',`${rec.title} is today. Check your planned activities.`,{sourceId:refs[1],sourceType:'occasion',tab:'calendar'});
+  }
+ }
+}
+function occasionVisible6C7(){
+ const today=currentDate();return occasionRecords6C1().filter(r=>(!OCCASION6C1_TERMINAL.has(r.status)&&r.dateISO>=today&&daysBetween(today,r.dateISO)<=35)||
+ (r.dateISO<=today&&daysBetween(r.dateISO,today)<=3&&(r.status==='Completed'||r.status==='Expired')))
+ .sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||a.occasionId.localeCompare(b.occasionId)).slice(0,9)
+}
+function occasionPersonOptions6C7(filter){return (S.people||[]).filter(p=>p?.id&&!p.deceased&&!p.movedAway&&(!filter||filter(p))).slice(0,65)}
+function occasionOptionsHtml6C7(items,display){return items.map(x=>`<option value="${esc(x.id)}">${esc(display(x))}</option>`).join('')}
+function occasionButton6C7(rec,kind,value,label,gate,extra=''){
+ const valid=gate?.ok===true;
+ return `<button class="small ${valid?'':'ghost'}" data-occ-action="${esc(kind)}" data-occ-id="${esc(rec.occasionId)}" data-occ-value="${esc(value??'')}" ${extra} ${valid?'':`disabled title="${esc(gate?.reason||'Not available')}"`}>${esc(label)}</button>`
+}
+function occasionDetails6C7(rec){
+ const id=rec.occasionId,prep=occasionPreparationGate6C1(id),terminal=OCCASION6C1_TERMINAL.has(rec.status),today=currentDate(),active=today>=rec.dateISO&&today<=rec.endDateISO&&!terminal;
+ const plan=rec.planning6C2,guests=rec.guests6C4,gifts=rec.gifts6C3,social=rec.social6C6;
+ let html=`<div class="occ-detail" data-occ-detail="${esc(id)}"><p class="muted-text">${esc(formatDate(rec.dateISO))} • ${esc(rec.status)} • ${esc(rec.calendarReference?.authority||'Calendar')} source</p>`;
+ if(!terminal){
+  html+=`<div class="occ-group"><b>Preparation & budget</b><small>${prep.ok?'Available until the occasion begins':prep.reason==='preparation_not_open'?`Opens ${formatDate(rec.preparationWindow.opensISO)}`:prep.reason==='preparation_deadline_passed'?'Preparation deadline passed':esc(prep.reason)}</small>`;
+  if(prep.ok){
+   html+=`<div class="occ-controls"><label>Budget ($) <input data-occ-budget type="number" min="0" max="10000000" step="1" value="${Number(plan?.budget||0)}" aria-label="Occasion budget"></label>${occasionButton6C7(rec,'budget','', 'Set budget', {ok:true})}</div>`;
+   for(const [kind,label] of Object.entries(OCC6C7_LABEL))html+=occasionButton6C7(rec,'prepare',kind,label,occasionPlanningGate6C2(id,kind));
+   html+=occasionButton6C7(rec,'venue','Home','Choose Home venue',occasionPlanningGate6C2(id,'venue','Home'));
+   if(plan)html+=occasionButton6C7(rec,'prepare','cancel','Cancel occasion plan',occasionPlanningGate6C2(id,'cancel'));
+  }
+  html+=`<small>Spent $${Number(plan?.actualCost||0)} / $${Number(plan?.budget||0)} budget. ${esc(plan?.venue||'No venue selected')}.</small></div>`;
+  const people=occasionPersonOptions6C7(),inviteable=people.filter(p=>p.id!==rec.celebrantPersonId),inviteOptions=occasionOptionsHtml6C7(inviteable,p=>displayName(p));
+  html+=`<div class="occ-group"><b>Invitations & actual attendance</b><small>RSVP does not mean attended. Schedule and venue gates apply.</small>`;
+  if(inviteable.length&&prep.ok){html+=`<div class="occ-controls"><label>Invite <select data-occ-person>${inviteOptions}</select></label><label>Start <select data-occ-minute><option value="1080">6:00 PM</option><option value="1140">7:00 PM</option><option value="900">3:00 PM</option></select></label>${occasionButton6C7(rec,'invite','','Invite', {ok:true})}</div>`}
+  for(const e of guests?.invitations||[]){const p=personById(e.personId);html+=`<div class="occ-row"><span>${esc(p?displayName(p):'Former contact')} • ${esc(e.status)}${e.attended?' • Present':''}</span>${e.status==='Accepted'&&!e.attended?occasionButton6C7(rec,'attendance',e.personId,'Confirm arrival',occasionAttendanceGate6C4(id,e.personId)):''}</div>`}
+  html+=`</div>`;
+  const eligible=occasionPersonOptions6C7(),owned=(S.inventoryItems||[]).filter(it=>it?.id&&!it.stored&&!it.equipped);
+  html+=`<div class="occ-group"><b>Gifts & wrapping</b><small>Purchase through the existing Store. Only owned items can transfer.</small>`;
+  if(eligible.length&&owned.length&&prep.ok)html+=`<div class="occ-controls"><label>Recipient <select data-occ-gift-person>${occasionOptionsHtml6C7(eligible,p=>displayName(p))}</select></label><label>Owned item <select data-occ-item>${occasionOptionsHtml6C7(owned,it=>it.name||it.key)}</select></label>${occasionButton6C7(rec,'select-gift','','Select gift',{ok:true})}</div>`;
+  for(const entry of gifts?.selected||[]){if((gifts.transfers||[]).some(x=>x.itemId===entry.itemId))continue;const p=personById(entry.personId),it=S.inventoryItems.find(x=>x.id===entry.itemId);if(!p||!it)continue;
+   html+=`<div class="occ-row"><span>${esc(it.name||it.key)} → ${esc(displayName(p))}${it.wrapped?' • Wrapped':''}</span><div class="inline-actions">${occasionButton6C7(rec,'wrap',entry.itemId,'Wrap',it.wrapped?{ok:false,reason:'already_wrapped'}:occasionGiftGate6C3(id,null,'prepare'))}${occasionButton6C7(rec,'give',entry.itemId,'Give',occasionGiftDeliveryGate6C8(id,entry.itemId,p.id))}</div></div>`}
+  for(const e of gifts?.transfers||[])html+=`<small>Gift delivered to ${esc(personById(e.personId)?displayName(personById(e.personId)):'former contact')} • ${esc(e.reaction||'Recorded')}</small>`;
+  html+=`</div>`;
+  const candidates=occasionPersonOptions6C7(p=>occasionValidSocialPerson6C6(rec,p.id));
+  html+=`<div class="occ-group"><b>Traditions & relationships</b>`;
+  if(candidates.length)html+=`<label>Person <select data-occ-social-person>${occasionOptionsHtml6C7(candidates,p=>displayName(p))}</select></label>`;
+  const personId=candidates[0]?.id||null;
+  for(const [kind,label] of [['prepare_card','Prepare handwritten card'],['promise','Promise to acknowledge'],['give_card','Give prepared card'],['acknowledge','Wish / acknowledge'],['share_meal','Share a family meal'],['reflect','Reflect on anniversary']]){
+   const gate=occasionSocialGate6C6(id,kind,kind==='reflect'?null:personId);
+   if((kind==='reflect'&&rec.occasionType.includes('anniversary'))||(kind!=='reflect'&&personId))html+=occasionButton6C7(rec,'social',kind,label,gate);
+  }
+  for(const e of social?.actions||[])html+=`<small>${esc(e.kind.replaceAll('_',' '))} • ${esc(e.dateISO)}</small>`;
+  if(rec.occasionType==='holiday'){
+   const hw=holidayWindow().find(w=>w.h.id===rec.sourceKey);if(hw)for(const a of availableActivities(hw).slice(0,9))html+=occasionButton6C7(rec,'holiday',a.id,a.label,{ok:true});
+  }
+  html+=`</div>`;
+  const sur=rec.surprise6C5;
+  html+=`<div class="occ-group"><b>Surprise celebration</b><small>${esc(sur?.kind==='npc_for_player'?'Someone may have planned something':sur?.status||'No surprise arranged')}</small>`;
+  if(sur?.kind==='player_for_npc'&&sur.status==='secret_planned'){
+   html+=occasionButton6C7(rec,'surprise','reveal','Reveal surprise',occasionSurpriseEventGate6C5(id,'player_for_npc'));
+   html+=occasionButton6C7(rec,'surprise','cancel','Cancel surprise',{ok:true});
+  }else if(sur?.kind==='npc_for_player'&&['secret_planned','discovered_early'].includes(sur.status)){
+   for(const [kind,label] of [['happy','Celebrate happily'],['grateful','Thank the organizer'],['embarrassed','Feel embarrassed'],['overwhelmed','Feel overwhelmed'],['disappointed','Express disappointment']])html+=occasionButton6C7(rec,'surprise',kind,label,occasionSurpriseEventGate6C5(id,'npc_for_player'));
+  }else if(!sur&&rec.occasionType==='birthday'&&rec.celebrantKind==='person')html+=occasionButton6C7(rec,'surprise','plan','Organize a surprise',occasionSurpriseOtherPartyGate6C5(id));
+  html+=`</div>`;
+ }
+ return html+'</div>'
+}
+function occasionSection6C7(kind='home'){
+ const rows=occasionVisible6C7(),title=kind==='calendar'?'Occasions & celebrations':'Upcoming occasions';
+ return `<section class="card wide occasion6c7" data-sub="${kind==='calendar'?'upcoming':'now'}"><div class="section-heading"><div><h3>${title}</h3><p class="muted-text">Plan ahead, invite real people, and keep occasion memories.</p></div><span class="tag">${rows.length}</span></div>${rows.length?rows.map(rec=>{
+  const delta=daysBetween(currentDate(),rec.dateISO),chosen=occasionOpen6C7===rec.occasionId;
+  return `<div class="occ-card"><div class="occ-row"><div><b>${esc(rec.title)}</b><small>${esc(formatDate(rec.dateISO))} • ${delta===0?'Today':delta===1?'Tomorrow':delta>0?`${delta} days remaining`:'Past'} • ${esc(rec.status)}</small></div><button class="small ${chosen?'ghost':''}" data-occ-open="${esc(rec.occasionId)}" aria-expanded="${chosen}">${chosen?'Close':'Details'}</button></div>${chosen?occasionDetails6C7(rec):''}</div>`}).join(''):'<p class="muted-text">No occasions are approaching in the next 35 days.</p>'}</section>`
+}
+function occasionUiClick6C7(b){
+ const d=b.dataset;if(!d.occOpen&&!d.occAction)return false;
+ if(d.occOpen){occasionOpen6C7=occasionOpen6C7===d.occOpen?null:d.occOpen;render();return true}
+ const id=d.occId,rec=occasionRecord6C1(id),root=b.closest('[data-occ-detail]');if(!rec||!root||root.dataset.occDetail!==id)return true;
+ const read=(q)=>root.querySelector(q)?.value||null;
+ let res={ok:false,reason:'unsupported_action'};
+ switch(d.occAction){
+  case 'budget':{const raw=read('[data-occ-budget]');res=occasionPrepare6C2(id,'budget',raw!==null&&raw!==''?Number(raw):NaN);break}
+  case 'venue':res=occasionPrepare6C2(id,'venue',d.occValue);break;
+  case 'prepare':res=occasionPrepare6C2(id,d.occValue);break;
+  case 'invite':res=occasionInvite6C4(id,read('[data-occ-person]'),Number(read('[data-occ-minute]')||1080));break;
+  case 'attendance':res=occasionConfirmAttendance6C4(id,d.occValue);break;
+  case 'select-gift':res=occasionSelectGift6C3(id,read('[data-occ-item]'),read('[data-occ-gift-person]'));break;
+  case 'wrap':res=occasionWrapGift6C3(id,d.occValue);break;
+  case 'give':{const entry=rec.gifts6C3?.selected.find(x=>x.itemId===d.occValue);res=occasionGiveGift6C3(id,d.occValue,entry?.personId||null);break}
+  case 'social':res=occasionSocialAction6C6(id,d.occValue,d.occValue==='reflect'?null:read('[data-occ-social-person]'));break;
+  case 'holiday':res=occasionHolidayAction6C6(id,d.occValue);break;
+  case 'surprise':res=d.occValue==='plan'?occasionPlanSurprise6C5(id):d.occValue==='cancel'?occasionCancelSurprise6C5(id):d.occValue==='reveal'?occasionResolveSurprise6C5(id):occasionResolveSurprise6C5(id,d.occValue);break;
+ }
+ if(res?.ok){if(OCCASION6C1_TERMINAL.has(rec.status))occasionOpen6C7=null;save();toast('Occasion updated.');}
+ else toast(`Cannot do that: ${(res?.reason||'unavailable').replaceAll('_',' ')}.`);
+ render();return true
+}
+// PHASE 6C.8 — QA-only deterministic production-action fuzz runner.
+// Invoked exclusively from the existing Playwright test bridge.
+// Never runs during regular gameplay or persists test metadata.
+function occasionReleaseFuzz6C8(seed=620608,steps=80){
+ let x=(Number(seed)>>>0)||1;
+ const roll=(n)=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)%n};
+ const failures=[],count={};
+ const person=S.people.find(p=>p?.id&&!p.deceased&&!p.movedAway);
+ const cYear=2028,personId=person?.id;
+ const calendarOriginal=JSON.stringify(S.calendar||[]),plansOriginal=JSON.stringify(S.plans||[]);
+ function invariant(step){
+  const occ=occasionState6C1().occurrences,ids=Object.keys(occ),persons=new Set((S.people||[]).map(p=>p.id));
+  if(new Set(ids).size!==ids.length)failures.push(`${step}:duplicate_occurrence_keys`);
+  if(!Number.isFinite(S.money)||S.money<0)failures.push(`${step}:negative_or_invalid_money`);
+  if(JSON.stringify(S.calendar||[])!==calendarOriginal)failures.push(`${step}:unexpected_calendar_mutation`);
+  if(JSON.stringify(S.plans||[])!==plansOriginal)failures.push(`${step}:unexpected_plans_mutation`);
+  for(const [id,r] of Object.entries(occ)){
+   if(r.occasionId!==id||!id.endsWith(':'+r.occurrenceYear))failures.push(`${step}:broken_occurrence_identity`);
+   if(r.celebrantPersonId&&!persons.has(r.celebrantPersonId)&&!OCCASION6C1_TERMINAL.has(r.status))failures.push(`${step}:invalid_celebrant`);
+   if((r.guests6C4?.invitations||[]).length!==new Set((r.guests6C4?.invitations||[]).map(y=>y.personId)).size)failures.push(`${step}:duplicate_rsvp`);
+   for(const a of r.guests6C4?.attendance||[]){const inv=r.guests6C4.invitations.find(y=>y.personId===a.personId);if(!inv||inv.status!=='Accepted'||!inv.attended)failures.push(`${step}:false_attendance`)}
+   const transfers=r.gifts6C3?.transfers||[];
+   if(transfers.length!==new Set(transfers.map(t=>t.itemId)).size)failures.push(`${step}:duplicate_gift_transfer`);
+   for(const t of transfers)if(!persons.has(t.personId)||(S.inventoryItems||[]).some(i=>i.id===t.itemId))failures.push(`${step}:gift_not_transferred`);
+   if(r.surprise6C5?.actualAttendeeIds?.some(pid=>!persons.has(pid)))failures.push(`${step}:fictitious_party_guest`);
+   if(r.planning6C2?.actualCost>r.planning6C2?.budget)failures.push(`${step}:over_budget`);
+  }
+  if((S.inventoryItems||[]).some(i=>Number.isFinite(i.quantity)&&i.quantity<0))failures.push(`${step}:negative_inventory`);
+ }
+ const dateOptions=['2028-03-01','2028-03-07','2028-03-10','2028-03-12','2029-03-01','2029-03-07','2029-03-10','2029-03-12'];
+ let last='';for(let step=0;step<steps;step++){
+  // Keep operation sequences chronological within each annual episode.
+  const date=dateOptions[Math.min(dateOptions.length-1,Math.floor(step*dateOptions.length/steps))];
+  S.clock.dateISO=date;S.clock.minute=600+(roll(3)*120);S.location='Home';
+  try{
+   reconcileOccasions6C1('release-fuzz');
+   const yr=Number(date.slice(0,4)),rid=occasionId6C1('birthday','player',yr),r=occasionRecord6C1(rid);
+   if(!r) {failures.push(`${step}:missing_player_birthday`);continue}
+   const action=roll(17);const k=['budget','quiet','food_select','invitations_prepare','invite','repeat_invite','social','invalid_gift','invalid_attendance','cancel','reconcile','wrong_venue','bad_budget','purchase','gift_select','gift_deliver','age_progress'][action];count[k]=(count[k]||0)+1;
+   let out;
+   switch(k){
+    case 'budget':out=occasionPrepare6C2(rid,'budget',50+roll(5)*50);break;
+    case 'quiet':out=occasionPrepare6C2(rid,'quiet');break;
+    case 'food_select':out=occasionPrepare6C2(rid,'food_select');break;
+    case 'invitations_prepare':out=occasionPrepare6C2(rid,'invitations_prepare');break;
+    case 'invite':out=occasionInvite6C4(rid,personId,1080);break;
+    case 'repeat_invite':out=occasionInvite6C4(rid,personId,1080);break;
+    case 'social':out=occasionSocialAction6C6(rid,'prepare_card',personId);break;
+    case 'invalid_gift':out=occasionGiveGift6C3(rid,'missing-item',personId);break;
+    case 'invalid_attendance':out=occasionConfirmAttendance6C4(rid,personId);break;
+    case 'cancel':out=occasionPrepare6C2(rid,'cancel');break;
+    case 'reconcile':{const cash=S.money,items=JSON.stringify(S.inventoryItems),before=JSON.stringify(r.gifts6C3||null);reconcileOccasions6C1('repeat');if(S.money!==cash||JSON.stringify(S.inventoryItems)!==items||JSON.stringify(r.gifts6C3||null)!==before)failures.push(`${step}:projection_reward`);break}
+    case 'wrong_venue':out=occasionPrepare6C2(rid,'venue','Unverified Venue');break;
+    case 'bad_budget':out=occasionPrepare6C2(rid,'budget',-50);break;
+    case 'purchase':{
+     const beforeCash=S.money,beforeCount=S.inventoryItems.length;
+     // Use the genuine Store/Inventory purchase path, never manufacture an item.
+     buyWithOwnMoney('greetingCard');
+     if(S.inventoryItems.length>beforeCount&&S.money>=beforeCash)failures.push(`${step}:unpaid_store_item`);
+     break;
+    }
+    case 'gift_select':{
+     const item=S.inventoryItems.find(it=>it.key==='greetingCard'&&!it.stored&&!it.equipped
+       &&!Object.values(occasionState6C1().occurrences).some(oc=>oc.gifts6C3?.selected?.some(z=>z.itemId===it.id)));
+     if(item)out=occasionSelectGift6C3(rid,item.id,personId);
+     break;
+    }
+    case 'gift_deliver':{
+     const item=r.gifts6C3?.selected?.find(z=>z.personId===personId&&S.inventoryItems.some(it=>it.id===z.itemId));
+     if(item){const c=S.money;out=occasionGiveGift6C3(rid,item.itemId,personId);if(out.ok&&S.money!==c)failures.push(`${step}:double_charged_delivery`)}
+     break;
+    }
+    case 'age_progress':S.age=[12,16,25,30][roll(4)];break;
+   }
+   if((k==='invalid_gift'||k==='wrong_venue'||k==='bad_budget')&&out?.ok)failures.push(`${step}:invalid_action_accepted_${k}`);
+   invariant(step);last=k;
+  }catch(e){failures.push(`${step}:exception:${String(e?.stack||e).slice(0,130)}`)}
+ }
+ return {steps,seed,failures:failures.slice(0,25),totalFailures:failures.length,counts:count,last,years:Object.keys(occasionState6C1().occurrences).filter(k=>k.startsWith('occ6c1:birthday:player:')).sort()};
+}
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}
@@ -11840,7 +12690,7 @@ window.__LIFE_SIM_TEST__={
  eventChoice:(id,choice)=>resolveEventChoice(id,choice),
  reconcile:()=>{reconcileState('test');render();save()},
  todayWarnings:()=>todayWarnings(),
- call:(name,...args)=>{const f={promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
+ call:(name,...args)=>{const f={migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,occasionGiftDeliveryGate6C8,occasionUiClick6C7,occasionSection6C7,occasionNotify6C7,occasionVisible6C7,occasionSocialAction6C6,occasionSocialGate6C6,occasionHolidayAction6C6,occasionMeaningfulSocial6C6,occasionReconcileConsequences6C6,occasionSurpriseHomeVisit6C5,occasionSurpriseHomeActor6C5,occasionReconcileSurprise6C5,occasionDiscoverSurprise6C5,occasionSurpriseRecord6C5,occasionSurpriseOtherPartyGate6C5,occasionPlanSurprise6C5,occasionNpcSurpriseCandidates6C5,occasionNpcInitiative6C5,occasionSurpriseEventGate6C5,occasionCancelSurprise6C5,occasionResolveSurprise6C5,occasionGuestLedger6C4,occasionGuestGate6C4,occasionInvite6C4,occasionAttendanceGate6C4,occasionConfirmAttendance6C4,occasionGiftLedger6C3,occasionGiftGate6C3,occasionSelectGift6C3,occasionWrapGift6C3,occasionGiveGift6C3,occasionPlan6C2,occasionPlanningGate6C2,occasionPrepare6C2,occasionState6C1,migrateOccasions6C1,reconcileOccasions6C1,occasionDefinitionCatalog6C1,occasionRecords6C1,occasionRecord6C1,occasionPreparationGate6C1,occasionTransition6C1,occasionId6C1,occasionAnnualDate6C1,vacationTick,promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
 };
 
 if(new URLSearchParams(location.search).get('smoke')==='1')setTimeout(()=>{try{$('c-name').value='Smoke Test';initializeNewLife();document.body.dataset.smoke=(!$('game').classList.contains('hidden')&&S)?'pass':'fail'}catch(e){console.error(e);document.body.dataset.smoke='fail';document.body.dataset.smokeError=e.message}},30);

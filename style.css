@@ -324,6 +324,20 @@ body.planner-open .planner-close{display:inline-flex}
 .prom-after-actions-6b6 button{white-space:normal;max-width:100%;min-width:0}
 @media(max-width:560px){.prom-after-6b6{padding:9px}.prom-after-actions-6b6 button{flex:1 1 100%}}
 
+/* Phase 6C.7: compact Occasion cards in existing Home/Calendar sections. */
+.occasion6c7 .occ-card{border:1px solid var(--border, currentColor);border-radius:12px;padding:12px;margin:8px 0;background:var(--card, transparent)}
+.occasion6c7 .occ-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0}
+.occasion6c7 .occ-row small,.occasion6c7 .occ-group small{display:block;color:var(--text-muted, inherit)}
+.occasion6c7 .occ-detail{border-top:1px solid var(--border, currentColor);margin-top:12px;padding-top:8px}
+.occasion6c7 .occ-group{border-top:1px solid var(--border, currentColor);padding:12px 0;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.occasion6c7 .occ-group>b{width:100%;font-size:.93rem}
+.occasion6c7 .occ-group>small{width:100%}
+.occasion6c7 .occ-controls{display:flex;flex-wrap:wrap;gap:7px;align-items:end;width:100%}
+.occasion6c7 label{font-size:.82rem;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.occasion6c7 select,.occasion6c7 input{max-width:175px;min-width:88px;padding:7px;border:1px solid var(--border, currentColor);border-radius:8px;background:var(--card, transparent);color:inherit}
+.occasion6c7 button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:560px){.occasion6c7 .occ-row,.occasion6c7 .occ-controls{align-items:stretch}.occasion6c7 .occ-controls label{width:100%}.occasion6c7 select,.occasion6c7 input{max-width:100%}}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}
