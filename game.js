@@ -3689,15 +3689,15 @@ function advancedStudySelectedSubject5A4(){
  if(!subjects.includes(st.selectedSubject))st.selectedSubject=subjects.find(s=>ownedWorkbooks5A1(s,currentWorkbookGrade5A1()).length)||subjects[0];return st.selectedSubject
 }
 function workbookLevelRowsHtml5A4(subject){
- const g=currentWorkbookGrade5A1();if(g==null)return '';return [1,2,3].map(level=>{const itemId=workbookKey5A1(subject,g,level),d=workbookDefinition5A1(itemId),state=workbookDisplayState5A2(itemId),owned=workbookOwned5A1(itemId);return `<div class="row"><span><b>Level ${esc(d?.workbookLevel||WORKBOOK_LEVELS_5A1[level-1])}</b><br><small>${owned?'Owned':'Not owned'} • ${esc(state.label)}</small></span>${state.progress!=null&&state.status!=='not_owned'?`<span>${Math.round(state.progress)}%</span>`:''}</div>`}).join('')
+ const g=currentWorkbookGrade5A1();if(g==null)return '';return [1,2,3].map(level=>{const itemId=workbookKey5A1(subject,g,level),d=workbookDefinition5A1(itemId),state=workbookDisplayState5A2(itemId),owned=workbookOwned5A1(itemId);return `<div class="row"><span><b>Level ${esc(d?.workbookLevel||WORKBOOK_LEVELS_5A1[level-1])}</b><br><small>${owned?`Owned · ${esc(state.label)}`:'Not owned'}</small></span>${state.progress!=null&&state.status!=='not_owned'?`<span>${Math.round(state.progress)}%</span>`:''}</div>`}).join('')
 }
 function advancedStudyPanel5A4(explicitSubject=null){
  if(!S.school||!needsFormalSchool())return '<p class="muted-text">Advanced Study becomes available with formal school subjects and owned workbooks.</p>';
  const subjects=(S.school.subjects||[]).map(x=>x.name).filter(x=>WORKBOOK_SUBJECT_CODES_5A1[x]),selected=explicitSubject?(subjects.includes(explicitSubject)?explicitSubject:null):advancedStudySelectedSubject5A4();if(!selected)return '<p class="muted-text">No workbook-supported subjects are available for this grade.</p>';
  const grade=currentWorkbookGrade5A1(),candidate=workbookStudyCandidate5A2(selected,grade),gate=advancedStudySessionGate5A3(selected),recommend=workbookRecommendation5A4(selected),possible=workbookTeacherRecommendationCandidate5A4(selected),study=ensureWorkbookIntegration5A4().subjectStudy?.[selected],breakNote=typeof isSchoolBreak==='function'&&isSchoolBreak()?'<small class="muted-text">School break • workbook study is optional self-study, not mandatory homework.</small>':'';
- const focus=candidate?workbookDefinition5A1(candidate.key):null,status=gate.ok?`Available today • ${gate.minutes} min`:gate.reason;
+ const focus=candidate?workbookDefinition5A1(candidate.key):null,status=gate.ok?`Available today • ${gate.minutes} min`:(candidate?(gate.reason||"Study unavailable"):"Level I required");
  const recItem=recommend?.itemId?workbookDefinition5A1(recommend.itemId):null;
- return `<div class="advanced-study-5a4"><div class="section-heading"><div>${explicitSubject?`<b>${esc(selected)} · Extra Credit</b>`:`<label><b>Subject</b> <select data-advanced-study-subject5a4="1">${subjects.map(s=>`<option value="${esc(s)}" ${s===selected?'selected':''}>${esc(s)}</option>`).join('')}</select></label>`}<p class="muted-text">Grade ${grade} • one progression session per game day.</p></div><span class="tag">${esc(status)}</span></div>${breakNote}<div class="workbook-focus">${focus?`<b>${esc(focus.name)}</b><small>Progress ${Math.round(workbookProgress5A2(focus.workbookItemId)*10)/10}% • Level difficulty ×${workbookLevelDifficulty5A2(focus.workbookItemId).toFixed(2)}</small><div class="progress"><i style="width:${clamp(workbookProgress5A2(focus.workbookItemId))}%"></i></div><div class="inline-actions"><button class="small primary" data-workbook-study5a4="${esc(selected)}" ${gate.ok?'':'disabled'}>Study</button></div>`:`<b>No usable owned workbook for ${esc(selected)}</b><small>${esc(workbookStudyReason5A2(selected,grade))}</small><div class="inline-actions"><button class="small ghost" data-tab-jump="business">Open Shop</button></div>`}</div><div class="mini-meta">${study?`<span>Voluntary study: ${study.sessions} session${study.sessions===1?'':'s'} across ${study.days?.length||0} day${study.days?.length===1?'':'s'}</span>`:''}${workbookExamSupport5A4(selected).bonus>0?`<span>Exam readiness support: +${workbookExamSupport5A4(selected).bonus.toFixed(1)} max points</span>`:''}</div><div class="workbook-levels-5a4">${workbookLevelRowsHtml5A4(selected)}</div>${recItem?`<div class="stage-note"><b>Teacher recommendation • ${esc(recommend.teacher)}</b><small>${esc(recItem.name)} • ${esc(recommend.reason||'')}</small><div class="inline-actions">${!workbookOwned5A1(recommend.itemId)&&S.age<18?`<button class="small" data-workbook-support5a4="${esc(recommend.itemId)}">Ask caregiver</button>`:''}<button class="small ghost" data-tab-jump="business">View in Shop</button></div></div>`:possible?`<div class="inline-actions"><button class="small ghost" data-workbook-recommend5a4="${esc(selected)}">Ask teacher for workbook recommendation</button></div>`:''}</div>`
+ return `<div class="advanced-study-5a4"><div class="section-heading"><div>${explicitSubject?`<b>${esc(selected)} · Extra Credit</b>`:`<label><b>Subject</b> <select data-advanced-study-subject5a4="1">${subjects.map(s=>`<option value="${esc(s)}" ${s===selected?'selected':''}>${esc(s)}</option>`).join('')}</select></label>`}<p class="muted-text">Grade ${grade} • one progression session per game day.</p></div>${status?`<span class="tag">${esc(status)}</span>`:''}</div>${breakNote}<div class="workbook-focus">${focus?`<b>${esc(focus.name)}</b><small>Progress ${Math.round(workbookProgress5A2(focus.workbookItemId)*10)/10}% • Level difficulty ×${workbookLevelDifficulty5A2(focus.workbookItemId).toFixed(2)}</small><div class="progress"><i style="width:${clamp(workbookProgress5A2(focus.workbookItemId))}%"></i></div><div class="inline-actions"><button class="small primary" data-workbook-study5a4="${esc(selected)}" ${gate.ok?'':'disabled'}>Study</button></div>`:`<b>Level I workbook required</b><small>${esc(workbookStudyReason5A2(selected,grade))}</small><div class="inline-actions"><button class="small ghost" data-tab-jump="business">Open Shop</button></div>`}</div><div class="mini-meta">${study?`<span>Voluntary study: ${study.sessions} session${study.sessions===1?'':'s'} across ${study.days?.length||0} day${study.days?.length===1?'':'s'}</span>`:''}${workbookExamSupport5A4(selected).bonus>0?`<span>Exam readiness support: +${workbookExamSupport5A4(selected).bonus.toFixed(1)} max points</span>`:''}</div><div class="workbook-levels-5a4">${workbookLevelRowsHtml5A4(selected)}</div>${recItem?`<div class="stage-note"><b>Teacher recommendation • ${esc(recommend.teacher)}</b><small>${esc(recItem.name)} • ${esc(recommend.reason||'')}</small><div class="inline-actions">${!workbookOwned5A1(recommend.itemId)&&S.age<18?`<button class="small" data-workbook-support5a4="${esc(recommend.itemId)}">Ask caregiver</button>`:''}<button class="small ghost" data-tab-jump="business">View in Shop</button></div></div>`:possible?`<div class="inline-actions"><button class="small ghost" data-workbook-recommend5a4="${esc(selected)}">Ask teacher for workbook recommendation</button></div>`:''}</div>`
 }
 function handlePanelChange5A4(e){const s=e?.target?.closest?.('[data-advanced-study-subject5a4]');if(!s||!S)return false;ensureWorkbookIntegration5A4().selectedSubject=s.value;save();render();return true}
 function workbook5a4Click(b){
@@ -8527,7 +8527,7 @@ function romanceMenu(personId){
  if(L.mutual&&i>=LOVE_IDX.crushMutual){opts.push(['holdHands','Hold hands'],['hug','Hug'])}if(i>=LOVE_IDX.goingOut){opts.push(['cheekKiss','Cheek kiss']);if(!hasMs(p,'firstKiss'))opts.push(['firstKiss','First kiss']);else opts.push(['kiss','Kiss']);const last=(L.dateHistory||[]).at(-1);if(last?.dateISO===currentDate())opts.push(['goodbyeKiss','Goodbye kiss']);opts.push(['date','Plan a date'])}
  if(['goingOut','exclusive'].includes(L.stage))opts.push(['official','Talk about becoming official'],['endDatingH4','Stop seeing each other']);if(official){opts.push(['support','Emotional support'],['talkRel','Talk about the relationship'],['future','Discuss the future']);if((p.conflict||0)>=8)opts.push(['resolve','Resolve a disagreement']);if(adultRomance(p))opts.push(['intimate','Private intimate evening']);opts.push(['breakUp','Break up'])}
  if(romanceSneakOption3B3(p,'meet'))opts.push(['sneakMeet','Sneak out to meet them']);if(romanceSneakOption3B3(p,'over'))opts.push(['sneakOver','Sneak them in to watch a movie']);
- const ladder=loveLadderHtmlH4(p);openModal(`${displayName(p)} • ${esc(romanceStageLabel3B3(p))}`,`${ladder}<p class="muted-text">${S.age<18?'Teen romance stays age-appropriate.':'Affection and intimacy require current consent every time.'} Friendship remains separate from this romance state.</p>${official&&L.relationshipStartDate?`<p class="muted-text">Official since ${formatDate(L.relationshipStartDate)}.</p>`:''}<div class="modal-action-grid">${opts.map(([id,l])=>`<button data-r3-action="${id}" data-person-id="${p.id}">${esc(l)}</button>`).join('')}${romanceH5GroupHtml(p,opts,isEstablishedPartner(p))}<button class="ghost" data-close-modal="1">Not now</button></div>`)
+ const ladder=loveLadderHtmlH4(p);openModal(`${displayName(p)} • ${esc(romanceStageLabel3B3(p))}`,romanceH14MenuMarkup(p,opts,{official,ladder}));
 }
 function romance3B3Click(b){const d=b.dataset;if(d.r3Break){const p=personById(d.personId);breakup3B3(p,d.r3Break);save();render();return true}if(d.h5Action){const p=personById(d.personId);if(p)romanceH5Activity(p,d.h5Action);save();render();return true}if(!d.r3Action)return false;const p=personById(d.personId),k=d.r3Action;if(!p)return true;
  if(['talkingH4','exclusiveH4'].includes(k)){romanceStageConversationH4(p,k);save();render();return true}if(k==='endDatingH4'){openModal('Stop seeing each other?',`<p class="muted-text">This ends dating, not your shared friendship history. Your memories and boundaries remain.</p><button data-r3-action="endDatingH4Confirm" data-person-id="${p.id}">Confirm</button><button class="ghost" data-close-modal="1">Cancel</button>`);return true}if(k==='endDatingH4Confirm'){if(['goingOut','exclusive'].includes(ensureLove(p).stage)){endRelationship(p,'you stopped seeing each other');log('Stopped dating',`You and ${firstName(p)} stop seeing each other. Your shared memories stay in your history.`)}closeChoiceModal();save();render();return true}if(k==='askOut'){romanceAskOut3B2(p);return true}if(k==='date'){openRomanceDatePlanner3B2(p.id,true);return true}if(k==='compliment'){romanceCompliment3B3(p)}else if(k==='flirt'){romanceAffection3B3(p,'flirt')}else if(k==='confess'){romanceConfess3B3(p)}else if(ROMANCE_AFFECTION[k])romanceAffection3B3(p,k);else if(k==='official')romanceOfficialConversation3B3(p,'player');else if(['support','talkRel','resolve','future'].includes(k))romancePartnerInteraction3B3(p,k);else if(k==='intimate')adultIntimacy3B3(p);else if(k==='breakUp'){openBreakup3B3(p);return true}else if(k==='reconcile')reconcileRequest3B3(p);else if(k==='sneakMeet'){closeChoiceModal();sneakOut(p.id,'meet')}else if(k==='sneakOver'){closeChoiceModal();sneakOut(p.id,'over')}save();render();return true}
@@ -16706,6 +16706,166 @@ importSaveFile=function(file){if(!file||typeof file.text!=='function')return Pro
   catch(error){console.error('Import failed:',error);toast('Invalid save file. Your current life is preserved.');return false}
  }).catch(error=>{console.error('File read failed:',error);toast('Could not read that save file.');return false});
 };
+// Post-H13 focused UI / lunch-social repair. Original H10/H12/Phase4D/5A/5B engines remain authoritative.
+// One optional new H14 post-meal cafeteria conversation receipt per day, never a second meal.
+function h14SummerOpen(){return !!S?.school&&typeof needsFormalSchool==='function'&&needsFormalSchool()&&typeof academicInfo==='function'&&academicInfo(currentDate()).phase==='summer';}
+function h14LunchChatGate(personId){
+ const g=h126PersonGate(personId);if(!g.ok)return g;
+ if(!g.ev.ateLunch||!g.rec.lunchReceiptH125)return {ok:false,reason:'Finish an actual cafeteria or packed lunch before sitting and chatting.'};
+ if(g.ctx.lunch.end-currentMinute()<8)return {ok:false,reason:'You need at least eight minutes of lunch break remaining.'};
+ if(g.rec.postMealChatH14?.accepted)return {ok:false,reason:'You have already spent after-lunch time with a classmate today.'};
+ const attempts=Array.isArray(g.rec.postMealAttemptsH14)?g.rec.postMealAttemptsH14:[];
+ if(attempts.some(r=>r.personId===personId))return {ok:false,reason:'You already asked this classmate today.'};
+ if(attempts.length>=3)return {ok:false,reason:'You have already asked three classmates today.'};
+ return g;
+}
+function h14LunchChat(personId){
+ const g=h14LunchChatGate(personId);if(!g.ok){toast(g.reason);return {ok:false,reason:g.reason};}
+ const yes=h126DeterministicConsent(g.person,'after_lunch_chat');
+ const minutes=yes?8:2;
+ const receipt={schemaVersion:1,dateISO:currentDate(),schoolId:g.room.schoolId,roomId:g.room.roomId,personId:g.person.id,minute:currentMinute(),accepted:yes,minutes};
+ if(!Array.isArray(g.rec.postMealAttemptsH14))g.rec.postMealAttemptsH14=[];
+ g.rec.postMealAttemptsH14.push(receipt);
+ if(yes){
+  g.rec.postMealChatH14=receipt;
+  g.person.rel=clamp((g.person.rel||0)+2);g.person.trust=clamp((g.person.trust||0)+1);
+  S.needs.social=clamp((S.needs.social||0)+7);
+  rememberPerson(g.person,'You sat and chatted together in the school cafeteria after lunch.',1);
+ }
+ advanceTime(minutes,{silent:true});
+ log(yes?'After-lunch conversation':'Classmate has other plans',yes?`You spend eight minutes chatting with ${displayName(g.person)} at your school cafeteria.`:`${displayName(g.person)} politely declines. You respect their choice.`);
+ return {ok:true,accepted:yes,receipt};
+}
+function h14LunchRoomHtml(room){
+ const sid=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10();
+ if(!room||room.type!=='food'||room.schoolId!==sid||here?.roomId!==room.roomId||S.location!=='School')return '';
+ const base=h126BaseGate(),rec=schoolFacilityDay4C3(),ev=sessionEvent();
+ if(!base.ok)return `<p class="muted-text h14-lunch-note">Classmate conversations: ${esc(base.reason)}</p>`;
+ const after=!!ev?.ateLunch,done=rec.postMealChatH14?.accepted,hasCompanion=rec.lunchSocialH126?.status==='accepted';
+ const candidates=(S.people||[]).filter(p=>p?.npcId&&!isFamilyPerson(p)&&h126PersonGate(p.id).ok).slice(0,16);
+ const chat=candidates.map(p=>{
+  const gate=after?h14LunchChatGate(p.id):h126InviteGate(p.id);
+  return `<button type="button" class="small ghost" data-h14-lunch-person="${esc(p.id)}" ${gate.ok?'':`disabled aria-disabled="true" title="${esc(gate.reason||'Unavailable') }"`}>${esc(displayName(p))}</button>`;
+ }).join('');
+ const summary=after?'Sit and chat with classmates':'Invite a classmate to lunch';
+ return `<details class="h14-lunch" ${hasCompanion||done?'open':''}><summary>${summary}</summary>
+ <p class="muted-text">${after?'You have eaten. Invite a schoolmate to sit and talk before lunch break ends. They can decline; one successful conversation per day.':'Choose a real classmate first. If they accept, eat your own paid or packed lunch together.'}</p>
+ ${done?`<p class="h14-lunch-status" role="status">You already chatted with ${esc(displayName(personById(rec.postMealChatH14.personId)))} today.</p>`:
+ hasCompanion?`<p class="h14-lunch-status">${esc(displayName(personById(rec.lunchSocialH126.personId)))} accepted your lunch invitation. Eat your meal to join them.</p>`:
+ `<div class="h14-classmates">${chat||'<span class="muted-text">No available enrolled classmates are known here yet.</span>'}</div>`}
+ <small class="muted-text">You must be in this Cafeteria during the scheduled lunch period. Classmates decide for themselves.</small></details>`;
+}
+// H10's no-person legacy button cannot trigger H12.6's person-specific consent handler.
+// Remove just the obsolete CTA from room actions, and render one functional selector.
+const h14OldRoomActions=schoolRoomActionsH104;
+schoolRoomActionsH104=function(room){return h14OldRoomActions(room).filter(([kind])=>kind!=='social');};
+const h14OldRoomAction=schoolRoomActionH104;
+schoolRoomActionH104=function(roomId,action){if(action==='social')return {ok:false,reason:'Choose a classmate in the cafeteria social panel instead.'};return h14OldRoomAction(roomId,action);};
+const h14OldRoomHtml=schoolRoomActionHtmlH104;
+schoolRoomActionHtmlH104=function(room){
+ const html=h14OldRoomHtml(room),social=h14LunchRoomHtml(room);if(!social)return html;
+ const host=document.createElement('div');host.innerHTML=html;
+ const actions=host.querySelector('.h104-actions')||host.querySelector('.h104-room-activities');
+ if(actions){const node=document.createElement('div');node.innerHTML=social;if(node.firstElementChild)actions.append(node.firstElementChild);}
+ return host.innerHTML;
+};
+// Correct Education ownership: academic tasks, school activities, outside schools and summer.
+PANEL_TABS.school=[['today','Today'],['subjects','Subjects & Tests'],['attendance','Attendance'],['activities','School Activities'],['others','Other Schools'],['summer','Summer Programs'],['university','University']];
+SECTION_RULES.school.unshift([/^Other Schools/i,'others'],[/^Summer Programs/i,'summer']);
+const h14OriginalBadges=subTabBadges;
+subTabBadges=function(panel){const b=h14OriginalBadges(panel);if(panel==='school'){
+ if(b.exams){b.subjects=(Number(b.subjects)||0)+Number(b.exams);delete b.exams;}
+ }return b;};
+const h14OriginalSubTabs=applySubTabs;
+applySubTabs=function(){if(active==='school'&&UI.subTab.school==='exams')UI.subTab.school='subjects';return h14OriginalSubTabs();};
+const h14OriginalSwitchTab=switchSubTab;
+switchSubTab=function(id){return h14OriginalSwitchTab(active==='school'&&id==='exams'?'subjects':id);};
+const h14OldPlacesPanel=placesPanel;
+placesPanel=function(){const html=h14OldPlacesPanel();
+ const div=document.createElement('div');div.innerHTML=html;
+ [...div.querySelectorAll('.dashboard > section')].filter(s=>/Summer programs & practice/.test(s.querySelector('h3')?.textContent||'')).forEach(s=>{
+  if(h14SummerOpen())s.remove();else s.querySelector('h3').textContent='Activities & practice';
+ });
+ return div.innerHTML;
+};
+const h14OldSchoolPanel=schoolPanel;
+schoolPanel=function(){
+ const html=h14OldSchoolPanel();if(!S?.school||S.school.grade==='Kindergarten'||S.location==='School'&&locationSchoolId4C1()!==playerCurrentSchoolId4A2?.())return html;
+ const root=document.createElement('div');root.innerHTML=html;const dash=root.querySelector('.dashboard');if(!dash)return html;
+ const sections=[...dash.children].filter(e=>e.tagName==='SECTION');
+ const find=heading=>sections.find(s=>(s.querySelector('h3')?.textContent||'').trim()===heading);
+ // Preserve canonical exam cards and take/cheat/makeup wiring, place alongside subjects.
+ const subj=find('Subjects, teachers & homework'),tests=find('Assessments');
+ if(subj&&tests){
+  tests.remove();const title=tests.querySelector(':scope > h3');if(title)title.remove();
+  const due=(S.exams||[]).filter(e=>examIsOpen(e)&&e.dateISO>=currentDate());
+  const imminent=due.some(e=>daysBetween(currentDate(),e.dateISO)<=3);
+  const details=document.createElement('details');details.className='h14-assessment-fold';if(imminent)details.open=true;
+  details.innerHTML=`<summary>Assessments & tests <small>${due.length} upcoming · ${imminent?'Action needed soon':'View schedule and results'}</small></summary><div class="h14-assessment-content"></div>`;
+  details.querySelector('.h14-assessment-content').append(...tests.childNodes);
+  const heading=subj.querySelector(':scope > h3');if(heading)heading.after(details);else subj.prepend(details);
+ }
+ // Leadership belongs to School Activities, not the unrelated Today route.
+ const lead=find('School leadership & recognition'),activities=dash.querySelector('.education95-school-activities');
+ if(lead&&activities){
+  lead.remove();const nav=activities.querySelector('.education95-folders'),content=activities.querySelector('.education95-folder-content');
+  if(nav&&content){
+   const selected=!!UI.h14Leadership;
+   const button=document.createElement('button');button.className=selected?'primary':'ghost';button.type='button';button.dataset.h14Leadership='1';button.setAttribute('aria-pressed',String(selected));button.textContent='Leadership';nav.append(button);
+   if(selected){nav.querySelectorAll('[data-edu95-folder]').forEach(x=>{x.className='ghost';x.setAttribute('aria-pressed','false');});content.replaceChildren(lead);content.dataset.edu95Content='leadership';}
+  }
+ }
+ // Replace double/misplaced partner event cards with a dedicated cross-school space.
+ dash.querySelectorAll('[data-h3-section],.education95-visitors').forEach(n=>n.remove());
+ const others=document.createElement('section');others.className='card wide h14-other-schools';others.dataset.sub='others';
+ const invitations=schoolGuestInvitationHtmlH3(),publicEvents=h9PublicHtml();
+ others.innerHTML=`<h3>Other Schools</h3><p class="muted-text">Partner's school invitations and public events at other campuses. Visitor approval, RSVP and tickets still apply.</p>
+ <details class="h14-other-folder" ${invitations?'open':''}><summary>Partner's School Events</summary>${invitations||'<p class="muted-text">Partner invitations will appear when you know their school and are eligible to attend.</p>'}</details>
+ <details class="h14-other-folder"><summary>Public School Events</summary>${publicEvents||'<p class="muted-text">No public listings available.</p>'}</details>`;
+ dash.append(others);
+ // Display programs under Education only in the real academic summer, not on every weekend.
+ if(h14SummerOpen()){
+  const summer=document.createElement('section');summer.className='card wide h14-summer';summer.dataset.sub='summer';
+  summer.innerHTML=`<h3>Summer Programs</h3><p class="muted-text">Summer break programs, practice and eligible seasonal work. Scheduling, permission and cost stay unchanged.</p>${programsHtml()}`;
+  dash.append(summer);
+ }
+ return dash.outerHTML;
+};
+const h14PriorClick=handlePanelClick;
+handlePanelClick=function(e){
+ const button=e?.target?.closest?.('button');if(!button)return h14PriorClick(e);
+ if(button.dataset.h14LunchPerson){
+  const id=button.dataset.h14LunchPerson,ev=sessionEvent(),result=ev?.ateLunch?h14LunchChat(id):h126Invite(id);
+  if(!result?.ok&&result?.reason)toast(result.reason);save();render();return;
+ }
+ if(button.dataset.h14Leadership){UI.h14Leadership=true;UI.subTab.school='activities';saveUI();render();return;}
+ if(button.dataset.edu95Folder){UI.h14Leadership=false;saveUI();}
+ return h14PriorClick(e);
+};
+
+// One coherent Interact dialog: always-visible metrics + concise actions + optional disclosures.
+// Reuses every H3/H4/H5 existing action ID, handler, consent and date planner.
+function romanceH14MenuMarkup(p,opts,{official,ladder}){
+ const L=ensureLove(p),pane=document.createElement('div');pane.innerHTML=ladder;
+ const metrics=pane.querySelector('.h4-metric-grid')?.outerHTML||'';
+ pane.querySelector('.h4-metric-grid')?.remove();
+ const stages=pane.innerHTML;
+ const groups={everyday:[],conversations:[],decisions:[]};
+ const everyday=new Set(['compliment','flirt','holdHands','hug','cheekKiss','firstKiss','kiss','goodbyeKiss','date','askOut','support']);
+ const decisions=new Set(['breakUp','endDatingH4']);
+ for(const a of opts){if(decisions.has(a[0]))groups.decisions.push(a);else if(everyday.has(a[0]))groups.everyday.push(a);else groups.conversations.push(a);}
+ const buttons=list=>list.map(([id,label])=>`<button type="button" data-r3-action="${esc(id)}" data-person-id="${esc(p.id)}">${esc(label)}</button>`).join('');
+ return `<div class="h14-interact">
+  <header class="h14-interact-summary"><b>${esc(romanceDisplayLabelH4(p))}</b>${official&&L.relationshipStartDate?`<small>Official since ${esc(formatDate(L.relationshipStartDate))}</small>`:''}<p class="muted-text">${S.age<18?'Age-appropriate, mutual affection.':'Affection and intimacy always require mutual consent.'} Friendship and romance grow separately.</p></header>
+  ${metrics}
+  <details class="h14-stage-tracker"><summary>Relationship stages · View progress</summary>${stages}</details>
+  ${groups.everyday.length?`<section class="h14-interact-section"><h3>Everyday connection</h3><div class="h14-interact-actions">${buttons(groups.everyday)}</div></section>`:''}
+  ${groups.conversations.length?`<section class="h14-interact-section"><h3>Conversations & plans</h3><div class="h14-interact-actions">${buttons(groups.conversations)}</div></section>`:''}
+  ${official?`<section class="h14-interact-section"><h3>More things to do together</h3><p class="muted-text">Activities need a real shared location or a verified communication channel. Unavailable actions explain their requirements.</p><div class="h14-interact-more">${romanceH5GroupHtml(p,opts,isEstablishedPartner(p)).replace(/<details class="h5-romance-group" open>/g,'<details class="h5-romance-group">')}</div></section>`:''}
+  ${groups.decisions.length?`<details class="h14-interact-decisions"><summary>Relationship decisions</summary><p class="muted-text">Important decisions change relationship status. Your shared memories remain.</p><div class="h14-interact-actions">${buttons(groups.decisions)}</div></details>`:''}
+  <div class="h14-interact-footer"><button type="button" class="ghost" data-close-modal="1">Close interaction</button></div>
+ </div>`;
+}
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}

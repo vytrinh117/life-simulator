@@ -556,6 +556,71 @@ body.planner-open .planner-close{display:inline-flex}
 .school-public-h9 .mini-meta>button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .school-public-h9 .session-card{min-width:0}
 
+/* Post-H13 cafeteria, Education information architecture and Interact UI repair. */
+.h14-lunch{width:100%;max-width:100%;min-width:0;margin:.55rem 0;padding:.75rem .9rem;border:1px solid var(--line);border-radius:12px;background:var(--card,transparent)}
+.h14-lunch>summary,.h14-assessment-fold>summary,.h14-other-folder>summary,.h14-stage-tracker>summary,.h14-interact-decisions>summary{cursor:pointer;font-weight:750;line-height:1.45;overflow-wrap:anywhere}
+.h14-lunch .muted-text{margin:.6rem 0;overflow-wrap:anywhere;line-height:1.5}
+.h14-lunch-status{padding:.6rem .8rem;border:1px solid var(--line);border-radius:9px;overflow-wrap:anywhere}
+.h14-classmates{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:.45rem;margin:.8rem 0}
+.h14-classmates button{white-space:normal;min-width:0;text-align:left;overflow-wrap:anywhere}
+.h14-lunch-note{font-size:.83rem;overflow-wrap:anywhere}
+.h14-assessment-fold{margin-top:1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;min-width:0}
+.h14-assessment-fold>summary small{display:inline-block;margin-left:.4rem;opacity:.7;font-size:.82em;font-weight:450;white-space:normal}
+.h14-assessment-content{min-width:0;padding-top:.75rem;overflow-wrap:anywhere}
+.h14-assessment-content .exam-row{flex-wrap:wrap;min-width:0}
+.h14-other-folder{margin:.75rem 0;border:1px solid var(--line);border-radius:12px;padding:.85rem;min-width:0}
+.h14-other-folder>summary{padding:.2rem 0}
+.h14-other-folder .card{box-shadow:none;border:0;background:transparent;margin-top:.7rem;padding:.5rem 0;min-width:0}
+.h14-other-folder .holiday-acts{display:flex;flex-wrap:wrap;gap:.4rem}
+.h14-other-folder button{white-space:normal;overflow-wrap:anywhere}
+.h14-summer .card{box-shadow:none;border:0;background:transparent;padding:.5rem 0;min-width:0}
+.education95-school-activities .education95-folders button{flex:1 1 7rem;min-width:0}
+.education95-folder-content>.card{background:transparent;border:0;box-shadow:none;padding:.45rem 0;min-width:0}
+/* Workbook label + status used to collide inside half-width subject cards. */
+.education95-extra,.education95-extra-body,.education95-extra .advanced-study-5a4,.education95-extra .workbook-focus,.education95-extra .workbook-levels-5a4{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.education95-extra>summary{line-height:1.5}
+.education95-extra>summary small{display:inline-block;margin:0 .1rem;white-space:normal}
+.education95-extra .workbook-focus{display:flex;flex-direction:column;align-items:stretch;gap:.4rem}
+.education95-extra .workbook-focus>b,.education95-extra .workbook-focus>small{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.education95-extra .workbook-focus>.inline-actions{align-self:stretch;justify-content:flex-start}
+.education95-extra .section-heading>.tag{display:block;flex:0 1 100%;max-width:100%;width:fit-content;white-space:normal;line-height:1.4;overflow-wrap:anywhere}
+.education95-extra .mini-meta{display:flex;flex-wrap:wrap;gap:.3rem;min-width:0}
+.education95-extra .mini-meta>span{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.education95-extra .workbook-levels-5a4 .row{align-items:flex-start;gap:.5rem;min-width:0}
+.education95-extra .workbook-levels-5a4 .row>span{min-width:0;overflow-wrap:anywhere}
+.education95-extra .inline-actions button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere}
+/* People > Interact: no huge two-column break-up tile; all actions retained. */
+#choice-content:has(.h14-interact){min-width:0}
+.h14-interact{display:grid;gap:.9rem;min-width:0}
+.h14-interact-summary{padding-right:1.1rem;min-width:0}
+.h14-interact-summary>b{display:block;font-size:1.06rem;overflow-wrap:anywhere}
+.h14-interact-summary>small{display:block;color:var(--muted);margin-top:.25rem}
+.h14-interact-summary>p{margin:.5rem 0 0;line-height:1.5}
+.h14-interact .h4-metric-grid{margin:0;gap:.6rem;grid-template-columns:repeat(3,minmax(0,1fr))}
+.h14-stage-tracker,.h14-interact-decisions{padding:.7rem .85rem;border:1px solid var(--line);border-radius:10px;min-width:0}
+.h14-stage-tracker .h4-love-panel{padding:.8rem 0 .1rem;min-width:0}
+.h14-stage-tracker .h4-current{display:none}
+.h14-stage-tracker .h4-note{font-size:.8rem;margin:.5rem 0 0}
+.h14-interact-section{min-width:0}
+.h14-interact-section>h3{font-size:.92rem;margin:0 0 .55rem;line-height:1.45}
+.h14-interact-section>p{margin:.1rem 0 .65rem;line-height:1.5;font-size:.82rem}
+.h14-interact-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;min-width:0}
+.h14-interact-actions button{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;padding:.65rem .75rem;min-height:2.75rem}
+.h14-interact-more{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;min-width:0}
+.h14-interact-more>.h5-romance-group{margin:0;padding:.65rem .75rem;border:1px solid var(--line);border-radius:10px;min-width:0;width:100%;align-self:start}
+.h14-interact-more .h5-romance-group .modal-action-grid{display:grid;grid-template-columns:1fr;gap:.42rem;margin:.5rem 0 .1rem;min-width:0}
+.h14-interact-more .h5-romance-group button{display:block;width:100%;min-width:0;text-align:left;padding:.6rem .65rem;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.h14-interact-more .h5-romance-group button[disabled]{opacity:.65}
+.h14-interact-more .h5-romance-group .h13-activity-reason{font-size:.73rem;line-height:1.35;overflow-wrap:anywhere;max-width:100%;margin:.25rem 0 0}
+.h14-interact-decisions[open]>.h14-interact-actions{margin-top:.6rem}
+.h14-interact-decisions p{font-size:.82rem;line-height:1.5}
+.h14-interact-decisions button{background:transparent;border:1px solid var(--line)}
+.h14-interact-footer{display:flex;justify-content:flex-end}
+.h14-interact-footer button{width:auto;min-width:8rem}
+.h14-interact :is(summary,button):focus-visible,.h14-classmates button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:760px){.h14-interact .h4-metric-grid{grid-template-columns:1fr}.h14-interact-more{grid-template-columns:1fr}}
+@media(max-width:520px){.h14-interact-actions{grid-template-columns:1fr}.h14-other-folder{padding:.6rem}.h14-assessment-fold{padding:.65rem}.education95-extra{padding:.55rem}.h14-interact-footer button{width:100%}}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}
