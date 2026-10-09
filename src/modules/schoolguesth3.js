@@ -51,7 +51,7 @@ function schoolGuestApplyH3(personId){
  const policy=schoolGuestPolicyH3(ev.schoolId,'prom',personAge(p));if(!policy.ok)return policy;
  const key=schoolGuestRegKeyH3(ev.id,p.id),prior=st.registrations[key];if(prior)return {ok:false,reason:'registration_already_exists',record:prior};
  // NPC consent to public festivities and independent life commitments are authoritative.
- if(p.boundaries?.includes('noParties'))return {ok:false,reason:'guest_does_not_want_parties'};
+ if(!pa1EventAllows(p,ev.id))return {ok:false,reason:'needs_event_willingness_confirmation'};
  const approvalRoll=hashOf(ev.id+'|visitor|'+p.id)%100;
  const schoolOK=approvalRoll<(schoolById(ev.schoolId).type==='private'?76:90);
  const parentOK=S.age>=18||personAge(p)>=18||hashOf(ev.id+'|family|'+p.id)%100<85;
@@ -116,7 +116,7 @@ function schoolGuestExternalInvitationH3(personId,type='prom'){
  if(!spec)return {ok:false,reason:'no_school_event'};
  const policy=schoolGuestPolicyH3(spec.schoolId,type,S.age);if(!policy.ok)return policy;
  const prior=st.invitations[spec.eventId];if(prior)return {ok:false,reason:'invitation_already_recorded',invitation:prior};
- if(p.boundaries?.includes('noParties')&&['prom','school_dance'].includes(type))return {ok:false,reason:'partner_declines_parties'};
+ if(pa1IsParty(type)&&!pa1EventAllows(p,spec.eventId))return {ok:false,reason:'event_willingness_not_confirmed'};
  const status=npcStatusAt(p);if(!status.free)return {ok:false,reason:status.why||'npc_busy'};
  // School profile is authoritative for affiliation; match availability and consent remain NPC-controlled.
  if(npc.available===false||npc.promUnavailableDateISO===spec.dateISO)return {ok:false,reason:'partner_has_other_commitment'};
@@ -144,7 +144,7 @@ function schoolGuestApproveExternalH3(eventId){
  if(!e||e.status!=='PendingApproval'||!p)return {ok:false,reason:'not_awaiting_approval'};
  if(currentDate()>e.dateISO)return {ok:false,reason:'event_expired'};
  const policy=schoolGuestPolicyH3(e.schoolId,e.type,S.age);if(!policy.ok)return policy;
- if(p.movedAway||p.boundaries?.includes('noParties')&&['prom','school_dance'].includes(e.type))return {ok:false,reason:'partner_unavailable'};
+ if(p.movedAway||pa1IsParty(e.type)&&!pa1EventAllows(p,eventId))return {ok:false,reason:'partner_unavailable_or_event_willingness_not_confirmed'};
  const hostOK=hashOf(eventId+'|approval|player')%100< (schoolById(e.schoolId).type==='private'?76:90);
  const guardianOK=S.age>=18||caregiverApproval(8);
  e.schoolApproval=hostOK?'Approved':'Denied';e.guardianApproval=S.age>=18?'NotRequired':guardianOK?'Approved':'Denied';

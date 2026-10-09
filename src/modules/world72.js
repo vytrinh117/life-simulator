@@ -122,10 +122,11 @@ function npcGiftReaction(p,gift,d){
 function giveInventoryItem(itemId,personId){
  const it=S.inventoryItems.find(x=>x.id===itemId),p=personById(personId);if(!it||!p)return;const d=catalogItem(it.key)||{};
  if(S.age<13&&d.price>=100&&!caregiverApproval(0)){closeChoiceModal();log('Not allowed',`Your caregiver says the ${it.name.toLowerCase()} is too valuable to give away.`);return}
- const gift=removeItem(it.id,true)||it,r=npcGiftReaction(p,gift,d);let extra='';
+ const giftDay=currentDate(),gift=removeItem(it.id,true)||it,r=npcGiftReaction(p,gift,d);let extra='';
  if(gift.wrapped&&r.tier!=='dislike'){r.rel+=gift.wrapped.paper==='heart'?2:1.5;extra=` ${firstName(p)} tears open the ${gift.wrapped.paper==='heart'?'heart-covered':'bright'} paper first.`;if(gift.wrapped.paper==='heart'&&eligibleRomance(p)){ensureRomanceProfile(p);p.attraction=clamp((p.attraction||40)+3)}}
  if(r.tier==='love')addLove(p,8);p.rel=clamp(p.rel+r.rel);p.trust=clamp(p.trust+r.trust);p.giftsReceived=[...(p.giftsReceived||[]),gift.key].slice(-12);rememberPerson(p,`You gave them ${gift.name.toLowerCase()} — ${r.tier}.`,r.tier==='love'?2:1);
  if(gift.sentimental>=35&&gift.origin)S.happiness=clamp(S.happiness+(r.rel>0?1:-2));
+ if(r.rel>0&&['love','like','effort'].includes(r.tier)&&typeof romanceH5CanonicalPartner==='function'&&romanceH5CanonicalPartner(p)&&romanceH5MeetGate(p,'meet').ok){const o=applyRelationshipOutcomeH5(p.id,'gift','completed',{transactionId:'gift:'+gift.id,dateISO:giftDay,dailyKey:'gift',gain:r.tier==='love'?3:2});if(!o.ok)log('Romantic connection',o.reason)}
  advanceTime(10);closeChoiceModal();recordOutcome('Gift',`${gift.name} → ${displayName(p,'formal')}`,{love:'Loved it',like:'Liked it',effort:'Appreciated the effort',awkward:'Awkward',alreadyOwn:'Already had one',dislike:'Not their thing'}[r.tier],r.why);
  log(`Gave ${gift.name.toLowerCase()} to ${firstName(p)}`,`${r.why}${extra}`);toast(`Gift • ${firstName(p)}`)
 }

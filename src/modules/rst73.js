@@ -4,19 +4,24 @@
 // Safety: every stage needs mutual consent; minors stop at "Serious" (16+ for a promise ring);
 // living together, engagement, marriage and starting a family are adult-only (both 18+), non-explicit.
 // =====================================================================
+// H4 canonical ordering. Old stage IDs remain valid for imported saves.
+// Adult commitments are compatibility stages, not automatic Love Ladder rewards.
 const LOVE=[
- {id:'noticing',label:'Noticing',rs:'none'},
- {id:'crushOne',label:'One-sided crush',rs:'crush'},
- {id:'crushMutual',label:'Mutual crush',rs:'crush'},
- {id:'goingOut',label:'Going out / getting to know each other',rs:'dating'},
- {id:'official',label:'Boyfriend / girlfriend',rs:'partner'},
- {id:'inLove',label:'In love',rs:'partner',auto:{rel:75,trust:65}},
- {id:'superInLove',label:'Super in love',rs:'partner',auto:{rel:85,trust:72}},
- {id:'serious',label:'Serious (promise ring)',rs:'partner',minAge:16},
- {id:'livingTogether',label:'Living together',rs:'partner',adult:true},
- {id:'engaged',label:'Engaged',rs:'partner',adult:true},
- {id:'married',label:'Married',rs:'partner',adult:true},
- {id:'family',label:'Starting a family',rs:'partner',adult:true}
+ {id:'noticing',label:'No Romantic Interest',rs:'none'},
+ {id:'crushOne',label:'You Have a Crush',rs:'crush'},
+ {id:'crushThem',label:'They Have a Crush',rs:'crush'},
+ {id:'crushMutual',label:'Mutual Interest',rs:'crush'},
+ {id:'talking',label:'Talking / Getting to Know Each Other',rs:'crush'},
+ {id:'goingOut',label:'Dating / Seeing Each Other',rs:'dating'},
+ {id:'exclusive',label:'Exclusive Dating',rs:'dating'},
+ {id:'official',label:'Official Partners',rs:'partner'},
+ {id:'inLove',label:'In Love',rs:'partner',auto:{rel:75,trust:65}},
+ {id:'superInLove',label:'Deeply Committed',rs:'partner',auto:{rel:85,trust:72}},
+ {id:'serious',label:'Deeply Committed',rs:'partner',minAge:16,commitment:'Promise ring'},
+ {id:'livingTogether',label:'Deeply Committed',rs:'partner',adult:true,commitment:'Living Together'},
+ {id:'engaged',label:'Deeply Committed',rs:'partner',adult:true,commitment:'Engaged'},
+ {id:'married',label:'Deeply Committed',rs:'partner',adult:true,commitment:'Married'},
+ {id:'family',label:'Deeply Committed',rs:'partner',adult:true,commitment:'Family Milestone'}
 ];
 const LOVE_IDX=Object.fromEntries(LOVE.map((s,i)=>[s.id,i]));
 function ensureLove(p){if(!p)return null;if(!p.love){const rs=p.romanceStage||'none';const id=rs==='partner'?'official':rs==='dating'?'goingOut':rs==='crush'?((p.attraction||0)>=60?'crushMutual':'crushOne'):'noticing';p.love={stage:id,progress:0,since:currentDate()}}return p.love}
@@ -83,7 +88,7 @@ function matchmake(aId,bId){const a=personById(aId),b=personById(bId);closeChoic
 const GENERIC_MEMO=/Something changed in their life|drifted slightly|exchanged messages|^Hang out on /i;
 function personHistoryHtml(p){const h=p.history||[];const left=h.slice(0,40).map(x=>`<div class="ph-row"><small>${formatDate(x.dateISO||currentDate())} • age ${x.age??S.age}</small><span>${esc(x.text)}</span></div>`).join('')||'<p class="muted-text">Nothing yet.</p>';
  const mem=h.filter(x=>(x.importance||1)>=2&&!GENERIC_MEMO.test(x.text)).slice(0,12).map(x=>`<div class="pm-row"><small>${formatDate(x.dateISO||currentDate())}</small><span>${esc(x.text)}</span></div>`).join('')||'<p class="muted-text">Big moments — milestones and things that changed your relationship — appear here.</p>';
- const L=eligibleRomance(p)&&p.love&&LOVE_IDX[p.love.stage]>=1?`<div class="love-line"><b>💗 ${esc(loveStage(p).label)}</b><div class="progress"><i style="width:${Math.round(p.love.progress)}%"></i></div></div>`:'';
+ const L=eligibleRomance(p)&&p.love&&p.love.stage!=='noticing'?loveSummaryHtmlH4(p):'';
  const fam=parentsKnown(p)?npcFamilyLine(p):'',cp=p.npcId&&relStatusKnown(p)&&partnerNpcOf(p.npcId);
  return `<p class="id-line">${esc(identityLine(p))}${loveInterestVisible(p)&&!loveInterestKnown(p)?` <button class="small ghost" data-ask-love="${p.id}">Ask about their love life</button>`:''}</p>${narrativeHtml(p)}${L}${fam||cp?`<p class="muted-text person-family">${esc(fam)}${cp?`${fam?' • ':''}Dating ${esc(cp.fullName)}`:''}</p>`:''}<div class="person-cols"><div><h4>Relationship log</h4><div class="ph-list">${left}</div></div><div><h4>Milestones</h4><div class="pm-list">${milestonesHtml(p)}</div></div></div>`}
 // ---------- R. Romance menu with love stages ----------
@@ -115,6 +120,6 @@ function rstFollowUp(f){if(f.type==='wedding'){weddingDay(f);return true}if(f.ty
 function rstClick(b){const d=b.dataset;if(d.love){loveStep(d.personId,d.love);save();render();return true}if(d.matchmake){matchmake(d.matchmake,d.with);save();render();return true}if(d.matchmakeOpen){matchmakeModal(d.matchmakeOpen);return true}return false}
 function rstDaily(){npcCoupleTick();const pp=partnerPerson();if(pp&&eligibleRomance(pp)){const L=ensureLove(pp),last=(pp.history||[])[0]?.dateISO;if(last&&daysBetween(last,currentDate())>=7&&LOVE_IDX[L.stage]>=LOVE_IDX.official){L.progress=clamp(L.progress-2);pp.rel=clamp(pp.rel-.5)}}}
 
-function loveLifeHtml(){const pp=partnerPerson();return S.age>=13?`<section class="card"><h3>Love life</h3>${S.romance.optOut?'<p class="muted-text">Romance content is off.</p>':pp&&eligibleRomance(pp)?`<p><b>${esc(displayName(pp))}</b> • ${esc(loveStage(pp).label)}</p><div class="progress"><i style="width:${Math.round(ensureLove(pp).progress)}%"></i></div><div class="inline-actions"><button class="small" data-romance-open="${pp.id}">Relationship steps</button></div>`:'<p class="muted-text">Single. Romance is optional — nothing here is forced.</p>'}${S.romance.married?`<p class="muted-text">Married since ${formatDate(S.romance.married.dateISO)}.</p>`:''}<div class="inline-actions"><button class="small ghost" data-romance-toggle="1">${S.romance.optOut?'Turn romance content on':'Turn romance content off'}</button></div></section>`:''}
+function loveLifeHtml(){const pp=partnerPerson();return S.age>=13?`<section class="card"><h3>Love life</h3>${S.romance.optOut?'<p class="muted-text">Romance content is off.</p>':pp&&eligibleRomance(pp)?`<p><b>${esc(displayName(pp))}</b></p>${loveSummaryHtmlH4(pp)}<div class="inline-actions"><button class="small" data-romance-open="${pp.id}">Relationship steps</button></div>`:'<p class="muted-text">Single. Romance is optional — nothing here is forced.</p>'}${S.romance.married?`<p class="muted-text">Married since ${formatDate(S.romance.married.dateISO)}.</p>`:''}<div class="inline-actions"><button class="small ghost" data-romance-toggle="1">${S.romance.optOut?'Turn romance content on':'Turn romance content off'}</button></div></section>`:''}
 function familyTripHtml(){return S.trip?`<section class="card"><h3>Family trip</h3><p>${S.trip.going?'🧳 Going':'🏠 Staying home'} • ${esc(S.trip.dest)} • ${formatDate(S.trip.start)}–${formatDate(S.trip.end)}</p></section>`:''}
 function familyExtrasHtml(){return `${familyTreeHtml()}${loveLifeHtml()}${housingHtml()}${familyTripHtml()}`}
