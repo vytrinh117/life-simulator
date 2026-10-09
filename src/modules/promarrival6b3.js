@@ -67,6 +67,7 @@ function initializePromArrival6B3(pr=S?.school?.prom){
  const ready=promReadySummary6B2(pr),quality=(ready?.outfitValid?ready.outfitQuality:0);
  a.arrivalDescription=quality>=75?'Your carefully chosen outfit feels right for the school hall.':
   quality>=40?'You arrive in an outfit you chose for tonight.':'The hall is dressed for Prom; you step inside as you are.';
+ if(ready?.hairPrepared||ready?.makeupMethod&&ready.makeupMethod!=='none')a.arrivalDescription+=' Your prepared look gives you a little confidence.';
  return a;
 }
 function reconcilePromArrival6B3(pr=S?.school?.prom){

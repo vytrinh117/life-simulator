@@ -578,6 +578,7 @@ function runFollowUp(f){
  if(f.type==='promiseCheck'){const el=S.elections?.find(x=>x.id===f.payload.electionId);if(!el||SIM.skipping){addRep('leadership',-2);return}queueEvent({type:'promiseCheck',title:`People remember your promise`,text:`During the campaign you promised ${el.promise}. A classmate asks how it is going.`,payload:{electionId:el.id},priority:3,expiresDays:3,choices:[{id:'work',label:'Push hard to deliver it'},{id:'honest',label:'Admit it is harder than you thought'},{id:'dodge',label:'Dodge the question'}]});return}
  if(f.type==='npcInitiative'){if(!SIM.skipping&&currentMinute()>=420&&currentMinute()<1290&&!atSchool())npcInitiative();return}
  if(f.type==='npcSchool'){if(atSchool())npcSchoolInitiative();return}
+ if(f.type==='h6SchoolOpportunity'){if(atSchool()&&typeof h6NpcOpportunity==='function')h6NpcOpportunity();return}
  if(f.type==='teammateComment'){const c=clubById(f.payload.clubId);if(!c||c.status!=='Active'||quiet)return;const m=rand(c.members||[])||'A teammate';log(`${m} noticed`,rand([`"Where were you yesterday? ${c.leader} asked about you."`,`${m} mentions ${c.name} felt short-handed without you.`,`"We could have used you at ${c.name}," ${m} says — half joking.`]));return}
  if(f.type==='homeworkNote'){if(quiet){S.family.tension=clamp(S.family.tension+2);return}queueEvent({type:'homeworkTalk',title:`A note about missing homework`,text:`Three assignments are now recorded as missing. ${name} has the teacher's email open on their phone.`,participants:cg?[cg.id]:[],priority:3,expiresDays:1,choices:[{id:'apologize',label:'Apologize and catch up'},{id:'lie',label:'Say it was a mistake'},{id:'argue',label:'Argue'},{id:'explain',label:'Explain what is going on'}]});return}
  if(f.type==='parentTeacherMeeting'){if(quiet){S.family.tension=clamp(S.family.tension+5);if(SIM.summary)SIM.summary.notable.push('Parent–teacher meeting about missing homework');return}queueEvent({type:'ptMeeting',title:'Parent–teacher meeting',text:`Six missing assignments. ${name} and your teachers sit across the table from you. Everyone is waiting for you to say something.`,participants:cg?[cg.id]:[],priority:5,expiresDays:1,choices:[{id:'plan',label:'Commit to a homework plan'},{id:'promise',label:'Promise to do better'},{id:'blame',label:'Blame the teachers'},{id:'silent',label:'Stay quiet'}]});return}
@@ -585,6 +586,7 @@ function runFollowUp(f){
 
 // ---------- Lifecycle event choices ----------
 function handleLifecycleEventChoice(e,id,label){
+ if(typeof h6EventChoice==='function'&&h6EventChoice(e,id))return true;
  const s5=typeof seasonalActivityEventChoice5C1==='function'&&seasonalActivityEventChoice5C1(e,id,label);if(s5)return s5;
  const c3=typeof communication3C3EventChoice==='function'&&communication3C3EventChoice(e,id,label);if(c3)return c3;const cm=typeof communication3C1EventChoice==='function'&&communication3C1EventChoice(e,id,label);if(cm)return cm;const rb=typeof romance3B2EventChoice==='function'&&romance3B2EventChoice(e,id,label);if(rb)return rb;const un=uniEventChoice(e,id);if(un)return un;const rs=rstEventChoice(e,id);if(rs)return rs;const lq=lmpqEventChoice(e,id);if(lq)return lq;const kx=knxEventChoice(e,id);if(kx)return kx;const w=worldEventChoice(e,id);if(w)return w;const hj=hijEventChoice(e,id);if(hj)return hj;
  if(e.type==='newPhone')return handlePhoneChoice(e,id);
@@ -682,7 +684,7 @@ function todayAgenda(dateISO=currentDate()){
 
 // ---------- Reconciliation ----------
 function reconcileState(reason='tick'){
- if(!S)return;ensureLifecycleContainers();
+ if(!S)return;ensureLifecycleContainers();if(typeof migrateWorldEncountersH6==='function')migrateWorldEncountersH6();
  reconcileSchoolStage();reconcileEducationHistory();if(typeof migratePlayerSchool4A2==='function')migratePlayerSchool4A2();socialReconcile();if(typeof migrateNpcSchools4A3==='function')migrateNpcSchools4A3();if(typeof migrateCommunication3C1==='function')migrateCommunication3C1();if(typeof migrateCommunication3C3==='function')migrateCommunication3C3();if(typeof migrateCommunication3C4==='function')migrateCommunication3C4();
  for(const p of S.pendingDecisions){normalizePending(p);pendingLifecycleCheck(p)}
  if(needsFormalSchool()){ensureSchoolRecord();ensureSchoolDayObligation(currentDate())}

@@ -3,7 +3,7 @@
 // p.love is the canonical per-person romance record.
 // Legacy p.romanceStage / p.attraction remain compatibility mirrors only.
 // =====================================================================
-const ROMANCE_CANONICAL_STAGES=new Set(['noticing','crushOne','crushMutual','goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family','ex']);
+const ROMANCE_CANONICAL_STAGES=new Set(['noticing','crushOne','crushThem','crushMutual','talking','goingOut','exclusive','official','inLove','superInLove','serious','livingTogether','engaged','married','family','ex']);
 function deterministicNpcAttraction(p){
  const old=Number(p?.attraction);if(Number.isFinite(old))return clamp(old);
  const base=35+(hashOf((p?.id||p?.name||'person')+'-3b-attraction')%31);
@@ -33,16 +33,16 @@ function ensureLove(p){
  else if(p.romanceStage==='dating'&&(!ROMANCE_CANONICAL_STAGES.has(old.stage)||LOVE_IDX[stage]<LOVE_IDX.goingOut))stage='goingOut';
  // A legacy romanceStage="crush" alone is one-sided. Mutuality requires an
  // already-explicit mutual stage or an actual established relationship.
- const established=(S.romance?.partnerId===p.id&&stage!=='ex')||['goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(stage);
+ const established=(S.romance?.partnerId===p.id&&stage!=='ex')||['goingOut','exclusive','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(stage);
  const explicitMutual=old.stage==='crushMutual'||established;
- const playerCrush=old.playerCrush!=null?!!old.playerCrush:(p.romanceStage==='crush'||stage==='crushOne'||stage==='crushMutual'||established);
+ const playerCrush=old.playerCrush!=null?!!old.playerCrush:(stage==='crushThem'?false:(p.romanceStage==='crush'||stage==='crushOne'||stage==='crushMutual'||established));
  const legacyAttraction=Number(p.attraction);
  const npcAttraction=Number.isFinite(legacyAttraction)&&(!Number.isFinite(Number(old.npcAttraction))||legacyAttraction!==Number(old.npcAttraction))?clamp(legacyAttraction):Number.isFinite(Number(old.npcAttraction))?clamp(Number(old.npcAttraction)):deterministicNpcAttraction(p);
  const npcInterest=old.npcInterest||((explicitMutual||established)?'reciprocates':'unknown');
  if(stage==='crushMutual'&&npcInterest!=='reciprocates')stage='crushOne';
  p.love={...old,stage,progress:clamp(old.progress??0),since:old.since||currentDate(),playerCrush,npcAttraction,npcInterest,mutual:!!(explicitMutual&&npcInterest==='reciprocates')};
  p.attraction=npcAttraction; // compatibility mirror for existing balancing/UI
- p.romanceStage=stage==='ex'?'ex':stage==='crushOne'||stage==='crushMutual'?'crush':stage==='goingOut'?'dating':LOVE_IDX?.[stage]>=LOVE_IDX?.official?'partner':'none';
+ p.romanceStage=stage==='ex'?'ex':['crushOne','crushThem','crushMutual','talking'].includes(stage)?'crush':['goingOut','exclusive'].includes(stage)?'dating':LOVE_IDX?.[stage]>=LOVE_IDX?.official?'partner':'none';
  return p.love;
 }
 // H1 — A current partnership is keyed by the canonical Person ID, not by a
@@ -59,13 +59,13 @@ function relationshipStatus(pOrId){
  const p=typeof pOrId==='string'?(S.people||[]).find(x=>x.id===pOrId):pOrId;
  if(!p)return {kind:'unknown',personId:null};
  const current=isEstablishedPartner(p),stage=p.love?.stage||canonicalRomanceStageFromLegacy(p);
- return {kind:current?'official':stage==='ex'||p.romanceStage==='ex'?'ex':stage==='goingOut'?'dating':'single',personId:p.id,stage,currentPartner:current};
+ return {kind:current?'official':stage==='ex'||p.romanceStage==='ex'?'ex':['goingOut','exclusive'].includes(stage)?'dating':'single',personId:p.id,stage,currentPartner:current};
 }
 function partnerBoundaryH1(p,boundary){return !!p?.boundaries?.includes(boundary)}
 function romanceCompatibility(p){
  if(!p||isFamilyPerson(p))return {eligible:false,reason:'family'};
  const ageOK=eligibleRomance(p),orientationOK=ageOK&&(isEstablishedPartner(p)||npcInterestedInPlayer(p));
- const committedElsewhere=!!p.datingNpc||!!(p.npcId&&partnerNpcOf(p.npcId));
+ const committedElsewhere=!!p.datingNpc||!!(p.npcId&&partnerNpcOf(p.npcId))||!!(S.romance?.exclusivePartnerId&&S.romance.exclusivePartnerId!==p.id);
  const conflict=clamp(p.conflict||0),trust=clamp(p.trust??50),close=clamp(p.rel??0),looks=clamp(S.looks??50);
  const traits=p.traits||[],shared=Array.isArray(p.interests)&&Array.isArray(S.interests)?p.interests.filter(x=>S.interests.includes(x)).length:0;
  const personalityBonus=traits.includes('Bold')?3:traits.includes('Shy')||traits.includes('Quiet')?-2:0;
@@ -76,10 +76,10 @@ function romanceActualAvailability(p){
  if(!p)return 'Unknown';
  if(isEstablishedPartner(p)){const st=ensureLove(p).stage;if(st==='married'||S.romance?.married?.personId===p.id)return 'Married';if(st==='engaged')return 'Engaged';return 'In a relationship'}
  if(p.datingNpc||p.npcId&&partnerNpcOf(p.npcId))return 'In a relationship';
- const st=ensureLove(p).stage;if(st==='goingOut')return 'Seeing someone';if(st==='crushMutual'||st==='crushOne')return 'Single';return 'Single';
+ const st=ensureLove(p).stage;if(['goingOut','exclusive'].includes(st))return 'Seeing someone';if(st==='crushMutual'||st==='crushOne')return 'Single';return 'Single';
 }
 function romanceKnownAvailability(p){return relStatusKnown(p)?romanceActualAvailability(p):'Unknown'}
-function setPlayerCrush(p,on=true){const L=ensureLove(p);if(!L)return;L.playerCrush=!!on;if(on&&L.stage==='noticing')L.stage='crushOne';if(!on&&L.stage==='crushOne'&&L.npcInterest!=='reciprocates')L.stage='noticing';p.romanceStage=L.stage==='crushOne'||L.stage==='crushMutual'?'crush':p.romanceStage;}
+function setPlayerCrush(p,on=true){const L=ensureLove(p);if(!L)return;L.playerCrush=!!on;if(on&&['noticing','crushThem'].includes(L.stage))L.stage=L.npcInterest==='reciprocates'?'crushMutual':'crushOne';if(!on&&L.stage==='crushOne'&&L.npcInterest!=='reciprocates')L.stage='noticing';p.romanceStage=L.stage==='crushOne'||L.stage==='crushMutual'?'crush':p.romanceStage;}
 function setNpcRomanticInterest(p,state='reciprocates'){
  const L=ensureLove(p);if(!L)return;L.npcInterest=state;
  L.mutual=state==='reciprocates'&&!!L.playerCrush;
@@ -92,10 +92,12 @@ function setLoveStage(p,id,why=''){
  const mt={goingOut:'firstDate',official:'official',engaged:'engaged',married:'married',ex:'breakup'}[id];if(mt)addPersonMilestone(p,mt,why||'');
  L.stage=id;L.progress=0;L.since=currentDate();
  if(id==='crushOne'){L.playerCrush=true;L.mutual=false}
+ if(id==='crushThem'){L.playerCrush=false;L.mutual=false;L.npcInterest='reciprocates'}
+ if(id==='talking'){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true}
  if(id==='crushMutual'){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true}
- if(['goingOut','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(id)){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true}
- p.romanceStage=id==='ex'?'ex':id==='crushOne'||id==='crushMutual'?'crush':id==='goingOut'?'dating':LOVE_IDX[id]>=LOVE_IDX.official?'partner':'none';
- if(LOVE_IDX[id]>=LOVE_IDX.official&&S.romance.partnerId!==p.id)setPartner(p,'partner');
+ if(['goingOut','exclusive','official','inLove','superInLove','serious','livingTogether','engaged','married','family'].includes(id)){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true}
+ p.romanceStage=id==='ex'?'ex':['crushOne','crushThem','crushMutual','talking'].includes(id)?'crush':['goingOut','exclusive'].includes(id)?'dating':LOVE_IDX[id]>=LOVE_IDX.official?'partner':'none';
+ if(LOVE_IDX[id]>=LOVE_IDX.official){if(S.romance.exclusivePartnerId===p.id)S.romance.exclusivePartnerId=null;if(S.romance.partnerId!==p.id)setPartner(p,'partner')}
  if(LOVE_IDX[id]>=LOVE_IDX.goingOut&&!SIM.skipping){S.milestones.unshift({dateISO:currentDate(),age:S.age,title:`💗 ${LOVE[LOVE_IDX[id]].label}`,text:`${displayName(p,'formal')}${why?` — ${why}`:''}.`});notify('Relationship stage',`${displayName(p)}: ${LOVE[LOVE_IDX[id]].label}`,{sourceType:'love',sourceId:`love-${p.id}-${id}`,tab:'people'})}
  rememberPerson(p,`Relationship: ${id==='ex'?'Former partner':LOVE[LOVE_IDX[id]]?.label||id}.`,3)
 }
@@ -142,5 +144,5 @@ function migrateRomance3B1(){
  const stale=S.romance.partnerId&&(S.people||[]).find(p=>p.id===S.romance.partnerId);
  if(stale&&(stale.love?.stage==='ex'||(stale.romanceStage==='ex'&&!stale.love))&&S.romance.status==='Single'){S.romance.partnerId=null;S.romance.partner=null}
  for(const p of S.people||[]){const L=ensureLove(p);ensureRomanceProfile(p);if(S.romance.partnerId===p.id){L.playerCrush=true;L.npcInterest='reciprocates';L.mutual=true;if(LOVE_IDX[L.stage]<LOVE_IDX.goingOut)L.stage=S.romance.status==='In a relationship'?'official':'goingOut'}if(L.stage==='ex')p.formerPartner=true}
- migrateCanonicalIdentityH1();S.romance3B1Migrated=true;if(typeof migrateRomance3B2==='function')migrateRomance3B2();
+ migrateCanonicalIdentityH1();if(typeof migrateLoveH4==='function')migrateLoveH4();if(typeof migrateRomanceH5==='function')migrateRomanceH5();S.romance3B1Migrated=true;if(typeof migrateRomance3B2==='function')migrateRomance3B2();
 }

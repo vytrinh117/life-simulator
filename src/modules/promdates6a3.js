@@ -10,7 +10,7 @@ function promDateStudent6A3(p){
  return true;
 }
 function promRomancePossible6A3(p){
- if(!promDateStudent6A3(p)||partnerBoundaryH1(p,'noParties'))return false;
+ if(!promDateStudent6A3(p)||!pa1EventAllows(p,promDateEvent6A3()))return false;
  // H1 established partners keep their real relationship even when legacy preliminary
  // romanceOpen/notReady/orientation gates are stale. The Prom age/guest gate is separate.
  if(isEstablishedPartner(p))return true;

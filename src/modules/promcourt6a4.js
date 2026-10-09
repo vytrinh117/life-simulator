@@ -141,29 +141,99 @@ function reconcilePromCourt6A4(pr=S?.school?.prom){
  if(c.ballotLocked)resolveNotificationsFor(`${c.eventId}:court_voting`);
  return c;
 }
+// HF-PA.2 — A read-only, provenance-aware nomination dossier; never changes the frozen ballot.
+function promCourtProfilePA2(pr,category,candidateId){
+ const c=promCourtRecord6A4(pr),row=c?.nominees?.find(n=>n.category===category&&n.personId===candidateId);
+ if(!row)return null;
+ const own=candidateId==='player',n=own?null:npcById(candidateId);
+ // A missing NPC remains an archived nominee; never fabricate a replacement.
+ const p=own?null:(S.people||[]).find(x=>x.npcId===candidateId);
+ const publicRoleRecords=own?activeRolesForHolder4B1('player'):n?activeRolesForHolder4B1(n.id):[];
+ const roles=publicRoleRecords.filter(x=>x.schoolId===c.schoolId).map(x=>`${x.roleName} — ${x.organizationName}`);
+ const orgs=own?schoolOrganizationState4B1().organizations.filter(x=>x.schoolId===c.schoolId&&x.memberIds?.includes('player')):
+  n?schoolOrganizationState4B1().organizations.filter(x=>x.schoolId===c.schoolId&&x.memberIds?.includes(n.id)):[];
+ const participation=[...new Set(orgs.map(x=>x.name))].slice(0,8);
+ const schoolId=own?playerCurrentSchoolId4A2():n?.currentSchoolId;
+ const confirmedSchool=schoolId===c.schoolId;
+ const age=own?S.age:n?npcAge(n):null;
+ const clazz=own?S.school?.className:n?.schoolClass;
+ const grade=own?S.school?.grade:n?.schoolGrade;
+ // Looks are observable from an actual actor record. Smart is private until known or an actual school result is public.
+ const looks=own?S.looks:n?.looks;
+ const smart=own?S.smart:(p&&(p.rel>=35||p.schoolScoresKnown)?n?.smart:null);
+ const explicitAppearance=own?(S.appearance||{}):(n?.appearance&&typeof n.appearance==='object'?n.appearance:{});
+ const hair=explicitAppearance.hairColor||(!own&&n?.hairColor)||null;
+ const hairstyle=explicitAppearance.hairStyle||(!own&&n?.hairStyle)||null;
+ const face=explicitAppearance.faceFeatures||(!own&&n?.faceFeatures)||null;
+ const appearanceVisible=own||!!p; // never reveal a stranger's non-public stored personal details
+ const love=own?S.attraction:(p&&loveInterestKnown(p)?personIdentity(p).orientation:null);
+ const status=own?(S.romance?.partnerId?'In a relationship':'Not disclosed'):
+  p&&relStatusKnown(p)?npcRelStatus(p):null;
+ const met=own?'You are the nominee':p?metLine(p):'Not yet acquainted';
+ const interest=p&&p.rel>=20?(n?.interests||p.interests||[]):[];
+ return {personId:row.personId,category,name:row.name,age:typeof age==='number'&&Number.isFinite(age)?age:null,
+  school:confirmedSchool?schoolDisplayName(c.schoolId):null,grade:confirmedSchool?(grade||null):null,
+  className:confirmedSchool?(clazz||null):null,looks:Number.isFinite(Number(looks))&&looks!=null?Math.round(Number(looks)):null,
+  smart:Number.isFinite(Number(smart))&&smart!=null?Math.round(Number(smart)):null,
+  hair:appearanceVisible?hair:null,hairstyle:appearanceVisible?hairstyle:null,face:appearanceVisible?face:null,
+  love:love||null,status:status||null,activities:participation,roles,interests:interest,met,
+  // No archived school awards are claimed unless explicit, person-specific evidence exists.
+  achievements:roles.slice(),missingActor:!own&&!n};
+}
+function promCourtValuePA2(v){return v==null||v===''?'Not known':String(v)}
+function promCourtProfileHtmlPA2(pr,category,id){
+ const d=promCourtProfilePA2(pr,category,id);if(!d)return '<p class="muted-text">Candidate record unavailable.</p>';
+ const line=(title,val)=>`<div class="prom-pa2-fact"><span>${esc(title)}</span><b>${esc(promCourtValuePA2(val))}</b></div>`;
+ const arr=(title,values)=>`<div class="prom-pa2-fact"><span>${esc(title)}</span><b>${values.length?values.map(esc).join(' · '):'Not recorded'}</b></div>`;
+ const c=promCourtRecord6A4(pr),myVote=c.ballots.find(b=>b.voterId==='player'&&b.category===category);
+ const mayVote=promCourtVoteWindow6A4(pr,c)&&promCourtVoterValid6A4(pr,'player')&&!myVote&&id!=='player';
+ return `<section class="prom-pa2-dossier" data-prom-pa2-profile="${esc(id)}"><p class="muted-text">${esc(PROM_COURT_CATEGORIES_6A4[category])} nominee · School ballot record</p><h3>${esc(d.name)}</h3>
+ <div class="prom-pa2-facts">${line('Age',d.age)}${line('School',d.school)}${line('Grade',d.grade)}${line('Class / section',d.className)}${line('Looks (recorded)',d.looks)}${line('Smarts (known)',d.smart)}${line('Hair color',d.hair)}${line('Hair style',d.hairstyle)}${line('Face features',d.face)}${line('Love interest (disclosed)',d.love)}${line('Relationship status (known)',d.status)}${line('How you know them',d.met)}${arr('Recorded activities',d.activities)}${arr('School positions / achievements',d.achievements)}${arr('Known interests',d.interests)}</div>
+ <p class="muted-text">Private details remain unknown until learned. Unrecorded awards are not assumed. Reading this profile never changes votes or relationships.</p>
+ <div class="inline-actions">${mayVote?`<button class="small primary" data-prom-court6a4="vote" data-court-category="${esc(category)}" data-court-candidate="${esc(id)}">Review vote for ${esc(d.name)}</button>`:''}<button class="small ghost" data-prom-court6a4="close-profile">Back to candidates</button></div></section>`;
+}
 function promCourtSummaryHtml6A4(pr){
  const c=promCourtRecord6A4(pr);if(!c)return '';
  const chosen=c.nominees.some(n=>n.personId==='player');
- let html=`<section class="prom-court-6a4"><h4>Prom Court</h4><p class="muted-text">Nominations ${formatDate(c.nominationOpen)}–${formatDate(c.nominationClose)} • Student ballot ${formatDate(c.ballotOpen)}–${formatDate(c.ballotClose)}</p>`;
+ let html=`<section class="prom-court-6a4"><h4>Prom Court · Meet the candidates</h4><p class="muted-text">Nominations ${formatDate(c.nominationOpen)}–${formatDate(c.nominationClose)} · Student ballot ${formatDate(c.ballotOpen)}–${formatDate(c.ballotClose)}</p>`;
  if(!c.nominationsLocked){html+=`<p>${c.nominationRequested?'Nomination requested — the school will shortlist candidates.':'The school will choose nominees based on school standing.'}</p>`;
   if(currentDate()>=c.nominationOpen&&currentDate()<=c.nominationClose&&!c.nominationRequested&&promCourtPlayerEligible6A4(pr))html+='<button class="small" data-prom-court6a4="nominate">Request nomination</button>';
  }else{
-  html+=`<p class="muted-text">${chosen?'You made the shortlist.':'Nominees are announced; you are not on the shortlist.'} Voting is optional and does not require a prom date.</p>`;
+  html+=`<p class="muted-text">${chosen?'You made the shortlist.':'Nominees are announced; you are not on the shortlist.'} Read profiles before choosing. Voting is optional and does not require a Prom date.</p>`;
   for(const cat of [...new Set(c.nominees.map(n=>n.category))]){
-   html+=`<div class="prom-court-ballot"><b>${PROM_COURT_CATEGORIES_6A4[cat]}</b>`;
+   html+=`<div class="prom-court-ballot"><h5>${esc(PROM_COURT_CATEGORIES_6A4[cat])}</h5>`;
    const myVote=c.ballots.find(b=>b.voterId==='player'&&b.category===cat);
-   if(c.ballotLocked){html+='<p class="muted-text">School ballots counted. Winners will be presented at Prom Night.</p>'}
-   else if(myVote)html+='<p class="muted-text">Ballot submitted. Your vote is final.</p>';
-   else if(promCourtVoteWindow6A4(pr,c)&&promCourtVoterValid6A4(pr,'player'))html+=c.nominees.filter(n=>n.category===cat&&n.personId!=='player').map(n=>`<button class="small ghost" data-prom-court6a4="vote" data-court-category="${cat}" data-court-candidate="${esc(n.personId)}">Vote ${esc(n.name)}</button>`).join('');
-   else html+='<p class="muted-text">Ballot not currently open.</p>';
+   if(c.ballotLocked)html+='<p class="muted-text">School ballots counted. Winners will be presented at Prom Night.</p>';
+   else if(myVote)html+=`<p class="muted-text">Your vote for ${esc(c.nominees.find(n=>n.category===cat&&n.personId===myVote.candidateId)?.name||'a candidate')} was submitted. Your vote is final.</p>`;
+   else if(!promCourtVoteWindow6A4(pr,c)||!promCourtVoterValid6A4(pr,'player'))html+='<p class="muted-text">Ballot not currently open or you are not an eligible host-school voter. Profiles may still be viewed.</p>';
+   html+=`<div class="prom-pa2-roster">${c.nominees.filter(n=>n.category===cat).map(n=>{
+    const d=promCourtProfilePA2(pr,cat,n.personId),canVote=!c.ballotLocked&&!myVote&&promCourtVoteWindow6A4(pr,c)&&promCourtVoterValid6A4(pr,'player')&&n.personId!=='player';
+    return `<article class="prom-pa2-candidate"><b>${esc(n.name)}</b><small>${esc(d?.className||'Class not recorded')} · ${esc(d?.activities[0]||'Activities not recorded')}</small><div class="inline-actions"><button class="small ghost" data-prom-court6a4="profile" data-court-category="${esc(cat)}" data-court-candidate="${esc(n.personId)}">View profile</button>${canVote?`<button class="small" data-prom-court6a4="vote" data-court-category="${esc(cat)}" data-court-candidate="${esc(n.personId)}">Vote for ${esc(n.name)}</button>`:''}</div></article>`}).join('')}</div>`;
    html+='</div>';
   }
  }
  return html+'</section>';
 }
-function promCourtClick6A4(b){const act=b?.dataset?.promCourt6a4;if(!act)return false;
- const result=act==='nominate'?promCourtRequest6A4():act==='vote'?promCourtCast6A4(b.dataset.courtCategory,b.dataset.courtCandidate):{ok:false,reason:'unknown_action'};
+function promCourtClick6A4(b){
+ const act=b?.dataset?.promCourt6a4;if(!act)return false;
+ const cat=b.dataset.courtCategory,id=b.dataset.courtCandidate,pr=S?.school?.prom,c=promCourtRecord6A4(pr);
+ if(act==='close-profile'){closeChoiceModal();return true}
+ if(act==='profile'){
+  const d=promCourtProfilePA2(pr,cat,id);
+  if(!d){toast('That nominee is not on this ballot.');return true}
+  openModal('Prom Court candidate',promCourtProfileHtmlPA2(pr,cat,id));return true;
+ }
+ if(act==='vote'){
+  const d=promCourtProfilePA2(pr,cat,id);
+  if(!d){toast('That nominee is not on this ballot.');return true}
+  if(!promCourtVoteWindow6A4(pr,c)||!promCourtVoterValid6A4(pr,'player')||id==='player'||c.ballots.some(x=>x.voterId==='player'&&x.category===cat)){toast('This vote cannot be submitted.');return true}
+  openModal('Confirm your final Prom Court vote',`<p>Submit your one final vote for <b>${esc(d.name)}</b> as <b>${esc(PROM_COURT_CATEGORIES_6A4[cat])}</b>?</p><p class="muted-text">You cannot change your ballot after submission.</p><div class="inline-actions"><button class="primary" data-prom-court6a4="confirm-vote" data-court-category="${esc(cat)}" data-court-candidate="${esc(id)}">Confirm final vote</button><button class="ghost" data-prom-court6a4="cancel-vote">Cancel</button></div>`);
+  return true;
+ }
+ if(act==='cancel-vote'){closeChoiceModal();return true}
+ const result=act==='nominate'?promCourtRequest6A4():act==='confirm-vote'?promCourtCast6A4(cat,id):{ok:false,reason:'unknown_action'};
  if(!result.ok)toast(`Prom Court: ${result.reason}`);
+ if(result.ok&&act==='confirm-vote')closeChoiceModal();
  save();render();return true;
 }
 function promCourtNight6A4(sc){const pr=S?.school?.prom,c=promCourtRecord6A4(pr);
