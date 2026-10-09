@@ -94,6 +94,10 @@ rep("call:(name,...args)=>{const f={addExamRecord,","call:(name,...args)=>{const
 rep("const f={occasionReleaseFuzz6C8,", "const f={migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,")
 # H2 browser QA hooks for Prom invitation/finance invariants only.
 rep("const f={migrateRomance3B1,", "const f={schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,")
+rep("const f={schoolGuestCancelH3,", "const f={migrateLoveH4,romanceDisplayLabelH4:(id)=>romanceDisplayLabelH4(personById(id)),romanceCommitmentLabelH4:(id)=>romanceCommitmentLabelH4(personById(id)),romanceStageConversationH4:(id,k)=>romanceStageConversationH4(personById(id),k),romanceMenu:(id)=>romanceMenu(id),ensureLove:(id)=>ensureLove(personById(id)),schoolGuestCancelH3,")
+rep("const f={migrateLoveH4,", "const f={chatAdd,replyChat,migrateRomanceH5,romanceH5MeetGate:(id,mode)=>romanceH5MeetGate(personById(id),mode),romanceH5Activity:(id,key)=>romanceH5Activity(personById(id),key),applyRelationshipOutcomeH5,migrateLoveH4,")
+# HF-PA.3: expose genuine Court story helpers to the existing scoped QA bridge.
+rep("const f={chatAdd,replyChat,", "const f={promPA3Winners,promPA3Record,promPA3Gate,promPA3Action,promPA3Partner,promPA3Html,promPA3FollowupGate,promPA3Followup,chatAdd,replyChat,")
 rep("html=homePanel()}$('panel-host').innerHTML=html}","html=homePanel()}$('panel-host').innerHTML=html;applySubTabs()}")
 rep("function render(){if(!S)return;renderHeader();renderPanel();renderLog()}","function render(){if(!S)return;renderHeader();renderPanel();renderLog();renderPlanner()}")
 rep("function maybeRandomEvent(force=false){if(!force&&!chance(16))return;","function maybeRandomEvent(force=false){if(!force&&!chance(16))return;if(currentMinute()<390||currentMinute()>=1290)return;if(atSchool()&&!force)return;")
@@ -194,6 +198,17 @@ core+=open(ROOT+'/src/modules/occasionui6c7.js').read()
 core+=open(ROOT+'/src/modules/occasionqa6c8.js').read()
 core+=open(ROOT+'/src/modules/promhotfixh2.js').read()
 core+=open(ROOT+'/src/modules/schoolguesth3.js').read()
+core+=open(ROOT+'/src/modules/romanceladderh4.js').read()
+core+=open(ROOT+'/src/modules/romanceh5.js').read()
+core+=open(ROOT+'/src/modules/prompartypa1.js').read()
+core+=open(ROOT+'/src/modules/promcourtpa3.js').read()
+core+=open(ROOT+'/src/modules/promappearancepa4.js').read()
+core+=open(ROOT+'/src/modules/allowancepa5.js').read()
+core+=open(ROOT+'/src/modules/promconsolidationpa6.js').read()
+core+=open(ROOT+'/src/modules/worldencounterh6.js').read()
+core+=open(ROOT+'/src/modules/matchmakingh7.js').read()
+# Expose scoped HF-PA.4 helpers to the existing test-only fixture interface after all base replacements.
+s=s.replace("const f={promPA3Winners,", "const f={matchmakeModal,createMatchOffer3B4,matchCandidateInfo3B4,openMatchOffer3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,migrateRomance3B4,matchmakerEligible3B4,matchmakingCooldownActive3B4,noteMatchmakingPlan3B4,h7State,h7Edge,h7LinkedCandidates,h7ChooseLink,h7Candidate,h7MeetingGate,h7Meet,npcInitiative,migrateWorldEncountersH6,h6State,h6Venue,h6OpportunityRate,h6CandidatePool,h6PickCandidate,h6MaybeNotice,h6MaybeFollowUp,h6NpcOpportunity,h6EventChoice,doChore,sleepThroughNight,allowancePA5Roll,allowancePA5Request,allowancePA5State,allowancePA5Eligible,allowancePA5Bounds,allowancePA5Tick,allowancePA5Answer,allowancePA5Negotiate,allowancePA5Discuss,promPA4Choose,promPA4KitState,promPA4NoMakeup,promPA4Gate,promPA4Selected,promPA4HairMinutes,promPA4MakeupUnits,promPA3Winners,")
 marker="// ---------- UI helpers ----------"
 assert s.count(marker)==1
 s=s.replace(marker,core+"\n"+marker)
