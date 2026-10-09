@@ -50,6 +50,7 @@ const OBLIGATION_DEFS={
  trip:{category:'Family',icon:'🧳',start:420,end:1439,grace:1439,required:false,importance:1,location:''},
  conference:{category:'School',icon:'👪',start:960,end:1080,grace:1080,required:false,importance:1,location:'School'},
  election:{category:'Club',icon:'🗳️',start:870,end:900,grace:900,required:false,importance:1,location:'School'},
+ scheduledCallH8:{category:'Social',icon:'📞',start:1200,end:1220,grace:1220,required:false,importance:1,location:'Phone'},
  generic:{category:'Other',icon:'🗓️',start:0,end:60,grace:60,required:false,importance:0,location:''}
 };
 function obDef(type){return OBLIGATION_DEFS[type]||OBLIGATION_DEFS.generic}
@@ -81,6 +82,8 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1('calendar');const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  if(ev.type==='scheduledCallH8'){if(typeof h8CalendarTick==='function')h8CalendarTick(ev);continue;}
+  if(ev.type==='schoolPublicVisitH9'){if(typeof h9CalendarTick==='function')h9CalendarTick(ev);continue;}
   if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
   // An overnight reservation is a multi-day schedule hold, not an attendable
   // obligation. It is resolved when its owning outdoor plan is settled.

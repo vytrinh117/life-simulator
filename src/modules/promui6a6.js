@@ -51,15 +51,14 @@ function promUiHomeHtml6A6(){
   return `<section class="card wide prom-home-6a6" data-prom-home6a6="1"><h3>Prom Night memories</h3>${promNightHtml6B1(done)}</section>`;
  }
  const pr=promUiEligibleEvent6A6();if(!pr||pr.status!=='Season')return '';
- const controls=promHtml();if(!controls)return '';
- return `<section class="card wide prom-home-6a6" data-prom-home6a6="1"><h3>Prom season</h3>${promUiHeader6A6(pr)}<div class="prom-ui-actions-6a6">${controls}</div>${promNightHtml6B1(pr)}</section>`;
+ return `<section class="card wide prom-home-6a6" data-prom-home6a6="1"><h3>Prom season</h3>${promUiHeader6A6(pr,{compact:true})}<button class="small primary" data-edu95-open="events" data-edu95-id="${esc(pr.foundation6A1.eventId)}">Open School Prom in Education → Events</button></section>`;
 }
 function promUiCalendarHtml6A6(){
  const pr=promUiEligibleEvent6A6();if(!pr)return '';
  const f=pr.foundation6A1,ev=(S.calendar||[]).find(x=>x.id===f.eventId&&x.type==='prom');if(!ev)return '';
  const days=daysBetween(currentDate(),ev.dateISO),dates=PROM_UI_MILESTONES_6A6.map(([label,fn])=>({label,date:fn(pr)})).filter(x=>x.date&&x.date>=currentDate()&&x.date<=pr.dateISO).sort((a,b)=>a.date.localeCompare(b.date));
  return `<section class="card wide prom-calendar-6a6" data-sub="month" data-prom-calendar6a6="1"><h3>School Prom · ${days===0?'Today':days+' days remaining'}</h3><p class="muted-text">${formatDate(ev.dateISO)} · ${timeLabel(ev.startMinute)} · ${esc(ev.location)} · ${esc(f.registrationStatus)}</p>`+
- `<div class="prom-ui-calendar-dates">${dates.map(x=>`<div><b>${esc(x.label)}</b><small>${formatDate(x.date)} · ${daysBetween(currentDate(),x.date)}d</small></div>`).join('')||'<p class="muted-text">Registration and ballot deadlines have passed.</p>'}</div><button class="small ghost" data-tab-jump="school">See Prom at school</button></section>`;
+ `<div class="prom-ui-calendar-dates">${dates.map(x=>`<div><b>${esc(x.label)}</b><small>${formatDate(x.date)} · ${daysBetween(currentDate(),x.date)}d</small></div>`).join('')||'<p class="muted-text">Registration and ballot deadlines have passed.</p>'}</div><button class="small ghost" data-edu95-open="events" data-edu95-id="${esc(f.eventId)}">See Prom in School Activities</button></section>`;
 }
 function promUiNoticeCleanup6A6(pr){
  const f=pr?.foundation6A1,live=f?.eventId;
