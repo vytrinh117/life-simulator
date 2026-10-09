@@ -445,6 +445,117 @@ body.planner-open .planner-close{display:inline-flex}
 .education95-club-detail:focus-within{outline-offset:3px}
 .education95-calendar-shortcuts .education95-event-head{border-top:1px solid var(--border,#d9e2e8);padding:.55rem 0}
 
+/* H10.2 — campus map is a collapsible section within Education / Today. */
+.h102-campus{margin-top:14px;border:1px solid var(--border, #e5dacf);border-radius:16px;background:var(--card,#fffdf7);padding:12px 14px}
+.h102-campus>summary{cursor:pointer;font-weight:750;min-height:38px;display:list-item;outline-offset:4px}
+.h102-campus>summary:focus-visible,.h102-room:focus-visible{outline:3px solid #8b73ba;outline-offset:3px}
+.h102-mini{font-weight:400;font-size:.82em;opacity:.76;margin-left:10px}
+.h102-map-wrap{margin-top:10px}
+.h102-layout{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(210px,.9fr);align-items:start;gap:14px}
+.h102-zones{min-width:0;display:grid;gap:9px}
+.h102-zone{border:1px solid #e7dfd6;border-radius:12px;padding:10px;background:#f8f1e8}
+.h102-zone h5{font-size:.83rem;margin:0 0 8px;color:var(--text,#413b42)}
+.h102-room-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:7px}
+.h102-room{box-sizing:border-box;min-width:0!important;min-height:63px!important;display:flex!important;flex-direction:column!important;gap:4px;align-items:flex-start!important;justify-content:center!important;padding:10px!important;text-align:left!important;border:1px solid #d6cbbf!important;border-radius:10px!important;background:#fffaf3!important;color:#3d3543!important;white-space:normal!important;overflow-wrap:anywhere}
+.h102-room small{font-size:.69rem;line-height:1.3;color:#635a60}
+.h102-room-name{font-weight:700;line-height:1.25}
+.h102-room.is-selected{outline:2px solid #7b6096;outline-offset:-2px;background:#f3ecfc!important}
+.h102-room.is-current{border:2px solid #28755d!important;background:#eaf9f1!important}
+.h102-room.is-locked{opacity:.66}
+.h102-room-detail{border:1px solid #dfd5cf;border-radius:12px;padding:14px;background:#fffaf6;min-width:0;overflow-wrap:anywhere}
+.h102-room-detail p{margin:9px 0}
+.h102-note{font-size:.77rem}
+@media(max-width:740px){.h102-layout{grid-template-columns:minmax(0,1fr)}.h102-room-grid{grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}.h102-mini{display:block;margin:3px 0}.h102-campus{padding:10px}}
+.h102-room{width:100%!important;max-width:none!important}
+/* H10.3 — spatial context inside the existing School Today live summary and timetable */
+.h103-current-room{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-top:.35rem;font-weight:normal}
+.h103-current-room small{font-weight:normal;color:var(--muted,#766e70)}
+.h103-timetable-room{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.25rem}
+.h103-timetable-room small{color:var(--muted,#766e70)}
+.h103-locate{font-size:.78rem;min-height:2rem;white-space:normal}
+.h103-room-indicator{display:block;font-weight:750;margin-top:.25rem;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.h103-room-schedule{font-size:.85rem;overflow-wrap:anywhere}
+@media (max-width:420px){.h103-locate{min-height:2.4rem}.h103-timetable-room{align-items:flex-start;flex-direction:column;gap:.25rem}}
+/* H10.4: scoped room facilities and verified visitor-only area panel */
+.h104-room-activities{margin-top:.8rem;padding-top:.7rem;border-top:1px solid var(--line,#ddd8d3)}
+.h104-room-activities h5{margin:0 0 .45rem;font-size:.9rem}
+.h104-actions,.h104-visitor-list{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.h104-unavailable{display:block;font-size:.79rem;line-height:1.5;color:var(--muted,#69645f);padding:.25rem 0}
+.h104-visitor-area{border-radius:12px;padding:.5rem .75rem;border:1px solid var(--line,#d9d4cc);background:var(--surface,#fffaf3);font-weight:600}
+.h104-visitor-areas{max-width:100%;min-width:0}
+
+/* H10.5 — room-to-Education links; responsive, focus-visible and safe return path. */
+.h105-room-links{margin-top:12px;padding-top:10px;border-top:1px solid var(--line,#ddd8d3);min-width:0}
+.h105-room-links>b{display:block;font-size:.92rem;margin-bottom:5px}
+.h105-room-links>.muted-text{margin:0 0 8px;font-size:.78rem}
+.h105-link-buttons{display:flex;flex-wrap:wrap;gap:7px;min-width:0}
+.h105-link-buttons button{max-width:100%;white-space:normal;min-height:38px;overflow-wrap:anywhere;text-align:left}
+.h105-return{display:flex;align-items:center;margin-bottom:9px}
+.h105-return button{min-height:38px;max-width:100%;white-space:normal}
+#panel-host .h105-link:focus-visible,#panel-host .h105-return button:focus-visible,#panel-host .h102-room:focus-visible{outline:3px solid #6d4b92!important;outline-offset:3px!important;box-shadow:0 0 0 5px #faf0ff}
+#panel-host .subject-card:focus,#panel-host [data-sub="subjects"]:focus,#panel-host .education95-school-activities:focus{outline:2px solid #6d4b92;outline-offset:3px}
+@media(max-width:600px){.h105-link-buttons{display:grid;grid-template-columns:minmax(0,1fr)}.h105-link-buttons button{width:100%;min-width:0}.h102-room-detail{max-width:100%;padding:11px}.h102-layout{min-width:0}.h102-map-wrap{min-width:0}.h105-return button{width:100%}}
+@media(prefers-reduced-motion:reduce){.h105-room-links button{transition:none!important}}
+@media(max-width:600px){#panel-host .dashboard>.card .row>b{white-space:normal;min-width:0;max-width:70%;overflow-wrap:anywhere;text-align:right}#panel-host .dashboard>.card .row{min-width:0}}
+/* H11.5 — scoped school-day permission and medical navigation; preserve existing theme. */
+.h115-context{border:1px solid var(--line,#dfd5cf);border-radius:12px;padding:12px;margin:12px 0;background:var(--surface,#fffaf6);min-width:0;overflow-wrap:anywhere}
+.h115-context h4{margin:0 0 7px;font-size:1rem}.h115-context p{margin:.5rem 0;font-size:.86rem}
+.h115-context details>summary{cursor:pointer;font-weight:700;padding:7px 0;min-height:36px}
+.h115-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:8px 0}
+.h115-choice{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.h115-choice button{white-space:normal;min-height:40px;max-width:100%;text-align:left}
+.h115-choice small{font-size:.77rem;color:var(--muted,#766e70);overflow-wrap:anywhere}
+.h115-feedback{border-inline-start:3px solid var(--accent,#6d4b92);padding:5px 10px}
+.h115-nurse-inline{border-top:1px solid var(--line,#dfd5cf);margin-top:10px;padding-top:10px;min-width:0}
+.h115-nurse-inline h3{font-size:1rem}.h115-nurse-inline button{max-width:100%;white-space:normal}
+.h115-health-nurse{min-width:0}.h115-health-nurse .h115-care{margin:10px 0}
+.h115-health-nurse .h115-care>section{margin:0;padding:10px;border:1px solid var(--line,#dfd5cf);border-radius:10px}
+.h115-stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;list-style:none;padding:0;margin:9px 0}
+.h115-stages li{border:1px solid var(--line,#dfd5cf);border-radius:8px;padding:7px;min-width:0;overflow-wrap:anywhere;font-size:.8rem}
+.h115-stages li span{display:block;font-weight:700}.h115-stages li small{display:block;font-size:.71rem;color:var(--muted,#766e70)}
+.h115-stages li.is-current{outline:2px solid var(--accent,#6d4b92);outline-offset:0}.h115-stages li.is-done{opacity:.8}
+#panel-host [data-h115-request]:focus-visible,#panel-host [data-h115-nav]:focus-visible,#panel-host .h115-context summary:focus-visible,#panel-host [data-nurse]:focus-visible{outline:3px solid #6d4b92!important;outline-offset:3px}
+@media(max-width:600px){.h115-choices{grid-template-columns:minmax(0,1fr)}.h115-stages{grid-template-columns:repeat(2,minmax(0,1fr))}.h115-context,.h115-health-nurse{max-width:100%}.h115-nurse-inline .inline-actions{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.h115-context *{transition:none!important}}
+/* H12.3 — compact Home food preparation, matching existing card/typography tokens. */
+.h123-kitchen{min-width:0}.h123-recipes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,255px),1fr));gap:12px;margin-top:12px}
+.h123-recipe{min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-sunken);display:flex;flex-direction:column;gap:8px}
+.h123-recipe-header{display:flex;flex-direction:column;gap:3px}.h123-recipe-header small,.h123-ingredient,.h123-recipe small{overflow-wrap:anywhere}
+.h123-ingredients{display:flex;gap:6px;flex-wrap:wrap}.h123-ingredient{font-size:.85rem;padding:3px 7px;border-radius:8px;background:color-mix(in srgb,var(--good) 10%,transparent)}
+.h123-missing{color:var(--bad)!important}.h123-actions{align-items:center;flex-wrap:wrap;margin-top:auto}
+.h123-caregiver{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:.8rem}.h123-caregiver select{min-width:110px;max-width:210px;width:100%}
+.h123-leftovers{margin-top:12px}.h123-leftovers>summary{cursor:pointer;font-weight:600}.h123-leftover{gap:8px;min-width:0;flex-wrap:wrap}.h123-leftover span{min-width:0;overflow-wrap:anywhere}
+.h123-feedback{min-height:1.2em}
+@media(max-width:480px){.h123-recipe{padding:10px}.h123-actions button{max-width:100%;white-space:normal}.h123-caregiver{flex:1}}
+
+/* H12.4 — Compact Home lunchbox; native selects stay within narrow viewports. */
+.h124-lunchbox{min-width:0}
+.h124-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:.7rem;margin:.85rem 0}
+.h124-fields label{display:grid;gap:.35rem;min-width:0}
+.h124-fields select{min-width:0;width:100%;max-width:100%}
+.h124-lunchbox p{overflow-wrap:anywhere}
+/* H12.6 — school meal companionship uses the existing food card and theme. */
+.h126-social{min-width:0;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.h126-social>summary{cursor:pointer;font-weight:650;overflow-wrap:anywhere}
+.h126-social .muted-text{overflow-wrap:anywhere}
+.h126-actions{display:flex;gap:7px;flex-wrap:wrap;min-width:0;margin:8px 0}
+.h126-actions button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:480px){.h126-actions>*{min-width:0;flex:1 1 170px}}
+
+/* H13.2: show the real H5 backend reason on unavailable romance choices. */
+.h5-romance-group .h13-activity-reason{display:block;text-align:left;font-size:.76em;line-height:1.35;font-weight:400;white-space:normal;overflow-wrap:anywhere;opacity:.9;margin-top:4px}
+.h5-romance-group button[disabled]{cursor:not-allowed;opacity:.76}
+
+/* H13.3 — audited narrow-screen education and public-school visitor overflow.
+   Keep the existing workbook requirement and ticket/access semantics intact. */
+.advanced-study-5a4 .section-heading{min-width:0;flex-wrap:wrap}
+.advanced-study-5a4 .section-heading>div{flex:1 1 180px;min-width:0}
+.advanced-study-5a4 .section-heading>.tag{flex:0 1 auto;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.school-public-h9 .mini-meta{min-width:0;align-items:center}
+.school-public-h9 .mini-meta>span{min-width:0;flex:1 1 170px;white-space:normal;overflow-wrap:anywhere}
+.school-public-h9 .mini-meta>button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.school-public-h9 .session-card{min-width:0}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}

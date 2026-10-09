@@ -323,7 +323,7 @@ function hobbyActionRaw(kind){
  else if(kind==='game'){S.needs.fun=clamp(S.needs.fun+14);advanceTime(60);feedback(S.age<6?'Played':'Played a game','Fun +14',60)}
  else if(kind==='exercise'){const mins=S.age<10?45:60;S.healthState.fitness=clamp(S.healthState.fitness+4+(catalogItem(equippedIn('shoes')?.key)?.exerciseBonus||0));practiceSkill('fitness',1.2);S.health=clamp(S.health+2);S.stress=clamp(S.stress-5);S.energy=clamp(S.energy-10);advanceTime(mins);feedback('Exercise','Fitness +4 • Stress -5',mins)}
 }
-function cook(){if(S.age<D.ageRules.cookingHelp){toast('You can help a caregiver instead of cooking independently.');return}if(!householdAccess('stove'))return;const supervised=S.age<13;S.development.skills.cooking=clamp(S.development.skills.cooking+(supervised?5:8));S.needs.hunger=clamp(S.needs.hunger-48);S.energy=clamp(S.energy+4);advanceTime(50);feedback(supervised?'Cooked with supervision':'Cooked a meal',`Cooking skill ${Math.round(S.development.skills.cooking)}% • Hunger improved`,50)}
+function cook(recipeId){const now=Date.now();if(now-H12_LAST_UI_COOK_CLICK_MS<800)return {ok:false,reason:'Cooking already submitted.'};H12_LAST_UI_COOK_CLICK_MS=now;return cookRecipeH122(recipeId||preferredRecipeH122())} // H12.2: one UI action per click, no free hunger
 function familyMeal(){S.needs.hunger=clamp(S.needs.hunger-52);S.needs.social=clamp(S.needs.social+10);S.family.closeness=clamp(S.family.closeness+2);advanceTime(45);feedback('Ate with family','Hunger improved • family closeness +2',45)}
 function homeComfort(kind){if(kind==='ac'&&!S.homeAmenities.ac){toast('This home does not currently have A/C.');return}if(kind==='fireplace'&&!S.homeAmenities.fireplace){toast('There is no fireplace available.');return}if(kind==='fan'&&!S.homeAmenities.fan){toast('No fan is available.');return}S.needs.comfort=clamp(S.needs.comfort+25);S.stress=clamp(S.stress-3);advanceTime(15);feedback(kind==='ac'?'Used A/C':kind==='fan'?'Used fan':'Sat by the fireplace','Comfort +25 • Stress -3',15)}
 function saveMoney(amount=25){amount=Math.min(S.money,Math.max(1,Number(amount)||25));if(!amount){toast('No cash available to save.');return}S.money-=amount;if(S.age<13){S.finance.parentSavings+=amount;feedback('Saved money',`${money(amount)} moved to parent-managed savings.`,5)}else{S.finance.savings+=amount;feedback('Saved money',`${money(amount)} moved to savings.`,5)}checkConditionalRequests()}
@@ -1454,6 +1454,7 @@ function performItemUse(itemId,useId){
 function eatPortion(itemId,portion){
  let it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;const d=catalogItem(it.key);if(!d||!['consumable','perishable'].includes(it.lifecycleType)||d.gift){toast('That is not food.');return}
  if(it.stored){toast('Take it out of storage first.');return}
+ if(d.ingredientOnly){toast('This ingredient needs preparation in a recipe.');return}
  it=openOne(it);const rem=it.remaining,amt=portion==='little'?Math.min(25,rem):portion==='half'?rem/2:rem;if(amt<=0)return;
  const f=amt/100,spoiled=isSpoiled(it),stale=!spoiled&&freshDaysLeft(it)<0;
  if(d.drink){S.needs.comfort=clamp(S.needs.comfort+(d.comfort||10)*f);S.needs.toilet=clamp(S.needs.toilet+6*f)}
@@ -1518,7 +1519,7 @@ function useInventoryItem(id,action='use'){
 // ---------- Gifts ----------
 function openGiftPersonModal(personId,itemId=null){
  if(itemId){const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return;openModal(`Give ${it.name} to…`,`<div class="modal-action-grid">${S.people.map(p=>`<button data-gift-item="${it.id}" data-gift-person="${p.id}">${esc(p.name)}</button>`).join('')}</div>`);return}
- const p=personById(personId);if(!p)return;const items=S.inventoryItems.filter(i=>!i.stored&&i.id!==S.phone.activeItemId&&!(i.opened&&['consumable','perishable'].includes(i.lifecycleType)));
+ const p=personById(personId);if(!p)return;const items=S.inventoryItems.filter(i=>!i.stored&&!(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(i.id))&&i.id!==S.phone.activeItemId&&!(i.opened&&['consumable','perishable'].includes(i.lifecycleType)));
  if(!items.length){toast('You do not have a suitable item to gift.');return}
  openModal(`Give something to ${firstName(p)}`,`<div class="modal-action-grid">${items.map(i=>`<button data-gift-item="${i.id}" data-gift-person="${p.id}">${catalogItem(i.key)?.icon||''} ${esc(i.name)}${i.quantity>1?` ×${i.quantity}`:''} <small>${i.sentimental>=35?'means something to you':money(itemValue(i)/(i.quantity||1))}</small></button>`).join('')}</div>`)
 }
@@ -1545,7 +1546,7 @@ function normalizeInventory(){
   delete it.currentValue
  }
  // merge legacy duplicates of stackable, unopened items into one stack
- const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored||it.microbusinessBatchReturn5D2)return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
+ const stacks={};S.inventoryItems=S.inventoryItems.filter(it=>{const d=catalogItem(it.key);if(!d?.stackable||it.opened||it.stored||it.microbusinessBatchReturn5D2||(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(it.id)))return true;const k=it.key+'|'+(it.freshUntil||'');if(stacks[k]){stacks[k].quantity+=it.quantity;return false}stacks[k]=it;return true});
  // one equipped item per slot
  const used=new Set();for(const it of S.inventoryItems)if(it.equipped){if(!it.slot||used.has(it.slot))it.equipped=false;else used.add(it.slot)}
  if(S.phone.activeItemId&&!phoneItems().some(i=>i.id===S.phone.activeItemId))S.phone.activeItemId=null;
@@ -1599,6 +1600,7 @@ function itemStatus(it){
 function effectChips(keyOrD){const d=typeof keyOrD==='string'?catalogItem(keyOrD):keyOrD;return (d?.effectLabels||[]).slice(0,4).map(e=>`<span class="fx-chip">${esc(e)}</span>`).join('')}
 function productTypeLabel(d){if(d?.workbook5A){const ws=typeof workbookDisplayState5A2==='function'?workbookDisplayState5A2(d.workbookItemId):null;return `${d.subject} • Grade ${d.grade} • Level ${d.workbookLevel}${ws&&ws.status!=='not_owned'?` • ${ws.label}`:''}`;} const lt=lifecycleOf(d);return lt==='consumable'?(d.drink?'1 drink':'1 serving • eat in portions'):lt==='perishable'?`Fresh for ${d.freshnessDays} days`:lt==='finite'?`${d.units} ${d.unitLabel}`:lt==='wearable'?`Wearable • ${SLOT_LABEL[d.slot]||'clothing'}`:lt==='device'?`Device${d.battery?' • battery':''}`:lt==='container'?`${d.capacity} ml • refillable`:lt==='progress'?({reading:'Read at your own pace',story:'Long story game',exercises:'Practice workbook',pieces:'500 pieces'})[d.progressType]||'Progress':lt==='gift'?'Give to someone':'Reusable'}
 function itemCardActions(it){
+ if(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(it.id))return '<div class="item-actions"><small class="muted-text">Packed for school lunch · Unpack at Home to use, sell or gift.</small></div>';
  const d=catalogItem(it.key)||{},lt=it.lifecycleType,b=[],more=[];const btn=(attrs,label,cls='small')=>`<button class="${cls}" ${attrs}>${esc(label)}</button>`;
  if(it.stored)b.push(btn(`data-item-action="store" data-item-id="${it.id}"`,'Take out'));
  else{
@@ -4334,7 +4336,6 @@ function goToSchool4C1(opts={}){
  const ev=ensureSchoolDayObligation();
  if(ev&&!isTerminal(ev.status)&&currentMinute()<=g.state.hours.attendanceCutoff)checkInToSchool(opts);
  else if(ev&&!isTerminal(ev.status)&&currentMinute()>g.state.hours.attendanceCutoff)processCalendar();
- if(typeof preparePackedLunch4C3==='function')preparePackedLunch4C3('auto');
  const late=currentMinute()>g.state.hours.tardyAfter;
  log('Went to school',`${localTransport()} • ${g.commute} min commute from ${timeLabel(depart)}${late?' • arrived after the on-time window':''}.`);
  return true
@@ -4535,15 +4536,11 @@ function schoolFacilityContext4C3(dateISO=currentDate(),minute=currentMinute()){
 }
 function eligiblePackedLunchCaregivers4C3(){return typeof householdCaregivers==='function'?householdCaregivers().filter(p=>p&&!p.movedAway):[]}
 function packedLunchItem4C3(rec=schoolFacilityDay4C3()){
- const id=rec?.packedLunch?.itemId;if(!id)return null;const it=S.inventoryItems.find(x=>x.id===id);return it&&it.key==='sandwich'?it:null
+ const p=rec?.packedLunchH12;if(p){const entry=p.entries?.find(x=>x.kind==='meal'&&x.status==='packed');return entry?S.inventoryItems.find(x=>x.id===entry.itemId&&x.key===entry.key)||null:null}return null
 }
+// H12.4: Legacy entrypoint is inert. Packing must originate from Home and owned item IDs.
 function preparePackedLunch4C3(mode='auto'){
- if(!S.school||!isSchoolDay())return null;const rec=schoolFacilityDay4C3();if(rec.packedLunch&&packedLunchItem4C3(rec))return rec.packedLunch;
- let it=findUsable('sandwich'),source='inventory',caregiver=null;
- if(!it){const caregivers=eligiblePackedLunchCaregivers4C3();if(mode==='caregiver'||(mode==='auto'&&caregivers.length&&hashOf(`${currentDate()}|${playerCurrentSchoolId4A2?.()||''}|packed`)%100<68)){caregiver=caregivers[Math.abs(hashOf(`${currentDate()}|caregiver`))%caregivers.length];it=addItem('sandwich',`from ${displayName(caregiver)}`);source='caregiver'}
-  else if(mode==='self'||(mode==='auto'&&S.age>=10&&(S.development?.skills?.cooking||0)>=20)){it=addItem('sandwich','prepared at home');source='self'}
- }
- if(!it)return null;rec.packedLunch={itemId:it.id,source,caregiverId:caregiver?.id||null,preparedBy:caregiver?displayName(caregiver):source==='self'?S.name:'Already in inventory',dateISO:currentDate()};return rec.packedLunch
+ const rec=schoolFacilityDay4C3();return rec.packedLunchH12?.status==='packed'||rec.packedLunchH12?.status==='carried'?rec.packedLunch:null;
 }
 function consumeSchoolFoodItem4C3(itemId,{label='Food',minutes=10}={}){
  const it=S.inventoryItems.find(x=>x.id===itemId);if(!it)return false;const d=catalogItem(it.key);if(!d||!['consumable','perishable'].includes(lifecycleOf(d))){toast('That is not school food.');return false}if(isSpoiled(it)){toast(`${it.name} is spoiled.`);return false}
@@ -4556,7 +4553,7 @@ function cafeteriaLunch4C3(){
 }
 function eatPackedLunch4C3(){
  const c=schoolFacilityContext4C3();if(!c.atSchool){toast('You are not at school.');return false}if(!c.lunchActive){toast(`Packed lunch is for the lunch period (${timeLabel(c.lunch.start)}–${timeLabel(c.lunch.end)}).`);return false}const ev=sessionEvent();if(!ev)return false;if(ev.ateLunch){toast('You already ate lunch.');return false}
- const rec=schoolFacilityDay4C3(),p=rec.packedLunch||preparePackedLunch4C3('auto'),it=p&&packedLunchItem4C3(rec);if(!it){toast('You do not have a packed lunch today.');return false}const ok=consumeSchoolFoodItem4C3(it.id,{label:'Lunch • packed lunch',minutes:15});if(ok){ev.ateLunch=true;ev.lunchSource='packed';rec.packedLunchConsumed=true}return ok
+ const rec=schoolFacilityDay4C3(),linked=typeof h124LunchMeal==='function'?h124LunchMeal(rec):null,it=linked?.item;if(!it){toast('You did not carry a packed meal to school today.');return false}h124AuthorizedRemoval=it.id;let ok=false;try{ok=consumeSchoolFoodItem4C3(it.id,{label:'Lunch • packed lunch',minutes:15});}finally{h124AuthorizedRemoval=null}if(ok){h124MarkConsumed(it.id);ev.ateLunch=true;ev.lunchSource='packed';rec.packedLunchConsumed=true;}return ok
 }
 function vendingSnack4C3(kind='snackPack'){
  const c=schoolFacilityContext4C3();if(!c.atSchool){toast('You are not at school.');return false}if(!c.freeWindow||c.day.classesRunning&&!c.break.active&&!c.lunchActive){toast('The vending machines are for breaks, lunch, or after school — not during class.');return false}
@@ -4595,7 +4592,7 @@ function schoolFacilitiesHtml4C3({embedded=false}={}){
  if(c.break.active||c.lunchActive||c.afterSchool){actions.push('<button class="small ghost" data-school-restroom4c3="1">Restroom</button>','<button class="small ghost" data-school-wash4c3="1">Wash hands</button>','<button class="small ghost" data-school-rest4c3="1">Short rest</button>')}
  if((c.break.active&&c.minute>=c.lunch.end)||c.lunchActive||c.afterSchool)actions.push('<button class="small ghost" data-school-vending4c3="snackPack">Vending snack</button>');
  const status=c.lunchActive?`Lunch until ${timeLabel(c.lunch.end)}`:c.break.active?`${c.break.label} • ${c.break.minutesLeft} min left`:c.afterSchool?'After-school campus time':c.day.classesRunning?'Class in session':'Campus time';
- const details=`<span><b>Facilities:</b> ${esc(status)}</span><span><b>Phone:</b> ${phone.ok?'Allowed in this context':esc(phone.reason)}</span>${packed&&!ev?.ateLunch?`<span><b>Packed lunch:</b> ${esc(rec.packedLunch.preparedBy||'Ready')}</span>`:''}`;
+ const details=`<span><b>Facilities:</b> ${esc(status)}</span><span><b>Phone:</b> ${phone.ok?'Allowed in this context':esc(phone.reason)}</span>${packed&&!ev?.ateLunch?`<span><b>Packed lunch:</b> ${esc(rec.packedLunch?.preparedBy||'Carried from Home')}</span>`:''}`;
  if(embedded)return `<div class="school-today-facility-meta">${details}</div><div class="school-today-action-group"><h4>Campus needs & facilities</h4><div class="school-today-buttons">${actions.join('')||'<span class="muted-text">No facility action available during this period.</span>'}</div></div>`;
  return `<div class="mini-meta school-facilities-4c3">${details}${actions.join('')}</div>`
 }
@@ -13281,7 +13278,10 @@ function romanceH5GroupHtml(p,opts,official){
  return groups.map(group=>{
   const aa=Object.entries(ROMANCE_H5_ACTIVITIES).filter(([,a])=>a.group===group);
   return `<details class="h5-romance-group" ${group==='Talk'?'open':''}><summary>${esc(group)} · ${aa.length} options</summary><div class="modal-action-grid">${aa.map(([id,a])=>{
-   const g=romanceH5MeetGate(p,a.mode);return `<button class="small" data-h5-action="${id}" data-person-id="${esc(p.id)}" ${g.ok?'':`title="${esc(g.reason)}"`}>${esc(a.label)}${g.ok?'': ' · check availability'}</button>`;
+   const g=romanceH5MeetGate(p,a.mode);
+   // H13.2: make the actual backend ineligibility visible, not an apparently
+   // working button that only displays a refusal after clicking.
+   return `<button class="small ${g.ok?'':'ghost'}" data-h5-action="${id}" data-person-id="${esc(p.id)}" ${g.ok?'':`disabled aria-disabled="true" title="${esc(g.reason||'Unavailable now')}"`}>${esc(a.label)}${g.ok?'':`<small class="h13-activity-reason">${esc(g.reason||'Unavailable now')}</small>`}</button>`;
   }).join('')}</div></details>`;
  }).join('');
 }
@@ -14522,7 +14522,19 @@ function h8OpenPersonSlots(personId){
  openModal(`Plan a call with ${displayName(p)}`,`<p class="muted-text">Check their schedule and your own bedtime. A real NPC can still decline. Video needs a smartphone; kids' watches support voice only.</p>${rows}<button class="ghost" data-h8-view="1">Back to calls</button>`)
 }
 function h8Click(b){const d=b?.dataset;if(!d)return false;
- if(d.h8Offer){const x=h8Propose(d.h8Offer,d.h8Day,Number(d.h8Minute),d.h8Video==='1');if(!x.ok)toast(x.reason);else toast(x.record.reason);save();render();return true}
+ if(d.h8Offer){
+  const requestedPersonId=d.h8Offer,x=h8Propose(requestedPersonId,d.h8Day,Number(d.h8Minute),d.h8Video==='1');
+  if(!x.ok)toast(x.reason);else toast(x.record?.reason||'Call request already recorded.');
+  // An accepted *or declined* response resolves this choice. Leaving the old
+  // slot picker open obstructs the Phone and People controls and invites replay.
+  if(x.ok)closeChoiceModal();
+  save();render();
+  if(x.ok&&typeof document!=='undefined'){
+   const returnButton=[...document.querySelectorAll('[data-h8-plan]')].find(b=>b.dataset.h8Plan===requestedPersonId);
+   if(returnButton)returnButton.focus();
+  }
+  return true;
+ }
  if(d.h8Join){const x=h8Join(d.h8Join);if(!x.ok)toast(x.reason);save();render();return true}
  if(d.h8Cancel){h8Cancel(d.h8Cancel);save();render();return true}
  if(d.h8Plan){h8OpenPersonSlots(d.h8Plan);return true}
@@ -14948,6 +14960,1752 @@ document.addEventListener('toggle',function(e){
  }else if(p.extra===name)p.extra=null;
  saveUI();
 },true);
+// H13.3: ESC with focus inside an open Extra Credit disclosure closes only that
+// disclosure. The global pause-menu ESC handler must not intercept this context.
+// This is UI state only: no school event, workbook, clock, or money mutations.
+document.addEventListener('keydown',function(e){
+ if(e.key!=='Escape'||!S)return;
+ const node=document.activeElement?.closest?.('#panel-host .education95-extra[open]');
+ if(!node||!document.getElementById('choice-overlay')?.classList.contains('hidden')||!document.getElementById('overlay')?.classList.contains('hidden'))return;
+ e.preventDefault();e.stopImmediatePropagation();node.open=false;
+ node.querySelector('summary')?.focus();
+},true);
+// H10.1 — deterministic campus registry and room sub-location foundation ONLY.
+// No map controls, room movement actions, new timetable, or hall passes.
+const SCHOOL_ROOM_SCHEMA_H10=1;
+const SCHOOL_ROOM_CACHE_H10=new Map();
+function schoolRoomSlugH10(s){return String(s||'room').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,52)||'room'}
+function schoolFacilityTypeH10(label){
+ const f=String(label||'').toLowerCase();
+ if(/science|stem|robot|laborator|\blab\b|advanced lab/.test(f))return 'science';
+ if(/gym|stadium|sports|athletic|court|field/.test(f))return 'sports';
+ if(/art|studio|theater|theatre|performing/.test(f))return 'arts';
+ if(/music|piano/.test(f))return 'music';
+ if(/media|newspaper/.test(f))return 'media';
+ if(/librar|story corner|reading/.test(f))return 'library';
+ if(/auditorium/.test(f))return 'auditorium';
+ if(/garden|play yard|playground/.test(f))return 'outdoor';
+ if(/classroom|play room/.test(f))return 'classroom';
+ return 'facility';
+}
+function schoolRoomsH10(schoolId){
+ const school=schoolById(schoolId);if(!school)return [];
+ const sid=String(school.schoolId),facilities=Array.isArray(school.facilities)?school.facilities.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[];
+ const signature=JSON.stringify([sid,school.educationLevel,facilities]);const prev=SCHOOL_ROOM_CACHE_H10.get(sid);
+ if(prev?.signature===signature)return prev.rooms;
+ const rooms=[],used=new Set();
+ const make=(key,name,type,zone,access,source)=>{
+  const root=schoolRoomSlugH10(key);let k=root,index=2;while(used.has(k))k=root+'_'+index++;
+  used.add(k);const roomId=sid+'::'+k;
+  rooms.push(Object.freeze({roomId,schoolId:sid,name,type,zone,floor:zone==='Main'?'Ground':'First',access,facilitySource:source||null,layout:Object.freeze({column:rooms.length%4,row:Math.floor(rooms.length/4)}),connections:[]}));
+ };
+ // Basic necessities are school infrastructure, not claims about specialized facilities.
+ make('entrance','Entrance','entrance','Main','public','generic');
+ make('main_hall','Main Hall','hall','Main','enrolled_student','generic');
+ make('main_office','Main Office','office','Main','staff','generic');
+ make('homeroom','Homeroom','classroom','Learning','scheduled_class','generic');
+ make('restroom','Restroom','restroom','Main','enrolled_student','generic');
+ make('nurse_office','Nurse Office','health','Main','health','generic');
+ if(school.educationLevel!=='kindergarten')make('cafeteria','Cafeteria','food','Main','food','generic');
+ for(const facility of facilities){
+  const type=schoolFacilityTypeH10(facility);
+  const zone=['science','classroom','library','media'].includes(type)?'Learning':['sports','outdoor'].includes(type)?'Outdoors':'Activities';
+  const access=['auditorium','arts','music','facility'].includes(type)?'event':'enrolled_student';
+  make('facility_'+facility,facility,type,zone,access,facility);
+ }
+ const frozen=Object.freeze(rooms.map((r,i)=>Object.freeze({...r,connections:Object.freeze(i===0?[sid+'::main_hall']:i===1?rooms.filter((_,j)=>j!==1).map(x=>x.roomId):[sid+'::main_hall'])})));
+ SCHOOL_ROOM_CACHE_H10.set(sid,{signature,rooms:frozen});return frozen;
+}
+function schoolRoomByIdH10(schoolId,roomId){return schoolRoomsH10(schoolId).find(r=>r.roomId===roomId)||null}
+function schoolRoomGraphH10(schoolId){
+ const rooms=schoolRoomsH10(schoolId),byId=new Map(rooms.map(r=>[r.roomId,r])),graph={};
+ const cost=r=>r.zone==='Outdoors'?4:r.zone==='Learning'?3:r.zone==='Activities'?2:1;
+ for(const r of rooms){graph[r.roomId]=Object.freeze(r.connections.map(id=>Object.freeze({to:id,minutes:Math.max(cost(r),cost(byId.get(id)))})));}
+ return Object.freeze(graph);
+}
+function schoolRoomRouteH10(schoolId,fromId,toId){
+ const graph=schoolRoomGraphH10(schoolId);if(!graph[fromId]||!graph[toId])return {ok:false,reason:'unknown_room',path:[],minutes:null};
+ const distances=new Map([[fromId,0]]),paths=new Map([[fromId,[fromId]]]),todo=new Set(Object.keys(graph));
+ while(todo.size){let curr=[...todo].sort((a,b)=>(distances.get(a)??Infinity)-(distances.get(b)??Infinity)||a.localeCompare(b))[0];
+  if(!Number.isFinite(distances.get(curr)??Infinity))break;todo.delete(curr);if(curr===toId)break;
+  for(const edge of graph[curr])if(todo.has(edge.to)){const d=distances.get(curr)+edge.minutes;const current=distances.get(edge.to)??Infinity;
+   if(d<current){distances.set(edge.to,d);paths.set(edge.to,[...paths.get(curr),edge.to]);}}
+ }
+ return distances.has(toId)?{ok:true,path:paths.get(toId),minutes:distances.get(toId)}:{ok:false,reason:'unreachable_room',path:[],minutes:null};
+}
+function schoolRoomTravelMinutesH10(schoolId,fromId,toId){return schoolRoomRouteH10(schoolId,fromId,toId).minutes}
+function schoolRoomForSubjectH10(schoolId,subject){
+ const rooms=schoolRoomsH10(schoolId),s=String(subject||'').toLowerCase();let match=null;
+ if(/science|chemist|biolog|physic|stem|technology/.test(s))match='science';
+ else if(/physical education|sport|fitness|gym/.test(s))match='sports';
+ else if(/visual art|\bart\b|drawing/.test(s))match='arts';
+ else if(/music|orchestra/.test(s))match='music';
+ else if(/media|journal/.test(s))match='media';
+ const room=(match&&rooms.find(x=>x.type===match))||rooms.find(x=>x.type==='classroom'&&x.facilitySource==='generic');return room||null;
+}
+function schoolRoomRuntimeH10(){const r=schoolDayRuntime4C1();if(!Object.prototype.hasOwnProperty.call(r,'currentRoomId'))r.currentRoomId=null;if(!Object.prototype.hasOwnProperty.call(r,'roomSchoolIdH10'))r.roomSchoolIdH10=null;r.roomSchemaH10=SCHOOL_ROOM_SCHEMA_H10;return r;}
+function h10ActivePromVenue(){const pr=typeof promNightRecord6B1==='function'?promNightRecord6B1():null;return !!pr&&pr.status==='attending'&&S.location==='School'}
+function reconcileSchoolRoomH10(){
+ const r=schoolRoomRuntimeH10(),sid=typeof playerCurrentSchoolId4A2==='function'?playerCurrentSchoolId4A2():null;
+ const physical=S.location==='School'?locationSchoolId4C1():null;
+ // External H9 guests, H3 visits, and Prom keep their canonical venue authority.
+ if(!sid||!schoolById(sid)||!physical||physical!==sid||h10ActivePromVenue()){
+  r.currentRoomId=null;r.roomSchoolIdH10=null;return null;
+ }
+ const previous=schoolRoomByIdH10(sid,r.currentRoomId);
+ if(r.roomSchoolIdH10!==sid||!previous){r.currentRoomId=sid+'::entrance';r.roomSchoolIdH10=sid;}
+ return schoolRoomByIdH10(sid,r.currentRoomId);
+}
+function currentSchoolRoomH10(){return reconcileSchoolRoomH10();}
+// Foundation-only state setter: no public button invokes it; H10.2 will add the
+// movement transaction/time/access checks before exposing user-initiated moves.
+function setSchoolRoomH10(roomId){
+ const current=reconcileSchoolRoomH10(),sid=current?.schoolId;
+ if(!sid)return {ok:false,reason:'not_enrolled_at_this_campus'};
+ const room=schoolRoomByIdH10(sid,roomId);if(!room)return {ok:false,reason:'room_not_on_campus'};
+ const r=schoolRoomRuntimeH10();r.currentRoomId=room.roomId;r.roomSchoolIdH10=sid;return {ok:true,roomId:room.roomId};
+}
+function schoolRoomAccessH10(schoolId,roomId,{purpose='view'}={}){
+ const room=schoolRoomByIdH10(schoolId,roomId);if(!room)return {ok:false,reason:'unknown_room'};
+ if(purpose==='view')return {ok:true,room};
+ const cur=currentSchoolRoomH10();if(!cur||cur.schoolId!==schoolId)return {ok:false,reason:'enrolled_school_presence_required'};
+ if(room.access==='staff')return {ok:false,reason:'staff_room_restricted'};
+ if(schoolDayState4C1().classesRunning&&room.roomId!==cur.roomId&&!schoolFacilityContext4C3().freeWindow)return {ok:false,reason:'class_in_session_hall_pass_not_implemented'};
+ return {ok:true,room};
+}
+function migrateSchoolRoomsH10(){return reconcileSchoolRoomH10();}
+// After the verified H9 + H9.5 wrappers: keep room state synchronized with
+// canonical coarse location and school changes, without introducing new trips.
+const h10PriorSetLocation=setPlayerLocation4C1;
+setPlayerLocation4C1=function(...args){const result=h10PriorSetLocation(...args);reconcileSchoolRoomH10();return result;};
+const h10PriorReconcileSchool=reconcileSchoolDay4C1;
+reconcileSchoolDay4C1=function(...args){const result=h10PriorReconcileSchool(...args);reconcileSchoolRoomH10();return result;};
+const h10PriorMigrateSchool=migrateSchoolDay4C1;
+migrateSchoolDay4C1=function(...args){const result=h10PriorMigrateSchool(...args);migrateSchoolRoomsH10();return result;};
+const h10PriorTransferSchool=transferPlayerSchool4A2;
+transferPlayerSchool4A2=function(...args){const result=h10PriorTransferSchool(...args);if(result)reconcileSchoolRoomH10();return result;};
+// H10.2 — Campus Map interaction, physical room travel and Today-only UI.
+// Uses H10.1 school-scoped rooms and Phase 4C's real clock/location.
+// Timetable-room display, facility usage and visitor map are deferred to H10.3/4.
+function h102Prefs(){
+ if(!UI.h10Map||typeof UI.h10Map!=='object')UI.h10Map={open:false,selected:null,schoolId:null};
+ const p=UI.h10Map,sid=playerCurrentSchoolId4A2?.()||null;
+ if(p.schoolId!==sid){p.schoolId=sid;p.selected=null;p.open=false;}
+ return p;
+}
+function schoolRoomMoveGateH102(targetId){
+ const sid=playerCurrentSchoolId4A2?.(),room=schoolRoomByIdH10(sid,targetId);
+ if(!room)return {ok:false,reason:'That room does not exist on your enrolled campus.'};
+ const present=currentSchoolRoomH10(),day=schoolDayState4C1();
+ if(!present||S.location!=='School'||day.locationSchoolId!==sid||!day.atSchool)return {ok:false,reason:'Go to your own school before moving between its rooms.'};
+ if(room.roomId===present.roomId)return {ok:false,reason:'You are already here.'};
+ if(!day.campusOpen)return {ok:false,reason:'Campus rooms are closed at this time.'};
+ const facility=schoolFacilityContext4C3();
+ if(!facility.freeWindow)return {ok:false,reason:'Class is in session. Wait for a scheduled break or free time; hall passes arrive in H11.'};
+ const permission=schoolRoomAccessH10(sid,room.roomId,{purpose:'enter'});
+ if(!permission.ok)return {ok:false,reason:permission.reason==='staff_room_restricted'?'Staff rooms are restricted.':permission.reason==='class_in_session_hall_pass_not_implemented'?'Movement is unavailable during class.':permission.reason||'This room is restricted.'};
+ const route=schoolRoomRouteH10(sid,present.roomId,room.roomId);
+ if(!route.ok||!Number.isFinite(route.minutes)||route.minutes<=0)return {ok:false,reason:'No usable path to this room.'};
+ const m=currentMinute(),end=facility.break.active?facility.break.end:facility.lunchActive?facility.lunch.end:day.phase==='arrival'?day.hours.classStart:day.hours.campusClose;
+ if(m+route.minutes>end)return {ok:false,reason:`The route takes ${route.minutes} minutes; there is not enough free time before ${timeLabel(end)}.`};
+ return {ok:true,room,current:present,route,minutes:route.minutes};
+}
+function schoolRoomMoveH102(targetId){
+ const gate=schoolRoomMoveGateH102(targetId);
+ if(!gate.ok)return gate;
+ const sid=gate.room.schoolId,before=S.location,from=gate.current.name;
+ advanceTime(gate.minutes,{silent:true});
+ // Time progression and existing event handlers retain final location authority.
+ if(S.location!==before||!currentSchoolRoomH10()||locationSchoolId4C1()!==sid)return {ok:false,reason:'Your school location changed while traveling; the room move was cancelled.'};
+ const updated=setSchoolRoomH10(targetId);if(!updated.ok)return updated;
+ log('School room change',`${from} → ${gate.room.name} • ${gate.minutes} min on campus.`);
+ return {ok:true,roomId:targetId,minutes:gate.minutes};
+}
+function schoolCampusMapHtmlH102(){
+ const sid=playerCurrentSchoolId4A2?.(),rooms=sid?schoolRoomsH10(sid):[];
+ if(!rooms.length)return '';
+ const p=h102Prefs(),here=currentSchoolRoomH10(),chosen=schoolRoomByIdH10(sid,p.selected)||here||rooms[0];
+ const route=here?schoolRoomRouteH10(sid,here.roomId,chosen.roomId):null;
+ const gate=schoolRoomMoveGateH102(chosen.roomId);
+ const status=here?'You are on campus':'Preview only · go to your enrolled school to move';
+ const kinds=[['Main','Main campus'],['Learning','Classrooms & study'],['Activities','Activities & events'],['Outdoors','Outdoor facilities']];
+ const tiles=kinds.map(([zone,title])=>{
+  const items=rooms.filter(r=>r.zone===zone);if(!items.length)return '';
+  return `<div class="h102-zone"><h5>${title}</h5><div class="h102-room-grid">${items.map(r=>{
+   const isHere=here?.roomId===r.roomId,selected=chosen.roomId===r.roomId;
+   const locked=r.access==='staff',tags=[isHere?'You are here':'',locked?'Staff only':''].filter(Boolean);
+   return `<button type="button" class="h102-room ${selected?'is-selected':''} ${isHere?'is-current':''} ${locked?'is-locked':''}" data-h102-select="${esc(r.roomId)}" aria-pressed="${selected}" aria-label="${esc(r.name)}${isHere?', you are here':''}${locked?', staff only':''}"><span class="h102-room-name">${esc(r.name)}</span><small>${esc(r.type)}${tags.length?' · '+esc(tags.join(' · ')):''}</small></button>`;
+  }).join('')}</div></div>`;
+ }).join('');
+ const distance=here&&route?.ok?route.minutes+' min from your location':null;
+ const pathText=here&&route?.ok?route.path.map(id=>schoolRoomByIdH10(sid,id)?.name||'Room').join(' → '):'';
+ const reason=gate.ok?`Walk to ${chosen.name} via ${gate.route.path.length-1} connection${gate.route.path.length===2?'':'s'}.`:
+   gate.reason;
+ return `<details class="h102-campus" data-h102-map="1" ${p.open?'open':''}><summary>Campus Map <span class="h102-mini">${esc(here?.name||'Preview campus')} · ${rooms.length} rooms</span></summary>
+ <div class="h102-map-wrap"><p class="muted-text">${esc(status)}. Select a room to inspect it; selecting never moves you or advances time.</p>
+ <div class="h102-layout"><div class="h102-zones" role="group" aria-label="School campus rooms">${tiles}</div>
+ <aside class="h102-room-detail" aria-label="Selected campus room"><b>${esc(chosen.name)}</b><p class="muted-text">${esc(chosen.type)} · ${esc(chosen.zone)} · ${esc(chosen.floor)} floor</p>
+ <p>${here?.roomId===chosen.roomId?'<b>You are here.</b>':distance?`Route: <b>${esc(distance)}</b><br><small>${esc(pathText)}</small>`:'Travel estimate available on campus.'}</p>
+ <p class="muted-text">${esc(reason||'Campus room')}</p>
+ ${gate.ok?`<button type="button" class="small primary" data-h102-move="${esc(chosen.roomId)}">Go there · ${gate.minutes} min</button>`:
+ `<button type="button" class="small ghost" disabled aria-disabled="true">${here?.roomId===chosen.roomId?'Current room':'Go there unavailable'}</button>`}
+ <p class="muted-text h102-note">School classes, facilities and event attendance still use their existing controls. A room shown here does not grant permission to use it.</p></aside></div></div></details>`;
+}
+const h102PriorSchoolPanel=schoolPanel;
+schoolPanel=function(){
+ const html=h102PriorSchoolPanel();
+ if(!S?.school||S.location==='School'&&locationSchoolId4C1()&&locationSchoolId4C1()!==playerCurrentSchoolId4A2?.()||typeof h9ActualPresence==='function'&&Object.values(h9State().passes).some(r=>h9ActualPresence(r)))return html;
+ const container=document.createElement('div');container.innerHTML=html;
+ const today=container.querySelector('[data-school-today]');if(!today)return html;
+ const panel=document.createElement('div');panel.innerHTML=schoolCampusMapHtmlH102();
+ if(panel.firstElementChild)today.append(panel.firstElementChild);
+ return container.innerHTML;
+};
+const h102PriorPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button');
+ if(b&&b.dataset.h102Select){
+  const id=b.dataset.h102Select,sid=playerCurrentSchoolId4A2?.();
+  if(!schoolRoomByIdH10(sid,id))return;
+  const p=h102Prefs();p.selected=id;p.open=true;saveUI();render();
+  const focus=Array.from(document.querySelectorAll('#panel-host [data-h102-select]')).find(x=>x.dataset.h102Select===id);focus?.focus({preventScroll:true});return;
+ }
+ if(b&&b.dataset.h102Move){
+  const result=schoolRoomMoveH102(b.dataset.h102Move);
+  if(!result.ok)toast(result.reason);
+  save();render();return;
+ }
+ return h102PriorPanelClick(e);
+};
+document.addEventListener('toggle',e=>{
+ if(!e.target?.matches?.('#panel-host details[data-h102-map]'))return;
+ const p=h102Prefs();p.open=e.target.open;saveUI();
+},true);
+// H10.3 — Spatial annotations for the ONE existing Phase 4C timetable and Today panel.
+// No independent calendar/attendance/room movement engine, hall pass, or new save fields.
+function schoolPeriodRoomH103(schoolId,period){
+ if(!schoolId||!period)return null;
+ if(period.kind==='lunch')return schoolRoomsH10(schoolId).find(r=>r.type==='food')||schoolRoomByIdH10(schoolId,schoolId+'::main_hall');
+ if(period.kind==='class')return schoolRoomForSubjectH10(schoolId,period.subject);
+ return null;
+}
+function schoolTimetableRoomsH103(dateISO=currentDate(),schoolId=playerCurrentSchoolId4A2?.()){
+ if(!schoolId||!schoolById(schoolId)||!S.school||!needsFormalSchool())return [];
+ // Use the existing timetable as the ONLY period authority. The room model is derived,
+ // never a second timetable saved on S.
+ return timetableFor(dateISO).map(p=>{
+  const room=schoolPeriodRoomH103(schoolId,p);
+  const subject=S.school.subjects?.find(s=>s.name===p.subject);
+  return {...p,roomId:room?.roomId||null,roomName:room?.name||'Room unavailable',schoolId,teacher:subject?.teacher?.name||null};
+ });
+}
+function schoolLiveRoomsH103(dateISO=currentDate(),minute=currentMinute()){
+ const schoolId=playerCurrentSchoolId4A2?.()||null;
+ const day=schoolDayState4C1(dateISO,minute);
+ if(!day.isSchoolDay||!schoolId||day.schoolId!==schoolId)return {schoolId,dateISO,minute,current:null,next:null};
+ const periods=schoolTimetableRoomsH103(dateISO,schoolId);
+ const raw=periods.find(p=>minute>=p.start&&minute<p.end)||null;
+ const br=typeof schoolShortBreak4C3==='function'?schoolShortBreak4C3(minute):{active:false};
+ const current=br.active?null:raw;
+ const next=br.active&&raw?.kind==='class'?raw:periods.find(p=>p.start>minute)||null;
+ return {schoolId,dateISO,minute,current,next};
+}
+function schoolLocateRoomH103(roomId){
+ const sid=playerCurrentSchoolId4A2?.(),room=schoolRoomByIdH10(sid,roomId);
+ if(!room)return {ok:false,reason:'This room is not part of your enrolled campus.'};
+ const p=h102Prefs();p.open=true;p.selected=room.roomId;p.schoolId=sid;saveUI();
+ // Intentionally no setSchoolRoom, no clock advance, and no access grant.
+ render();
+ const el=Array.from(document.querySelectorAll('#panel-host [data-h102-select]')).find(b=>b.dataset.h102Select===room.roomId);
+ el?.focus({preventScroll:true});return {ok:true,roomId:room.roomId};
+}
+function schoolLocateButtonH103(p,context='timetable'){
+ if(!p?.roomId)return '';
+ return `<button type="button" class="small ghost h103-locate" data-h103-locate="${esc(p.roomId)}" aria-label="Locate ${esc(p.roomName)} for ${esc(p.kind==='lunch'?'lunch':p.subject||'class')} on Campus Map">Locate on Map</button>`;
+}
+const h103PriorSessionHtml=schoolSessionHtml;
+schoolSessionHtml=function(opts={}){
+ const html=h103PriorSessionHtml(opts);
+ if(!html||!S.school||!needsFormalSchool()||!isSchoolDay())return html;
+ const periods=schoolTimetableRoomsH103(),node=document.createElement('div');node.innerHTML=html;
+ const rows=Array.from(node.querySelectorAll('ol.timetable > li'));
+ rows.forEach((row,i)=>{
+  const p=periods[i];if(!p?.roomId)return;
+  row.setAttribute('data-h103-period',p.id);
+  const meta=document.createElement('div');meta.className='h103-timetable-room';
+  meta.innerHTML=`<small>${esc(p.roomName)}${p.kind==='class'&&p.teacher?' · '+esc(p.teacher):''}</small>${schoolLocateButtonH103(p)}`;
+  row.append(meta);
+ });
+ return node.innerHTML;
+};
+const h103PriorClassContext=schoolClassContextHtml4C2;
+schoolClassContextHtml4C2=function(opts={}){
+ const html=h103PriorClassContext(opts);
+ if(!html||!S.school||!needsFormalSchool())return html;
+ const live=schoolLiveRoomsH103(),node=document.createElement('div');node.innerHTML=html;
+ const summary=node.querySelector('.school-class-context-4c2');if(!summary)return html;
+ // This stays INSIDE the existing current/next/attendance summary, not a new card.
+ const slots=Array.from(summary.querySelectorAll(':scope > span'));
+ const write=(slot,p,label)=>{
+  if(!slot||!p?.roomId)return;
+  const line=document.createElement('span');line.className='h103-current-room';
+  line.innerHTML=`<small>${esc(label)}: ${esc(p.roomName)}${p.kind==='class'&&p.teacher?' · '+esc(p.teacher):''}</small> ${schoolLocateButtonH103(p,'live')}`;
+  slot.append(line);
+ };
+ write(slots[0],live.current,'Room');write(slots[1],live.next,'Room');
+ return node.innerHTML;
+};
+const h103PriorCampusMap=schoolCampusMapHtmlH102;
+schoolCampusMapHtmlH102=function(){
+ const html=h103PriorCampusMap();if(!html)return html;
+ const live=schoolLiveRoomsH103();if(!live.current&&!live.next)return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ const current=live.current?.roomId,next=live.next?.roomId;
+ for(const b of node.querySelectorAll('[data-h102-select]')){
+  const id=b.dataset.h102Select,marks=[];
+  if(id===current)marks.push('Current class');
+  if(id===next)marks.push('Next period');
+  if(marks.length){const mark=document.createElement('small');mark.className='h103-room-indicator';mark.textContent=marks.join(' · ');b.append(mark);b.setAttribute('aria-label',(b.getAttribute('aria-label')||'')+', '+marks.join(', '));}
+ }
+ const detail=node.querySelector('.h102-room-detail');
+ const chosen=schoolRoomByIdH10(live.schoolId,h102Prefs().selected)||currentSchoolRoomH10()||schoolRoomsH10(live.schoolId)[0];
+ if(detail&&chosen){
+  const matching=schoolTimetableRoomsH103().filter(p=>p.roomId===chosen.roomId&&p.kind==='class');
+  if(matching.length){const note=document.createElement('p');note.className='muted-text h103-room-schedule';note.textContent='Scheduled here: '+matching.map(p=>p.subject+' '+timeLabel(p.start)).join(' · ');detail.append(note);}
+ }
+ return node.innerHTML;
+};
+const h103PriorPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button[data-h103-locate]');
+ if(b){const result=schoolLocateRoomH103(b.dataset.h103Locate);if(!result.ok)toast(result.reason);return;}
+ return h103PriorPanelClick(e);
+};
+// H10.4 — Room-specific existing facility actions and event-only visitor-area display.
+// No new food, hall pass, student enrollment, timetable, visitor credential, or save schema.
+function schoolRoomActionsH104(room){
+ if(!room)return [];
+ switch(room.type){
+  case 'restroom':return [['toilet','Use restroom'],['wash','Wash hands']];
+  case 'food':return [['cafeteria','Cafeteria lunch'],['packed','Eat packed lunch'],['social','Sit with school friends'],['vending','Vending snack']];
+  case 'hall':return [['rest','Short rest'],['vending','Vending snack']];
+  case 'library':case 'health':return [['rest','Short rest']];
+  default:return [];
+ }
+}
+function schoolRoomActionGateH104(roomId,action){
+ const sid=playerCurrentSchoolId4A2?.(),room=schoolRoomByIdH10(sid,roomId);
+ if(!room)return {ok:false,reason:'Unknown room on your enrolled campus.'};
+ if(!schoolRoomActionsH104(room).some(([key])=>key===action))return {ok:false,reason:'That activity is not supported in this room.'};
+ const here=currentSchoolRoomH10(),day=schoolDayState4C1(),ctx=schoolFacilityContext4C3();
+ if(S.location!=='School'||locationSchoolId4C1()!==sid||!here||!day.atSchool||!day.campusOpen)return {ok:false,reason:'You must be at your enrolled school during campus hours.'};
+ if(here.roomId!==room.roomId)return {ok:false,reason:`Go to ${room.name} before using its facilities.`};
+ const permission=schoolRoomAccessH10(sid,room.roomId,{purpose:'enter'});
+ if(!permission.ok)return {ok:false,reason:'You are not permitted to use this room.'};
+ if(action==='toilet')return ctx.day.classesRunning&&!ctx.break.active&&!ctx.lunchActive&&(S.needs?.toilet||0)<75?
+  {ok:false,reason:'Wait for a break; urgent restroom permission is unchanged.'}:{ok:true,room};
+ if(action==='wash')return ctx.day.classesRunning&&!ctx.break.active&&!ctx.lunchActive?
+  {ok:false,reason:'Wash hands during a break, lunch, or after class.'}:{ok:true,room};
+ if(['cafeteria','packed','social'].includes(action)){
+  if(!ctx.lunchActive)return {ok:false,reason:'Lunch activities are only available during the scheduled lunch period.'};
+  if(action!=='social'&&!sessionEvent())return {ok:false,reason:'No active school session for lunch.'};
+  if(action!=='social'&&sessionEvent()?.ateLunch)return {ok:false,reason:'You have already eaten lunch today.'};
+  // Packed-lunch preparation and caregiver policy are owned by Phase 4C.3, not this display gate.
+ }
+ if(action==='rest'){
+  if(!(ctx.break.active||ctx.lunchActive||ctx.afterSchool))return {ok:false,reason:'Rest only during a break, lunch, or after school.'};
+  if((schoolFacilityDay4C3().restUses||0)>=2)return {ok:false,reason:'The daily school-rest limit has been reached.'};
+  if(ctx.break.active&&ctx.break.minutesLeft<5)return {ok:false,reason:'Too little break time remains.'};
+ }
+ if(action==='vending'){
+  if(!(ctx.break.active&&ctx.minute>=ctx.lunch.end||ctx.lunchActive||ctx.afterSchool))return {ok:false,reason:'Vending is available during lunch or later free periods.'};
+  if((Number(S.money)||0)<3)return {ok:false,reason:'You need $3 for a vending snack.'};
+ }
+ return {ok:true,room};
+}
+function schoolRoomActionH104(roomId,action){
+ const gate=schoolRoomActionGateH104(roomId,action);
+ if(!gate.ok)return gate;
+ // Existing Phase 4C.3 functions remain the gameplay/clock/inventory authority.
+ const handlers={toilet:()=>schoolRestroom4C3(),wash:()=>schoolWashHands4C3(),cafeteria:()=>cafeteriaLunch4C3(),packed:()=>eatPackedLunch4C3(),social:()=>schoolLunchSocial4C3(),vending:()=>vendingSnack4C3('snackPack'),rest:()=>shortSchoolRest4C3()};
+ const worked=handlers[action]?.();return worked?{ok:true,action,roomId}:{ok:false,reason:'The existing school facility could not complete that action.'};
+}
+function schoolRoomActionHtmlH104(room){
+ const actions=schoolRoomActionsH104(room);if(!actions.length)return `<p class="muted-text h104-info">Room context only. School study, clubs and events use their existing Education controls.</p>`;
+ const here=currentSchoolRoomH10(),inRoom=here?.roomId===room.roomId;
+ const entries=actions.map(([kind,label])=>{
+  const gate=schoolRoomActionGateH104(room.roomId,kind);
+  if(!inRoom)return '';
+  return gate.ok?`<button type="button" class="small ghost" data-h104-room="${esc(room.roomId)}" data-h104-action="${kind}">${label}</button>`:
+   `<span class="h104-unavailable" title="${esc(gate.reason)}">${label} · ${esc(gate.reason)}</span>`;
+ }).filter(Boolean).join('');
+ return `<div class="h104-room-activities" aria-label="Actions in selected room"><h5>In this room</h5>${inRoom?`<div class="h104-actions">${entries||'<p class="muted-text">No facility action is currently available.</p>'}</div>`:
+ `<p class="muted-text">Go to ${esc(room.name)} first. Selecting the room does not give access to its activities.</p>`}</div>`;
+}
+function schoolVisitorContextH104(){
+ if(S.location!=='School')return null;
+ const physical=locationSchoolId4C1(),sid=playerCurrentSchoolId4A2?.();if(!physical||physical===sid)return null;
+ const h9=Object.values(S.schoolPublicH9?.passes||{}).find(r=>r&&r.schoolId===physical&&r.role==='public_event_visitor'&&r.hostApproval==='Approved'&&['Approved','NotRequired'].includes(r.guardianApproval)&&r.credential&&r.arrival?.credential===r.credential&&r.ticket?.paid&&Array.isArray(r.visitorAreas)&&h9ActualPresence(r));
+ if(h9)return {source:'H9 public visitor',eventId:h9.eventId,schoolId:physical,areas:h9.visitorAreas.slice(),credential:h9.credential,attending:true};
+ const h3=Object.values(S.schoolGuestsH3?.invitations||{}).find(e=>e&&e.schoolId===physical&&e.status==='Attending'&&e.rsvp==='Accepted'&&e.credential&&e.ticket?.paid&&e.arrivedAt?.schoolId===physical&&e.arrivedAt?.credential===e.credential&&e.dateISO===currentDate()&&currentMinute()>=e.startMinute&&currentMinute()<e.endMinute&&Array.isArray(e.permittedAreas));
+ if(h3)return {source:'H3 invited guest',eventId:h3.eventId,schoolId:physical,areas:h3.permittedAreas.slice(),credential:h3.credential,attending:true};
+ return {source:'Unverified visitor',eventId:null,schoolId:physical,areas:[],credential:null,attending:false};
+}
+function schoolVisitorAreasHtmlH104(v){
+ if(!v)return '';
+ // This is an area-policy illustration only: event check-in, attendance, activity and
+ // checkout remain solely in the H9/H3 authority. No fake physical room ID or movement.
+ const allowed=['entrance','hall','auditorium'].filter(a=>v.areas.includes(a));
+ return `<section class="card wide h104-visitor-areas" data-h104-visitor="${v.attending?'approved':'denied'}"><h3>Visitor areas · ${esc(schoolDisplayName(v.schoolId))}</h3>
+ <p class="muted-text">${v.attending?`${esc(v.source)} · event-only authorization`:'No currently verified visitor pass at this school.'} Student timetables, classrooms, clubs, school elections and the enrolled campus map are unavailable.</p>
+ <div class="h104-visitor-list" aria-label="Authorized event areas">${allowed.map(a=>`<span class="h104-visitor-area">${esc(a==='hall'?'Event hall':a==='auditorium'?'Auditorium':'Entrance')}</span>`).join('')||'<span class="muted-text">No authorized areas</span>'}</div>
+ <p class="muted-text">Event interactions and checkout remain in your existing visitor invitation or public-event desk. This diagram does not move you.</p></section>`;
+}
+const h104PriorCampusMap=schoolCampusMapHtmlH102;
+schoolCampusMapHtmlH102=function(){
+ const html=h104PriorCampusMap();if(!html)return html;
+ const sid=playerCurrentSchoolId4A2?.(),p=h102Prefs(),here=currentSchoolRoomH10(),room=schoolRoomByIdH10(sid,p.selected)||here||schoolRoomsH10(sid)[0];
+ if(!room)return html;
+ const node=document.createElement('div');node.innerHTML=html;const detail=node.querySelector('.h102-room-detail');
+ if(detail){const el=document.createElement('div');el.innerHTML=schoolRoomActionHtmlH104(room);if(el.firstElementChild)detail.append(el.firstElementChild);}
+ return node.innerHTML;
+};
+const h104PriorSchoolPanel=schoolPanel;
+schoolPanel=function(){
+ const visitor=schoolVisitorContextH104();
+ if(visitor){
+  // H9 source already returns its complete visitor-only desk. H3 previously had no
+  // Education visitor-only adaptation; supply its existing invitation controls.
+  const desk=visitor.source==='H9 public visitor'?h104PriorSchoolPanel():`<div class="dashboard">${schoolGuestInvitationHtmlH3()}</div>`;
+  const container=document.createElement('div');container.innerHTML=desk;
+  const card=document.createElement('div');card.innerHTML=schoolVisitorAreasHtmlH104(visitor);
+  (container.querySelector('.dashboard')||container).prepend(card.firstElementChild);
+  return container.innerHTML;
+ }
+ return h104PriorSchoolPanel();
+};
+const h104PriorPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const btn=e?.target?.closest?.('button[data-h104-action]');
+ if(btn){
+  const result=schoolRoomActionH104(btn.dataset.h104Room,btn.dataset.h104Action);
+  if(!result.ok)toast(result.reason);
+  if(result.ok)save();render();return;
+ }
+ return h104PriorPanelClick(e);
+};
+// H10.5 — UI-only campus -> canonical H9.5 Education routes and return navigation.
+// Viewing a route never moves the player, enrolls a visitor or performs gameplay.
+function h105CampusEligible(){
+ const own=playerCurrentSchoolId4A2?.();
+ return !!own&&!!schoolById(own)&&!!S.school&&!(S.location==='School'&&locationSchoolId4C1()!==own)
+  &&!(typeof h10ActivePromVenue==='function'&&h10ActivePromVenue());
+}
+function h105RoomTargets(room){
+ if(!room||!h105CampusEligible()||room.schoolId!==playerCurrentSchoolId4A2?.()||room.access==='staff')return [];
+ const links=[],add=(id,label,subject=null,eventId=null)=>{if(!links.some(x=>x.id===id&&x.subject===subject&&x.eventId===eventId))links.push({id,label,subject,eventId});};
+ const subjects=S.school?.subjects||[];
+ if(['classroom','library','science','media','music','arts'].includes(room.type)){
+  const period=typeof schoolTimetableRoomsH103==='function'?schoolTimetableRoomsH103().find(p=>p.kind==='class'&&p.roomId===room.roomId&&subjects.some(s=>s.name===p.subject)):null;
+  if(period)add('subjects',`Open ${period.subject} in Subjects`,period.subject);
+  else add('subjects','Open Subjects');
+ }
+ if(['sports','music','arts'].includes(room.type)||/club|student activities/i.test(room.name))add('clubs','Explore Clubs');
+ if(['auditorium','arts','music','facility'].includes(room.type)){
+  add('events','Explore School Events');
+  const promId=S.school?.prom?.foundation6A1?.eventId;
+  if(promId)add('events','Open School Prom details',null,promId);
+ }
+ if(['sports','science'].includes(room.type))add('contests','Explore Contests');
+ return links;
+}
+function h105RouteGate(roomId,target,subject=null,eventId=null){
+ const sid=playerCurrentSchoolId4A2?.(),room=schoolRoomByIdH10(sid,roomId);
+ if(!h105CampusEligible()||!room)return {ok:false,reason:'Your own school Education portal is unavailable from this location.'};
+ const choice=h105RoomTargets(room).find(x=>x.id===target&&x.subject===(subject||null)&&x.eventId===(eventId||null));
+ if(!choice)return {ok:false,reason:'This room does not link to that school activity.'};
+ if(target==='subjects'&&subject&&!S.school.subjects.some(s=>s.name===subject))return {ok:false,reason:'That subject is no longer available.'};
+ if(eventId&&!(target==='events'&&S.school?.prom?.foundation6A1?.eventId===eventId))return {ok:false,reason:'The requested event no longer exists.'};
+ return {ok:true,room,choice};
+}
+function h105Prefs(){if(!UI.h105Return||typeof UI.h105Return!=='object')UI.h105Return={roomId:null,schoolId:null};return UI.h105Return;}
+function h105FocusTarget(target,subject){
+ let sel=target==='subjects'?'[data-sub="subjects"]':'.education95-school-activities';
+ const section=document.querySelector('#panel-host '+sel);
+ let focus=section;
+ if(target==='subjects'&&subject){const index=S.school?.subjects?.findIndex(s=>s.name===subject)??-1;focus=index>=0?section?.querySelectorAll('.subject-card')[index]||section:section;}
+ if(focus){focus.setAttribute('tabindex','-1');focus.focus({preventScroll:true});focus.scrollIntoView?.({block:'nearest'});}
+}
+function h105OpenRoomEducation(roomId,target,subject=null,eventId=null){
+ const gate=h105RouteGate(roomId,target,subject,eventId);if(!gate.ok)return gate;
+ const p=h105Prefs();p.roomId=roomId;p.schoolId=gate.room.schoolId;
+ let success=false;
+ if(target==='subjects'){
+  UI.subTab.school='subjects';active='school';saveUI();render();success=true;
+ }else{
+  const filter=eventId?null:null;
+  success=education95Route(target,eventId,{filter});
+ }
+ if(!success)return {ok:false,reason:'The school portal cannot open that section.'};
+ h105FocusTarget(target,subject);
+ return {ok:true,roomId,target,subject,eventId};
+}
+function h105ReturnToMap(){
+ const p=h105Prefs(),sid=playerCurrentSchoolId4A2?.();
+ if(!p.roomId||p.schoolId!==sid||!h105CampusEligible()||!schoolRoomByIdH10(sid,p.roomId))return {ok:false,reason:'Your previous campus room is no longer available.'};
+ const h=h102Prefs();h.open=true;h.selected=p.roomId;h.schoolId=sid;
+ UI.subTab.school='today';active='school';saveUI();render();
+ const selected=Array.from(document.querySelectorAll('#panel-host [data-h102-select]')).find(el=>el.dataset.h102Select===p.roomId);
+ selected?.focus({preventScroll:true});selected?.scrollIntoView?.({block:'nearest'});
+ return {ok:true,roomId:p.roomId};
+}
+function h105RoomLinksHtml(room){
+ const links=h105RoomTargets(room);if(!links.length)return '';
+ return `<div class="h105-room-links" role="group" aria-label="Education links for ${esc(room.name)}"><b>Explore in Education</b><p class="muted-text">Information only · these links do not move you, register you or permit room entry.</p><div class="h105-link-buttons">${links.map(link=>`<button type="button" class="small ghost h105-link" data-h105-room="${esc(room.roomId)}" data-h105-target="${link.id}" ${link.subject?`data-h105-subject="${esc(link.subject)}"`:''} ${link.eventId?`data-h105-event="${esc(link.eventId)}"`:''}>${esc(link.label)}</button>`).join('')}</div></div>`;
+}
+const h105PriorCampusMap=schoolCampusMapHtmlH102;
+schoolCampusMapHtmlH102=function(){
+ const html=h105PriorCampusMap();if(!html||!h105CampusEligible())return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ const sid=playerCurrentSchoolId4A2?.(),room=schoolRoomByIdH10(sid,h102Prefs().selected)||currentSchoolRoomH10()||schoolRoomsH10(sid)[0];
+ const detail=node.querySelector('.h102-room-detail');
+ if(room&&detail){const links=document.createElement('div');links.innerHTML=h105RoomLinksHtml(room);if(links.firstElementChild)detail.append(links.firstElementChild);}
+ return node.innerHTML;
+};
+const h105PriorSchoolPanel=schoolPanel;
+schoolPanel=function(){
+ const html=h105PriorSchoolPanel();if(!h105CampusEligible())return html;
+ const p=h105Prefs(),sid=playerCurrentSchoolId4A2?.();
+ if(p.schoolId!==sid||!schoolRoomByIdH10(sid,p.roomId))return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ const subj=[...node.querySelectorAll('.dashboard > section')].find(section=>/Subjects, teachers & homework/.test(section.querySelector('h3')?.textContent||''));
+ for(const section of [node.querySelector('.education95-school-activities'),subj].filter(Boolean)){
+  const wrap=document.createElement('div');wrap.className='h105-return';
+  wrap.innerHTML=`<button type="button" class="small ghost" data-h105-back="${esc(p.roomId)}">← Back to Campus Map</button>`;
+  section.prepend(wrap);
+ }
+ return node.innerHTML;
+};
+const h105PriorPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const btn=e?.target?.closest?.('button');
+ if(btn?.dataset?.h105Room){
+  const result=h105OpenRoomEducation(btn.dataset.h105Room,btn.dataset.h105Target,btn.dataset.h105Subject||null,btn.dataset.h105Event||null);
+  if(!result.ok)toast(result.reason);return;
+ }
+ if(btn?.dataset?.h105Back){const result=h105ReturnToMap();if(!result.ok)toast(result.reason);return;}
+ return h105PriorPanelClick(e);
+};
+// H11.2 canonical issuance, extended by H11.3 bounded in-transit/arrival/return lifecycle.
+// H11.3 owns class-time map/facility travel; H11.4 owns clinical/nurse attendance.
+const H11_PASS_SCHEMA=1;
+const H11_PASS_ACTIVE=Object.freeze(['Approved','In Transit','Arrived','Returning']);
+const H11_PASS_TERMINAL=Object.freeze(['Denied','Cancelled','Revoked','Expired','Completed','Emergency']);
+const H11_PASS_PURPOSES=Object.freeze(['restroom','nurse']);
+function hallPassRuntimeH11(){
+ const r=schoolDayRuntime4C1();
+ r.hallPassSchemaH11=H11_PASS_SCHEMA;
+ if(!Array.isArray(r.hallPassHistoryH11))r.hallPassHistoryH11=[];
+ // Import is untrusted: retain only typed terminal history, never promote it to a grant.
+ r.hallPassHistoryH11=r.hallPassHistoryH11.filter(h=>h&&typeof h==='object'&&!Array.isArray(h)&&typeof h.id==='string'&&h.id.length<180&&H11_PASS_TERMINAL.includes(h.status)).slice(-32);
+ if(!Array.isArray(r.hallPassAttemptsH11))r.hallPassAttemptsH11=[];
+ r.hallPassAttemptsH11=r.hallPassAttemptsH11.filter(a=>a&&typeof a==='object'&&!Array.isArray(a)&&typeof a.id==='string'&&typeof a.dateISO==='string'&&typeof a.schoolId==='string'&&typeof a.periodId==='string'&&H11_PASS_PURPOSES.includes(a.purpose)&&Number.isInteger(a.minute)&&a.minute>=0&&a.minute<=1440).slice(-64);
+ if(!Number.isSafeInteger(r.hallPassSerialH11)||r.hallPassSerialH11<0)r.hallPassSerialH11=0;
+ // A partial legacy import may carry receipts but omit the serial: never reuse their IDs.
+ for(const h of r.hallPassHistoryH11){const m=/^hall:[a-zA-Z0-9_-]+:\d{4}-\d\d-\d\d:(\d+)$/.exec(h.id);if(m&&Number.isSafeInteger(+m[1]))r.hallPassSerialH11=Math.max(r.hallPassSerialH11,+m[1]);}
+ if(!Object.prototype.hasOwnProperty.call(r,'hallPassH11'))r.hallPassH11=null;
+ return r;
+}
+function hallPassValidH11(p){
+ if(!p||typeof p!=='object'||Array.isArray(p)||p.schemaVersion!==H11_PASS_SCHEMA||typeof p.id!=='string'||!/^hall:[a-zA-Z0-9_-]+:\d{4}-\d\d-\d\d:\d+$/.test(p.id))return false;
+ if(typeof p.schoolId!=='string'||typeof p.issuedDateISO!=='string'||!/^(\d{4})-(\d\d)-(\d\d)$/.test(p.issuedDateISO)||!p.id.startsWith(`hall:${p.schoolId}:${p.issuedDateISO}:`))return false;
+ if(!H11_PASS_PURPOSES.includes(p.purpose)||!H11_PASS_ACTIVE.includes(p.status)||p.decision!=='Approved')return false;
+ if(['In Transit','Returning'].includes(p.status)&&(!Number.isInteger(p.travelStartedMinute)||p.travelStartedMinute<p.issuedMinute||p.travelStartedMinute>1440))return false;
+ if(['Arrived','Returning'].includes(p.status)&&(!Number.isInteger(p.arrivedMinute)||p.arrivedMinute<p.issuedMinute||p.arrivedMinute>1440||p.outboundReceiptId!==p.id+':outbound'))return false;
+ if(p.status==='Returning'&&p.travelStartedMinute<p.arrivedMinute)return false;
+ if(!['ordinary','urgent'].includes(p.urgency)||!Number.isInteger(p.requestMinute)||!Number.isInteger(p.issuedMinute)||!Number.isInteger(p.expiresMinute)||p.requestMinute<0||p.issuedMinute<0||p.expiresMinute>1440||p.expiresMinute<=p.issuedMinute||p.requestMinute>p.issuedMinute)return false;
+ if(typeof p.originRoomId!=='string'||typeof p.destinationRoomId!=='string'||typeof p.returnRoomId!=='string'||!p.originRoomId.startsWith(p.schoolId+'::')||!p.destinationRoomId.startsWith(p.schoolId+'::')||!p.returnRoomId.startsWith(p.schoolId+'::'))return false;
+ if(typeof p.periodId!=='string'||!p.periodId||typeof p.subject!=='string'||!p.subject||typeof p.issuerTeacherName!=='string'||!p.issuerTeacherName)return false;
+ if(!Array.isArray(p.route)||p.route.length<2||p.route.length>24||p.route.some(x=>typeof x!=='string'||!x.startsWith(p.schoolId+'::'))||!Number.isInteger(p.minutes)||p.minutes<=0)return false;
+ return true;
+}
+function hallPassArchiveH11(p,status,reason){
+ const r=hallPassRuntimeH11();
+ if(!p||typeof p.id!=='string')return null;
+ if(r.hallPassHistoryH11.some(h=>h?.id===p.id)){if(r.hallPassH11?.id===p.id)r.hallPassH11=null;return null;}
+ const rec={...p,status,closedReason:String(reason||status),closedDateISO:currentDate(),closedMinute:currentMinute()};
+ r.hallPassHistoryH11.push(rec);r.hallPassHistoryH11=r.hallPassHistoryH11.slice(-32);
+ if(r.hallPassH11?.id===p.id)r.hallPassH11=null;
+ return rec;
+}
+function hallPassReconcileH11(){
+ const r=hallPassRuntimeH11();
+ // Never convert an old nurse pass or unverified user-supplied object into travel authorization.
+ const p=r.hallPassH11;
+ if(!p)return null;
+ if(!hallPassValidH11(p)){r.hallPassH11=null;return null;}
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),here=currentSchoolRoomH10();
+ let reason=null;
+ if(currentDate()!==p.issuedDateISO)reason='school_date_changed';
+ else if(!sid||sid!==p.schoolId||!day.isSchoolDay||!day.atSchool||day.locationSchoolId!==sid||!day.campusOpen)reason='school_or_presence_changed';
+ else if(currentMinute()>=p.expiresMinute||currentMinute()<p.issuedMinute)reason='pass_expired_or_time_rewound';
+ else if(!schoolRoomByIdH10(sid,p.originRoomId)||!schoolRoomByIdH10(sid,p.destinationRoomId)||!schoolRoomByIdH10(sid,p.returnRoomId))reason='school_room_missing';
+ else if(!here||here.schoolId!==sid||( ['Approved','In Transit'].includes(p.status)&&here.roomId!==p.originRoomId)||( ['Arrived','Returning'].includes(p.status)&&here.roomId!==p.destinationRoomId))reason='room_context_changed';
+ else if(!sessionEvent())reason='lesson_context_changed';
+ else {
+  const period=timetableFor(p.issuedDateISO).find(x=>x.id===p.periodId&&x.kind==='class'&&x.subject===p.subject);
+  const subject=S.school?.subjects?.find(x=>x.name===p.subject);
+  const out=schoolRoomRouteH10(sid,p.originRoomId,p.destinationRoomId),back=schoolRoomRouteH10(sid,p.destinationRoomId,p.returnRoomId);
+  const allowedTarget=sid+'::'+(p.purpose==='restroom'?'restroom':'nurse_office');
+  if(!period||p.issuedMinute<period.start||p.issuedMinute>=period.end||p.expiresMinute>period.end||!subject?.teacher||subject.teacher.name!==p.issuerTeacherName||schoolPeriodRoomH103(sid,period)?.roomId!==p.originRoomId||p.returnRoomId!==p.originRoomId||p.destinationRoomId!==allowedTarget||schoolRoomByIdH10(sid,allowedTarget)?.access==='staff'||!out.ok||!back.ok||JSON.stringify(out.path)!==JSON.stringify(p.route)||out.minutes!==p.minutes||p.expiresMinute-p.issuedMinute<out.minutes+back.minutes+5)reason='invalid_teacher_route_or_period';
+ }
+ if(reason){hallPassArchiveH11(p,'Expired',reason);return null;}
+ return p;
+}
+function hallPassActiveH11(){return hallPassReconcileH11();}
+function hallPassRequestGateH11(purpose,options={}){
+ const urgency=options&&options.urgency==='urgent'?'urgent':'ordinary';
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),here=currentSchoolRoomH10(),now=currentMinute();
+ const medical=!!(typeof condition==='function'&&condition())||!!S.healthState?.illness||(Number.isFinite(S.health)&&S.health<75);
+ const seriousMedical=!!S.healthState?.emergency||condition()?.severity==='emergency'||(Number.isFinite(S.health)&&S.health<45);
+ const toilet=Number(S.needs?.toilet)||0,seriousRestroom=toilet>=90;
+ const emergency=(purpose==='nurse'&&seriousMedical)||(purpose==='restroom'&&seriousRestroom);
+ if(!H11_PASS_PURPOSES.includes(purpose))return {ok:false,reason:purpose==='office'?'Main Office remains staff-only; no student front-desk workflow is authorized yet.':'Unsupported hall-pass destination.'};
+ if(!sid||!schoolById(sid)||!day.isSchoolDay||!day.atSchool||S.location!=='School'||day.locationSchoolId!==sid||!day.campusOpen||!here||here.schoolId!==sid)return {ok:false,reason:'An enrolled student must be at their own open school to request a teacher pass.'};
+ if(hallPassActiveH11())return {ok:false,reason:'You already have an active hall pass. It cannot be issued twice.'};
+ if(schoolFacilityContext4C3().freeWindow)return {ok:false,reason:'Use normal campus travel during breaks or other free time; no teacher pass is needed.'};
+ // The school's timetable and recorded class session are the sole lesson authority.
+ const raw=timetableFor(currentDate()).find(x=>x.start<=now&&now<x.end&&x.kind==='class');
+ const sub=raw&&S.school?.subjects?.find(x=>x.name===raw.subject);
+ const teacher=sub?.teacher;
+ const emergencyContext={emergency,medical,seriousMedical,seriousRestroom};
+ if(!raw||!sub||!sessionEvent())return {ok:false,reason:'No active attended class with a recorded subject.',...emergencyContext};
+ const scheduled=schoolPeriodRoomH103(sid,raw);
+ if(!scheduled||here.roomId!==scheduled.roomId)return {ok:false,reason:'Ask the teacher from the classroom where this lesson is scheduled.',...emergencyContext};
+ const destination=schoolRoomByIdH10(sid,`${sid}::${purpose==='restroom'?'restroom':'nurse_office'}`);
+ if(!destination||destination.access==='staff')return {ok:false,reason:'The requested student destination is unavailable.',...emergencyContext};
+ const route=schoolRoomRouteH10(sid,here.roomId,destination.roomId),back=schoolRoomRouteH10(sid,destination.roomId,scheduled.roomId);
+ if(!route.ok||!back.ok||route.minutes<=0)return {ok:false,reason:'No verified path to the requested destination.',...emergencyContext};
+ const attempts=hallPassRuntimeH11().hallPassAttemptsH11.filter(a=>a.dateISO===currentDate()&&a.schoolId===sid&&a.periodId===raw.id&&a.purpose===purpose);
+ const urgent=urgency==='urgent'&&(purpose==='restroom'?toilet>=75:medical);
+ // Genuine medical emergencies will be routed by H11.4; they must not mint an ordinary movement grant.
+ if(emergency)return {ok:true,mode:'emergency',reason:'Urgent care requires the medical emergency workflow; no ordinary roaming pass is issued.',context:{sid,here,raw,sub,teacher,destination,route,back,now},...emergencyContext};
+ if(!teacher||typeof teacher.name!=='string'||!teacher.name.trim())return {ok:false,reason:'The currently assigned teacher cannot be identified.',...emergencyContext};
+ if(attempts.length>=2)return {ok:false,reason:'Teacher request limit reached for this lesson and destination.',...emergencyContext};
+ if(attempts.length&&now-attempts[attempts.length-1].minute<15)return {ok:false,reason:'Please wait 15 minutes before requesting again.',...emergencyContext};
+ if(purpose==='restroom'&&toilet<55)return {ok:false,reason:'Your teacher asks you to wait for the next break unless your restroom need is pressing.',context:{sid,here,raw,sub,teacher,destination,route,back,now},...emergencyContext};
+ if(purpose==='nurse'&&!medical)return {ok:false,reason:'No current illness or injury is recorded; ask again if your health changes.',context:{sid,here,raw,sub,teacher,destination,route,back,now},...emergencyContext};
+ // Bound ordinary approval to both outbound and return time in this exact class.
+ const needed=route.minutes+back.minutes+(purpose==='restroom'?5:10);
+ if(raw.end-now<needed)return {ok:false,reason:'Not enough time remains in this class for the full authorized trip.',context:{sid,here,raw,sub,teacher,destination,route,back,now},...emergencyContext};
+ return {ok:true,mode:'teacher',urgency:urgent?'urgent':'ordinary',context:{sid,here,raw,sub,teacher,destination,route,back,now,needed},...emergencyContext};
+}
+function hallPassRequestH11(purpose,options={}){
+ // Retain a request receipt (including denial) without time/attendance/room/economy changes.
+ const gate=hallPassRequestGateH11(purpose,options);const r=hallPassRuntimeH11();
+ if(gate.reason?.includes('already have an active'))return {ok:false,reason:gate.reason,pass:r.hallPassH11};
+ const c=gate.context;
+ if(!c)return {ok:false,reason:gate.reason};
+ const {sid,here,raw,sub,teacher,destination,route,now}=c;
+ const id=`hall:${sid}:${currentDate()}:${++r.hallPassSerialH11}`;
+ const status=gate.mode==='emergency'?'Emergency':gate.ok?'Approved':'Denied';
+ const expiry=gate.ok&&gate.mode==='teacher'?Math.min(raw.end,now+Math.max(c.needed||15,Math.min(30,raw.end-now))):now;
+ const pass={id,schemaVersion:1,schoolId:sid,issuedDateISO:currentDate(),requestMinute:now,issuedMinute:now,expiresMinute:expiry,purpose,urgency:gate.urgency||'ordinary',originRoomId:here.roomId,destinationRoomId:destination.roomId,returnRoomId:here.roomId,issuerPersonId:typeof teacher?.personId==='string'?teacher.personId:null,issuerTeacherName:teacher?.name||null,periodId:raw.id,subject:sub.name,decision:status==='Approved'?'Approved':status==='Emergency'?'Emergency':'Denied',decisionReason:status==='Approved'?`${teacher.name} approved a ${purpose} trip for this lesson.`:gate.reason,status,route:route.path.slice(),minutes:route.minutes,arrivedMinute:null,returnedMinute:null,closedReason:null,excuseReceiptId:null,notificationReceiptId:null};
+ r.hallPassAttemptsH11.push({id,dateISO:currentDate(),schoolId:sid,periodId:raw.id,purpose,minute:now,outcome:status});r.hallPassAttemptsH11=r.hallPassAttemptsH11.slice(-64);
+ if(status==='Approved'){r.hallPassH11=pass;return {ok:true,status,pass};}
+ hallPassArchiveH11(pass,status,gate.reason);
+ return {ok:status==='Emergency',status,emergency:status==='Emergency',reason:gate.reason,pass};
+}
+function hallPassCancelH11(){const p=hallPassActiveH11();if(!p)return {ok:false,reason:'No current hall pass to cancel.'};if(p.status!=='Approved')return {ok:false,reason:'A trip already in progress must be reconciled with the school.'};hallPassArchiveH11(p,'Cancelled','student_cancelled_before_departure');return {ok:true,status:'Cancelled',id:p.id};}
+function migrateHallPassH11(){return hallPassReconcileH11();}
+// Lifecycle wrappers must run AFTER H10 room/location wrappers, retaining earlier behavior.
+const h112PriorMigrateDay=migrateSchoolDay4C1;
+migrateSchoolDay4C1=function(...args){const value=h112PriorMigrateDay(...args);migrateHallPassH11();return value;};
+const h112PriorReconcileDay=reconcileSchoolDay4C1;
+reconcileSchoolDay4C1=function(...args){const value=h112PriorReconcileDay(...args);if(S)hallPassReconcileH11();return value;};
+const h112PriorSetLocation=setPlayerLocation4C1;
+setPlayerLocation4C1=function(...args){const value=h112PriorSetLocation(...args);if(S)hallPassReconcileH11();return value;};
+const h112PriorTransfer=transferPlayerSchool4A2;
+transferPlayerSchool4A2=function(...args){const value=h112PriorTransfer(...args);if(S)hallPassReconcileH11();return value;};
+// H11.3 — single-route class travel and restroom return. No nurse clinical state.
+// Loaded after H10.5 + H11.2 so prior H10 free-window behavior stays authoritative.
+function hallPassRecoveryH113(){
+ const r=hallPassRuntimeH11(),sid=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10(),now=currentMinute();
+ if(!here||S.location!=='School'||schoolFacilityContext4C3().freeWindow)return null;
+ const h=[...r.hallPassHistoryH11].reverse().find(p=>p.status==='Expired'&&p.closedReason==='pass_expired_or_time_rewound'&&H11_PASS_PURPOSES.includes(p.purpose)&&p.issuedDateISO===currentDate()&&p.schoolId===sid&&p.arrivedMinute!=null&&!p.returnedMinute&&!p.recoveryReceiptId&&here.roomId===p.destinationRoomId);
+ if(!h||now<h.arrivedMinute||now<h.expiresMinute||!hallPassValidH11({...h,status:'Arrived',decision:'Approved'}))return null;
+ if(!schoolRoomByIdH10(sid,h.returnRoomId)||!schoolRoomRouteH10(sid,h.destinationRoomId,h.returnRoomId).ok)return null;
+ return h;
+}
+function hallPassTravelAuthorizationH113(targetId){
+ const p=hallPassActiveH11(),here=currentSchoolRoomH10(),sid=playerCurrentSchoolId4A2?.(),now=currentMinute();
+ if(!here||here.schoolId!==sid)return {ok:false,reason:'Only enrolled students at their own school may use a teacher pass.'};
+ if(p){
+  const outbound=p.status==='Approved',returning=p.status==='Arrived';
+  const destination=outbound?p.destinationRoomId:returning?p.returnRoomId:null;
+  if(targetId!==destination)return {ok:false,reason:'This pass permits only its assigned destination and return route.'};
+  const route=schoolRoomRouteH10(sid,here.roomId,targetId);
+  if(!route.ok||!Number.isInteger(route.minutes)||route.minutes<=0)return {ok:false,reason:'The approved room route no longer exists.'};
+  if(now+route.minutes>=p.expiresMinute)return {ok:false,reason:'Not enough pass time remains for the route. Return when the bell allows.'};
+  return {ok:true,pass:p,route,direction:outbound?'outbound':'return',room:schoolRoomByIdH10(sid,targetId)};
+ }
+ const h=hallPassRecoveryH113();
+ if(h&&targetId===h.returnRoomId){
+  const route=schoolRoomRouteH10(sid,here.roomId,targetId);
+  if(route.ok&&route.minutes>0&&now+route.minutes<schoolDayState4C1().hours.campusClose)return {ok:true,pass:h,route,direction:'recovery',room:schoolRoomByIdH10(sid,targetId)};
+ }
+ return {ok:false,reason:'Class is in session. Request a teacher hall pass to leave your assigned room.'};
+}
+function hallPassRouteGateH113(targetId){
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),here=currentSchoolRoomH10(),room=schoolRoomByIdH10(sid,targetId);
+ if(!room||room.access==='staff')return {ok:false,reason:'Staff-only or unknown campus room.'};
+ if(!day.isSchoolDay||!day.campusOpen||!day.atSchool||day.locationSchoolId!==sid||S.location!=='School'||!here||here.roomId===targetId)return {ok:false,reason:'You must be on your own open campus and choose a different room.'};
+ if(schoolFacilityContext4C3().freeWindow)return {ok:false,reason:'A normal free-window trip uses the existing H10 movement gate.'};
+ return hallPassTravelAuthorizationH113(targetId);
+}
+const h113PreviousAccess=schoolRoomAccessH10;
+schoolRoomAccessH10=function(sid,roomId,options={}){
+ const usual=h113PreviousAccess(sid,roomId,options);
+ if(usual.ok||options?.purpose==='view'||usual.reason!=='class_in_session_hall_pass_not_implemented')return usual;
+ const g=hallPassRouteGateH113(roomId);
+ return g.ok?{ok:true,room:schoolRoomByIdH10(sid,roomId),hallPassId:g.pass.id}:{ok:false,reason:usual.reason};
+};
+const h113PreviousMoveGate=schoolRoomMoveGateH102;
+schoolRoomMoveGateH102=function(targetId){
+ if(schoolFacilityContext4C3().freeWindow)return h113PreviousMoveGate(targetId);
+ const g=hallPassRouteGateH113(targetId);
+ return g.ok?{ok:true,room:g.room,current:currentSchoolRoomH10(),route:g.route,minutes:g.route.minutes,hallPassId:g.pass.id,hallPassDirection:g.direction}:{ok:false,reason:g.reason};
+};
+function hallPassOverstayH113(p){
+ if(!p||p.purpose!=='restroom'||p.status!=='Arrived'||p.overstayReceiptId)return;
+ p.overstayReceiptId=p.id+':late-return';
+ if(S.school&&Number.isFinite(S.school.behavior))S.school.behavior=clamp(S.school.behavior-1);
+ log('Overdue hall pass','You missed the return window. Your teacher records one behavior warning; return by the authorized route.');
+}
+const h113PreviousArchive=hallPassArchiveH11;
+hallPassArchiveH11=function(p,status,reason){
+ if(status==='Expired'&&p?.status==='Arrived'&&reason==='pass_expired_or_time_rewound'&&currentMinute()>=p.expiresMinute)hallPassOverstayH113(p);
+ return h113PreviousArchive(p,status,reason);
+};
+function hallPassMoveH113(targetId){
+ const gate=hallPassRouteGateH113(targetId);if(!gate.ok)return gate;
+ const {pass,route,direction}=gate,sid=pass.schoolId,from=currentSchoolRoomH10(),beforeDate=currentDate(),start=currentMinute();
+ const r=hallPassRuntimeH11();
+ // The return is committed only after the H10 clock and campus stay valid.
+ if(direction!=='recovery'){pass.status=direction==='outbound'?'In Transit':'Returning';pass.travelStartedMinute=start;}
+ advanceTime(route.minutes,{silent:true});
+ const locationOk=S.location==='School'&&locationSchoolId4C1()===sid&&currentDate()===beforeDate&&schoolDayState4C1().campusOpen;
+ const record=direction==='recovery'?hallPassRecoveryH113():hallPassActiveH11();
+ if(!locationOk||!record||record.id!==pass.id){
+  if(direction!=='recovery'&&r.hallPassH11?.id===pass.id)hallPassArchiveH11(pass,'Revoked','campus_or_clock_changed_during_travel');
+  return {ok:false,reason:'The school or clock changed during travel; no room arrival was recorded.',minutes:route.minutes};
+ }
+ const result=setSchoolRoomH10(targetId);if(!result.ok){if(direction!=='recovery')hallPassArchiveH11(pass,'Revoked','room_unavailable_after_travel');return {ok:false,reason:result.reason,minutes:route.minutes};}
+ if(direction==='outbound'){
+  pass.status='Arrived';pass.arrivedMinute=currentMinute();pass.outboundReceiptId=pass.outboundReceiptId||pass.id+':outbound';
+ }else if(direction==='return'){
+  pass.returnedMinute=currentMinute();pass.returnReceiptId=pass.id+':return';hallPassArchiveH11(pass,'Completed','returned_to_class');
+ }else{
+  const old=r.hallPassHistoryH11.find(x=>x.id===pass.id);
+  if(old){old.returnedMinute=currentMinute();old.recoveryReceiptId=pass.id+':recovered-return';}
+ }
+ log('Teacher-authorized school trip',`${from.name} → ${gate.room.name} · ${route.minutes} min · ${direction==='outbound'?'approved visit':direction==='return'?'returned to class':'safe overdue return'}.`);
+ return {ok:true,roomId:targetId,minutes:route.minutes,direction,passId:pass.id};
+}
+const h113PreviousMove=schoolRoomMoveH102;
+schoolRoomMoveH102=function(targetId){
+ if(schoolFacilityContext4C3().freeWindow)return h113PreviousMove(targetId);
+ return hallPassMoveH113(targetId);
+};
+function hallPassRestroomGateH113(action){
+ const g=hallPassActiveH11(),here=currentSchoolRoomH10(),ctx=schoolFacilityContext4C3();
+ if(ctx.freeWindow)return {ok:false,reason:'The standard break-time restroom functions apply.'};
+ if(!g||g.purpose!=='restroom'||g.status!=='Arrived'||here?.roomId!==g.destinationRoomId)return {ok:false,reason:'An approved restroom pass and physical arrival are required during class.'};
+ if(action==='toilet'&&g.restroomReceiptId)return {ok:false,reason:'This restroom visit has already been completed on this pass.'};
+ if(action==='wash'&&g.washReceiptId)return {ok:false,reason:'You have already washed your hands on this pass.'};
+ if(action==='wash'&&!g.restroomReceiptId)return {ok:false,reason:'Use the restroom before washing your hands on this trip.'};
+ const minutes=action==='toilet'?(S.age<=4?12:8):3;
+ const back=schoolRoomRouteH10(g.schoolId,here.roomId,g.returnRoomId);
+ if(!back.ok||currentMinute()+minutes+back.minutes>g.expiresMinute)return {ok:false,reason:'Not enough time remains for the facility and return route. Return to class.'};
+ return {ok:true,pass:g,minutes};
+}
+const h113PreviousRestroom=schoolRestroom4C3;
+schoolRestroom4C3=function(){
+ if(schoolFacilityContext4C3().freeWindow)return h113PreviousRestroom();
+ const g=hallPassRestroomGateH113('toilet');if(!g.ok){toast(g.reason);return false;}
+ g.pass.restroomReceiptId=g.pass.id+':restroom';basicAction('toilet');return true;
+};
+const h113PreviousWash=schoolWashHands4C3;
+schoolWashHands4C3=function(){
+ if(schoolFacilityContext4C3().freeWindow)return h113PreviousWash();
+ const g=hallPassRestroomGateH113('wash');if(!g.ok){toast(g.reason);return false;}
+ g.pass.washReceiptId=g.pass.id+':wash';basicAction('washHands');return true;
+};
+const h113PreviousActionGate=schoolRoomActionGateH104;
+schoolRoomActionGateH104=function(roomId,action){
+ if(schoolFacilityContext4C3().freeWindow||!['toilet','wash'].includes(action))return h113PreviousActionGate(roomId,action);
+ const sid=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10();
+ if(!here||here.roomId!==roomId||roomId!==sid+'::restroom')return {ok:false,reason:'Travel to your own campus restroom first.'};
+ const g=hallPassRestroomGateH113(action);
+ return g.ok?{ok:true,room:here}:{ok:false,reason:g.reason};
+};
+function hallPassReturnH113(){
+ const p=hallPassActiveH11()||hallPassRecoveryH113();
+ if(!p||p.status!=='Arrived'&&p.status!=='Expired')return {ok:false,reason:'No eligible return trip is recorded.'};
+ return schoolRoomMoveH102(p.returnRoomId);
+}
+// H11.3 contextual controls only. H11.5 owns the final combined Education/Health UX.
+const h113PreviousMap=schoolCampusMapHtmlH102;
+schoolCampusMapHtmlH102=function(){
+ const html=h113PreviousMap();if(!html)return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ const detail=node.querySelector('.h102-room-detail');if(!detail)return html;
+ const pass=hallPassActiveH11(),recovery=hallPassRecoveryH113(),here=currentSchoolRoomH10(),ctx=schoolFacilityContext4C3();
+ let content='';
+ if(pass){
+  const to=schoolRoomByIdH10(pass.schoolId,pass.destinationRoomId),remaining=Math.max(0,pass.expiresMinute-currentMinute());
+  const gate=pass.status==='Arrived'?schoolRoomMoveGateH102(pass.returnRoomId):null;
+  content=`<section class="h113-pass" aria-label="Teacher hall pass"><b>Teacher pass · ${esc(pass.purpose)}</b><p class="muted-text">${esc(pass.status)} · ${esc(to?.name||'Destination')} · ${remaining} min remaining · ${esc(pass.issuerTeacherName)}</p>${pass.status==='Arrived'?`<button type="button" class="small primary" data-h113-return="1" ${gate?.ok?'':'disabled'}>Return to class · ${gate?.minutes||0} min</button>`:''}</section>`;
+ }else if(recovery){content=`<section class="h113-pass"><p>Your ${esc(recovery.purpose)} pass expired. Return to class using the safe route.</p><button type="button" class="small primary" data-h113-return="1">Return to class</button></section>`;}
+ else if(here&&!ctx.freeWindow&&schoolClassSession4C2().period?.kind==='class'){
+  const reasons=['restroom','nurse'].map(purpose=>{const g=hallPassRequestGateH11(purpose);return `<button type="button" class="small ghost" data-h113-request="${purpose}" ${g.ok?'':'disabled'} title="${esc(g.ok?'Ask your current teacher':g.reason)}">Request ${purpose==='restroom'?'restroom':'nurse'} pass</button>`;});
+  content=`<section class="h113-pass"><b>Ask your teacher</b><div class="school-today-buttons">${reasons.join('')}</div><p class="muted-text">Approval authorizes one specific route; nurse assessment is added in H11.4.</p></section>`;
+ }
+ if(content){const slot=document.createElement('div');slot.innerHTML=content;detail.prepend(slot.firstElementChild);}
+ return node.innerHTML;
+};
+const h113PreviousClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button');if(!b)return h113PreviousClick(e);
+ if(b.dataset.h113Request){
+  const result=hallPassRequestH11(b.dataset.h113Request,{urgency:'urgent'});
+  if(result.ok&&result.status==='Approved'){const p=h102Prefs();p.open=true;p.selected=result.pass.destinationRoomId;log('Teacher hall pass issued',`${result.pass.issuerTeacherName} approves a route to ${schoolRoomByIdH10(result.pass.schoolId,result.pass.destinationRoomId)?.name}.`);}
+  else if(result.emergency&&b.dataset.h113Request==='nurse'){const care=nurseEmergencyH114('emergency_teacher_referral');if(!care.ok)toast(care.reason);}else toast(result.reason||'The teacher could not issue a pass.');save();render();return;
+ }
+ if(b.dataset.h113Return){const result=hallPassReturnH113();if(!result.ok)toast(result.reason);save();render();return;}
+ return h113PreviousClick(e);
+};
+
+const h113PreviousClassAction=classAction;
+classAction=function(kind){
+ const here=currentSchoolRoomH10(),p=hallPassActiveH11()||hallPassRecoveryH113();
+ if(p&&here?.roomId===p.destinationRoomId){toast('Return to your assigned classroom before participating in lessons.');return false;}
+ return h113PreviousClassAction(kind);
+};
+// H11.4 — physical Nurse Office -> existing Phase 2A healthcare and canonical campus exit.
+// Teacher passes authorize travel only; legacy nurse passes authorize medical absence only.
+function nursePhysicalGateH114(){
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),here=currentSchoolRoomH10();
+ if(!sid||!day.isSchoolDay||!day.atSchool||!day.campusOpen||day.locationSchoolId!==sid||!sessionEvent()||here?.schoolId!==sid||here.roomId!==sid+'::nurse_office')return {ok:false,reason:'Travel to your enrolled school Nurse Office before checking in. A teacher pass is required during lessons.'};
+ return {ok:true,schoolId:sid,roomId:here.roomId,event:sessionEvent()};
+}
+function nurseMedicalSessionH114(){
+ const ev=schoolDayEvent();if(!ev||ev.dateISO!==currentDate()||!ev.nurse?.inOffice)return null;
+ const ns=ev.nurse,sid=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10();
+ if(S.location!=='School'||!['Attending','Attended','Completed'].includes(ev.status)||ns.schoolIdH114!==sid||ns.roomIdH114!==sid+'::nurse_office'||here?.roomId!==ns.roomIdH114||ns.medicalDismissalH114)return null;
+ return {ev,ns,sid};
+}
+function nurseMedicalExcuseH114(periods,reason){
+ const ev=sessionEvent(),ns=nurseState();if(!ev||!ns)return null;
+ if(ns.pass?.id&&ns.pass?.status!=='Closed')return ns.pass;
+ // Existing attended/credited periods must never be overwritten by an illness excuse.
+ const available=(periods||[]).filter(p=>p&&typeof p.id==='string'&&!['attend','auto','excused'].includes(ev.periods?.[p.id]));
+ return available.length?h114LegacyIssueNursePass(available,reason):null;
+}
+const h114LegacyIssueNursePass=issueNursePass;
+issueNursePass=function(periods,reason){return nurseMedicalExcuseH114(periods,reason);};
+const h114LegacyVisitNurse=visitNurse;
+visitNurse=function(){
+ const g=nursePhysicalGateH114();if(!g.ok){toast(g.reason);return false;}
+ const ns=nurseState();if(ns.inOffice){toast('You have already checked in with the nurse.');return false;}
+ const pass=hallPassActiveH11()||null;
+ // A medically necessary visit can occur during a normal school break without a pass.
+ if(!schoolFacilityContext4C3().freeWindow&&!(pass&&pass.purpose==='nurse'&&pass.status==='Arrived'&&pass.schoolId===g.schoolId&&pass.destinationRoomId===g.roomId)){
+  toast('Arrive with an authorized nurse referral before starting the assessment.');return false;
+ }
+ if(condition()?.severity==='emergency')return nurseEmergencyH114('nurse_emergency');
+ // Scope the existing Phase 2A clinical flow; do not manufacture any new diagnosis.
+ ns.schoolIdH114=g.schoolId;ns.roomIdH114=g.roomId;ns.assessmentReceiptH114=ns.assessmentReceiptH114||`nurse:${g.event.id}:${currentDate()}:${(ns.visits||0)+1}`;
+ if(pass){
+  ns.hallPassIdH114=pass.id;pass.excuseReceiptId=ns.assessmentReceiptH114;
+  // Close travel authorization at the actual check-in, BEFORE assessment time passes.
+  hallPassArchiveH11(pass,'Completed','nurse_checked_in');
+ }
+ h114LegacyVisitNurse();
+ if(!ns.inOffice){ns.readyToReturnH114=true;}
+ if(ns.pass)ns.pass.hallPassIdH114=ns.hallPassIdH114||null;
+ return true;
+};
+const h114LegacyRest=nurseRest;
+nurseRest=function(){
+ if(!nurseMedicalSessionH114()){toast('Rest is available after checking in at the physical Nurse Office.');return false;}
+ const ns=nurseState();const previous=ns.restReceiptCountH114||0;
+ h114LegacyRest();
+ ns.restReceiptCountH114=previous+1;
+ return true;
+};
+function nurseReturnGateH114(){
+ const visit=nurseMedicalSessionH114();
+ const ev=schoolDayEvent(),n=ev?.nurse,sid0=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10();
+ const recovered=!visit&&ev?.dateISO===currentDate()&&ev.status==='Attending'&&n?.readyToReturnH114&&!n.returnReceiptH114&&n.assessmentReceiptH114&&n.schoolIdH114===sid0&&n.roomIdH114===sid0+'::nurse_office'&&here?.roomId===n.roomIdH114&&S.location==='School';
+ if(!visit&&!recovered)return {ok:false,reason:'Check in at your own Nurse Office before returning.'};
+ const {ns,sid}=visit||{ns:n,sid:sid0},pass=ns.hallPassIdH114&&hallPassRuntimeH11().hallPassHistoryH11.find(p=>p.id===ns.hallPassIdH114);
+ if(ns.recommend==='home')return {ok:false,reason:'The nurse recommends medical dismissal. Contact a caregiver or obtain urgent care.'};
+ let roomId=pass?.returnRoomId;
+ if(!roomId||!schoolRoomByIdH10(sid,roomId)){
+  const period=timetableFor().find(p=>p.kind==='class'&&p.start<=currentMinute()&&currentMinute()<p.end);
+  roomId=period&&schoolPeriodRoomH103(sid,period)?.roomId;
+ }
+ if(!roomId||roomId===sid+'::nurse_office'||schoolRoomByIdH10(sid,roomId)?.access==='staff')return {ok:false,reason:'There is no current authorized classroom to return to.'};
+ const route=schoolRoomRouteH10(sid,sid+'::nurse_office',roomId),day=schoolDayState4C1();
+ if(!route.ok||route.minutes<=0||currentMinute()+route.minutes>=day.hours.campusClose)return {ok:false,reason:'The campus return route is no longer available.'};
+ return {ok:true,visit,roomId,route};
+}
+returnToClass=function(){
+ const g=nurseReturnGateH114();if(!g.ok){toast(g.reason);return false;}
+ const ns=g.visit?.ns||nurseState(),fromDay=currentDate();
+ advanceTime(g.route.minutes,{silent:true});
+ if(S.location!=='School'||currentDate()!==fromDay||!schoolDayState4C1().campusOpen||currentSchoolRoomH10()?.roomId!==playerCurrentSchoolId4A2()+'::nurse_office')return false;
+ const moved=setSchoolRoomH10(g.roomId);if(!moved.ok)return false;
+ ns.inOffice=false;ns.readyToReturnH114=false;ns.recommend='class';ns.returnReceiptH114=ns.returnReceiptH114||ns.assessmentReceiptH114+':return';
+ if(ns.pass)ns.pass.status='Closed';
+ log('Returned to class',`You follow the approved ${g.route.minutes}-minute campus route to your classroom with the nurse's note.`);
+ return true;
+};
+const h114LegacyFinishSickDay=finishSickDay;
+finishSickDay=function(how,picked=null){
+ const ev=sessionEvent()||schoolDayEvent();if(!ev)return false;
+ const ns=ev.nurse||{};
+ if(ns.medicalDismissalH114)return false;
+ const emergency=how==='emergency'&&(condition()?.severity==='emergency'||S.healthState?.emergency);
+ if(!emergency&&!nurseMedicalSessionH114()){toast('A medical dismissal requires an actual nurse check-in or a verified emergency.');return false;}
+ // Receipt first: time callbacks and save/reload cannot award a second excused day.
+ ns.medicalDismissalH114={id:`medical:${ev.id}:${currentDate()}`,reason:how,schoolId:playerCurrentSchoolId4A2?.(),minute:currentMinute(),caregiverId:picked?.id||null};
+ const active=hallPassRuntimeH11().hallPassH11;
+ if(active)hallPassArchiveH11(active,'Completed','medical_dismissal');
+ h114LegacyFinishSickDay(how,picked);
+ // Legacy directly changed S.location; synchronize the real Phase 4C / H10 authorities.
+ setPlayerLocation4C1('Home',{reason:'Nurse-approved medical dismissal',quiet:true});reconcileSchoolRoomH10();
+ return true;
+};
+const h114LegacyCall=nurseCallCaregiver;
+nurseCallCaregiver=function(){
+ const v=nurseMedicalSessionH114();if(!v){toast('Ask the nurse at your school before requesting caregiver pickup.');return false;}
+ if(v.ns.callReceiptH114){toast('The nurse has already contacted home for this visit.');return false;}
+ v.ns.callReceiptH114=v.ns.assessmentReceiptH114+':call';
+ h114LegacyCall();
+ return true;
+};
+const h114LegacyEmergencyCare=emergencyCare;
+emergencyCare=function(){
+ if(S.location==='School'&&playerAtSchool4C1()&&condition()?.severity==='emergency'){
+  finishSickDay('emergency');
+ }
+ return h114LegacyEmergencyCare();
+};
+function nurseEmergencyH114(reason='emergency_referral'){
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),c=condition();
+ if(!sid||!day.atSchool||day.locationSchoolId!==sid||S.location!=='School'||!(c?.severity==='emergency'||S.healthState?.emergency||S.health<45))return {ok:false,reason:'No verified school medical emergency is present.'};
+ const ev=sessionEvent()||schoolDayEvent();
+ if(!ev||ev.nurse?.medicalDismissalH114)return {ok:false,reason:'This medical exit has already been completed.'};
+ if(!ev.nurse)ev.nurse={};
+ ev.nurse.emergencyReceiptH114=`emergency:${ev.id}:${currentDate()}`;
+ // Emergency escalation needs neither a teacher, hall pass nor a phone.
+ if(c&&c.severity!=='emergency')c.severity='emergency';
+ const dismissed=finishSickDay('emergency');
+ if(!dismissed)return {ok:false,reason:'Emergency dismissal could not be recorded.'};
+ if(c)h114LegacyEmergencyCare();
+ else log('Urgent school medical care','School staff arrange immediate medical assistance and an excused departure.',true);
+ return {ok:true,status:'Emergency',receiptId:ev.nurse.emergencyReceiptH114,reason};
+}
+// Keep H11.3 UI layout (H11.5 will consolidate navigation); make every nurse click truthful.
+const h114PriorNurseHtml=nurseHtml;
+nurseHtml=function(){
+ if(!canSeeNurse())return '';
+ const gate=nursePhysicalGateH114(),ns=nurseState(),visit=nurseMedicalSessionH114();
+ if(!gate.ok)return `<section class="card nurse-card"><h3>School Nurse</h3><p class="muted-text">${esc(gate.reason)}</p></section>`;
+ if(!visit){
+  const returnGate=nurseReturnGateH114();
+  if(returnGate.ok)return `<section class="card nurse-card"><h3>Nurse Office</h3><p>You have been assessed and are ready to return.</p><button class="small primary" data-nurse="back">Return to class · ${returnGate.route.minutes} min</button></section>`;
+  const pass=hallPassActiveH11();const canCheck=schoolFacilityContext4C3().freeWindow||(pass?.purpose==='nurse'&&pass.status==='Arrived');
+  return `<section class="card nurse-card"><h3>Nurse Office · arrived</h3><p class="muted-text">${canCheck?'Check in for the existing Phase 2A assessment.':'Bring a valid nurse referral before checking in during class.'}</p><button class="small" data-nurse="visit" ${canCheck?'':'disabled'}>Check in with nurse</button></section>`;
+ }
+ let html=h114PriorNurseHtml();
+ const g=nurseReturnGateH114();
+ html=html.replace('data-nurse="back"',`data-nurse="back" ${g.ok?'':'disabled title="'+esc(g.reason)+'"'}`);
+ return html;
+};
+// On old imports never manufacture new medical attendance or travel passes.
+const h114PreviousMigrate=migrateSchoolDay4C1;
+migrateSchoolDay4C1=function(...args){const value=h114PreviousMigrate(...args);const ev=schoolDayEvent();const ns=ev?.nurse;
+ if(ns?.inOffice&&(!ns.schoolIdH114||!ns.roomIdH114||!nurseMedicalSessionH114())){ns.inOffice=false;ns.reconcileReasonH114='old_unverified_nurse_session';}
+ return value;
+};
+// H11.5 — UI-only consolidation of the existing H11 travel and Phase 2A clinical authorities.
+// No new attendance, healthcare, visitor or permission engine.
+function h115Ui(){if(!UI.h115||typeof UI.h115!=='object')UI.h115={requestOpen:false,feedback:''};return UI.h115;}
+function h115NurseStages(){
+ const ns=schoolDayEvent()?.nurse||{},p=hallPassActiveH11(),here=currentSchoolRoomH10(),sid=playerCurrentSchoolId4A2?.();
+ const atNurse=!!sid&&here?.roomId===sid+'::nurse_office'&&S.location==='School';
+ const steps=[['Request','Request teacher permission during class'],['Travel','Walk to your Nurse Office'],['Assessment','Check in with the nurse'],['Resolution','Return to class or arrange pickup']];
+ let current=0;
+ if(p?.purpose==='nurse')current=p.status==='Arrived'?2:1;
+ if(atNurse)current=Math.max(current,2);
+ if(ns.assessmentReceiptH114)current=3;
+ if(ns.returnReceiptH114||ns.medicalDismissalH114)current=4;
+ return `<ol class="h115-stages" aria-label="Nurse visit steps">${steps.map(([short,full],i)=>`<li class="${i<current?'is-done':i===current?'is-current':''}" ${i===current?'aria-current="step"':''}><span>${esc(short)}</span><small>${esc(full)}</small></li>`).join('')}</ol>`;
+}
+function h115PassPanel(){
+ const sid=playerCurrentSchoolId4A2?.(),day=schoolDayState4C1(),here=currentSchoolRoomH10(),p=hallPassActiveH11(),recovery=hallPassRecoveryH113(),n=schoolDayEvent()?.nurse||{};
+ if(!sid||!S.school||S.location!=='School'||!day.atSchool||day.locationSchoolId!==sid||!here)return '';
+ const ui=h115Ui(),period=schoolClassSession4C2()?.period,free=schoolFacilityContext4C3().freeWindow;
+ const title='<h4 id="h115-title">Teacher permissions & Nurse Office</h4>';
+ if(n.medicalDismissalH114)return '';
+ if(p||recovery){
+  const r=p||recovery,to=schoolRoomByIdH10(sid,r.destinationRoomId),until=Math.max(0,r.expiresMinute-currentMinute());
+  return `<section class="h115-context" aria-labelledby="h115-title">${title}<p role="status"><b>${p?'Authorized pass':'Expired pass — return required'}:</b> ${esc(to?.name||'School destination')} · ${esc(r.status)}${p?' · '+until+' min left':''}.</p><p class="muted-text">The highlighted Campus Map route below is the only authorized route. The pass does not excuse a class or grant access to other rooms.</p><button class="small ghost" type="button" data-h115-nav="map">View assigned route</button></section>`;
+ }
+ if(n.assessmentReceiptH114&&here.roomId===sid+'::nurse_office')return `<section class="h115-context" aria-labelledby="h115-title">${title}<p role="status">Nurse assessment recorded. Use the medical controls below to rest, return or request caregiver pickup.</p></section>`;
+ if(free||!period||period.kind!=='class')return `<section class="h115-context" aria-labelledby="h115-title">${title}<p class="muted-text">${free?'During breaks, ordinary campus movement does not require a hall pass.':'Teacher passes are available during an attended class at your own school.'} Medical care requires arrival at the real Nurse Office.</p></section>`;
+ const choices=[['restroom','Restroom'],['nurse','Nurse Office']].map(([purpose,label])=>{
+  const gate=hallPassRequestGateH11(purpose,{urgency:'ordinary'}),emergency=gate.emergency;
+  return `<div class="h115-choice"><button type="button" class="small ${purpose==='nurse'?'primary':'ghost'}" data-h115-request="${purpose}" ${gate.ok?'':'disabled aria-disabled="true"'} aria-describedby="h115-why-${purpose}">Ask for ${label}</button><small id="h115-why-${purpose}">${esc(gate.ok?emergency?'Emergency assistance (not a regular pass)':'Teacher reviews this request for one approved destination.':gate.reason||'Not available right now.')}</small></div>`;
+ }).join('');
+ return `<section class="h115-context" aria-labelledby="h115-title">${title}<details data-h115-request-panel="1" ${ui.requestOpen?'open':''}><summary>Request Hall Pass</summary><p class="muted-text">Ask your current teacher. Approval is not travel or an attendance excuse. Urgent illness is handled through medical escalation.</p><div class="h115-choices">${choices}</div></details>${ui.feedback?`<p class="h115-feedback" role="status" tabindex="-1">${esc(ui.feedback)}</p>`:''}</section>`;
+}
+const h115PreviousMap=schoolCampusMapHtmlH102;
+schoolCampusMapHtmlH102=function(){
+ const html=h115PreviousMap();if(!html)return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ // H11.3's map request controls are superseded by the Today permission disclosure.
+ // Preserve its active-pass ribbon and authorized return button in room detail.
+ if(!hallPassActiveH11()&&!hallPassRecoveryH113())node.querySelector('.h113-pass')?.remove();
+ return node.innerHTML;
+};
+const h115PriorNurseHtml=nurseHtml;
+// Existing school render appends nurseHtml() after schoolPanel(). We place it inside
+// Today instead and expose the same canonical actions in the Health view.
+nurseHtml=function(){return '';};
+const h115PreviousSchool=schoolPanel;
+schoolPanel=function(){
+ const html=h115PreviousSchool();if(!html||!S?.school)return html;
+ const node=document.createElement('div');node.innerHTML=html;
+ const today=node.querySelector('[data-school-today]');if(!today)return html;
+ const panel=document.createElement('div');panel.innerHTML=h115PassPanel();
+ if(panel.firstElementChild){const heading=today.querySelector('h3');(heading||today).after(panel.firstElementChild);}
+ const nurse=h115PriorNurseHtml();
+ if(nurse){const wrap=document.createElement('div');wrap.innerHTML=nurse;const section=wrap.querySelector('section');if(section){section.classList.remove('card');section.classList.add('h115-nurse-inline');section.setAttribute('aria-label','School Nurse care');today.append(section);}}
+ return node.innerHTML;
+};
+const h115PreviousHealth=healthPanel73;
+healthPanel73=function(){
+ const html=h115PreviousHealth();if(!S?.school)return html;
+ const node=document.createElement('div');node.innerHTML=html;const dash=node.querySelector('.dashboard');if(!dash)return html;
+ const nurse=h115PriorNurseHtml(),sid=playerCurrentSchoolId4A2?.(),atOwn=S.location==='School'&&locationSchoolId4C1()===sid;
+ if(!nurse&&!atOwn)return html;
+ const wrap=document.createElement('section');wrap.className='card wide h115-health-nurse';wrap.setAttribute('aria-label','School Nurse');
+ wrap.innerHTML=`<h3>School Nurse · ${esc(S.school.name)}</h3>${h115NurseStages()}${nurse?`<div class="h115-care">${nurse}</div>`:`<p class="muted-text">School nurse access is available only on your own open campus.</p>`}<button type="button" class="small ghost" data-h115-nav="map">${atOwn?'Open Campus Map':'View school information'}</button>`;
+ dash.append(wrap);return node.innerHTML;
+};
+const h115PreviousClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button');if(!b)return h115PreviousClick(e);
+ if(b.dataset.h115Nav==='map'){
+  active='school';const p=h102Prefs();p.open=true;
+  const pass=hallPassActiveH11()||hallPassRecoveryH113(),sid=playerCurrentSchoolId4A2?.();
+  if(pass)p.selected=pass.status==='Arrived'?pass.returnRoomId:pass.destinationRoomId;
+  else if(sid)p.selected=sid+'::nurse_office';
+  saveUI();render();document.querySelector('#panel-host [data-h102-map] summary')?.focus({preventScroll:true});return;
+ }
+ if(b.dataset.h115Request){
+  const purpose=b.dataset.h115Request,g=hallPassRequestGateH11(purpose,{urgency:'ordinary'}),ui=h115Ui();
+  if(!g.ok){ui.feedback=g.reason||'The teacher cannot grant this request.';render();return;}
+  const result=hallPassRequestH11(purpose,{urgency:'ordinary'});
+  if(result.emergency&&purpose==='nurse'){
+   const care=nurseEmergencyH114('emergency_teacher_referral');ui.feedback=care.ok?'Urgent medical care arranged.':care.reason;
+  }else if(result.ok&&result.status==='Approved'){
+   const pref=h102Prefs();pref.open=true;pref.selected=result.pass.destinationRoomId;
+   ui.feedback=`${result.pass.issuerTeacherName} approved the trip. Select Go there on the Campus Map.`;
+   log('Teacher hall pass issued',ui.feedback);
+  }else ui.feedback=result.reason||'Teacher permission was not issued.';
+  ui.requestOpen=true;save();render();
+  const map=document.querySelector('#panel-host [data-h102-map] summary'),feedback=document.querySelector('#panel-host .h115-feedback');
+  (map&&result.ok&&result.status==='Approved'?map:feedback)?.focus?.({preventScroll:true});return;
+ }
+ return h115PreviousClick(e);
+};
+document.addEventListener('toggle',e=>{
+ if(!e.target?.matches?.('#panel-host details[data-h115-request-panel]'))return;
+ h115Ui().requestOpen=!!e.target.open;saveUI();
+},true);
+
+// Escape closes only the local permission disclosure or Campus Map details, not
+// dialogs/overlays managed by the established global ESC authority.
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Escape'||active!=='school'||document.querySelector('[role="dialog"][aria-modal="true"]'))return;
+ const host=e.target?.closest?.('#panel-host');if(!host)return;
+ const req=host.querySelector('details[data-h115-request-panel]');
+ if(req?.open&&req.contains(e.target)){req.open=false;h115Ui().requestOpen=false;saveUI();req.querySelector('summary')?.focus({preventScroll:true});e.preventDefault();e.stopPropagation();return;}
+ const map=host.querySelector('details[data-h102-map]');
+ if(map?.open&&map.contains(e.target)){map.open=false;h102Prefs().open=false;saveUI();map.querySelector('summary')?.focus({preventScroll:true});e.preventDefault();e.stopPropagation();}
+},true);
+// H12.2 — ingredient-backed Home cooking. No meal purchase, lunchbox or cafeteria authority here.
+// All ingredients/results are canonical D.catalog keys; stock stays in S.inventoryItems.
+const H12_RECIPE_SCHEMA=1;
+let H12_LAST_UI_COOK_CLICK_MS=0;
+const H12_RECIPES=Object.freeze({
+ sandwich:Object.freeze({id:'sandwich',label:'Make a sandwich',resultKey:'sandwich',resultQuantity:1,ingredients:[{key:'breadSlices',units:2},{key:'cheeseSlices',units:1}],equipment:'prepBoard',minAge:7,supervisedBelow:13,minutes:20,skillGain:1.5}),
+ fruitBowl:Object.freeze({id:'fruitBowl',label:'Prepare a fruit bowl',resultKey:'fruitCup',resultQuantity:1,ingredients:[{key:'fruit',units:2}],equipment:'prepBoard',minAge:7,supervisedBelow:13,minutes:15,skillGain:1}),
+ eggToast:Object.freeze({id:'eggToast',label:'Cook eggs on toast',resultKey:'eggToast',resultQuantity:1,ingredients:[{key:'rawEgg',units:2},{key:'breadSlices',units:1}],equipment:'panSet',minAge:13,supervisedBelow:18,requiresStove:true,minutes:30,skillGain:2})
+});
+function foodCookingStateH122(){
+ if(!S.foodCookingH12||typeof S.foodCookingH12!=='object'||Array.isArray(S.foodCookingH12))S.foodCookingH12={schemaVersion:1,receipts:[]};
+ const f=S.foodCookingH12;f.schemaVersion=H12_RECIPE_SCHEMA;
+ if(!Array.isArray(f.receipts))f.receipts=[];
+ // Never invent a historical cooking event. Conservatively ignore malformed past receipts.
+ f.receipts=f.receipts.filter(x=>x&&x.schemaVersion===1&&typeof x.id==='string'&&typeof x.recipeId==='string'&&H12_RECIPES[x.recipeId]&&x.dateISO&&x.status==='Committed').slice(-80);
+ return f;
+}
+function foodIngredientPlanH122(recipe){
+ const debits=[];
+ for(const req of recipe.ingredients){
+  let remaining=req.units;
+  for(const it of S.inventoryItems||[]){
+   if(it.key!==req.key||it.stored||isSpoiled(it)||freshDaysLeft(it)<0||(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(it.id)))continue;
+   const count=Number(it.quantity||1),portion=Number(it.remaining??100);
+   if(!Number.isSafeInteger(count)||count<1||!Number.isFinite(portion)||portion<=0||portion>100)continue;
+   // Partial/opened units are never mistaken for a whole fresh ingredient.
+   const available=it.opened?(count===1&&portion>=99.999?1:0):count;
+   const take=Math.min(remaining,available);
+   if(take>0){debits.push({itemId:it.id,key:it.key,units:take});remaining-=take;}
+   if(remaining===0)break;
+  }
+  if(remaining>0)return {ok:false,reason:`Missing ${remaining} × ${catalogItem(req.key)?.name||req.key}.`,missingKey:req.key};
+ }
+ return {ok:true,debits};
+}
+function foodCookingGateH122(recipeId,options=null){
+ if(!S)return {ok:false,reason:'Begin a life first.'};
+ const recipe=H12_RECIPES[recipeId];if(!recipe)return {ok:false,reason:'Unknown recipe.'};
+ if(S.location!=='Home')return {ok:false,reason:'Prepare food at Home, not at school or while traveling.'};
+ if(options&&Object.prototype.hasOwnProperty.call(options,'caregiverPersonId')&&!options.caregiverPersonId)return {ok:false,reason:'Choose an actual caregiver before requesting help.'};
+ const help=options?.caregiverPersonId?foodCaregiverGateH123(options.caregiverPersonId,recipe):null;
+ if(help&&!help.ok)return help;
+ if(S.age<recipe.minAge&&!help)return {ok:false,reason:`This recipe requires age ${recipe.minAge}+ and safe equipment.`};
+ if(!Number.isFinite(S.energy)||S.energy<12)return {ok:false,reason:'You need more energy to prepare food.'};
+ if(currentMinute()+recipe.minutes>=1440)return {ok:false,reason:'Not enough time left today to finish this recipe.'};
+ const equipment=findUsable(recipe.equipment);
+ if(!equipment||equipment.condition<=0)return {ok:false,reason:`You need a working ${catalogItem(recipe.equipment).name}.`};
+ let caregiver=null;
+ if(help)caregiver=help.caregiver;
+ else if(S.age<recipe.supervisedBelow){
+  // Only a real co-resident adult / eligible older sibling can supervise.
+  caregiver=typeof householdCaregivers==='function'?householdCaregivers().find(p=>p&&inHousehold(p)&&!(p.busyDateISO===currentDate()&&Number(p.busyUntilMinute)>currentMinute())):null;
+  if(!caregiver)return {ok:false,reason:'An available household caregiver must supervise this recipe.'};
+ }
+ if(recipe.requiresStove&&!help&&S.age<18&&!(S.permissions?.dailyAccess?.dateISO===currentDate()&&S.permissions.dailyAccess.stove===true))return {ok:false,reason:'Ask a caregiver for stove permission before cooking.'};
+ const stock=foodIngredientPlanH122(recipe);if(!stock.ok)return stock;
+ return {ok:true,recipe,caregiverPersonId:caregiver?.id||null,caregiverPrepared:!!help,debits:stock.debits};
+}
+function preferredRecipeH122(){
+ const available=Object.keys(H12_RECIPES).find(k=>foodCookingGateH122(k).ok);
+ return available||'sandwich';
+}
+function foodCookApplyDebitsH122(inventory,debits){
+ // Pure staged mutation of existing item instances; no partial real-state expenditure.
+ for(const debit of debits){
+  const i=inventory.findIndex(x=>x.id===debit.itemId);
+  if(i<0||inventory[i].key!==debit.key||inventory[i].stored)return false;
+  if(!Number.isSafeInteger(debit.units)||debit.units<=0)return false;
+  const quantity=Number(inventory[i].quantity||1);
+  if(!Number.isSafeInteger(quantity)||quantity<debit.units)return false;
+  if(quantity===debit.units)inventory.splice(i,1);
+  else inventory[i].quantity=quantity-debit.units;
+ }
+ return true;
+}
+function cookRecipeH122(recipeId,requestId=null,options=null){
+ const state=foodCookingStateH122();
+ if(requestId!==null){
+  if(typeof requestId!=='string'||!/^[a-zA-Z0-9:_-]{1,100}$/.test(requestId))return {ok:false,reason:'Invalid cooking request identifier.'};
+  const previous=state.receipts.find(r=>r.requestId===requestId);
+  if(previous)return {ok:false,reason:'This cooking request was already completed.',receiptId:previous.id};
+ }
+ const gate=foodCookingGateH122(recipeId,options);
+ if(!gate.ok){toast(gate.reason);return gate}
+ const {recipe,debits,caregiverPersonId,caregiverPrepared}=gate;
+ const staged=JSON.parse(JSON.stringify(S.inventoryItems));
+ if(!foodCookApplyDebitsH122(staged,debits))return {ok:false,reason:'Ingredient stock changed. Try again.'};
+ // Distinct output id is retained regardless of inventory stacks so future lunch reservations are safe.
+ const output=makeItemInstance(recipe.resultKey,`Cooked: ${recipe.id}`);
+ output.opened=false;output.quantity=recipe.resultQuantity;
+ output.cookingRecipeIdH12=recipe.id;output.cookingDateISOH12=currentDate();
+ if(staged.some(it=>it.id===output.id))return {ok:false,reason:'Inventory ID collision.'};
+ staged.push(output);
+ const today=state.receipts.filter(x=>x.dateISO===currentDate()).length;
+ const gain=!caregiverPrepared&&today<2?recipe.skillGain:0; // Only two skill-earning cooking sessions per day.
+ const receipt={schemaVersion:1,id:uid('cook'),requestId:requestId||null,dateISO:currentDate(),minute:currentMinute(),recipeId:recipe.id,caregiverPersonId,ingredientDebits:debits,caregiverPrepared:!!caregiverPrepared,outputItemIds:[output.id],minutes:recipe.minutes,skillGain:gain,status:'Committed'};
+ // Snapshot only the canonical persisted state. If a synchronous commit fails, restore all state.
+ const before=JSON.stringify(S);
+ try{
+  S.inventoryItems=staged;
+  state.receipts.push(receipt);if(state.receipts.length>80)state.receipts.splice(0,state.receipts.length-80);
+  S.development.skills.cooking=clamp((S.development.skills.cooking||0)+gain);
+  syncLegacyInventory();
+  advanceTime(recipe.minutes);
+  log('Prepared food',`${catalogItem(recipe.resultKey).name} (×${recipe.resultQuantity}) from owned ingredients.${caregiverPersonId?(caregiverPrepared?' Prepared by your actual household caregiver.':' Supervised by a household caregiver.'):''}`);
+ }catch(error){S=JSON.parse(before);console.error('Cooking transaction rolled back',error);return {ok:false,reason:'Cooking could not be completed; ingredients restored.'}}
+ toast(`Prepared ${catalogItem(recipe.resultKey).name}. Eat it from Inventory.`);
+ return {ok:true,receiptId:receipt.id,outputItemIds:[output.id],debits,minutes:recipe.minutes,skillGain:gain};
+}
+// Inert idempotent migration: no retroactive recipes, items, expenses or receipts.
+const _migratePreFoodH122=migrate;
+migrate=function(){const result=_migratePreFoodH122.apply(this,arguments);if(S)foodCookingStateH122();return result};
+// H12.3 — source-grounded caregiver meal prep + discoverable Home recipe/leftovers UI.
+// H12.4 packed lunch and H12.5 school meals are deliberately not modified here.
+function foodCaregiverGateH123(personId,recipe){
+ if(!S||S.location!=='Home')return {ok:false,reason:'A caregiver can prepare this meal only at Home.'};
+ if(S.age<3)return {ok:false,reason:'Infants and very young toddlers need their existing age-appropriate feeding care.'};
+ if(typeof livesWithParents==='function'&&!livesWithParents())return {ok:false,reason:'These family members live at the previous household, not your current home.'};
+ if(typeof personId!=='string'||!personId)return {ok:false,reason:'Choose a real household caregiver.'};
+ const p=householdCaregivers().find(x=>x.id===personId&&inHousehold(x));
+ if(!p)return {ok:false,reason:'That caregiver does not live with you or is unavailable.'};
+ if(personAge(p)<16)return {ok:false,reason:'This household member is not old enough to prepare food.'};
+ if(p.busyDateISO===currentDate()&&Number(p.busyUntilMinute)>currentMinute())return {ok:false,reason:`${p.fullName||p.name} is busy until later.`};
+ if(p.unavailableDateISO===currentDate()||p.atWorkDateISO===currentDate())return {ok:false,reason:'The caregiver is away today.'};
+ if(Number.isFinite(Number(p.rel))&&Number(p.rel)<20)return {ok:false,reason:'This caregiver is not willing to help right now.'};
+ if(Number(S.family?.tension||0)>=85)return {ok:false,reason:'Family tensions are too high for this favor right now.'};
+ if(Number(S.family?.rules?.strictness||0)>=85&&Number(p.rel||0)<55)return {ok:false,reason:'Household rules prevent this request right now.'};
+ // The player must truly own all ingredients and equipment, even if the family is wealthy.
+ // Adult stove supervision is performed by the actual caregiver; do not grant the child stove permission.
+ return {ok:true,caregiver:p};
+}
+function foodInventoryUnitsH123(key){
+ return (S.inventoryItems||[]).filter(it=>it.key===key&&!it.stored&&!isSpoiled(it)&&freshDaysLeft(it)>=0&&!(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(it.id))&&(!it.opened||Number(it.remaining)>=99.999)).reduce((n,it)=>n+(it.opened?1:Math.max(1,Number(it.quantity)||1)),0);
+}
+function foodHomeHtmlH123(){
+ if(!S)return '';
+ const home=S.location==='Home';const caregivers=typeof householdCaregivers==='function'&&(!livesWithParents||livesWithParents())?householdCaregivers().filter(p=>inHousehold(p)&&personAge(p)>=16):[];
+ const recipes=Object.values(H12_RECIPES).map(r=>{
+  const own=foodCookingGateH122(r.id),stock=r.ingredients.map(i=>{
+   const n=foodInventoryUnitsH123(i.key);return `<span class="h123-ingredient ${n>=i.units?'':'h123-missing'}">${esc(catalogItem(i.key)?.name||i.key)} ${n}/${i.units}</span>`;
+  }).join('');
+  const equip=findUsable(r.equipment),eq=!!equip&&equip.condition>0;
+  const helperOptions=caregivers.map(p=>`<option value="${esc(p.id)}">${esc(p.fullName||p.name)}</option>`).join('');
+  const help=caregivers.length?foodCookingGateH122(r.id,{caregiverPersonId:caregivers[0].id}):{ok:false,reason:'No available household caregiver.'};
+  return `<div class="h123-recipe" data-h123-recipe="${esc(r.id)}"><div class="h123-recipe-header"><b>${esc(r.label)}</b><small>${r.minutes} min · age ${r.minAge}+ for self preparation</small></div><div class="h123-ingredients">${stock}</div><small class="${eq?'':'h123-missing'}">${esc(catalogItem(r.equipment)?.name||r.equipment)} ${eq?'✓ owned':'— equipment missing'}</small><div class="inline-actions h123-actions"><button type="button" class="small primary" data-h123-cook="${esc(r.id)}" ${!home||!own.ok?'disabled':''}>Cook yourself</button>${home&&caregivers.length?`<label class="h123-caregiver"><span>Helper</span><select data-h123-helper="${esc(r.id)}" aria-label="Caregiver for ${esc(r.label)}">${helperOptions}</select></label><button type="button" class="small" data-h123-ask="${esc(r.id)}" ${!help.ok?'disabled':''}>Ask to prepare</button>`:''}</div>${!own.ok?`<small class="muted-text">Self: ${esc(own.reason)}</small>`:''}${home&&!help.ok&&caregivers.length?`<small class="muted-text">Caregiver: ${esc(help.reason)}</small>`:''}</div>`;
+ }).join('');
+ const food=(S.inventoryItems||[]).filter(it=>!it.stored&&!(typeof itemReservedForLunchH12==='function'&&itemReservedForLunchH12(it.id))&&['perishable','consumable'].includes(it.lifecycleType)&&!catalogItem(it.key)?.ingredientOnly&&!catalogItem(it.key)?.gift);
+ const leftovers=food.slice(0,8).map(it=>{
+  const spoiled=isSpoiled(it),remaining=it.opened?`${Math.round(it.remaining)}% left`:`×${it.quantity||1}`;
+  const freshness=it.freshUntil?` · fresh through ${esc(it.freshUntil)}`:'';
+  return `<div class="row h123-leftover"><span><b>${esc(it.name)}</b><small>${remaining}${freshness}${spoiled?' · SPOILED':''}</small></span><button class="small ghost" type="button" data-h123-eat="${esc(it.id)}" ${!home||spoiled||S.age<3?'disabled':''}>Eat one serving</button></div>`;
+ }).join('');
+ return `<section class="card wide h123-kitchen" aria-label="Cook and prepare food"><div class="section-heading"><div><h3>Cook / Prepare Food</h3><p class="muted-text">Real ingredients and equipment only. Preparing food doesn't feed you until you eat it.</p></div><span class="tag">${home?'At Home':'Home only'}</span></div>${!home?'<p class="muted-text">Return Home to prepare food. School meals have separate location and time rules.</p>':''}<div class="h123-recipes">${recipes}</div><div class="inline-actions"><button type="button" class="small ghost" data-tab-jump="business">Shop ingredients and equipment</button></div><details class="h123-leftovers"><summary>Prepared food and leftovers (${food.length})</summary>${leftovers||'<p class="muted-text">No ready-to-eat food in your inventory.</p>'}</details><p class="muted-text h123-feedback" role="status" aria-live="polite"></p></section>`;
+}
+const h123PriorHomePanel=homePanel;
+homePanel=function(){const html=h123PriorHomePanel();if(!S)return html;const shell=document.createElement('div');shell.innerHTML=html;const target=shell.querySelector('.dashboard');if(!target)return html;const box=document.createElement('div');box.innerHTML=foodHomeHtmlH123();if(box.firstElementChild)target.prepend(box.firstElementChild);return shell.innerHTML;};
+const h123PriorClick=handlePanelClick;
+handlePanelClick=function(e){
+ const btn=e.target?.closest?.('button');if(!btn||!S)return h123PriorClick(e);
+ if(btn.dataset.h123Cook||btn.dataset.h123Ask){
+  const rid=btn.dataset.h123Cook||btn.dataset.h123Ask;
+  const options=btn.dataset.h123Ask?{caregiverPersonId:document.querySelector(`[data-h123-helper="${rid}"]`)?.value}:null;
+  const result=cookRecipeH122(rid,uid('h123'),options);
+  save();render();
+  const notice=document.querySelector('.h123-feedback');if(notice){notice.textContent=result.ok?`Prepared ${catalogItem(H12_RECIPES[rid].resultKey).name}. Find it under Prepared food and leftovers.`:result.reason;notice.focus?.({preventScroll:true});}
+  return;
+ }
+ if(btn.dataset.h123Eat){
+  const it=S.inventoryItems.find(x=>x.id===btn.dataset.h123Eat);
+  if(S.location!=='Home'||S.age<3||!it||it.stored||isSpoiled(it)||catalogItem(it.key)?.ingredientOnly){toast('This food cannot be eaten here.');return;}
+  eatPortion(it.id,'all');save();render();return;
+ }
+ return h123PriorClick(e);
+};
+
+// A different legitimate caregiver can be selected without losing focus or rerendering.
+document.getElementById('panel-host')?.addEventListener('change',e=>{
+ const sel=e.target?.closest?.('[data-h123-helper]');if(!sel)return;
+ const rid=sel.dataset.h123Helper;const gate=foodCookingGateH122(rid,{caregiverPersonId:sel.value});
+ const row=sel.closest('[data-h123-recipe]'),ask=row?.querySelector('[data-h123-ask]');
+ if(ask){ask.disabled=!gate.ok;ask.title=gate.ok?'':gate.reason;}
+});
+// H12.4 — inventory-conserving pre-departure school lunchbox.
+// The sole food authority is S.inventoryItems. The lunchbox stores references, never products.
+const H124_PACK_SCHEMA=1;
+function h124Record(dateISO=currentDate(),create=false){
+ const days=schoolFacilitiesRuntime4C3().days;
+ if(!days[dateISO]&&!create)return null;
+ const day=create?schoolFacilityDay4C3(dateISO):days[dateISO];return day&&typeof day==='object'?day:null;
+}
+function h124Owned(id){return (S.inventoryItems||[]).find(it=>it.id===id)||null;}
+function h124FoodGate(it,drink=false){
+ if(!it||it.stored)return {ok:false,reason:'The selected item is not in your accessible inventory.'};
+ const cat=catalogItem(it.key);if(!cat||!['consumable','perishable'].includes(it.lifecycleType)||cat.ingredientOnly||cat.gift)return {ok:false,reason:'Choose ready-to-eat food, not a raw ingredient.'};
+ if(!!cat.drink!==!!drink)return {ok:false,reason:drink?'Choose an actual drink.':'Choose a meal or snack, not a drink.'};
+ if(isSpoiled(it)||freshDaysLeft(it)<0)return {ok:false,reason:'That food is stale or spoiled; do not pack it.'};
+ if(it.opened&&Number(it.remaining)<99.999)return {ok:false,reason:'A partly consumed serving cannot be packed.'};
+ if(itemReservedForLunchH12(it.id))return {ok:false,reason:'This item is already reserved in a lunchbox.'};
+ return {ok:true};
+}
+function h124ActivePack(rec=h124Record()){
+ const p=rec?.packedLunchH12;
+ return p&&typeof p==='object'&&!Array.isArray(p)&&Array.isArray(p.entries)&&p.schemaVersion===H124_PACK_SCHEMA&&['packed','carried','partly_consumed'].includes(p.status)?p:null;
+}
+function itemReservedForLunchH12(itemId){
+ if(!S||!itemId)return false;
+ const days=S.schoolDayRuntime?.facilities4C3?.days||{};
+ return Object.entries(days).some(([date,rec])=>{
+  const p=rec?.packedLunchH12;return date===currentDate()&&p&&['packed','carried','partly_consumed'].includes(p.status)&&Array.isArray(p.entries)&&p.entries.some(e=>e&&e.itemId===itemId&&e.status==='packed');
+ });
+}
+function h124PackGate(mealId,drinkId=''){
+ if(S.location!=='Home')return {ok:false,reason:'Pack lunch at Home before leaving for school.'};
+ const travel=schoolTravelEligibility4C1();if(!travel.ok)return {ok:false,reason:travel.reason};
+ if((S.age||0)<3)return {ok:false,reason:'Very young children need age-appropriate feeding instead of a school lunchbox.'};
+ const r=h124Record(currentDate());if(r?.packedLunchH12&&r.packedLunchH12.status!=='unpacked')return {ok:false,reason:'Today already has a lunchbox record. You cannot pack the same day twice.'};
+ if(r?.packedLunchConsumed||schoolDayEvent()?.ateLunch)return {ok:false,reason:'Lunch for today has already been recorded.'};
+ if(!mealId)return {ok:false,reason:'Choose one actual meal or snack.'};
+ if(mealId===drinkId)return {ok:false,reason:'Choose two distinct inventory items.'};
+ for(const [id,drink] of [[mealId,false],...(drinkId?[[drinkId,true]]:[])]){
+  const g=h124FoodGate(h124Owned(id),drink);if(!g.ok)return g;
+ }
+ return {ok:true,schoolId:travel.state.schoolId};
+}
+function packLunchH124(mealId,drinkId=''){
+ const g=h124PackGate(mealId,drinkId);if(!g.ok){toast(g.reason);return {ok:false,reason:g.reason};}
+ // All checks precede any mutation. Unique portions are carved out of true stacks.
+ const original=[mealId,...(drinkId?[drinkId]:[])].map(id=>h124Owned(id));
+ const portion=original.map(it=>openOne(it));
+ const now=currentMinute(),date=currentDate(),rec=h124Record(date,true);
+ const entries=portion.map((it,i)=>({itemId:it.id,key:it.key,kind:i===0?'meal':'drink',portionUnits:1,packedAtMinute:now,freshUntil:it.freshUntil||null,status:'packed',receiptId:null}));
+ const pack={schemaVersion:H124_PACK_SCHEMA,packId:uid('lunch'),dateISO:date,schoolId:g.schoolId,packedAtMinute:now,packedAtLocation:'Home',actorId:'player',caregiverPersonId:null,source:'owned_food',entries,status:'packed',carriedAtMinute:null,closedAtMinute:null};
+ rec.packedLunchH12=pack;
+ rec.packedLunch={itemId:entries[0].itemId,source:'owned_food',caregiverId:null,preparedBy:'Packed from owned inventory at Home',dateISO:date};
+ log('Packed school lunch',`${entries.map(e=>catalogItem(e.key)?.name||e.key).join(' and ')} reserved from existing inventory.`);
+ return {ok:true,pack};
+}
+function unpackLunchH124(){
+ const rec=h124Record(),pack=h124ActivePack(rec);
+ if(S.location!=='Home'||!pack||pack.status!=='packed'||pack.dateISO!==currentDate()||pack.schoolId!==playerCurrentSchoolId4A2?.())return {ok:false,reason:'Only an uncarried lunchbox at Home can be unpacked.'};
+ pack.status='unpacked';pack.closedAtMinute=currentMinute();pack.entries.forEach(e=>{if(e.status==='packed')e.status='unpacked'});
+ rec.packedLunch=null;log('Unpacked lunchbox','The reserved servings return to ordinary inventory; no new food was created.');return {ok:true};
+}
+function h124CarryOnTravel(schoolId,dateISO){
+ const rec=h124Record(dateISO),p=h124ActivePack(rec);
+ if(!p||p.status!=='packed'||p.schoolId!==schoolId||p.dateISO!==dateISO)return false;
+ // There is no automatic packing. Lost food cannot be regenerated.
+ if(!p.entries.every(e=>e.status==='packed'&&h124Owned(e.itemId))){p.status='invalid';p.closedReason='missing_item';return false;}
+ p.status='carried';p.carriedAtMinute=currentMinute();return true;
+}
+function h124ReturnFromSchool(){
+ const p=h124ActivePack();if(!p||p.status!=='carried'&&p.status!=='partly_consumed')return;
+ p.status='closed';p.closedReason='returned_home';p.closedAtMinute=currentMinute();
+ p.entries.forEach(e=>{if(e.status==='packed')e.status='returned'});
+}
+function h124LunchMeal(rec=h124Record()){
+ const p=h124ActivePack(rec);
+ if(!p||p.dateISO!==currentDate()||p.schoolId!==locationSchoolId4C1()||p.status!=='carried'&&p.status!=='partly_consumed')return null;
+ const e=p.entries.find(x=>x.kind==='meal'&&x.status==='packed');if(!e)return null;
+ const it=h124Owned(e.itemId);return it&&it.key===e.key?{pack:p,entry:e,item:it}:null;
+}
+function h124MarkConsumed(id){
+ const r=h124Record(),p=h124ActivePack(r),e=p?.entries?.find(e=>e.itemId===id&&e.status==='packed');
+ if(!e)return false;
+ e.status='consumed';e.receiptId=`lunch:${p.packId}:${id}`;
+ if(!p.entries.some(e=>e.status==='packed'))p.status='partly_consumed';
+ return true;
+}
+function migrateLunchboxH124(){
+ const days=S?.schoolDayRuntime?.facilities4C3?.days;
+ if(!days||typeof days!=='object')return {ok:true,days:0};
+ let changed=0;
+ for(const [date,r] of Object.entries(days)){
+  if(!r||typeof r!=='object')continue;
+  const p=r.packedLunchH12;
+  if(!p){
+   // Existing legacy record is linked only if its exact item survives; no fabricated food.
+   const old=r.packedLunch;
+   if(old?.itemId&&h124Owned(old.itemId)&&!r.packedLunchConsumed&&!S.calendar?.some(e=>e.type==='schoolDay'&&e.dateISO===date&&e.ateLunch)){
+    const it=h124Owned(old.itemId);if(it.key!=='sandwich')continue;
+    r.packedLunchH12={schemaVersion:1,packId:`legacy:${date}:${it.id}`,dateISO:date,schoolId:r.schoolId||null,packedAtMinute:null,packedAtLocation:'unknown',actorId:null,caregiverPersonId:old.caregiverId||null,source:'legacy_linked',entries:[{itemId:it.id,key:it.key,kind:'meal',portionUnits:1,freshUntil:it.freshUntil||null,status:'packed',receiptId:null}],status:date===currentDate()&&S.location==='School'?'carried':'closed',closedReason:date===currentDate()?'historical_not_prepacked':'old_date'};changed++;
+   }
+   continue;
+  }
+  if(typeof p!=='object'||Array.isArray(p)){
+   // A corrupt imported scalar/array is inert; never reconstruct a phantom meal.
+   r.packedLunchH12={schemaVersion:1,status:'invalid',closedReason:'malformed',entries:[]};changed++;continue;
+  }
+  if(!Array.isArray(p.entries)||!p.entries.every(e=>e&&typeof e==='object'&&!Array.isArray(e)&&typeof e.itemId==='string'&&typeof e.key==='string'&&['meal','drink'].includes(e.kind)&&['packed','returned','consumed','unpacked'].includes(e.status))||p.schemaVersion!==1||p.dateISO!==date||typeof p.packId!=='string'||!p.schoolId){
+   if(p.status!=='invalid'||p.closedReason!=='malformed'){p.status='invalid';p.closedReason='malformed';changed++}continue;
+  }
+  if(['packed','carried','partly_consumed'].includes(p.status)){
+   let reason=null;
+   if(date!==currentDate())reason='old_day';else if(p.schoolId!==playerCurrentSchoolId4A2?.())reason='school_changed';
+   else if(!p.entries.every(e=>e.status!=='packed'||!!h124Owned(e.itemId)&&h124Owned(e.itemId).key===e.key))reason='missing_item';
+   else if(r.packedLunchConsumed||S.calendar?.some(e=>e.type==='schoolDay'&&e.dateISO===date&&e.ateLunch))reason='already_ate';
+   if(reason){p.status='closed';p.closedReason=reason;p.closedAtMinute=p.closedAtMinute??currentMinute();changed++}
+   else if(S.location==='Home'&&p.status==='carried'){p.status='closed';p.closedReason='already_home';changed++}
+  }
+ }
+ return {ok:true,days:Object.keys(days).length,changed};
+}
+// Guard generic inventory actions: a packed serving cannot be eaten, sold, gifted, stored, or discarded twice.
+let h124AuthorizedRemoval=null;
+const h124OldRemoveItem=removeItem;
+removeItem=function(id,one=false){if(itemReservedForLunchH12(id)&&h124AuthorizedRemoval!==id){toast('Unpack this item at Home before using it.');return null;}return h124OldRemoveItem(id,one);};
+const h124OldEatPortion=eatPortion;
+eatPortion=function(id,portion){if(itemReservedForLunchH12(id)){toast('That serving is reserved for school lunch.');return false;}return h124OldEatPortion(id,portion);};
+const h124OldUseInventoryItem=useInventoryItem;
+useInventoryItem=function(id,action='use'){if(itemReservedForLunchH12(id)){toast('This item is packed for school. Unpack it at Home first.');return false;}return h124OldUseInventoryItem(id,action);};
+const h124OldGiveInventoryItem=giveInventoryItem;
+giveInventoryItem=function(...args){if(args.some(x=>typeof x==='string'&&itemReservedForLunchH12(x))){toast('Packed food cannot be gifted.');return false;}return h124OldGiveInventoryItem(...args);};
+const h124OldMigrate=migrate;
+migrate=function(...args){const result=h124OldMigrate(...args);migrateLunchboxH124();return result;};
+const h124OldGoToSchool=goToSchool4C1;
+goToSchool4C1=function(opts={}){const date=currentDate(),schoolId=playerCurrentSchoolId4A2?.();const ok=h124OldGoToSchool(opts);if(ok)h124CarryOnTravel(schoolId,date);return ok;};
+const h124PriorSetPlayerLocation=setPlayerLocation4C1;
+setPlayerLocation4C1=function(location,options={}){const previous=S?.location;const result=h124PriorSetPlayerLocation(location,options);if(previous==='School'&&S?.location==='Home')h124ReturnFromSchool();return result;};
+const h124OldGoHome=goHomeFromSchool4C1;
+goHomeFromSchool4C1=function(...args){const result=h124OldGoHome(...args);if(result&&S.location==='Home')h124ReturnFromSchool();return result;};
+function h124FoodOptions(drink){return (S.inventoryItems||[]).filter(i=>h124FoodGate(i,drink).ok).map(i=>`<option value="${esc(i.id)}">${esc(i.name)}${(i.quantity||1)>1?' ×'+i.quantity:''}</option>`).join('');}
+function homeLunchboxHtmlH124(){
+ if(!S?.school||!needsFormalSchool())return '';
+ const r=h124Record(),p=r?.packedLunchH12,gate=schoolTravelEligibility4C1();
+ const can=S.location==='Home'&&gate.ok&&(!p||p.status==='unpacked')&&!r?.packedLunchConsumed&&!schoolDayEvent()?.ateLunch;
+ const meal=h124FoodOptions(false),drink=h124FoodOptions(true),items=Array.isArray(p?.entries)?p.entries.filter(e=>e&&typeof e==='object').map(e=>`${esc(catalogItem(e.key)?.name||e.key)} (${esc(e.status)})`).join(' · '):'';
+ const controls=can?`<div class="h124-fields"><label>Meal or snack<select data-h124-meal>${meal||'<option value="">No available food</option>'}</select></label><label>Optional drink<select data-h124-drink><option value="">No drink</option>${drink}</select></label></div><button type="button" class="small primary" data-h124-pack="1" ${!meal?'disabled':''}>Pack this lunch</button>`:'';
+ const existing=p&&p.status!=='unpacked'?`<p><b>${esc(p.status)}</b> · ${items}</p>${p.status==='packed'&&S.location==='Home'?'<button type="button" class="small ghost" data-h124-unpack="1">Unpack / replace</button>':''}`:'';
+ const note=!can&&!p?`<small class="muted-text">${esc(gate.reason||'There is no packable school lunch for today.')}</small>`:'';
+ return `<section class="card wide h124-lunchbox" aria-label="Pack lunch before school"><h3>Pack Lunch</h3><p class="muted-text">Choose real owned food at Home before commuting. Packed items remain yours, reserved by unique item ID. No free lunch is supplied at school.</p>${existing}${controls}${note}<p class="muted-text" role="status" aria-live="polite" data-h124-feedback></p></section>`;
+}
+const h124OldHomePanel=homePanel;
+homePanel=function(){const html=h124OldHomePanel();if(!S)return html;const shell=document.createElement('div');shell.innerHTML=html;const target=shell.querySelector('.dashboard');if(!target)return html;const wrap=document.createElement('div');wrap.innerHTML=homeLunchboxHtmlH124();if(wrap.firstElementChild)target.insertBefore(wrap.firstElementChild,target.children[1]||null);return shell.innerHTML;};
+const h124OldClick=handlePanelClick;
+handlePanelClick=function(e){const b=e.target?.closest?.('button');if(b&&S&&(b.dataset.h124Pack||b.dataset.h124Unpack)){
+ const result=b.dataset.h124Unpack?unpackLunchH124():packLunchH124(document.querySelector('[data-h124-meal]')?.value||'',document.querySelector('[data-h124-drink]')?.value||'');
+ save();render();const f=document.querySelector('[data-h124-feedback]');if(f)f.textContent=result.ok?'Lunchbox updated using actual owned food.':result.reason;
+ return;
+}return h124OldClick(e);};
+// H12.5 — canonical school food; uses H10 room, Phase 4C timetable and the H12.4 real lunchbox.
+// No alternate wallet/inventory; no generated free packed lunch or fictitious meal history.
+const H125_MENU=Object.freeze([
+ Object.freeze({id:'school_sandwich',key:'sandwich',name:'Sandwich lunch',price:7,minutes:15}),
+ Object.freeze({id:'school_snack_plate',key:'snackPack',name:'Snack plate',price:5,minutes:12})
+]);
+function h125Stock(option,rec=schoolFacilityDay4C3()){
+ const key=`${currentDate()}:${playerCurrentSchoolId4A2?.()}:${option.id}`;
+ const seed=Array.from(key).reduce((v,c)=>((v*31+c.charCodeAt(0))>>>0),17);
+ return Math.max(0,(12+seed%9)-Math.max(0,Number(rec.cafeteriaSalesH125?.[option.id])||0));
+}
+const H125_VENDING=Object.freeze({snackPack:Object.freeze({key:'snackPack',price:3}),juiceBox:Object.freeze({key:'juiceBox',price:2})});
+function h125FoodRoom(){
+ const sid=playerCurrentSchoolId4A2?.(),here=currentSchoolRoomH10();
+ if(!sid||!here||here.schoolId!==sid)return null;
+ return schoolRoomByIdH10(sid,here.roomId)||null;
+}
+function h125Gate(kind,{menuId=null,itemId=null}={}){
+ const sid=playerCurrentSchoolId4A2?.(),ctx=schoolFacilityContext4C3(),room=h125FoodRoom();
+ if(S.location!=='School'||!sid||locationSchoolId4C1()!==sid||!ctx.atSchool||!ctx.day.isSchoolDay||!ctx.day.campusOpen||!room)return {ok:false,reason:'You must be present at your own open school, in a valid campus room.'};
+ if(!schoolRoomAccessH10(sid,room.roomId,{purpose:'enter'}).ok)return {ok:false,reason:'This campus area is not available to you.'};
+ if(kind==='vending'){
+  if(!['food','hall'].includes(room.type))return {ok:false,reason:'Go to your school Cafeteria or Main Hall for vending.'};
+  if(!(ctx.lunchActive||ctx.afterSchool||(ctx.break.active&&ctx.minute>=ctx.lunch.end)))return {ok:false,reason:'Vending is available during lunch or free periods after lunch.'};
+  const option=H125_VENDING[menuId||'snackPack'];if(!option)return {ok:false,reason:'This machine does not sell that item.'};
+  const rec=schoolFacilityDay4C3();if((rec.vendingUses||0)>=3)return {ok:false,reason:'The daily vending limit has been reached.'};
+  if(ctx.day.hours.campusClose-currentMinute()<5)return {ok:false,reason:'Not enough campus time remains for a vending purchase.'};
+  if((Number(S.money)||0)<option.price)return {ok:false,reason:`You need ${money(option.price)} in cash.`};
+  return {ok:true,room,ctx,option};
+ }
+ if(room.type!=='food')return {ok:false,reason:'Go to your school Cafeteria to eat lunch.'};
+ if(!ctx.lunchActive)return {ok:false,reason:`Lunch is available ${timeLabel(ctx.lunch.start)}–${timeLabel(ctx.lunch.end)}.`};
+ if(ctx.lunch.end-currentMinute()<5)return {ok:false,reason:'Not enough lunch time remains to eat.'};
+ const ev=sessionEvent(),rec=schoolFacilityDay4C3();
+ if(!ev||ev.status!=='Attending')return {ok:false,reason:'There is no active school attendance session for lunch.'};
+ if(kind!=='drink'&&(ev.ateLunch||rec.lunchReceiptH125||rec.packedLunchConsumed))return {ok:false,reason:'You have already eaten lunch today.'};
+ if(kind==='skip')return {ok:true,room,ctx,ev,rec};
+ if(kind!=='drink'&&(Number(S.needs?.hunger)||0)<10)return {ok:false,reason:'You are already full; save this meal for when you need it.'};
+ if(kind==='cafeteria'){
+  const option=H125_MENU.find(x=>x.id===(menuId||H125_MENU[0].id));if(!option||!catalogItem(option.key))return {ok:false,reason:'That menu item is unavailable.'};
+  if(h125Stock(option,rec)<1)return {ok:false,reason:'That cafeteria menu item has sold out for today.'};
+  if((Number(S.money)||0)<option.price)return {ok:false,reason:`You need ${money(option.price)} cash for ${option.name}.`};
+  return {ok:true,room,ctx,ev,rec,option};
+ }
+ if(kind==='packed'||kind==='drink'){
+  const p=h124ActivePack(rec),entry=p?.entries.find(e=>e.kind===(kind==='drink'?'drink':'meal')&&e.status==='packed');
+  const it=entry&&h124Owned(entry.itemId),cat=it&&catalogItem(it.key);
+  if(!p||p.schoolId!==sid||p.dateISO!==currentDate()||!['carried','partly_consumed'].includes(p.status)||!entry||!it||entry.key!==it.key||!cat||cat.ingredientOnly)return {ok:false,reason:kind==='drink'?'No unconsumed carried drink is available.':'You did not bring an edible packed lunch.'};
+  if(kind==='drink'&&!cat.drink)return {ok:false,reason:'That item is not a drink.'};
+  if(kind==='packed'&&cat.drink)return {ok:false,reason:'A drink cannot count as your full lunch.'};
+  if(isSpoiled(it)||freshDaysLeft(it)<0)return {ok:false,reason:'That packed food is stale or spoiled. Discard it rather than eating it.'};
+  if(kind==='drink'&&!ev.ateLunch)return {ok:false,reason:'Drink your packed beverage with or after lunch.'};
+  return {ok:true,room,ctx,ev,rec,pack:p,entry,item:it,option:{minutes:kind==='drink'?5:15}};
+ }
+ return {ok:false,reason:'Unknown school food action.'};
+}
+function h125LunchReceipt(g,source,price=0){
+ const rec=g.rec,ev=g.ev;
+ const receipt={schemaVersion:1,id:`schoolfood:${currentDate()}:${g.room.schoolId}:lunch`,dateISO:currentDate(),schoolId:g.room.schoolId,source,menuId:source==='cafeteria'?g.option.id:null,itemId:source==='packed'?g.item.id:null,price,paidFrom:price?'cash':null,minute:currentMinute(),roomId:g.room.roomId};
+ rec.lunchReceiptH125=receipt;ev.ateLunch=true;ev.lunchSource=source;return receipt;
+}
+function cafeteriaLunch4C3(menuId='school_sandwich'){
+ const g=h125Gate('cafeteria',{menuId});if(!g.ok){toast(g.reason);return false;}
+ // A cafeteria meal is purchased and consumed in one transaction, not a free inventory gift.
+ const cost=g.option.price,cat=catalogItem(g.option.key);if(!cat||!Number.isFinite(cost)||cost<0)return false;
+ const mins=Math.max(5,Math.min(g.option.minutes,g.ctx.lunch.end-currentMinute()));
+ if(mins<5||Number(S.money)<cost)return false;
+ S.money=Math.round((S.money-cost)*100)/100;
+ (g.rec.cafeteriaSalesH125||(g.rec.cafeteriaSalesH125={}))[g.option.id]=(g.rec.cafeteriaSalesH125[g.option.id]||0)+1;
+ const old=S.needs.hunger;S.needs.hunger=clamp(old-(cat.hunger||25));S.energy=clamp(S.energy+(g.option.key==='sandwich'?5:2));
+ if(cat.healthy)S.health=clamp(S.health+1);
+ h125LunchReceipt(g,'cafeteria',cost);advanceTime(mins,{silent:true});
+ log('Paid cafeteria lunch',`${g.option.name} • ${money(cost)} cash • Hunger ${Math.round(old)} → ${Math.round(S.needs.hunger)}.`);return true;
+}
+function eatPackedLunch4C3(){
+ const g=h125Gate('packed');if(!g.ok){toast(g.reason);return false;}
+ const id=g.item.id,old=S.needs.hunger;h124AuthorizedRemoval=id;let ok=false;
+ try{ok=consumeSchoolFoodItem4C3(id,{label:'Lunch • packed lunch',minutes:Math.max(5,Math.min(15,g.ctx.lunch.end-currentMinute()))});}finally{h124AuthorizedRemoval=null;}
+ if(!ok)return false;
+ h124MarkConsumed(id);g.rec.packedLunchConsumed=true;h125LunchReceipt(g,'packed',0);return true;
+}
+function h125Drink(){
+ const g=h125Gate('drink');if(!g.ok){toast(g.reason);return false;}
+ const id=g.item.id;h124AuthorizedRemoval=id;let ok=false;
+ try{ok=consumeSchoolFoodItem4C3(id,{label:'Packed drink',minutes:5});}finally{h124AuthorizedRemoval=null;}
+ if(ok){h124MarkConsumed(id);g.rec.drinkReceiptH125={schemaVersion:1,id:`schoolfood:${currentDate()}:${g.room.schoolId}:drink:${id}`,dateISO:currentDate(),itemId:id,roomId:g.room.roomId};}return ok;
+}
+function vendingSnack4C3(kind='snackPack'){
+ const g=h125Gate('vending',{menuId:kind});if(!g.ok){toast(g.reason);return false;}
+ const d=catalogItem(g.option.key),price=g.option.price;
+ if(!d||!Number.isFinite(price)||price<0||Number(S.money)<price)return false;
+ S.money=Math.round((S.money-price)*100)/100;
+ const old=S.needs.hunger;S.needs.hunger=clamp(old-(d.hunger||0));if(d.comfort)S.needs.comfort=clamp(S.needs.comfort+d.comfort);
+ S.energy=clamp(S.energy+1);const rec=schoolFacilityDay4C3(),count=(rec.vendingUses||0)+1;rec.vendingUses=count;
+ (rec.vendingReceiptsH125||(rec.vendingReceiptsH125=[])).push({id:`schoolfood:${currentDate()}:${g.room.schoolId}:vending:${count}`,itemKey:g.option.key,price,minute:currentMinute(),roomId:g.room.roomId});
+ advanceTime(5,{silent:true});log('School vending',`${d.name} • ${money(price)} cash • Hunger ${Math.round(old)} → ${Math.round(S.needs.hunger)}.`);return true;
+}
+function h125FoodHtml(){
+ if(S.location!=='School'||!schoolFacilityContext4C3().atSchool)return '';
+ const room=h125FoodRoom(),ctx=schoolFacilityContext4C3();if(!room)return '';
+ const atFood=room.type==='food',lunch=atFood&&ctx.lunchActive,ev=sessionEvent(),rec=schoolFacilityDay4C3(),receipt=rec.lunchReceiptH125;
+ const buttons=lunch&&!ev?.ateLunch?H125_MENU.map(m=>{const g=h125Gate('cafeteria',{menuId:m.id});return `<button type="button" class="small ${g.ok?'primary':'ghost'}" data-h125-menu="${m.id}" ${g.ok?'':`disabled title="${esc(g.reason)}"`}>${esc(m.name)} · ${money(m.price)} · ${h125Stock(m,rec)} available</button>`}).join(''):'';
+ const pg=h125Gate('packed'),dg=h125Gate('drink'),v=ctx.lunchActive||ctx.afterSchool||ctx.break.active;
+ return `<div class="h125-school-food" data-h125-food="1"><h4>Lunch & snacks · ${esc(room.name)}</h4><p class="muted-text">${atFood?'Cafeteria menu • pay with cash, or eat what you packed at Home.':'Travel to the Cafeteria to eat; vending is available in the Main Hall later in the day.'} ${receipt?`Today's lunch: ${esc(receipt.source)}${receipt.price?` (${money(receipt.price)})`:''}.`:''}</p>${buttons?`<div class="school-today-buttons">${buttons}</div>`:''}${lunch&&!ev?.ateLunch?`<div class="school-today-buttons">${pg.ok?'<button class="small" data-h125-packed="1">Eat owned packed lunch</button>':`<span class="muted-text">${esc(pg.reason)}</span>`}<button class="small ghost" data-h125-skip="1">Skip lunch</button></div>`:''}${lunch&&ev?.ateLunch&&dg.ok?'<button class="small" data-h125-drink="1">Drink packed beverage</button>':''}${v?`<div class="school-today-buttons">${Object.entries(H125_VENDING).map(([key,x])=>{const g=h125Gate('vending',{menuId:key});return `<button class="small ghost" data-h125-vending="${key}" ${g.ok?'':`disabled title="${esc(g.reason)}"`}>${esc(catalogItem(key)?.name||key)} · ${money(x.price)}</button>`;}).join('')}</div>`:''}</div>`;
+}
+// The legacy Today panel shows general facilities; all food clicks must go through H12.5 gate.
+const h125OldFacilitiesHtml=schoolFacilitiesHtml4C3;
+schoolFacilitiesHtml4C3=function(args={}){
+ let html=h125OldFacilitiesHtml(args);
+ html=html.replace(/<button[^>]*data-school-(?:cafeteria|packed|vending)4c3=[^>]*>[^<]*<\/button>/g,'');
+ if(S.location!=='School')return html;
+ return html+h125FoodHtml();
+};
+// Keep H10's public backend room-action gate consistent with actual H12.5 food permission.
+const h125OldRoomGate=schoolRoomActionGateH104;
+schoolRoomActionGateH104=function(roomId,action){
+ const existing=h125OldRoomGate(roomId,action);if(!existing.ok)return existing;
+ const kind=action==='cafeteria'?'cafeteria':action==='packed'?'packed':action==='vending'?'vending':null;
+ if(!kind)return existing;
+ const check=h125Gate(kind,{menuId:kind==='cafeteria'?'school_sandwich':kind==='vending'?'snackPack':null});
+ return check.ok?existing:{ok:false,reason:check.reason};
+};
+const h125OldRoomHtml=schoolRoomActionHtmlH104;
+schoolRoomActionHtmlH104=function(room){
+ let html=h125OldRoomHtml(room);
+ // Avoid a second vague cafeteria/vending button in the room detail.
+ html=html.replace(/<button[^>]*data-h104-action="(?:cafeteria|packed|vending)"[^>]*>[^<]*<\/button>/g,'');
+ if(room&&h125FoodRoom()?.roomId===room.roomId&&['food','hall'].includes(room.type))html+='<p class="muted-text h125-route-note">Lunch and vending options appear once in Today at school above; all require this exact room.</p>'; 
+ return html;
+};
+const h125OldPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button[data-h125-menu],button[data-h125-packed],button[data-h125-drink],button[data-h125-vending],button[data-h125-skip]');
+ if(!b)return h125OldPanelClick(e);
+ if(b.dataset.h125Menu)cafeteriaLunch4C3(b.dataset.h125Menu);
+ else if(b.dataset.h125Packed)eatPackedLunch4C3();
+ else if(b.dataset.h125Drink)h125Drink();
+ else if(b.dataset.h125Vending)vendingSnack4C3(b.dataset.h125Vending);
+ else if(b.dataset.h125Skip){const g=h125Gate('skip');if(g.ok&&!g.rec.lunchSkippedH125){g.rec.lunchSkippedH125=true;log('Skipped school lunch','You choose not to eat a school meal; hunger may rise after the lunch window.');}else if(!g.ok)toast(g.reason);}
+ save();render();return;
+};
+// H12.6 — consent-based, real-school social lunches. H12.5 owns meals/payments,
+// H12.4 owns items, Phase 4A owns school identities, H5 owns romantic progress.
+function h126SocialRecord(){return schoolFacilityDay4C3()}
+function h126BaseGate(){
+ const room=h125FoodRoom(),ctx=schoolFacilityContext4C3(),sid=playerCurrentSchoolId4A2?.(),ev=sessionEvent();
+ if(!room||room.type!=='food'||S.location!=='School'||room.schoolId!==sid||locationSchoolId4C1()!==sid||!ctx.day.isSchoolDay||!ctx.day.campusOpen||!ctx.atSchool)return {ok:false,reason:'Meet for lunch in the Cafeteria at your enrolled school.'};
+ if(!ctx.lunchActive||ctx.lunch.end-currentMinute()<7)return {ok:false,reason:'There is not enough lunch break left to meet.'};
+ if(!ev||ev.status!=='Attending')return {ok:false,reason:'You must be attending school to meet a classmate for lunch.'};
+ return {ok:true,room,ctx,ev,rec:h126SocialRecord()};
+}
+function h126PersonGate(personId){
+ const g=h126BaseGate();if(!g.ok)return g;
+ const p=personById(personId),n=p?.npcId&&npcById(p.npcId);
+ if(!p||!n||isFamilyPerson(p)||p.deceased||p.movedAway||n.deceased||!sameSchool4A3('player',p.id)||n.currentSchoolId!==g.room.schoolId)return {ok:false,reason:'Only a real, available student at your enrolled school can join.'};
+ const avail=npcStatusAt(p,currentDate(),currentMinute());
+ if(!avail.atSchool||n.vacationUntil&&n.vacationUntil>=currentDate())return {ok:false,reason:'This student is not attending school during lunch today.'};
+ return {...g,person:p,npc:n};
+}
+function h126DeterministicConsent(p,kind){
+ const n=dayHash(`h126|${kind}|${currentDate()}|${p.id}|${playerCurrentSchoolId4A2()}`);
+ const score=Math.max(8,Math.min(94,58+(Number(p.rel)||45)*.24+(Number(p.trust)||45)*.10-(Number(p.conflict)||0)*.65-((p.traits||[]).includes('Busy')?15:0)));
+ return n<score;
+}
+function h126InviteGate(personId){
+ const g=h126PersonGate(personId);if(!g.ok)return g;
+ const rec=g.rec,existing=rec.lunchSocialH126;
+ if(existing?.status==='accepted'||existing?.status==='ate_together'||existing?.status==='shared')return {ok:false,reason:'You already have a lunch companion for this school day.'};
+ if((rec.lunchSocialInvitesH126||[]).some(x=>x.personId===personId))return {ok:false,reason:'You already asked this student today; respect their answer.'};
+ if((rec.lunchSocialInvitesH126||[]).length>=3)return {ok:false,reason:'You have already asked three classmates today.'};
+ return g;
+}
+function h126Invite(personId){
+ const g=h126InviteGate(personId);if(!g.ok){toast(g.reason);return {ok:false,reason:g.reason};}
+ const p=g.person,rec=g.rec,accepted=h126DeterministicConsent(p,'sit'),id=`schoollunch:${currentDate()}:${g.room.schoolId}:invite:${p.id}`;
+ const request={schemaVersion:1,id,dateISO:currentDate(),schoolId:g.room.schoolId,roomId:g.room.roomId,personId:p.id,minute:currentMinute(),accepted};
+ (rec.lunchSocialInvitesH126||(rec.lunchSocialInvitesH126=[])).push(request);
+ if(accepted){rec.lunchSocialH126={schemaVersion:1,id:`schoollunch:${currentDate()}:${g.room.schoolId}:companion`,dateISO:currentDate(),schoolId:g.room.schoolId,roomId:g.room.roomId,personId:p.id,acceptedMinute:currentMinute(),status:'accepted',mealReceiptId:null,sharedItemId:null,occasionId:null};}
+ advanceTime(2,{silent:true});
+ log(accepted?'Lunch invitation accepted':'Lunch invitation declined',accepted?`${displayName(p)} agrees to meet you at the Cafeteria table. Eat your own actual meal to spend lunch together.`:`${displayName(p)} prefers a different lunch plan. You respect their decision.`);
+ return {ok:true,accepted,request};
+}
+function h126OccasionReference(personId){
+ // Never fabricate school-event attendance or complete a 6C occasion from a lunch.
+ return (typeof occasionRecords6C1==='function'?occasionRecords6C1():[]).find(r=>r.dateISO===currentDate()&&r.status==='Active'&&/school/i.test(String(r.planning6C2?.venue||''))&&(r.participantPersonIds||[]).includes(personId)&&(r.guests6C4?.attendance||[]).some(a=>a.personId===personId&&a.attended))?.occasionId||null;
+}
+function h126AttendMeal(){
+ // The H12.5 meal advances the clock before returning here. Recheck the committed
+ // receipt and physical school identity, not '7 minutes remaining' after eating.
+ const room=h125FoodRoom(),rec=schoolFacilityDay4C3(),sid=playerCurrentSchoolId4A2?.();
+ const x=rec.lunchSocialH126,p=x&&personById(x.personId),n=p?.npcId&&npcById(p.npcId);
+ if(!room||room.type!=='food'||S.location!=='School'||locationSchoolId4C1()!==sid||room.schoolId!==sid||!x||x.status!=='accepted'||x.dateISO!==currentDate()||x.schoolId!==sid||x.roomId!==room.roomId||!p||!n||!sameSchool4A3('player',p.id)||n.currentSchoolId!==sid||p.deceased||p.movedAway||!rec.lunchReceiptH125||rec.lunchReceiptH125.roomId!==room.roomId)return false;
+ const g={room,rec};
+ x.status='ate_together';x.mealReceiptId=g.rec.lunchReceiptH125.id;x.joinedMinute=currentMinute();x.occasionId=h126OccasionReference(p.id);
+ p.rel=clamp((p.rel||0)+2);p.trust=clamp((p.trust||0)+1);S.needs.social=clamp(S.needs.social+6);
+ rememberPerson(p,`You had lunch together at the school Cafeteria.`,1);
+ if(romanceH5CanonicalPartner(p))x.romanceOutcome=applyRelationshipOutcomeH5(p.id,'h126:school_lunch','completed',{transactionId:x.id,gain:1,rel:0,trust:0,dailyKey:'h126:school_lunch'}).ok;
+ log('Lunch together',`You share conversation with ${displayName(p)} over your actual school meal.`);
+ return true;
+}
+const h126OldCafeteria=cafeteriaLunch4C3;
+cafeteriaLunch4C3=function(menuId='school_sandwich'){
+ const ok=h126OldCafeteria(menuId);if(ok)h126AttendMeal();return ok;
+};
+const h126OldPacked=eatPackedLunch4C3;
+eatPackedLunch4C3=function(){const ok=h126OldPacked();if(ok)h126AttendMeal();return ok;};
+function h126ShareGate(personId,itemId){
+ const g=h126PersonGate(personId);if(!g.ok)return g;
+ const x=g.rec.lunchSocialH126;
+ if(!x||x.personId!==personId||!['ate_together'].includes(x.status)||!x.mealReceiptId||g.rec.lunchReceiptH125?.id!==x.mealReceiptId)return {ok:false,reason:'Eat a real school lunch with a consenting companion before offering a snack.'};
+ if(g.rec.lunchShareReceiptH126)return {ok:false,reason:'You already shared one food serving today.'};
+ if(g.ctx.lunch.end-currentMinute()<5)return {ok:false,reason:'Not enough time is left to share a snack.'};
+ const it=h124Owned(itemId),cat=it&&catalogItem(it.key);
+ if(!it||it.stored||!cat||cat.ingredientOnly||cat.drink||!['perishable','consumable'].includes(it.lifecycleType)||itemReservedForLunchH12(itemId)||it.opened&&Number(it.remaining)<99.999||isSpoiled(it)||freshDaysLeft(it)<0)return {ok:false,reason:'Choose one fresh, owned, unreserved ready-to-eat food serving.'};
+ return {...g,item:it};
+}
+function h126Share(personId,itemId){
+ const g=h126ShareGate(personId,itemId);if(!g.ok){toast(g.reason);return {ok:false,reason:g.reason};}
+ const p=g.person,accepted=h126DeterministicConsent(p,'share');
+ // Refusal neither removes the item nor awards affection; one offer per day.
+ const id=`schoollunch:${currentDate()}:${g.room.schoolId}:share`;
+ const receipt={schemaVersion:1,id,personId,dateISO:currentDate(),schoolId:g.room.schoolId,roomId:g.room.roomId,itemId:g.item.id,itemKey:g.item.key,minute:currentMinute(),accepted,quantity:accepted?1:0};
+ g.rec.lunchShareReceiptH126=receipt;
+ if(accepted){
+  const one=openOne(g.item);receipt.itemId=one.id;removeItem(one.id,true);
+  g.rec.lunchSocialH126.status='shared';g.rec.lunchSocialH126.sharedItemId=one.id;
+  p.rel=clamp((p.rel||0)+2);p.trust=clamp((p.trust||0)+1);
+  rememberPerson(p,`You shared a real food serving at school lunch.`,1);
+  if(romanceH5CanonicalPartner(p))receipt.romanceOutcome=applyRelationshipOutcomeH5(p.id,'h126:shared_food','completed',{transactionId:id,gain:1,rel:0,trust:0,dailyKey:'h126:shared_food'}).ok;
+ }
+ advanceTime(5,{silent:true});
+ log(accepted?'Shared a lunch snack':'Snack sharing declined',accepted?`${displayName(p)} accepts one of your actual food servings.`:`${displayName(p)} politely declines. Your food stays in your inventory.`);
+ return {ok:true,accepted,receipt};
+}
+// Replace legacy generic social button without changing other school facilities.
+function schoolLunchSocial4C3(personId=null){
+ if(!personId){toast('Choose a real classmate in the Lunch with Friends section.');return false;}
+ return !!h126Invite(personId).accepted;
+}
+const h126OldFacilityHtml=schoolFacilitiesHtml4C3;
+schoolFacilitiesHtml4C3=function(opts={}){return h126OldFacilityHtml(opts).replace(/<button[^>]*data-school-social4c3=[^>]*>[^<]*<\/button>/g,'');};
+function h126SocialHtml(){
+ const g=h126BaseGate();if(!g.ok)return '';
+ const rec=g.rec,x=rec.lunchSocialH126,partner=x&&personById(x.personId);
+ const people=(S.people||[]).filter(p=>p?.npcId&&!isFamilyPerson(p)&&h126PersonGate(p.id).ok).slice(0,12);
+ const options=people.map(p=>{const check=h126InviteGate(p.id);return `<button type="button" class="small ghost" data-h126-invite="${esc(p.id)}" ${check.ok?'':`disabled title="${esc(check.reason)}"`}>Ask ${esc(displayName(p))}</button>`}).join('');
+ const items=(S.inventoryItems||[]).filter(it=>partner&&h126ShareGate(partner.id,it.id).ok).slice(0,8);
+ const share=items.map(it=>`<button type="button" class="small ghost" data-h126-share="${esc(it.id)}" data-h126-person="${esc(partner.id)}">Offer ${esc(it.name)}</button>`).join('');
+ const attempts=(rec.lunchSocialInvitesH126||[]).slice(-3).map(z=>{const p=personById(z.personId);return `${p?esc(displayName(p)):'Classmate'}: ${z.accepted?'accepted':'declined'}`}).join(' · ');
+ return `<details class="h126-social" data-h126-social ${x||(rec.lunchSocialInvitesH126||[]).length?'open':''}><summary>Eat with friends & share food</summary><p class="muted-text">Only students from your enrolled school may choose to join you at this Cafeteria. Your lunch, invitations and shared portions are all recorded separately.</p>${x&&partner?`<p class="muted-text">${esc(displayName(partner))}: ${esc(x.status.replaceAll('_',' '))}. ${x.status==='accepted'?'Eat a paid or packed meal to meet together.':'A real meal was shared together.'}</p>`:`<div class="h126-actions">${options||'<span class="muted-text">No verified schoolmates are available for lunch today.</span>'}</div>`}${x&&partner&&x.status==='ate_together'?`<div class="h126-actions">${share||'<span class="muted-text">No suitable unreserved snack is available to share.</span>'}</div>`:''}${attempts?`<p class="muted-text">Invitations: ${attempts}</p>`:''}${rec.lunchShareReceiptH126?`<p class="muted-text">Food offer: ${rec.lunchShareReceiptH126.accepted?'accepted':'declined'} · ${esc(catalogItem(rec.lunchShareReceiptH126.itemKey)?.name||'Food')}.</p>`:''}<p class="muted-text">Occasion celebrations and RSVPs continue through the existing Calendar; lunch never creates a new occasion, guest pass or reward.</p></details>`;
+}
+const h126OldFoodHtml=h125FoodHtml;
+h125FoodHtml=function(){const html=h126OldFoodHtml();return html?html.replace(/<\/div>$/,h126SocialHtml()+'</div>'):html;};
+const h126OldPanelClick=handlePanelClick;
+handlePanelClick=function(e){
+ const b=e?.target?.closest?.('button[data-h126-invite],button[data-h126-share]');
+ if(!b)return h126OldPanelClick(e);
+ if(b.dataset.h126Invite)h126Invite(b.dataset.h126Invite);
+ else if(b.dataset.h126Share)h126Share(b.dataset.h126Person,b.dataset.h126Share);
+ save();render();return;
+};
+
+// Native keyboard activation + local ESC without triggering the game's global overlay.
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Escape'||active!=='school'||document.querySelector('[role="dialog"][aria-modal="true"]'))return;
+ const details=e.target?.closest?.('#panel-host details[data-h126-social]');
+ if(!details?.open)return;
+ details.open=false;details.querySelector('summary')?.focus({preventScroll:true});
+ e.preventDefault();e.stopPropagation();
+},true);
+// H13.4 — narrow import boundary + optional-record integrity guard.
+// Other migration engines, NPC history, wallets, school/Prom/food receipts remain canonical.
+function h134IsRecord(value){return value!==null&&typeof value==='object'&&!Array.isArray(value)}
+function h134ImportEnvelope(value){
+ if(!h134IsRecord(value))return {ok:false,reason:'A Life Simulator save must be a JSON object.'};
+ // A bare object is not a historical life; accepting it would invent a biography.
+ if(typeof value.name!=='string'||!value.name.trim()||(!value.dob&&!Number.isFinite(Number(value.age))))
+  return {ok:false,reason:'The file has no recognizable life identity or age.'};
+ if(value.school!=null&&!h134IsRecord(value.school))return {ok:false,reason:'The school record has an unsupported structure.'};
+ return {ok:true};
+}
+function h134NormalizeOptionalEntries(){
+ if(!h134IsRecord(S))throw new Error('Invalid life save root.');
+ // Malformed array members have no valid identity/ownership to preserve.  Do not
+ // synthesize replacement people, inventory instances, cash or old receipts.
+ for(const key of ['people','inventoryItems']){
+  if(Array.isArray(S[key]))S[key]=S[key].filter(item=>h134IsRecord(item)&&(key==='people'?(typeof item.name==='string'&&!!item.name.trim()):(typeof item.key==='string'&&!!item.key.trim())));
+  else if(S[key]!==undefined&&S[key]!==null)S[key]=[];
+ }
+ // Financial balances must never become negative or non-finite from corrupt saves.
+ if(h134IsRecord(S.finance))for(const key of ['savings','parentSavings','debt','investments']){
+  if(S.finance[key]!==undefined){const n=Number(S.finance[key]);S.finance[key]=Number.isFinite(n)?Math.max(0,n):0;}
+ }
+}
+const h134PriorMigrate=migrate;
+migrate=function(...args){h134NormalizeOptionalEntries();return h134PriorMigrate.apply(this,args)};
+// Validate before changing S. On any downstream exception, restore the prior
+// session and autosave bytes; a failed import cannot destroy the current life.
+function h134LoadCandidate(candidate,label){
+ const validity=h134ImportEnvelope(candidate);
+ if(!validity.ok){toast(validity.reason);return false;}
+ const prior=S,raw=localStorage.getItem(KEY);
+ try{S=candidate;enterGame();toast(label);return true;}
+ catch(error){
+  S=prior;
+  try{if(raw===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,raw)}catch(_){}
+  console.error('Life save validation failed:',error);
+  try{if(prior)render();else{$('game').classList.add('hidden');$('creator').classList.remove('hidden')}}catch(_){}
+  toast('This save could not be loaded; the previous life was preserved.');return false;
+ }
+}
+loadLast=function(){const raw=loadRaw();if(!raw){toast('No autosave found.');return false}try{return h134LoadCandidate(JSON.parse(raw),'Life loaded')}catch(error){console.error('Load failed:',error);toast('Autosave is invalid or incompatible.');return false}};
+importSaveFile=function(file){if(!file||typeof file.text!=='function')return Promise.resolve(false);
+ return file.text().then(text=>{
+  try{return h134LoadCandidate(JSON.parse(text),'Save imported')}
+  catch(error){console.error('Import failed:',error);toast('Invalid save file. Your current life is preserved.');return false}
+ }).catch(error=>{console.error('File read failed:',error);toast('Could not read that save file.');return false});
+};
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}
@@ -15037,7 +16795,7 @@ $('talents').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));if(mode!=='custom')randomize()}));
 document.querySelectorAll('[data-random]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();randomField(b.dataset.random)}));$('random-all').addEventListener('click',randomize);
 $('begin').addEventListener('click',()=>{try{$('creator-error').hidden=true;initializeNewLife()}catch(err){console.error('Start-game error',err);$('creator-error').hidden=false;$('creator-error').textContent='Could not start life: '+(err?.message||err)}});
-$('load-last').addEventListener('click',loadLast);$('import-btn').addEventListener('click',importFile);$('import-file').addEventListener('change',e=>importSaveFile(e.target.files?.[0]));
+$('load-last').addEventListener('click',()=>loadLast());$('import-btn').addEventListener('click',importFile);$('import-file').addEventListener('change',e=>importSaveFile(e.target.files?.[0]));
 $('save').addEventListener('click',()=>{save();toast('Saved')});$('export').addEventListener('click',exportSave);$('pause').addEventListener('click',()=>$('overlay').classList.remove('hidden'));$('close-menu').addEventListener('click',()=>$('overlay').classList.add('hidden'));$('menu-save').addEventListener('click',()=>{save();toast('Saved')});$('menu-export').addEventListener('click',exportSave);$('menu-import').addEventListener('click',importFile);$('menu-new').addEventListener('click',restart);$('close-choice').addEventListener('click',closeChoiceModal);
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;active=b.dataset.tab;render()});$('panel-host').addEventListener('click',handlePanelClick);$('event-actions').addEventListener('click',handlePanelClick);$('choice-content').addEventListener('click',handleModalClick);$('age-up').addEventListener('click',ageUp);$('next-day').addEventListener('click',()=>{nextDay();save();render()});$('ff-btn').addEventListener('click',()=>{if(S)openFastForward()});$('log-drawer').addEventListener('toggle',()=>{UI.logOpen=$('log-drawer').open;saveUI()});$('open-journal').addEventListener('click',()=>{if(!S)return;active='world';UI.subTab.world='journal';saveUI();render()});$('planner-btn').addEventListener('click',()=>document.body.classList.toggle('planner-open'));$('clear-log').addEventListener('click',()=>{if(!S)return;if(confirm('Clear the visible life log? Important milestones remain in the journal.')){S.log=[];save();render()}});
 $('needs-hud').addEventListener('click',e=>{const b=e.target.closest('[data-need]');if(!b||!S)return;const k=b.dataset.need;if(k==='social'){active='people';render()}else if(k==='comfort'){active='places';render()}else act(needAction(k))});
@@ -15081,7 +16839,7 @@ window.__LIFE_SIM_TEST__={
  eventChoice:(id,choice)=>resolveEventChoice(id,choice),
  reconcile:()=>{reconcileState('test');render();save()},
  todayWarnings:()=>todayWarnings(),
- call:(name,...args)=>{const f={h9State,migrateSchoolPublicH9,h9Policy,h9CalendarTick,h9PublicEvent,h9KnownSchools,h9Listings,h9Pass,h9Gate,h9Register,h9Ticket,h9TravelGate,h9CheckIn,h9ActualPresence,h9GuestInvite,h9VisitorTicket,h9VisitorArrive,h9Moment,h9CheckOut,h9Cancel,h9Tick,h9PublicHtml,h8OpenPersonSlots,h8CalendarTickById,h8CalendarTick,h8UpdateCalendar,h8State,migrateNightCallsH8,h8SlotKey,h8TimeValid,h8NpcAvailability,h8CallSlotGate,h8Propose,h8JoinGate,h8Join,h8Tick,h8Cancel,h8CallPanel,h8PlayerPermissionNeeded,canSneak,sneakOut,callAvailability3C2,bedtimeCommunicationGate3C3,openCallsModal3C2,matchmakeModal,createMatchOffer3B4,matchCandidateInfo3B4,openMatchOffer3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,migrateRomance3B4,matchmakerEligible3B4,matchmakingCooldownActive3B4,noteMatchmakingPlan3B4,h7State,h7Edge,h7LinkedCandidates,h7ChooseLink,h7Candidate,h7MeetingGate,h7Meet,npcInitiative,migrateWorldEncountersH6,h6State,h6Venue,h6OpportunityRate,h6CandidatePool,h6PickCandidate,h6MaybeNotice,h6MaybeFollowUp,h6NpcOpportunity,h6EventChoice,doChore,sleepThroughNight,allowancePA5Roll,allowancePA5Request,allowancePA5State,allowancePA5Eligible,allowancePA5Bounds,allowancePA5Tick,allowancePA5Answer,allowancePA5Negotiate,allowancePA5Discuss,promPA4Choose,promPA4KitState,promPA4NoMakeup,promPA4Gate,promPA4Selected,promPA4HairMinutes,promPA4MakeupUnits,promPA3Winners,promPA3Record,promPA3Gate,promPA3Action,promPA3Partner,promPA3Html,promPA3FollowupGate,promPA3Followup,chatAdd,replyChat,migrateRomanceH5,romanceH5MeetGate:(id,mode)=>romanceH5MeetGate(personById(id),mode),romanceH5Activity:(id,key)=>romanceH5Activity(personById(id),key),applyRelationshipOutcomeH5,migrateLoveH4,romanceDisplayLabelH4:(id)=>romanceDisplayLabelH4(personById(id)),romanceCommitmentLabelH4:(id)=>romanceCommitmentLabelH4(personById(id)),romanceStageConversationH4:(id,k)=>romanceStageConversationH4(personById(id),k),romanceMenu:(id)=>romanceMenu(id),ensureLove:(id)=>ensureLove(personById(id)),schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,occasionGiftDeliveryGate6C8,occasionUiClick6C7,occasionSection6C7,occasionNotify6C7,occasionVisible6C7,occasionSocialAction6C6,occasionSocialGate6C6,occasionHolidayAction6C6,occasionMeaningfulSocial6C6,occasionReconcileConsequences6C6,occasionSurpriseHomeVisit6C5,occasionSurpriseHomeActor6C5,occasionReconcileSurprise6C5,occasionDiscoverSurprise6C5,occasionSurpriseRecord6C5,occasionSurpriseOtherPartyGate6C5,occasionPlanSurprise6C5,occasionNpcSurpriseCandidates6C5,occasionNpcInitiative6C5,occasionSurpriseEventGate6C5,occasionCancelSurprise6C5,occasionResolveSurprise6C5,occasionGuestLedger6C4,occasionGuestGate6C4,occasionInvite6C4,occasionAttendanceGate6C4,occasionConfirmAttendance6C4,occasionGiftLedger6C3,occasionGiftGate6C3,occasionSelectGift6C3,occasionWrapGift6C3,occasionGiveGift6C3,occasionPlan6C2,occasionPlanningGate6C2,occasionPrepare6C2,occasionState6C1,migrateOccasions6C1,reconcileOccasions6C1,occasionDefinitionCatalog6C1,occasionRecords6C1,occasionRecord6C1,occasionPreparationGate6C1,occasionTransition6C1,occasionId6C1,occasionAnnualDate6C1,vacationTick,promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
+ call:(name,...args)=>{const f={h126BaseGate,h126PersonGate,h126InviteGate,h126Invite,h126ShareGate,h126Share,h126SocialHtml,h126AttendMeal,h125FoodRoom,h125Gate,cafeteriaLunch4C3,eatPackedLunch4C3,h125Drink,vendingSnack4C3,h125FoodHtml,setPlayerLocation4C1,h124Record,h124PackGate,packLunchH124,unpackLunchH124,itemReservedForLunchH12,h124CarryOnTravel,h124ReturnFromSchool,h124LunchMeal,migrateLunchboxH124,homeLunchboxHtmlH124,foodCaregiverGateH123,foodHomeHtmlH123,foodInventoryUnitsH123,foodCookingStateH122,foodCookingGateH122,foodIngredientPlanH122,cookRecipeH122,preferredRecipeH122,H12_RECIPES,nursePhysicalGateH114,nurseMedicalSessionH114,nurseReturnGateH114,nurseEmergencyH114,hallPassRouteGateH113,hallPassMoveH113,hallPassRestroomGateH113,hallPassRecoveryH113,hallPassReturnH113,schoolClassSession4C2,schoolLiveRoomsH103,hallPassRuntimeH11,hallPassValidH11,hallPassReconcileH11,hallPassActiveH11,hallPassRequestGateH11,hallPassRequestH11,hallPassCancelH11,migrateHallPassH11,h105RoomTargets,h105RouteGate,h105OpenRoomEducation,h105ReturnToMap,h105CampusEligible,schoolRoomActionsH104,schoolRoomActionGateH104,schoolRoomActionH104,schoolRoomActionHtmlH104,schoolVisitorContextH104,schoolVisitorAreasHtmlH104,schoolTimetableRoomsH103,schoolLiveRoomsH103,schoolPeriodRoomH103,schoolLocateRoomH103,schoolCampusMapHtmlH102,schoolRoomMoveH102,schoolRoomMoveGateH102,schoolRoomsH10,schoolRoomByIdH10,schoolRoomGraphH10,schoolRoomRouteH10,schoolRoomTravelMinutesH10,schoolRoomForSubjectH10,schoolRoomRuntimeH10,currentSchoolRoomH10,setSchoolRoomH10,schoolRoomAccessH10,migrateSchoolRoomsH10,reconcileSchoolRoomH10,h9State,migrateSchoolPublicH9,h9Policy,h9CalendarTick,h9PublicEvent,h9KnownSchools,h9Listings,h9Pass,h9Gate,h9Register,h9Ticket,h9TravelGate,h9CheckIn,h9ActualPresence,h9GuestInvite,h9VisitorTicket,h9VisitorArrive,h9Moment,h9CheckOut,h9Cancel,h9Tick,h9PublicHtml,h8OpenPersonSlots,h8CalendarTickById,h8CalendarTick,h8UpdateCalendar,h8State,migrateNightCallsH8,h8SlotKey,h8TimeValid,h8NpcAvailability,h8CallSlotGate,h8Propose,h8JoinGate,h8Join,h8Tick,h8Cancel,h8CallPanel,h8PlayerPermissionNeeded,canSneak,sneakOut,callAvailability3C2,bedtimeCommunicationGate3C3,openCallsModal3C2,matchmakeModal,createMatchOffer3B4,matchCandidateInfo3B4,openMatchOffer3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,migrateRomance3B4,matchmakerEligible3B4,matchmakingCooldownActive3B4,noteMatchmakingPlan3B4,h7State,h7Edge,h7LinkedCandidates,h7ChooseLink,h7Candidate,h7MeetingGate,h7Meet,npcInitiative,migrateWorldEncountersH6,h6State,h6Venue,h6OpportunityRate,h6CandidatePool,h6PickCandidate,h6MaybeNotice,h6MaybeFollowUp,h6NpcOpportunity,h6EventChoice,doChore,sleepThroughNight,allowancePA5Roll,allowancePA5Request,allowancePA5State,allowancePA5Eligible,allowancePA5Bounds,allowancePA5Tick,allowancePA5Answer,allowancePA5Negotiate,allowancePA5Discuss,promPA4Choose,promPA4KitState,promPA4NoMakeup,promPA4Gate,promPA4Selected,promPA4HairMinutes,promPA4MakeupUnits,promPA3Winners,promPA3Record,promPA3Gate,promPA3Action,promPA3Partner,promPA3Html,promPA3FollowupGate,promPA3Followup,chatAdd,replyChat,migrateRomanceH5,romanceH5MeetGate:(id,mode)=>romanceH5MeetGate(personById(id),mode),romanceH5Activity:(id,key)=>romanceH5Activity(personById(id),key),applyRelationshipOutcomeH5,migrateLoveH4,romanceDisplayLabelH4:(id)=>romanceDisplayLabelH4(personById(id)),romanceCommitmentLabelH4:(id)=>romanceCommitmentLabelH4(personById(id)),romanceStageConversationH4:(id,k)=>romanceStageConversationH4(personById(id),k),romanceMenu:(id)=>romanceMenu(id),ensureLove:(id)=>ensureLove(personById(id)),schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,occasionGiftDeliveryGate6C8,occasionUiClick6C7,occasionSection6C7,occasionNotify6C7,occasionVisible6C7,occasionSocialAction6C6,occasionSocialGate6C6,occasionHolidayAction6C6,occasionMeaningfulSocial6C6,occasionReconcileConsequences6C6,occasionSurpriseHomeVisit6C5,occasionSurpriseHomeActor6C5,occasionReconcileSurprise6C5,occasionDiscoverSurprise6C5,occasionSurpriseRecord6C5,occasionSurpriseOtherPartyGate6C5,occasionPlanSurprise6C5,occasionNpcSurpriseCandidates6C5,occasionNpcInitiative6C5,occasionSurpriseEventGate6C5,occasionCancelSurprise6C5,occasionResolveSurprise6C5,occasionGuestLedger6C4,occasionGuestGate6C4,occasionInvite6C4,occasionAttendanceGate6C4,occasionConfirmAttendance6C4,occasionGiftLedger6C3,occasionGiftGate6C3,occasionSelectGift6C3,occasionWrapGift6C3,occasionGiveGift6C3,occasionPlan6C2,occasionPlanningGate6C2,occasionPrepare6C2,occasionState6C1,migrateOccasions6C1,reconcileOccasions6C1,occasionDefinitionCatalog6C1,occasionRecords6C1,occasionRecord6C1,occasionPreparationGate6C1,occasionTransition6C1,occasionId6C1,occasionAnnualDate6C1,vacationTick,promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
 };
 
 if(new URLSearchParams(location.search).get('smoke')==='1')setTimeout(()=>{try{$('c-name').value='Smoke Test';initializeNewLife();document.body.dataset.smoke=(!$('game').classList.contains('hidden')&&S)?'pass':'fail'}catch(e){console.error(e);document.body.dataset.smoke='fail';document.body.dataset.smokeError=e.message}},30);
