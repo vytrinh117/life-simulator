@@ -425,3 +425,25 @@ body.planner-open .planner-close{display:inline-flex}
 
 /* Long class rosters scroll inside the existing candidate group, not a 20-button page. */
 .prom-pa6-screen .prom-h2-candidates{max-height:400px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+/* H9.5 — School Activities portal and optional subject enrichment */
+.education95-school-activities{min-width:0}
+.education95-folders,.education95-filter{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0;align-items:center}
+.education95-folders button{flex:1 1 7rem;max-width:13rem}
+.education95-folder-content{display:grid;gap:.85rem;min-width:0}
+.education95-event{padding:.85rem;border:1px solid var(--border,#d9e2e8);border-radius:12px;min-width:0}
+.education95-event-head{display:flex;justify-content:space-between;align-items:center;gap:.8rem;flex-wrap:wrap}
+.education95-event-head small{display:block;margin-top:.2rem;overflow-wrap:anywhere}
+.education95-event .education95-detail{padding-top:.85rem;margin-top:.85rem;border-top:1px solid var(--border,#d9e2e8)}
+.education95-extra{margin-top:.8rem;border:1px solid var(--border,#d9e2e8);border-radius:10px;padding:.55rem .7rem;background:var(--card,#fff)}
+.education95-extra>summary,.education95-club-management>summary{cursor:pointer;font-weight:700;padding:.25rem 0}
+.education95-extra>summary small{font-weight:400;opacity:.75;margin-left:.35rem}
+.education95-extra-body{padding-top:.65rem}
+.education95-extra .advanced-study-5a4{min-width:0}
+.education95-extra button:focus-visible,.education95-folders button:focus-visible,.education95-event button:focus-visible,.education95-extra>summary:focus-visible{outline:3px solid var(--accent,#3c78b2);outline-offset:3px}
+.education95-club-management{border-top:1px solid var(--border,#d9e2e8);padding-top:.75rem}
+.education95-visitors{border-top:1px solid var(--border,#d9e2e8);padding:.7rem 0}
+@media(max-width:560px){.education95-event-head{align-items:flex-start}.education95-event-head button{width:100%}.education95-folders button{max-width:none;flex-basis:28%}.education95-extra{padding:.45rem}}
+.education95-club-detail{border:1px solid var(--border,#d9e2e8);padding:.65rem;border-radius:9px;margin:.4rem 0}
+.education95-club-detail>summary{cursor:pointer;font-weight:650}
+.education95-club-detail:focus-within{outline-offset:3px}
+.education95-calendar-shortcuts .education95-event-head{border-top:1px solid var(--border,#d9e2e8);padding:.55rem 0}
