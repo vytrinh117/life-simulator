@@ -340,3 +340,88 @@ body.planner-open .planner-close{display:inline-flex}
 .occasion6c7 select,.occasion6c7 input{max-width:175px;min-width:88px;padding:7px;border:1px solid var(--border, currentColor);border-radius:8px;background:var(--card, transparent);color:inherit}
 .occasion6c7 button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:560px){.occasion6c7 .occ-row,.occasion6c7 .occ-controls{align-items:stretch}.occasion6c7 .occ-controls label{width:100%}.occasion6c7 select,.occasion6c7 input{max-width:100%}}
+/* H2: partner-first Prom invitations and compact preparation; inherit established tokens. */
+.prom-h2-invitations,.prom-h2-preparation,.prom-h2-plans{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;min-width:0}
+.prom-h2-invitations h4,.prom-h2-preparation h4,.prom-h2-plans h4{margin:0 0 8px}
+.prom-h2-partner{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card,transparent)}
+.prom-h2-partner h5,.prom-h2-group h5{margin:0 0 8px;font-size:.86rem}
+.prom-h2-person{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);min-width:0}
+.prom-h2-featured{border-top:0}.prom-h2-person-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;overflow-wrap:anywhere}
+.prom-h2-person-info b{font-size:.9rem}.prom-h2-person-info small{font-size:.76rem;color:var(--muted)}
+.prom-h2-person-info .prom-h2-warning{color:var(--muted)}.prom-h2-person button{flex-shrink:0}
+.prom-h2-pill{font-size:.74rem;color:var(--muted);text-align:right;max-width:36%;overflow-wrap:anywhere}
+.prom-h2-search-label{display:block;font-size:.82rem;font-weight:600;margin-bottom:5px}
+.prom-h2-invitations input[type=search]{display:block;width:100%;max-width:460px;padding:10px;border:1px solid var(--line);border-radius:9px;margin:0 0 9px;background:var(--panel,transparent);color:inherit}
+.prom-h2-group{border-bottom:1px solid var(--line);padding:8px 0;min-width:0}
+.prom-h2-group summary,.prom-h2-prep-group summary{cursor:pointer;font-weight:600;font-size:.85rem;padding:7px 1px}
+.prom-h2-prep-group{padding:6px 0;border-bottom:1px solid var(--line)}.prom-h2-prep-group .prom-prep{padding:7px 0}
+[data-prom-h2-candidate][hidden]{display:none!important}
+@media(max-width:540px){.prom-h2-person{flex-wrap:wrap;gap:8px}.prom-h2-person button{width:100%}.prom-h2-pill{max-width:100%;text-align:left}}
+
+/* Cross-phase H3: compact, accessible guest admission and external school-event steps. */
+.prom-h3-guest {border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:var(--card2);}
+.prom-h3-guest h5 {margin:0 0 8px;font-size:1rem;}
+.prom-h3-guest p {margin:6px 0;line-height:1.5;}
+.schoolguest-h3 {min-width:0;}
+.schoolguest-h3 .holiday-acts {display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.schoolguest-h3 .prom-h3-guest {margin-top:14px;}
+.schoolguest-h3 button:focus-visible,.prom-h3-guest button:focus-visible {outline:3px solid var(--accent);outline-offset:2px;}
+@media(max-width:600px){.schoolguest-h3 .holiday-acts button,.prom-h3-guest .holiday-acts button {max-width:100%;white-space:normal;}}
+
+/* H4 canonical romance progression: compact responsive meters and labels */
+.h4-love-panel,.h4-summary{max-width:100%;min-width:0}
+.h4-current{margin:.3rem 0 .65rem}
+.h4-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:.55rem .85rem;margin:.75rem 0}
+.h4-metric-grid .love-line{min-width:0}
+.h4-metric-grid small{display:block;line-height:1.4;margin-bottom:.25rem}
+.h4-commitment{font-size:.91rem;margin:.65rem 0}
+.h4-note{font-size:.85rem;line-height:1.5}
+.h4-love-panel .love-ladder{display:flex;flex-wrap:wrap;gap:.35rem}
+@media(max-width:480px){.h4-metric-grid{grid-template-columns:1fr}}
+
+/* H5: compact contextual romance menu, no extra tab bar. */
+.h5-romance-group{border-top:1px solid var(--line);padding:6px 0;margin:8px 0 0;min-width:0;width:100%}
+.h5-romance-group summary{cursor:pointer;font-size:.9rem;font-weight:650;padding:7px 4px;line-height:1.45}
+.h5-romance-group summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}
+.h5-romance-group .modal-action-grid{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 10px}
+.h5-romance-group button{white-space:normal;line-height:1.3;text-align:left;max-width:100%}
+@media(max-width:520px){.h5-romance-group .modal-action-grid button{flex:1 1 170px}}
+
+/* HF-PA.2 — compact, inspectable and keyboard-accessible ballot. */
+.prom-pa2-roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:9px;margin:9px 0 14px}.prom-pa2-candidate{display:flex;flex-direction:column;gap:6px;min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px;background:rgba(255,255,255,.025)}.prom-pa2-candidate small{color:var(--muted);overflow-wrap:anywhere}.prom-pa2-candidate .inline-actions{margin-top:auto}.prom-pa2-candidate button{white-space:normal}.prom-pa2-facts{display:grid;gap:5px;margin:11px 0}.prom-pa2-fact{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:7px 0;border-bottom:1px solid var(--line)}.prom-pa2-fact span{color:var(--muted);min-width:100px}.prom-pa2-fact b{font-size:13px;font-weight:600;text-align:right;overflow-wrap:anywhere}.prom-pa2-dossier h3{margin:6px 0 12px}.prom-pa2-dossier .inline-actions{flex-wrap:wrap}@media(max-width:450px){.prom-pa2-fact{display:block}.prom-pa2-fact b{display:block;text-align:left;margin-top:3px}}
+/* HF-PA.3: compact school-court scenes; match existing native design tokens. */
+.prom-pa3-stories{margin-top:14px;padding:14px;border:1px solid var(--border, #dadbe2);border-radius:14px}
+.prom-pa3-stories h4{margin:0 0 6px}.prom-pa3-stories h5{margin:0 0 8px}
+.prom-pa3-winners{display:grid;gap:8px;margin:12px 0}
+.prom-pa3-winner,.prom-pa3-partner,.prom-pa3-award{padding:12px;border:1px solid var(--border,#dadbe2);border-radius:12px;margin-top:8px}
+.prom-pa3-winner small{display:block;margin:3px 0 8px;opacity:.75}
+.prom-pa3-stories .inline-actions{display:flex;flex-wrap:wrap;gap:6px}
+.prom-pa3-stories button:disabled{opacity:.42;cursor:not-allowed}
+@media(max-width:620px){.prom-pa3-stories{padding:10px}.prom-pa3-winner,.prom-pa3-partner{padding:9px}.prom-pa3-stories button{white-space:normal}}
+/* HF-PA.4 — clear planning versus actual, inventory-backed Prom preparation. */
+.prom-pa4-planning,.prom-pa4-ready{border:1px solid var(--line,var(--border));border-radius:12px;padding:12px;margin:9px 0;min-width:0}
+.prom-pa4-planning h5,.prom-pa4-ready h4{margin:3px 0 7px}.prom-pa4-step{border-top:1px solid var(--line,var(--border));padding:10px 0;display:grid;gap:6px}.prom-pa4-step small{color:var(--muted)}
+.prom-pa4-choices,.prom-pa4-ready .inline-actions{display:flex;gap:6px;flex-wrap:wrap}.prom-pa4-planning button,.prom-pa4-ready button{white-space:normal;text-align:left;line-height:1.3;max-width:100%}
+.prom-pa4-choices button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}.prom-pa4-ready button:disabled{opacity:.5}
+@media(max-width:520px){.prom-pa4-planning,.prom-pa4-ready{padding:9px}.prom-pa4-choices button,.prom-pa4-ready .inline-actions button{flex:1 1 135px}}
+
+/* HF-PA.6: cohesive Prom navigation and finance action priority; existing design tokens. */
+.prom-pa6-overview{border:1px solid var(--line);border-radius:13px;padding:14px;background:var(--panel,transparent);min-width:0}
+.prom-pa6-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.prom-pa6-top h4{margin:0 0 5px}.prom-pa6-top small{color:var(--muted)}
+.prom-pa6-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.prom-pa6-status>div{border:1px solid var(--line);border-radius:10px;padding:9px;min-width:0;overflow-wrap:anywhere}
+.prom-pa6-status small,.prom-pa6-status b{display:block}.prom-pa6-status small{font-size:.75rem;color:var(--muted);margin-bottom:5px}.prom-pa6-status b{font-size:.86rem}
+.prom-pa6-next{padding:10px 0;margin:7px 0;line-height:1.5}.prom-pa6-next a{display:inline-block;margin-left:5px;font-weight:600}
+.prom-pa6-nav{display:flex;gap:7px;flex-wrap:wrap}.prom-pa6-nav a{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:.8rem;text-decoration:none;color:inherit}
+.prom-pa6-nav a:hover,.prom-pa6-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.prom-pa6-section{scroll-margin-top:16px}.prom-pa6-section>.prom-h2-invitations:first-child{border-top:0}
+.prom-pa6-school{border:1px solid var(--line);border-radius:11px;margin-top:14px;padding:8px 12px;min-width:0;scroll-margin-top:14px}
+.prom-pa6-school>summary{font-weight:700;cursor:pointer;padding:8px 0}.prom-pa6-school>summary small{display:block;font-weight:400;color:var(--muted);margin:4px 0}
+.prom-pa6-school .prom-registration-6a1>.muted-text:first-child{font-size:.78rem}.prom-pa6-school .prom-court-6a4{max-width:100%;min-width:0}
+.prom-pa6-night{scroll-margin-top:14px}.prom-pa6-finance-intro{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:11px 2px 0}
+.prom-pa6-finance-intro small{color:var(--muted)}
+@media(max-width:650px){.prom-pa6-status{grid-template-columns:1fr}.prom-pa6-nav a{flex:1 1 43%;text-align:center}.prom-pa6-overview{padding:10px}.prom-pa6-school{padding:6px 9px}}
+
+/* Long class rosters scroll inside the existing candidate group, not a 20-button page. */
+.prom-pa6-screen .prom-h2-candidates{max-height:400px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
