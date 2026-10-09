@@ -16866,6 +16866,119 @@ function romanceH14MenuMarkup(p,opts,{official,ladder}){
   <div class="h14-interact-footer"><button type="button" class="ghost" data-close-modal="1">Close interaction</button></div>
  </div>`;
 }
+// H15 visual refresh: illustrated portraits, curated workbook catalogue and readable campus.
+// All rules remain with H10/H11, Phase 5A inventory and purchase/education handlers.
+// No external font, image or code dependencies.
+function h15Hash(text){let h=2166136261;for(const ch of String(text||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+const H15_SKIN=['#f9d6b5','#dbac86','#b97955','#f1bf9a','#8b5849'];
+const H15_HAIR=['#322b39','#6f4640','#c79950','#2b445d','#523448','#98766c'];
+const H15_OUTFIT=['#416881','#b66b86','#5c7d67','#80649c','#bf8b58'];
+function h15AvatarAppearance(p,self=false){
+ const id=self?`${S?.name||'player'}|${S?.surname||''}|${S?.dob||''}`:(p?.id||p?.fullName||p?.name||'person');
+ const hash=h15Hash(id),custom=self?(S?.avatarLookH15||{}):{};
+ const idx=(name,pal,shift)=>Number.isInteger(custom[name])&&custom[name]>=0&&custom[name]<pal.length?custom[name]:(hash>>>shift)%pal.length;
+ return {skin:H15_SKIN[idx('skin',H15_SKIN,3)],hair:H15_HAIR[idx('hair',H15_HAIR,7)],outfit:H15_OUTFIT[idx('outfit',H15_OUTFIT,11)],hairStyle:Number.isInteger(custom.hairStyle)?custom.hairStyle:(hash>>>17)%3,seed:hash,age:self?S.age:typeof personAge==='function'?personAge(p):p?.age||12};
+}
+function h15AvatarSvg(p,{self=false,size='regular'}={}){
+ const a=h15AvatarAppearance(p,self),child=a.age<11,infant=a.age<3,kind=String(self?S?.gender||'':p?.gender||p?.sex||'').toLowerCase();
+ const bob=a.hairStyle===0||infant,style=infant?0:a.hairStyle,shirt=a.outfit;
+ const hairPath=style===2?'M15 75Q6 18 50 14Q98 18 85 79L78 71Q78 42 65 34Q46 23 28 44L23 77Z':bob?'M16 87Q2 33 35 18Q66 2 87 43L83 94L72 88L72 38L29 40L28 85Z':'M17 80Q6 32 41 17Q74 9 88 48L78 82L76 41Q65 39 58 31Q42 44 26 44L23 79Z';
+ const end=infant?'M12 114Q15 98 34 92H66Q88 97 91 114V120H12Z':'M4 120Q7 91 37 86L50 97L63 86Q92 91 96 120Z';
+ const blush=child?'.32':'.20';const alt=self?'Your character portrait':`Portrait of ${p?.fullName||p?.name||'character'}`;
+ return `<svg class="h15-avatar-svg h15-avatar-${size}" role="img" aria-label="${esc(alt)}" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g${a.seed}" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fbeae1"/><stop offset="1" stop-color="#dfddeb"/></linearGradient></defs><rect x="0" y="0" width="100" height="120" rx="14" fill="url(#g${a.seed})"/><circle cx="78" cy="25" r="23" fill="#fff" opacity=".31"/><path d="M12 106L96 22" stroke="#fff" stroke-width="2" opacity=".2"/><path d="${end}" fill="${shirt}"/><path d="M34 89L50 105L66 89" fill="none" stroke="#fff9ee" stroke-width="4" opacity=".86"/><path d="M41 91L50 99L59 91" fill="#f4f1e8"/><path d="M41 78V92Q50 103 59 92V78" fill="${a.skin}"/><path d="${hairPath}" fill="${a.hair}"/><ellipse cx="50" cy="58" rx="29" ry="34" fill="${a.skin}"/><path d="M21 53Q15 20 48 19Q78 17 83 57Q68 45 62 34Q42 49 21 53Z" fill="${a.hair}"/><path d="M25 49Q14 69 22 85" stroke="${a.hair}" stroke-width="8" fill="none" stroke-linecap="round" opacity=".82"/><path d="M78 49Q88 72 78 85" stroke="${a.hair}" stroke-width="7" fill="none" stroke-linecap="round" opacity=".8"/><ellipse cx="30" cy="66" rx="7" ry="4" fill="#e88b97" opacity="${blush}"/><ellipse cx="70" cy="66" rx="7" ry="4" fill="#e88b97" opacity="${blush}"/><path d="M31 53Q39 49 44 54M56 54Q62 50 69 53" stroke="${a.hair}" stroke-width="2" stroke-linecap="round" fill="none"/><ellipse cx="38" cy="59" rx="3.6" ry="4.5" fill="#353244"/><ellipse cx="62" cy="59" rx="3.6" ry="4.5" fill="#353244"/><circle cx="39" cy="57" r="1.1" fill="#fff"/><circle cx="63" cy="57" r="1.1" fill="#fff"/><path d="M48 62Q50 65 52 62" stroke="#b77e6b" stroke-width="1" fill="none"/><path d="M44 72Q50 76 56 72" fill="none" stroke="#b65f72" stroke-width="1.7" stroke-linecap="round"/><path d="M22 46Q21 28 40 21" fill="none" stroke="#ffffff" stroke-width="2" opacity=".13"/></svg>`;
+}
+function h15PortraitEditor(){
+ const a=S.avatarLookH15||{};return `<div class="h15-avatar-edit"><div class="h15-portrait-preview">${h15AvatarSvg(null,{self:true,size:'large'})}<div><h3>${esc(S.name)}</h3><p class="muted-text">A stylized profile portrait that stays with your save. You can change its colors whenever you like; NPC portraits are generated individually.</p></div></div>${[['skin','Skin tone',H15_SKIN],['hair','Hair color',H15_HAIR],['outfit','Clothing color',H15_OUTFIT]].map(([key,label,pal])=>`<div class="h15-swatch-group"><b>${label}</b><div>${pal.map((c,i)=>`<button type="button" class="h15-swatch ${a[key]===i?'selected':''}" data-h15-swatch="${key}" data-h15-value="${i}" title="${label} ${i+1}" aria-label="${label} ${i+1}" aria-pressed="${a[key]===i}" style="--h15-swatch:${c}"></button>`).join('')}</div></div>`).join('')}<div class="h15-swatch-group"><b>Hair shape</b><div class="h15-style-picker">${['Short / bob','Side swept','Long'].map((l,i)=>`<button type="button" class="small ${a.hairStyle===i?'primary':'ghost'}" data-h15-swatch="hairStyle" data-h15-value="${i}">${l}</button>`).join('')}</div></div><p class="muted-text">Portrait preferences are cosmetic and do not change your character’s identity, Looks score, traits or NPC relationships.</p></div>`;
+}
+const h15OldHeader=renderHeader;
+renderHeader=function(){h15OldHeader();if(!S)return;
+ const art=document.querySelector('#h15-self-portrait'),name=document.querySelector('#h15-self-name'),stage=document.querySelector('#h15-self-stage');
+ if(art)art.innerHTML=h15AvatarSvg(null,{self:true});if(name)name.textContent=[S.name,S.surname].filter(Boolean).join(' ');if(stage)stage.textContent=`Age ${S.age} · ${S.school?.grade||lifeStage()}`;
+};
+const h15OldPeopleCard=peopleCardCompact;
+peopleCardCompact=function(p){const node=document.createElement('div');node.innerHTML=h15OldPeopleCard(p);const header=node.querySelector('.pc-head');if(header){const art=document.createElement('span');art.className='h15-person-portrait';art.innerHTML=h15AvatarSvg(p);header.prepend(art);}return node.innerHTML};
+const h15OldProfile=profileHtml;
+profileHtml=function(p){const node=document.createElement('div');node.innerHTML=h15OldProfile(p);const header=node.querySelector('.pf-head');if(header){const portrait=document.createElement('div');portrait.className='h15-profile-portrait';portrait.innerHTML=h15AvatarSvg(p,{size:'large'});header.prepend(portrait);}return node.innerHTML};
+const h15OldRomance=romanceH14MenuMarkup;
+romanceH14MenuMarkup=function(p,opts,ctx){const node=document.createElement('div');node.innerHTML=h15OldRomance(p,opts,ctx);const head=node.querySelector('.h14-interact-summary');if(head){const portrait=document.createElement('div');portrait.className='h15-interact-portrait';portrait.innerHTML=h15AvatarSvg(p);head.prepend(portrait);}return node.innerHTML};
+// Workbook shop: one filterable product instead of a page of repetitive cards.
+let h15ShopState={subject:'Mathematics',grade:null,level:1};
+const h15OldStore=storeHtml;
+const h15OldWorkbookVisibility=workbookShopVisible5A1;
+workbookShopVisible5A1=function(d){return d?.workbook5A?false:h15OldWorkbookVisibility(d)};
+function h15WorkbookOptions(){return Object.keys(WORKBOOK_SUBJECT_CODES_5A1).filter(s=>[...Array(12)].some((_,i)=>!!workbookDefinition5A1(workbookKey5A1(s,i+1,1))))}
+function h15ShopFilterBar(){return '<nav class="h15-store-breadcrumb" aria-label="Workbook store navigation"><button type="button" class="small ghost" data-shop-cat="All">← Back to all items</button><span>School Supplies / <b>Workbooks</b></span></nav>'}
+function h15WorkbookShop(){const subj=h15WorkbookOptions(),grade=Number(h15ShopState.grade)||currentWorkbookGrade5A1()||1;let subject=subj.includes(h15ShopState.subject)?h15ShopState.subject:subj[0],level=Math.max(1,Math.min(3,Number(h15ShopState.level)||1));
+ const gradeSubjects=workbookSubjectsForGrade5A1(grade);if(!gradeSubjects.includes(subject)){subject=gradeSubjects.find(s=>subj.includes(s))||subj[0];}
+ h15ShopState={subject,grade,level};const key=workbookKey5A1(subject,grade,level),d=workbookDefinition5A1(key),owned=d&&workbookOwned5A1(key),study=typeof workbookProgress5A2==='function'?workbookProgress5A2(key):0;
+ const required=d?.prerequisiteItemId,preOk=!required||workbookCompleted5A2(required),gradeNow=currentWorkbookGrade5A1();
+ const purchase=d?canBuyItem(key,1):{ok:false,reason:'This workbook is not published for the selected grade.'};
+ const choices=(label,value,values)=>`<label class="h15-pick"><span>${label}</span><select data-h15-workbook="${value}" aria-label="Workbook ${label}">${values.map(([val,name])=>`<option value="${esc(String(val))}" ${String(val)===String(h15ShopState[value])?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`;
+ const levels=[1,2,3].map(n=>{const k=workbookKey5A1(subject,grade,n),nd=workbookDefinition5A1(k),own=workbookOwned5A1(k),done=own&&workbookCompleted5A2(k);return `<button type="button" data-h15-wb-level="${n}" class="h15-wb-level ${n===level?'active':''}" ${nd?'':`disabled`}><span>Level ${WORKBOOK_LEVELS_5A1[n-1]}</span><small>${!nd?'Not offered':own?(done?'Completed':'Owned'):`${money(nd.price)} · Not owned`}</small></button>`}).join('');
+ return `${h15ShopFilterBar()}<div class="h15-workbook-shop"><header><div><h3>📚 Workbooks</h3><p class="muted-text">Browse by subject, school grade, then level. One copy of each book per character.</p></div><span class="h15-shop-count">${ownedWorkbooks5A1().length} owned</span></header><div class="h15-wb-selectors">${choices('Subject','subject',subj.map(s=>[s,s]))}${choices('Grade','grade',Array.from({length:12},(_,i)=>[i+1,`Grade ${i+1}`]))}${choices('Level','level',WORKBOOK_LEVELS_5A1.map((l,i)=>[i+1,`Level ${l}`]))}</div><article class="h15-workbook-focus"><div class="h15-book-art" aria-hidden="true"><span>EDUCATION</span><b>${esc(subject)}</b><strong>GRADE ${grade}</strong><i>LEVEL ${WORKBOOK_LEVELS_5A1[level-1]}</i><small>Practice &amp; Review</small></div><div class="h15-book-info"><div class="h15-book-top"><h4>${esc(subject)} Workbook</h4><strong>${d?money(d.price):'Unavailable'}</strong></div><p class="muted-text">Grade ${grade} · Level ${WORKBOOK_LEVELS_5A1[level-1]} · Reusable advanced practice.</p><div class="h15-book-status ${owned?'is-owned':''}">${owned?'✓ Already in your inventory':!d?'Unavailable in this grade':'Not yet owned'}</div>${owned?`<p>Study progress: <b>${Math.round(study)}%</b></p><div class="h15-book-progress"><span style="width:${clamp(study)}%"></span></div>`:''}${required&&!preOk?`<p class="muted-text">To study Level ${WORKBOOK_LEVELS_5A1[level-1]}, first complete Level ${WORKBOOK_LEVELS_5A1[level-2]}. You may buy this book in advance.</p>`:''}${gradeNow!=null&&grade!==gradeNow?`<p class="muted-text">Your current grade is ${gradeNow}. Other grades may be purchased for future study or review; learning progression follows the original grade restrictions.</p>`:''}<div class="h15-buy-actions"><button type="button" class="small primary" data-shop-own="${esc(key)}" ${owned||!purchase.ok?'disabled':''}>${owned?'✓ Owned':!purchase.ok?'Unavailable':`Buy · ${money(d.price)}`}</button>${S.age<18&&d&&!owned?`<button type="button" class="small ghost" data-shop-parent="${esc(key)}">Ask caregiver</button>`:''}</div>${!purchase.ok&&!owned&&d?`<small class="muted-text">${esc(purchase.reason)}</small>`:''}</div></article><div class="h15-wb-other"><h4>Other levels · Grade ${grade}</h4><div class="h15-wb-levels">${levels}</div></div><p class="muted-text h15-wb-footnote">Your inventory is the ownership record. You cannot buy a second copy, including through saved wishes or caregiver purchases.</p></div>`;
+}
+storeHtml=function(){if(shopCat==='Workbooks')return h15WorkbookShop();const html=h15OldStore(),cat='<button class="filter-chip" type="button" data-shop-cat="Workbooks">📘 Workbooks</button>';
+ return html.replace('</div><div class="product-grid">',cat+'</div><div class="product-grid">')};
+// Existing grade/level keys, money cost, permissions and save migration are authoritative.
+// Gifted NPC workbooks also respect the one-copy rule; NPCs do not currently have an independent shop simulator.
+function h15NpcHasBook(p,key){return !!p&&(Array.isArray(p.workbooksOwnedH15)&&p.workbooksOwnedH15.includes(key)||(p.giftsReceived||[]).includes(key));}
+function h15NpcGrantBook(p,key){if(!p||!workbookDefinition5A1(key))return;if(!Array.isArray(p.workbooksOwnedH15))p.workbooksOwnedH15=[];if(!p.workbooksOwnedH15.includes(key))p.workbooksOwnedH15.push(key);}
+const h15OldGiveItem=giveInventoryItem;
+giveInventoryItem=function(id,personId){const it=S.inventoryItems.find(x=>x.id===id),p=personById(personId);if(it&&p&&workbookDefinition5A1(it.key)&&h15NpcHasBook(p,it.key)){toast(`${firstName(p)} already owns that exact workbook.`);return;}const before=it?.key;const res=h15OldGiveItem(id,personId);if(before&&p&&workbookDefinition5A1(before)&&!S.inventoryItems.some(x=>x.id===id))h15NpcGrantBook(p,before);return res;};
+const h15OldOccasionGift=occasionGiveGift6C3;
+occasionGiveGift6C3=function(occasionId,itemId,personId){const it=S.inventoryItems.find(x=>x.id===itemId),p=personById(personId);if(it&&p&&workbookDefinition5A1(it.key)&&h15NpcHasBook(p,it.key))return {ok:false,reason:'This person already owns that workbook.'};const key=it?.key,res=h15OldOccasionGift(occasionId,itemId,personId);if(res?.ok&&p&&key)h15NpcGrantBook(p,key);return res};
+// School overview gets a dedicated Campus tab instead of concealing the map in Today.
+PANEL_TABS.school=[['today','Overview'],['subjects','Subjects & Tests'],['activities','Activities'],['campus','Campus'],['attendance','Attendance'],['others','Other Schools'],['summer','Summer Programs'],['university','University']];
+const h15OldSchoolPanel=schoolPanel;
+schoolPanel=function(){
+ const html=h15OldSchoolPanel();if(!S?.school)return html;const root=document.createElement('div');root.innerHTML=html;const dash=root.querySelector('.dashboard');if(!dash)return html;
+ const today=dash.querySelector('[data-school-today]'),map=today?.querySelector('[data-h102-map]');
+ if(today){
+  const overview=document.createElement('section');overview.className='card wide h15-school-overview';overview.dataset.sub='today';
+  const cur=currentSchoolRoomH10?.(),inSchool=S.location==='School';
+  overview.innerHTML=`<div class="h15-school-title"><div><span class="h15-eyebrow">📚 EDUCATION</span><h2>${esc(S.school.name||schoolDisplayName(playerCurrentSchoolId4A2?.())||'My School')}</h2><p>${esc(S.school.grade||'Student')} · ${esc(inSchool?(cur?.name||'On campus'):'Away from campus')} · ${esc(formatDate(currentDate()))}</p></div><div class="h15-school-jumps"><button type="button" class="small primary" data-h15-open-campus="1">🗺️ Campus Map</button><button type="button" class="small ghost" data-h15-open-subjects="1">📖 Subjects & Tests</button><button type="button" class="small ghost" data-h15-open-activities="1">⭐ Activities</button></div></div>`;
+  dash.insertBefore(overview,today);
+ }
+ if(map){
+  const section=document.createElement('section');section.className='card wide h15-campus-section';section.dataset.sub='campus';section.innerHTML='<div class="h15-campus-intro"><div><h3>🗺️ Campus Map</h3><p class="muted-text">Explore real school rooms, routes and actions. Selecting a pin only inspects a room; movement uses the normal travel and pass rules.</p></div></div>';
+  map.open=true;map.querySelector('summary')?.setAttribute('tabindex','0');section.append(map);
+  dash.append(section);
+  // Food and lunchtime social actions are room-context activities, not Overview widgets.
+  const cafeteriaActions=today?.querySelector('.h125-school-food');
+  if(cafeteriaActions){const foodPanel=document.createElement('div');foodPanel.className='h15-campus-food';foodPanel.append(cafeteriaActions);section.append(foodPanel);}
+  const foot=document.createElement('div');foot.className='h15-today-map-shortcut';foot.innerHTML='<p class="muted-text">Looking for the cafeteria, nurse or next classroom? Your Campus Map now has its own tab.</p><button class="small ghost" type="button" data-h15-open-campus="1">Explore campus →</button>';
+  today.append(foot);
+ }
+ return root.innerHTML;
+};
+// Evolving spatial campus: existing H10 select/move and H11 pass links are retained.
+const h15OldCampus=schoolCampusMapHtmlH102;
+const H15_ZONES=[['Main','Main Campus','🏫'],['Learning','Classrooms & Study','📘'],['Activities','Arts & Student Life','🎨'],['Outdoors','Sports & Outdoor','🌳']];
+function h15RoomIcon(room){const type=room.type;return ({food:'🍽️',health:'🩺',library:'📚',restroom:'🚻',classroom:'🏫',sports:'🏀',science:'🧪',entrance:'🚪',hall:'🏛️',office:'📋',arts:'🎭',music:'🎵',outdoor:'🌳',media:'📰',auditorium:'🎤'})[type]||'📍'}
+schoolCampusMapHtmlH102=function(){const html=h15OldCampus();if(!html)return html;const container=document.createElement('div');container.innerHTML=html;
+ const shell=container.querySelector('.h102-layout'),zones=shell?.querySelector('.h102-zones'),detail=shell?.querySelector('.h102-room-detail');if(!shell||!zones||!detail)return html;
+ const sid=playerCurrentSchoolId4A2?.(),p=h102Prefs(),rooms=schoolRoomsH10(sid),chosen=schoolRoomByIdH10(sid,p.selected)||currentSchoolRoomH10()||rooms[0],here=currentSchoolRoomH10();
+ const selectedZone=rooms.some(r=>r.zone===UI.h15MapZone)?UI.h15MapZone:chosen?.zone||'Main';
+ const rail=document.createElement('nav');rail.className='h15-campus-rail';rail.setAttribute('aria-label','Campus areas');rail.innerHTML=H15_ZONES.filter(([id])=>rooms.some(r=>r.zone===id)).map(([id,label,ico])=>`<button type="button" data-h15-zone="${id}" class="${id===selectedZone?'active':''}" aria-pressed="${id===selectedZone}"><span>${ico}</span>${label}</button>`).join('');
+ const scene=document.createElement('div');scene.className='h15-campus-scene';scene.innerHTML=`<div class="h15-scene-head"><div><small>YOUR SCHOOL</small><b>${esc(S.school?.name||'Campus')}</b></div><span>${here?'📍 '+esc(here.name):'Preview mode'}</span></div><div class="h15-map-art" aria-hidden="true"><svg viewBox="0 0 700 420" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><rect width="700" height="420" fill="#b4d3b1"/><path d="M-25 335Q180 210 355 325T740 230" stroke="#f6e6c5" stroke-width="42" fill="none"/><path d="M305 -30Q220 115 365 235T300 470" stroke="#f6e6c5" stroke-width="24" fill="none"/><path d="M-20 335Q180 210 355 325T740 230M305 -30Q220 115 365 235T300 470" stroke="#ddcbb0" stroke-width="2" stroke-dasharray="6 6" fill="none"/><rect x="45" y="42" width="206" height="124" rx="17" fill="#9eaea3"/><rect x="50" y="35" width="206" height="124" rx="17" fill="#d9b4a0" stroke="#9e7e76" stroke-width="3"/><rect x="61" y="46" width="184" height="101" rx="12" fill="#e8d5c6"/><path d="M58 78H247M94 38V156M182 38V156" stroke="#b99385" stroke-width="8"/><rect x="426" y="36" width="222" height="112" rx="16" fill="#d8baa0" stroke="#9e7e76" stroke-width="4"/><rect x="440" y="50" width="192" height="85" rx="8" fill="#f8e8d0"/><path d="M455 57V133M513 57V133M570 57V133M628 57V133" stroke="#b58f77" stroke-width="5"/><rect x="45" y="225" width="195" height="135" rx="20" fill="#cdbaa1" stroke="#a08d76" stroke-width="3"/><rect x="59" y="238" width="168" height="108" rx="12" fill="#ebd6bc"/><rect x="462" y="250" width="192" height="125" rx="18" fill="#c1c9d2" stroke="#8593ab" stroke-width="3"/><rect x="476" y="264" width="164" height="97" rx="12" fill="#e2edf2"/><ellipse cx="350" cy="175" rx="61" ry="40" fill="#87b9b9" stroke="#fff5dc" stroke-width="8"/><circle cx="352" cy="173" r="21" fill="#a8d7d5"/><path d="M343 171Q360 159 364 171" stroke="#fff" stroke-width="3" fill="none"/>${[[28,196],[278,54],[687,62],[681,318],[263,384],[385,375]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="23" fill="#578a6e"/><circle cx="${x+7}" cy="${y-6}" r="17" fill="#72a782"/>`).join('')}</svg></div><div class="h15-map-pins" role="group" aria-label="Select campus room">${rooms.filter(r=>r.zone===selectedZone).map((r,i,list)=>{const cur=here?.roomId===r.roomId,sel=chosen?.roomId===r.roomId,cols=list.length>6?3:2,col=i%cols,row=Math.floor(i/cols);const x=cols===3?16+col*34:25+col*50,y=23+row*(list.length>6?18:22);return `<button type="button" class="h15-campus-pin ${cur?'is-current':''} ${sel?'is-selected':''}" data-h102-select="${esc(r.roomId)}" aria-pressed="${sel}" style="left:${x}%;top:${Math.min(y,89)}%" title="${esc(r.name)}${cur?' · You are here':''}"><span>${h15RoomIcon(r)}</span>${esc(r.name)}${cur?'<small>YOU</small>':''}</button>`}).join('')}</div><div class="h15-scene-legend"><span>📍 Current room</span><span>🟣 Selected</span><span>Click a location to inspect</span></div>`;
+ const originalButtons=zones.querySelectorAll('[data-h102-select]');const list=document.createElement('details');list.className='h15-campus-directory';list.innerHTML='<summary>All rooms · accessible directory</summary>';const dir=document.createElement('div');dir.className='h15-room-directory';originalButtons.forEach(b=>{const clone=b.cloneNode(true);clone.dataset.h15DirectorySelect=clone.dataset.h102Select;delete clone.dataset.h102Select;dir.append(clone)});list.append(dir);
+ zones.remove();detail.classList.add('h15-campus-detail');shell.prepend(rail,scene);shell.append(detail,list);shell.classList.add('h15-campus-layout');return container.innerHTML;
+};
+const h15OldPanelClick=handlePanelClick;
+handlePanelClick=function(e){const b=e?.target?.closest?.('button');if(!b)return h15OldPanelClick(e);
+ if(b.dataset.h15DirectorySelect){h102Prefs().selected=b.dataset.h15DirectorySelect;h102Prefs().open=true;saveUI();render();return;}
+ if(b.dataset.h15Zone){UI.h15MapZone=b.dataset.h15Zone;h102Prefs().open=true;UI.subTab.school='campus';saveUI();render();return;}
+ if(b.dataset.h15OpenCampus){h102Prefs().open=true;switchSubTab('campus');return;}
+ if(b.dataset.h15OpenSubjects){switchSubTab('subjects');return;}
+ if(b.dataset.h15OpenActivities){switchSubTab('activities');return;}
+ if(b.dataset.h115Nav==='map'){const result=h15OldPanelClick(e);UI.subTab.school='campus';saveUI();render();return result;}
+ if(b.dataset.h115Request){const result=h15OldPanelClick(e);if(hallPassActiveH11?.()){UI.subTab.school='campus';saveUI();render();}return result;}
+ if(b.dataset.h105Back){const result=h15OldPanelClick(e);if(active==='school'){UI.subTab.school='campus';saveUI();render();}return result;}
+ if(b.dataset.h15WbLevel){h15ShopState.level=Number(b.dataset.h15WbLevel);render();return;}
+ return h15OldPanelClick(e);
+};
+document.addEventListener('change',e=>{const el=e.target;if(!el?.matches?.('[data-h15-workbook]'))return;const k=el.dataset.h15Workbook;if(!['subject','grade','level'].includes(k))return;h15ShopState[k]=k==='subject'?el.value:Number(el.value);if(k==='grade'&&!workbookSubjectsForGrade5A1(h15ShopState.grade).includes(h15ShopState.subject))h15ShopState.subject=workbookSubjectsForGrade5A1(h15ShopState.grade)[0];render();});
+document.addEventListener('click',e=>{if(e.target?.closest?.('#h15-self-photo')&&S){openModal('Customize character portrait',h15PortraitEditor());return;}const b=e.target?.closest?.('button[data-h15-swatch]');if(!b||!S)return;const key=b.dataset.h15Swatch,val=Number(b.dataset.h15Value);if(!['skin','hair','outfit','hairStyle'].includes(key)||!Number.isInteger(val))return;S.avatarLookH15=S.avatarLookH15||{};S.avatarLookH15[key]=val;save();renderHeader();openModal('Customize character portrait',h15PortraitEditor());});
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}

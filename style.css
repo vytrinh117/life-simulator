@@ -621,6 +621,121 @@ body.planner-open .planner-close{display:inline-flex}
 @media(max-width:760px){.h14-interact .h4-metric-grid{grid-template-columns:1fr}.h14-interact-more{grid-template-columns:1fr}}
 @media(max-width:520px){.h14-interact-actions{grid-template-columns:1fr}.h14-other-folder{padding:.6rem}.h14-assessment-fold{padding:.65rem}.education95-extra{padding:.55rem}.h14-interact-footer button{width:100%}}
 
+/* H15 — Cohesive school/life/people surfaces (visual only; uses existing tokens). */
+.h15-self-card{padding:8px;margin:1px 0 13px;border:1px solid var(--line);border-radius:15px;background:var(--panel);box-shadow:var(--shadow-card)}
+#h15-self-photo{display:flex!important;flex-direction:column;align-items:stretch;text-align:left;gap:8px;width:100%;border:0!important;padding:0!important;background:transparent!important;min-width:0}
+.h15-self-portrait{display:block;overflow:hidden;border-radius:12px;background:#efe8e9;aspect-ratio:1/1.04;width:100%}
+.h15-avatar-svg{display:block;width:100%;height:100%;max-width:100%;object-fit:cover}
+.h15-self-details{display:grid;gap:3px;padding:0 2px 3px;min-width:0}
+.h15-self-details>b{color:var(--text);font-weight:800;font-size:13px;overflow-wrap:anywhere}
+.h15-self-details small{color:var(--muted);font-size:11px}
+.h15-self-details .h15-edit-hint{color:var(--accent2);font-size:10px;font-weight:650}
+.h15-self-card button:focus-visible,.h15-swatch:focus-visible,.h15-campus-pin:focus-visible,.h15-campus-rail button:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+.h15-person-portrait{display:block;flex:0 0 58px;width:58px;height:70px;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+.person-card .pc-head:has(.h15-person-portrait){display:flex;gap:10px;align-items:center;justify-content:flex-start}
+.person-card .pc-head .pc-ident{min-width:0;overflow-wrap:anywhere}
+.person-card .pc-mood{margin-left:auto}
+.pf-head:has(.h15-profile-portrait){display:grid!important;grid-template-columns:112px minmax(0,1fr);align-items:start;gap:4px 14px}
+.h15-profile-portrait{grid-row:1/span 5;aspect-ratio:100/120;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#e9e4e9}
+.pf-head:has(.h15-profile-portrait) .pf-title{align-self:end}
+.h14-interact-summary:has(.h15-interact-portrait){display:grid;grid-template-columns:82px minmax(0,1fr);column-gap:14px;align-items:start}
+.h15-interact-portrait{grid-row:1/span 3;width:82px;aspect-ratio:100/120;overflow:hidden;border-radius:12px;border:1px solid var(--line)}
+.h14-interact-summary:has(.h15-interact-portrait)>*{min-width:0}
+.h15-avatar-edit{display:grid;gap:15px;max-width:600px}
+.h15-portrait-preview{display:grid;grid-template-columns:148px minmax(0,1fr);gap:15px;align-items:center;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.h15-portrait-preview svg{border-radius:13px}
+.h15-swatch-group{display:grid;gap:7px}
+.h15-swatch-group>div{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.h15-swatch{background:var(--h15-swatch)!important;width:34px;height:34px;padding:0;border-radius:999px;border:2px solid var(--panel)!important;box-shadow:0 0 0 1px var(--line)}
+.h15-swatch.selected{box-shadow:0 0 0 3px var(--accent2)}
+.h15-style-picker button{max-width:140px}
+/* Workbooks as a browsable catalog: one primary product and compact other-level controls. */
+.h15-store-breadcrumb{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;padding:4px 0;color:var(--muted);font-size:12px}
+.h15-store-breadcrumb b{color:var(--text)}
+.h15-workbook-shop{display:grid;gap:14px;min-width:0}
+.h15-workbook-shop>header{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.h15-workbook-shop>header h3{font-size:19px;margin:0 0 4px}
+.h15-workbook-shop>header p{max-width:560px;margin:0}
+.h15-shop-count{white-space:nowrap;color:var(--muted);border:1px solid var(--line);padding:7px 9px;border-radius:999px;font-size:11px}
+.h15-wb-selectors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border:1px solid var(--line);background:var(--panel);padding:13px;border-radius:14px}
+.h15-pick{display:grid;gap:6px;font-size:11px;font-weight:700;min-width:0}
+.h15-pick select{min-width:0;width:100%;border-radius:9px;background:var(--card);color:var(--text);border:1px solid var(--line);padding:9px;font-size:12px;min-height:40px}
+.h15-workbook-focus{display:grid;grid-template-columns:minmax(110px,.6fr) minmax(0,1.7fr);gap:18px;padding:14px;border-radius:15px;border:1px solid var(--line);background:var(--card);min-width:0}
+.h15-book-art{min-height:222px;max-width:190px;width:100%;background:linear-gradient(138deg,#27528e,#1e3763 70%,#102b50);color:#fff;padding:22px 12px 16px;border-radius:6px 13px 13px 6px;box-shadow:6px 6px 0 #bdd0e2,9px 10px 16px rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;overflow-wrap:anywhere;position:relative}
+.h15-book-art:before{content:'';position:absolute;left:7px;top:5px;bottom:5px;border-left:2px solid #9eb9da;opacity:.65}
+.h15-book-art span{font-size:9px;font-weight:800;letter-spacing:.22em;opacity:.8}
+.h15-book-art>b{font-size:14px;font-weight:800;line-height:1.2}
+.h15-book-art strong{font-size:19px;line-height:1.15}
+.h15-book-art i{font-style:normal;letter-spacing:.12em;font-weight:800;font-size:11px}
+.h15-book-art small{font-size:10px;opacity:.8}
+.h15-book-info{display:grid;gap:9px;align-content:start;min-width:0}
+.h15-book-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:start}
+.h15-book-top h4{margin:0;font-size:17px}
+.h15-book-top strong{font-size:20px;color:var(--accent2)}
+.h15-book-info p{margin:0;line-height:1.5;overflow-wrap:anywhere}
+.h15-book-status{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-size:11px;font-weight:700;background:var(--panel)}
+.h15-book-status.is-owned{color:#256b56;background:#ebf6ed;border-color:#add5bb}
+.h15-book-progress{height:7px;background:var(--line);border-radius:9px;overflow:hidden}
+.h15-book-progress>span{display:block;height:100%;background:linear-gradient(90deg,#248c85,#cf438a)}
+.h15-buy-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.h15-wb-other{display:grid;gap:9px}
+.h15-wb-other h4{margin:0}
+.h15-wb-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.h15-wb-level{display:flex!important;align-items:flex-start!important;flex-direction:column;gap:7px;white-space:normal!important;text-align:left!important;padding:10px!important;min-height:66px;border:1px solid var(--line)!important;background:var(--card)!important;border-radius:10px!important}
+.h15-wb-level.active{outline:2px solid var(--accent2);outline-offset:-2px}
+.h15-wb-level small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
+.h15-wb-footnote{font-size:11px;line-height:1.5}
+/* School: diagrammatic campus with beautiful but honest illustrated grounds. The pins are interactive DOM elements. */
+#panel-host .h15-campus-layout{display:grid;grid-template-columns:minmax(130px,.47fr) minmax(0,1.6fr) minmax(210px,.75fr);align-items:start;gap:12px}
+#panel-host .h15-campus-rail{display:grid;gap:7px;min-width:0;align-self:stretch}
+#panel-host .h15-campus-rail button{display:flex;gap:9px;align-items:center;text-align:left;white-space:normal;min-width:0!important;width:100%;padding:10px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:11px;line-height:1.3;color:var(--text)}
+#panel-host .h15-campus-rail button span{font-size:17px}
+#panel-host .h15-campus-rail button.active{border-color:var(--accent2);background:var(--panel);font-weight:800}
+#panel-host .h15-campus-scene{position:relative;min-width:0;overflow:hidden;border-radius:15px;border:1px solid var(--line);background:#cde0c6}
+.h15-scene-head{position:relative;z-index:1;display:flex;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--card)}
+.h15-scene-head div{display:grid;gap:2px}
+.h15-scene-head small{color:var(--muted);font-size:9px;letter-spacing:.09em}
+.h15-scene-head b{font-size:12px;line-height:1.3}
+.h15-scene-head>span{border:1px solid var(--line);border-radius:30px;padding:5px 8px;font-size:10px;background:var(--panel);align-self:center;max-width:54%;overflow-wrap:anywhere}
+.h15-map-art{width:100%;aspect-ratio:7/5;min-height:270px;overflow:hidden}
+.h15-map-art svg{display:block;height:100%;width:100%}
+.h15-map-pins{position:absolute;inset:54px 0 29px;pointer-events:none;min-height:0}
+#panel-host .h15-campus-pin{position:absolute!important;transform:translate(-50%,-50%);pointer-events:auto;display:flex!important;align-items:center!important;gap:5px;justify-content:center!important;min-width:0!important;min-height:31px!important;max-width:44%;width:max-content!important;padding:5px 8px!important;text-align:center!important;color:#273a45!important;font-size:10px!important;font-weight:800;border-radius:10px!important;border:2px solid #e4ddd7!important;background:#fffdf8!important;box-shadow:0 3px 8px rgba(0,0,0,.18);white-space:normal;overflow-wrap:anywhere;line-height:1.2}
+.h15-campus-pin span{font-size:16px;flex:0 0 auto}
+.h15-campus-pin small{color:#0f816a;font-size:9px;letter-spacing:.08em}
+#panel-host .h15-campus-pin.is-selected{border-color:#8e679d!important;background:#faf1ff!important}
+#panel-host .h15-campus-pin.is-current{border-color:#188878!important;background:#e5fcf3!important}
+.h15-scene-legend{position:absolute;bottom:0;left:0;right:0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;background:color-mix(in srgb,var(--panel) 94%,transparent);padding:6px 8px;font-size:9px;color:#435561}
+#panel-host .h15-campus-detail{padding:12px;background:var(--card);max-height:600px;overflow-y:auto}
+#panel-host .h15-campus-directory{grid-column:1/-1;border:1px solid var(--line);border-radius:11px;padding:9px 12px;background:var(--card)}
+.h15-campus-directory>summary{cursor:pointer;font-size:11px;font-weight:800}
+.h15-room-directory{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;padding-top:9px}
+@media(max-width:1220px){#panel-host .h15-campus-layout{grid-template-columns:125px minmax(0,1fr)}#panel-host .h15-campus-detail{grid-column:1/-1;max-height:none}#panel-host .h15-campus-directory{grid-column:1/-1}}
+@media(max-width:780px){.h15-self-card{display:block;margin:6px 0 10px;max-width:100%}.h15-self-card #h15-self-photo{flex-direction:row;align-items:center}.h15-self-card .h15-self-portrait{width:54px;flex:0 0 54px;height:62px;aspect-ratio:auto}.h15-self-card .h15-self-details{flex:1}.h15-wb-selectors{grid-template-columns:1fr 1fr}.h15-pick:first-child{grid-column:1/-1}.h15-workbook-focus{grid-template-columns:116px minmax(0,1fr)}#panel-host .h15-campus-layout{grid-template-columns:minmax(0,1fr)}#panel-host .h15-campus-rail{display:flex;overflow-x:auto;gap:5px}#panel-host .h15-campus-rail button{min-width:115px!important;flex:0 0 115px}#panel-host .h15-campus-detail{grid-column:auto}}
+@media(max-width:520px){.h15-workbook-focus{grid-template-columns:1fr}.h15-book-art{width:132px;min-height:168px;margin:auto}.h15-wb-levels{grid-template-columns:1fr}.h15-portrait-preview{grid-template-columns:105px minmax(0,1fr)}.pf-head:has(.h15-profile-portrait){grid-template-columns:86px minmax(0,1fr)}.h15-interact-portrait{width:67px}.h14-interact-summary:has(.h15-interact-portrait){grid-template-columns:67px minmax(0,1fr)}.h15-map-art{min-height:250px}.h15-scene-head>span{max-width:48%}#panel-host .h15-campus-pin{font-size:9px!important;padding:4px 5px!important;max-width:45%}}
+
+/* Education hero and Today/Campus separation */
+.h15-school-overview{background:var(--card)!important;padding:16px!important}
+.h15-school-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.h15-school-title h2{font-size:22px;margin:4px 0 6px;line-height:1.25;overflow-wrap:anywhere}
+.h15-school-title p{color:var(--muted);font-size:12px;margin:0}
+.h15-eyebrow{letter-spacing:.09em;font-weight:800;font-size:10px;color:var(--accent2)}
+.h15-school-jumps{display:flex;gap:7px;flex-wrap:wrap}
+.h15-school-jumps button{white-space:normal;text-align:center}
+.h15-campus-section{min-width:0;overflow:hidden}
+.h15-campus-intro{padding:0 0 12px}
+.h15-campus-intro h3{font-size:18px;margin:0 0 5px}
+.h15-campus-intro p{margin:0}
+.h15-campus-section>details.h102-campus{padding:0;background:transparent;border:0}
+.h15-campus-section>details.h102-campus>summary{display:none}
+.h15-campus-section>details.h102-campus>.h102-map-wrap{padding:0}
+.h15-today-map-shortcut{border:1px dashed var(--line);background:var(--card);border-radius:12px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:9px}
+.h15-today-map-shortcut p{margin:0;flex:1 1 190px}
+@media(max-width:640px){.h15-school-title h2{font-size:19px}.h15-school-jumps{width:100%}.h15-school-jumps button{flex:1 1 auto}}
+
+.h15-campus-food{margin-top:16px;max-width:100%;min-width:0}
+.h15-campus-food .h125-school-food{max-width:100%;min-width:0}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}
