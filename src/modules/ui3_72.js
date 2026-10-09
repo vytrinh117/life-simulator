@@ -8,7 +8,7 @@ function saveUI(){try{localStorage.setItem(UI_KEY,JSON.stringify(UI))}catch(e){}
 const PANEL_TABS={
  home:[['now','Now'],['today','Today'],['inbox','Inbox']],
  places:[['care','Care'],['independence','Independence'],['activities','Activities'],['things','Your things'],['out','Go out']],
- school:[['today','Today'],['subjects','Subjects'],['exams','Assessments'],['attendance','Attendance'],['activities','Clubs & events'],['university','University']],
+ school:[['today','Today'],['subjects','Subjects'],['exams','Assessments'],['attendance','Attendance'],['activities','School Activities'],['university','University']],
  business:[['things','Your things'],['shop','Shop'],['money','Money & chores'],['selling','Selling']],
  calendar:[['month','Month'],['today','Today'],['upcoming','Upcoming'],['history','History']],
  world:[['world','World'],['journal','Journal']]
@@ -16,7 +16,7 @@ const PANEL_TABS={
 const SECTION_RULES={
  home:[[/attention|happening|gift|holiday|prom/i,'now'],[/today|right now|mood/i,'today'],[/notification|pending/i,'inbox']],
  places:[[/independence|early education/i,'independence'],[/daily life/i,'care'],[/use your things|skills|traits/i,'things'],[/go out|weather/i,'out'],[/.*/,'activities']],
- school:[[/^university/i,'university'],[/attendance/i,'attendance'],[/assessment/i,'exams'],[/subjects/i,'subjects'],[/clubs|competitions/i,'activities'],[/.*/,'today']],
+ school:[[/^university/i,'university'],[/attendance/i,'attendance'],[/assessment/i,'exams'],[/subjects/i,'subjects'],[/school activities|clubs|competitions|prom season/i,'activities'],[/.*/,'today']],
  business:[[/your things/i,'things'],[/^shop/i,'shop'],[/money|pending|chores/i,'money'],[/business|yard/i,'selling']],
  calendar:[[/^(?:[A-Z][a-z]+ \d{4})|month/i,'month'],[/upcoming/i,'upcoming'],[/recently|holidays this year/i,'history'],[/.*/,'today']],
  world:[[/journal|milestone|education|life log/i,'journal'],[/.*/,'world']]
