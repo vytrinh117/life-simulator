@@ -109,7 +109,26 @@ function migrate(){
  ensureLifecycleContainers();registerWorkbookCatalog5A1();normalizeInventory();migrateWorkbooks5A1();migrateWorkbooks5A2();migrateWorkbooks5A3();migrateWorkbooks5A4();normalizeSchool();migrateSchoolWorld4A1();migratePlayerSchool4A2();normalizeRequests();addStagePeople();migrateNpcSchools4A3();migrateSchoolSocial4A4();migrateSchoolOrganizations4B1();migrateSchoolElections4B2();migrateClubLeadership4B3();migrateSchoolRecognition4B4();migrateSchoolDay4C1();migrateSchoolClasses4C2();migrateSchoolFacilities4C3();migrateSchoolAfter4C4();migrateSchoolEvents4D1();migrateSchoolEventDiscovery4D2();migrateSchoolEventParticipation4D3();migrateSchoolEventCalendar4D4();migratePrograms5B1();migratePrograms5B2();migratePrograms5B3();migratePrograms5B4();migrateSeasonalActivities5C1();migrateSeasonalActivities5C2();migrateSeasonalActivities5C31();migrateOutdoorSocial5C33();migrateOutdoorIntegration5C35();migrateSeasonalItems5C41();migrateSeasonalIntegration5C45();migrateMicrobusiness5D1();migrateMicrobusiness5D4();migrateMicrobusiness5D5();migrateMicrobusiness5D6();migrateOccasions6C1();ensurePhoneApps();ensureCalendarBasics();reconcileState('migrate');
 }
 
-function save(){if(!S)return;try{localStorage.setItem(KEY,JSON.stringify(S));const el=$('save-status');if(el)el.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch(e){console.error('Save failed',e);toast('Could not save this life.')}}
+// Immediate write + readback acknowledgment only; not crash durability or cross-tab atomicity.
+function save(){
+ const el=$('save-status');
+ if(!S){if(el)el.textContent='Not saved — no active life';return false;}
+ try{
+  if(typeof ART1C42!=="undefined"&&!ART1C42.sync(S))throw new Error("New-life actor metadata is invalid or unsafe to save.");
+  if(typeof ART1C43!=="undefined"&&!ART1C43.sync(S))throw new Error("Appearance identity ownership is invalid or unsafe to save.");
+  const raw=JSON.stringify(S);
+  if(typeof raw!=='string')throw new Error('Life state could not be serialized.');
+  localStorage.setItem(KEY,raw);
+  if(localStorage.getItem(KEY)!==raw)throw new Error('Saved life could not be verified in browser storage.');
+  if(el)el.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  return true;
+ }catch(error){
+  console.error('Save failed:',error);
+  if(el)el.textContent='UNSAVED — retry Save or Export';
+  toast('Could not save this life. Retry Save or Export.');
+  return false;
+ }
+}
 function loadRaw(){let raw=localStorage.getItem(KEY);if(raw)return raw;for(const k of LEGACY_KEYS){raw=localStorage.getItem(k);if(raw)return raw}return null}
 function exportSave(){if(!S)return;const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`life-${S.name.replace(/\s+/g,'-').toLowerCase()}-v7.3.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function importFile(){$('import-file').click()}
@@ -1229,8 +1248,8 @@ function normalizeSchool(){
  if(S.school.grade==='Kindergarten'){if(S.exams?.length){S.archive.exams.unshift(...S.exams);S.exams=[]}return}
  S.exams=Array.isArray(S.exams)?S.exams:[];S.exams.forEach(normalizeExam);syncExamCalendar()
 }
-function initializeNewLife(){S=makeState();migrate();setWeather();ensureCalendarBasics();setCurrentContext({sourceType:'general',priority:1,title:'Welcome to the world.',text:'At first, almost everything happens through caregivers. Your independence will grow with age, skills, trust and circumstances.'});log('Life begins',S.current.text,true);enterGame()}
-function enterGame(){migrate();schoolActivityTick();processCalendar();reconcileState('enter');$('creator').classList.add('hidden');$('game').classList.remove('hidden');render();save()}
+function initializeNewLife(){ART1C42.freshGuard();S=makeState();ART1C42.newLife(S);migrate();if(!ART1C42.sync(S))throw new Error("New-life identity could not be verified.");if(!ART1C43.newLife(S))throw new Error("New-life appearance identity could not be verified.");setWeather();ensureCalendarBasics();setCurrentContext({sourceType:'general',priority:1,title:'Welcome to the world.',text:'At first, almost everything happens through caregivers. Your independence will grow with age, skills, trust and circumstances.'});log('Life begins',S.current.text,true);enterGame()}
+function enterGame(){migrate();schoolActivityTick();processCalendar();reconcileState('enter');$('creator').classList.add('hidden');$('game').classList.remove('hidden');render();return save()}
 
 // ---------- v7.2 UI: hero, upcoming, panels ----------
 function upcomingEvents(limit=7,{includeRoutine=false}={}){
@@ -16686,17 +16705,50 @@ const h134PriorMigrate=migrate;
 migrate=function(...args){h134NormalizeOptionalEntries();return h134PriorMigrate.apply(this,args)};
 // Validate before changing S. On any downstream exception, restore the prior
 // session and autosave bytes; a failed import cannot destroy the current life.
+// Save acknowledgement is required for successful import/load. Recovery is best-effort,
+// explicitly verified, and does not constitute a cross-tab/crash-safe transaction.
 function h134LoadCandidate(candidate,label){
  const validity=h134ImportEnvelope(candidate);
  if(!validity.ok){toast(validity.reason);return false;}
- const prior=S,raw=localStorage.getItem(KEY);
- try{S=candidate;enterGame();toast(label);return true;}
- catch(error){
+ const prior=S;
+ const priorGameHidden=$('game').classList.contains('hidden');
+ const priorCreatorHidden=$('creator').classList.contains('hidden');
+ let raw;
+ try{raw=localStorage.getItem(KEY)}catch(error){
+  console.error('Life save storage unavailable:',error);
+  const el=$('save-status');if(el)el.textContent='UNSAVED — storage unavailable';
+  toast('Cannot access saved life storage. Import was not started.');
+  return false;
+ }
+ try{
+  S=candidate;
+  if(enterGame()!==true)throw new Error('IMMEDIATE_PERSISTENCE_NOT_ACKNOWLEDGED');
+  toast(label);
+  return true;
+ }catch(error){
   S=prior;
-  try{if(raw===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,raw)}catch(_){}
-  console.error('Life save validation failed:',error);
-  try{if(prior)render();else{$('game').classList.add('hidden');$('creator').classList.remove('hidden')}}catch(_){}
-  toast('This save could not be loaded; the previous life was preserved.');return false;
+  let recoveryVerified=false;
+  try{
+   // Avoid a risky extra write when the rejected save left the old bytes intact.
+   let current=localStorage.getItem(KEY);
+   if(current!==raw){
+    if(raw===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,raw);
+    current=localStorage.getItem(KEY);
+   }
+   recoveryVerified=current===raw;
+  }catch(recoveryError){
+   console.error('Life save rollback could not be verified:',recoveryError);
+  }
+  console.error('Life save validation or persistence failed:',error);
+  try{
+   if(prior)render();
+   $('game').classList.toggle('hidden',priorGameHidden);
+   $('creator').classList.toggle('hidden',priorCreatorHidden);
+  }catch(uiError){console.error('Failed to restore prior life view:',uiError)}
+  const el=$('save-status');
+  if(el)el.textContent=recoveryVerified?'UNSAVED import — previous autosave retained':'UNSAVED import — storage recovery unverified';
+  toast(recoveryVerified?'Life could not be saved; previous life retained.':'Life could not be saved; storage recovery unverified. Export your current life if possible.');
+  return false;
  }
 }
 loadLast=function(){const raw=loadRaw();if(!raw){toast('No autosave found.');return false}try{return h134LoadCandidate(JSON.parse(raw),'Life loaded')}catch(error){console.error('Load failed:',error);toast('Autosave is invalid or incompatible.');return false}};
@@ -16979,6 +17031,858 @@ handlePanelClick=function(e){const b=e?.target?.closest?.('button');if(!b)return
 };
 document.addEventListener('change',e=>{const el=e.target;if(!el?.matches?.('[data-h15-workbook]'))return;const k=el.dataset.h15Workbook;if(!['subject','grade','level'].includes(k))return;h15ShopState[k]=k==='subject'?el.value:Number(el.value);if(k==='grade'&&!workbookSubjectsForGrade5A1(h15ShopState.grade).includes(h15ShopState.subject))h15ShopState.subject=workbookSubjectsForGrade5A1(h15ShopState.grade)[0];render();});
 document.addEventListener('click',e=>{if(e.target?.closest?.('#h15-self-photo')&&S){openModal('Customize character portrait',h15PortraitEditor());return;}const b=e.target?.closest?.('button[data-h15-swatch]');if(!b||!S)return;const key=b.dataset.h15Swatch,val=Number(b.dataset.h15Value);if(!['skin','hair','outfit','hairStyle'].includes(key)||!Number.isInteger(val))return;S.avatarLookH15=S.avatarLookH15||{};S.avatarLookH15[key]=val;save();renderHeader();openModal('Customize character portrait',h15PortraitEditor());});
+// ART.1C.2.1 — isolated local illustrated portrait asset loader.
+// Asset-only API. Does NOT read or write S, bind game identities, fetch on startup,
+// or replace the existing H15 SVG avatar presentation.
+(function (scope) {
+ 'use strict';
+ const manifestFile = 'assets/art/manhwa/manifest.v1.json';
+ const pathRule = /^assets\/art\/manhwa\/portraits\/p(?:0[1-9]|1[0-2])\/p(?:0[1-9]|1[0-2])_w(?:128|320|640)\.webp$/;
+ let manifestCache = null;
+ let manifestPromise = null;
+ // An older asynchronous mount may not overwrite a newer request on the same node.
+ const latestMount = new WeakMap();
+ function localURL(relative) {
+  if (typeof relative !== 'string' || !pathRule.test(relative)) return null;
+  if (typeof document === 'undefined' || !document.baseURI) return null;
+  try {
+   const base = new URL('./', document.baseURI);
+   const result = new URL(relative, base);
+   // Do not permit origin/root escape, including GitHub Pages repository paths.
+   return result.origin === base.origin && result.pathname.startsWith(base.pathname) ? result.href : null;
+  } catch (_) { return null; }
+ }
+ function manifestURL() {
+  if (typeof document === 'undefined' || !document.baseURI) return null;
+  try { return new URL(manifestFile, new URL('./', document.baseURI)).href; }
+  catch (_) { return null; }
+ }
+ function assertValid(data) {
+  if (!data || data.schemaVersion !== 1 || !Array.isArray(data.portraits) || data.portraits.length !== 12 || data.allowAutomaticGameActorAssignment !== false) throw new Error('Invalid portrait manifest');
+  const ids = new Set();
+  for (const entry of data.portraits) {
+   if (!entry || typeof entry.artId !== 'string' || ids.has(entry.artId) || !entry.delivery || entry.gameEntityId != null) throw new Error('Invalid portrait record');
+   ids.add(entry.artId);
+   for (const width of ['128', '320', '640']) {
+    const asset = entry.delivery[width];
+    if (!asset || asset.mime !== 'image/webp' || !localURL(asset.path) || asset.width !== Number(width) || asset.height <= 0) throw new Error('Invalid portrait delivery path');
+   }
+  }
+  const teen = data.portraits.find(p=>p.pilotId === 'P03'), adult = data.portraits.find(p=>p.pilotId === 'P06');
+  if (!teen || !adult || teen.subjectId !== adult.subjectId || teen.artId === adult.artId || teen.ageVariant === adult.ageVariant) throw new Error('Invalid aging identity association');
+  return data;
+ }
+ function loadManifest() {
+  if (manifestCache) return Promise.resolve(manifestCache);
+  if (manifestPromise) return manifestPromise;
+  const href = manifestURL();
+  if (!href || typeof fetch !== 'function') return Promise.reject(new Error('Portrait manifest unavailable'));
+  manifestPromise = fetch(href, {cache:'force-cache'}).then(response => {
+   if (!response.ok) throw new Error('Portrait manifest HTTP '+response.status);
+   return response.json();
+  }).then(data => (manifestCache = assertValid(data))).catch(err => { manifestPromise = null; throw err; });
+  return manifestPromise;
+ }
+ function getEntry(artId, ageVariant) {
+  if (!manifestCache || typeof artId !== 'string') return null;
+  const entry = manifestCache.portraits.find(x=>x.artId === artId);
+  if (!entry || (ageVariant != null && entry.ageVariant !== ageVariant)) return null;
+  return entry;
+ }
+ function chooseWidth(displayWidth) {
+  const dpr = typeof window !== 'undefined' ? Math.min(3, Math.max(1, Number(window.devicePixelRatio) || 1)) : 1;
+  const n = Number(displayWidth) * dpr;
+  return n > 320 ? '640' : n > 128 ? '320' : '128';
+ }
+ function resolve(artId, opts) {
+  const options = opts || {};
+  const entry = getEntry(artId, options.ageVariant);
+  if (!entry) return null;
+  const asset = entry.delivery[chooseWidth(options.displayWidth || 320)];
+  const url = localURL(asset.path);
+  return url ? Object.freeze({artId:entry.artId, pilotId:entry.pilotId, subjectId:entry.subjectId, ageVariant:entry.ageVariant, src:url, width:asset.width, height:asset.height, aspectRatio:entry.aspectRatio, sha256:asset.sha256, mime:asset.mime}) : null;
+ }
+ function resolveSubject(subjectId, ageVariant, opts) {
+  if (!manifestCache || typeof subjectId !== 'string' || typeof ageVariant !== 'string') return null;
+  const entry = manifestCache.portraits.find(x=>x.subjectId === subjectId && x.ageVariant === ageVariant);
+  return entry ? resolve(entry.artId, Object.assign({}, opts || {}, {ageVariant})) : null;
+ }
+ // Optional opt-in mount for a later checkpoint. Existing fallback content remains
+ // untouched until an actual image is fully decoded. Failed/404/corrupt images
+ // return null and do not show a broken-image glyph. No call is made by H15 UI.
+ async function mount(target, artId, opts) {
+  const options = opts || {};
+  if (!target || typeof target.replaceChildren !== 'function' || typeof Image === 'undefined') return null;
+  const token = {};
+  latestMount.set(target, token);
+  try {
+   await loadManifest();
+   if (latestMount.get(target) !== token) return null;
+   const choice = resolve(artId, options);
+   if (!choice) return null;
+   // Probe before changing target; actual mount is opt-in, avoiding blank icons.
+   const probe = new Image();
+   probe.decoding = 'async';
+   await new Promise((done, fail) => {probe.onload=()=>done();probe.onerror=()=>fail(new Error('Portrait unavailable'));probe.src=choice.src;});
+   if (!probe.naturalWidth || !probe.naturalHeight) return null;
+   if (typeof probe.decode === 'function') await probe.decode();
+   if (latestMount.get(target) !== token || !target.isConnected) return null;
+   // Use the already loaded image to avoid a duplicate image allocation/request.
+   probe.alt = typeof options.alt === 'string' ? options.alt : 'Illustrated character portrait';
+   probe.loading=options.lazy === false ? 'eager' : 'lazy';
+   probe.decoding='async';
+   probe.style.width='100%';probe.style.height='100%';probe.style.objectFit='contain';probe.style.aspectRatio='3 / 4';
+   target.replaceChildren(probe);
+   return probe;
+  } catch (_) { return null; }
+ }
+ // Public art-only interface: no automatic initial network load, no game state hooks.
+ scope.LifeSimPortraitAssets = Object.freeze({version:'ART.1C.2.2',loadManifest,resolve,resolveSubject,mount,manifestURL});
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {}));
+// ART.1C.3.1 — opt-in, side-effect-free identity resolver.
+// This is intentionally *not* an artwork chooser or an appearance assignment.
+// Never read S / localStorage, generate IDs, mount portraits or modify game records.
+(() => {
+ 'use strict';
+ const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+ const validId = id => typeof id === 'string' && id.length > 0 && id.length <= 256 && id === id.trim();
+ const keyOf = (namespace, id) => `h15:${namespace}:${encodeURIComponent(id)}`;
+ const empty = (status, reason, namespace = null, sourceId = null) => Object.freeze({
+  status, reason, key: null, namespace, sourceId, linkedNpcId: null,
+  linkedPersonIds: Object.freeze([]), identityGuarantee: 'none',
+  appearanceIdentityId: null, artworkId: null, artworkSubjectId: null,
+  futureAssignmentEligible: false
+ });
+ const makeMap = (rows) => {
+  const map = new Map();
+  for (const record of rows) {
+   if (!record || !validId(record.id)) continue;
+   const matches = map.get(record.id);
+   if (matches) matches.push(record);
+   else map.set(record.id, [record]);
+  }
+  return map;
+ };
+ /**
+  * A snapshot, never cached globally. Recreate after save/load or roster changes.
+  * The snapshot indexes current authoritatively supplied arrays and does not alter them.
+  */
+ function createIndex({people = [], npcs = []} = {}) {
+  const valid = Array.isArray(people) && Array.isArray(npcs);
+  const byPerson = makeMap(valid ? people : []);
+  const byNpc = makeMap(valid ? npcs : []);
+  const peopleByNpc = new Map();
+  if (valid) for (const person of people) {
+   if (!person || !validId(person.npcId) || !validId(person.id)) continue;
+   const linked = peopleByNpc.get(person.npcId);
+   if (linked) linked.push(person);
+   else peopleByNpc.set(person.npcId, [person]);
+  }
+  const resolve = (kind, record) => {
+   if (!valid) return empty('unresolved', 'INVALID_ROSTER_COLLECTION');
+   if (!['player', 'person', 'npc'].includes(kind)) return empty('unresolved', 'INVALID_KIND');
+   if (kind === 'player') return empty('unresolved', 'PLAYER_SAVE_SCOPED_ID_NOT_VERIFIED', 'player');
+   const namespace = kind === 'npc' ? 'world-npc' : 'person';
+   if (!record || !validId(record.id)) return empty('unresolved', 'MISSING_OR_INVALID_ID', namespace);
+   const table = kind === 'npc' ? byNpc : byPerson;
+   const matches = table.get(record.id) || [];
+   if (matches.length === 0) return empty('unresolved', 'RECORD_NOT_IN_AUTHORITATIVE_ROSTER', namespace, record.id);
+   if (matches.length !== 1) return empty('conflict', 'DUPLICATE_ID_IN_NAMESPACE', namespace, record.id);
+   const authoritative = matches[0];
+   if (kind === 'person') {
+    // Stale caller records may have different links after a load or merge.
+    if (own(record, 'npcId') && record.npcId !== authoritative.npcId)
+     return empty('conflict', 'STALE_OR_CONFLICTING_NPC_LINK', namespace, record.id);
+    if (authoritative.npcId != null && authoritative.npcId !== '') {
+     if (!validId(authoritative.npcId)) return empty('unresolved', 'INVALID_NPC_LINK', namespace, record.id);
+     const npcMatches = byNpc.get(authoritative.npcId) || [];
+     if (npcMatches.length === 0) return empty('unresolved', 'BROKEN_NPC_LINK', namespace, record.id);
+     if (npcMatches.length !== 1) return empty('conflict', 'DUPLICATE_LINKED_WORLD_ID', namespace, record.id);
+     const peerLinks = peopleByNpc.get(authoritative.npcId) || [];
+     const ambiguousPeople = peerLinks.some(p => (byPerson.get(p.id) || []).length !== 1);
+     if (ambiguousPeople) return empty('conflict', 'AMBIGUOUS_LINKED_PEOPLE', namespace, record.id);
+     return Object.freeze({
+      status:'resolved', reason:null, key:keyOf('world-npc', authoritative.npcId),
+      namespace:'world-npc', sourceId:authoritative.npcId,
+      linkedNpcId:authoritative.npcId,
+      linkedPersonIds:Object.freeze(peerLinks.map(p=>p.id).slice().sort()),
+      identityGuarantee:'existing-save-id-only',
+      appearanceIdentityId:null, artworkId:null, artworkSubjectId:null,
+      futureAssignmentEligible:false
+     });
+    }
+   }
+   const npcId = kind === 'npc' ? authoritative.id : null;
+   const aliases = kind === 'npc' ? (peopleByNpc.get(npcId) || []) : [];
+   if (aliases.some(p => (byPerson.get(p.id) || []).length !== 1))
+    return empty('conflict', 'AMBIGUOUS_LINKED_PEOPLE', namespace, record.id);
+   return Object.freeze({
+    status:'resolved', reason:null, key:keyOf(namespace, authoritative.id),
+    namespace, sourceId:authoritative.id, linkedNpcId:npcId,
+    linkedPersonIds:Object.freeze(aliases.map(p=>p.id).slice().sort()),
+    identityGuarantee:'existing-save-id-only',
+    appearanceIdentityId:null, artworkId:null, artworkSubjectId:null,
+    futureAssignmentEligible:false
+   });
+  };
+  return Object.freeze({resolve, counts:Object.freeze({people:valid?people.length:0, npcs:valid?npcs.length:0}), schema:'ART1C3.1-readonly'});
+ }
+ const api = Object.freeze({createIndex, resolve:(kind, record, rosters) => createIndex(rosters).resolve(kind, record), keyForVerifiedId:keyOf});
+ // No H15 screen calls this API. No portrait manifest access or network work.
+ if (typeof window !== 'undefined') Object.defineProperty(window, 'LifeSimAppearanceIdentity', {value:api, writable:false, configurable:false});
+})();
+// ART.1C.3.2: explicit, snapshot-scoped, opt-in alias QA. No state or artwork writes.
+// Caller extracts personId/npcId from a VERIFIED current H15 record. This library
+// validates ID linkage against supplied rosters; it does NOT authenticate events.
+(() => {
+ 'use strict';
+ const own = (x, k) => Object.prototype.hasOwnProperty.call(x, k);
+ const validId = v => typeof v === 'string' && v.length > 0 && v.length <= 256 && v.trim() === v;
+ const domains = Object.freeze(['people','school','romance','neighborhood','family','workplace','event','prom','unknown']);
+ const freeze = x => Object.freeze(x);
+ const pending = (status,reason,domain,sourceRef) => freeze({status,reason,domain,sourceRef,key:null,namespace:null,sourceId:null,
+  linkedPersonIds:freeze([]),evidence:freeze([]),appearanceIdentityId:null,artworkId:null,artworkSubjectId:null,futureAssignmentEligible:false});
+ const success = (r,domain,sourceRef,evidence) => freeze({status:'resolved',reason:null,domain,sourceRef,key:r.key,namespace:r.namespace,sourceId:r.sourceId,
+  linkedPersonIds:freeze(Array.from(r.linkedPersonIds)),evidence:freeze(evidence.map(e=>freeze(e))),appearanceIdentityId:null,artworkId:null,artworkSubjectId:null,futureAssignmentEligible:false});
+ /** Create once for ONE supplied roster snapshot. Recreate after any mutation/load. */
+ function createAliasIndex({people=[],npcs=[]}={}) {
+  const valid = Array.isArray(people) && Array.isArray(npcs);
+  // Copy only explicit authoritative IDs: caller can mutate original objects later
+  // without changing this snapshot. No names or relationships are copied or read.
+  const personSnapshots = valid ? people.map(p => p && typeof p === 'object' ? {id:p.id,npcId:p.npcId} : p) : [];
+  const npcSnapshots = valid ? npcs.map(n => n && typeof n === 'object' ? {id:n.id} : n) : [];
+  const byPerson = new Map(), byNpc = new Map();
+  for(const p of personSnapshots) if(p && validId(p.id)) { const a=byPerson.get(p.id)||[];a.push(p);byPerson.set(p.id,a); }
+  for(const n of npcSnapshots) if(n && validId(n.id)) { const a=byNpc.get(n.id)||[];a.push(n);byNpc.set(n.id,a); }
+  const old = typeof window!=='undefined' && window.LifeSimAppearanceIdentity;
+  const identity = valid && old && typeof old.createIndex === 'function' ? old.createIndex({people:personSnapshots,npcs:npcSnapshots}) : null;
+  const resolveReference = (ref) => {
+   if(!valid) return pending('unresolved','INVALID_ROSTER_COLLECTION',null,null);
+   if(!identity) return pending('unresolved','IDENTITY_RESOLVER_UNAVAILABLE',null,null);
+   if(!ref || typeof ref !== 'object' || Array.isArray(ref)) return pending('unresolved','INVALID_REFERENCE',null,null);
+   const domain=ref.domain, sourceRef=validId(ref.sourceRef)?ref.sourceRef:null;
+   if(!domains.includes(domain)) return pending('unresolved','UNSUPPORTED_REFERENCE_DOMAIN',null,sourceRef);
+   const hasP=own(ref,'personId') && ref.personId != null;
+   const hasN=own(ref,'npcId') && ref.npcId != null;
+   if(!hasP && !hasN) return pending('unresolved','NO_EXPLICIT_PERSON_OR_NPC_ID',domain,sourceRef);
+   if((hasP&&!validId(ref.personId)) || (hasN&&!validId(ref.npcId))) return pending('unresolved','MALFORMED_REFERENCE_ID',domain,sourceRef);
+   let pr=null, nr=null;
+   if(hasP) {
+    const matches=byPerson.get(ref.personId)||[];
+    if(!matches.length) return pending('unresolved','PEOPLE_TARGET_MISSING',domain,sourceRef);
+    if(matches.length!==1) return pending('conflict','DUPLICATE_PEOPLE_ID',domain,sourceRef);
+    pr=identity.resolve('person',matches[0]);
+    if(pr.status!=='resolved') return pending(pr.status,pr.reason,domain,sourceRef);
+   }
+   if(hasN) {
+    const matches=byNpc.get(ref.npcId)||[];
+    if(!matches.length) return pending('unresolved','WORLD_NPC_TARGET_MISSING',domain,sourceRef);
+    if(matches.length!==1) return pending('conflict','DUPLICATE_WORLD_NPC_ID',domain,sourceRef);
+    nr=identity.resolve('npc',matches[0]);
+    if(nr.status!=='resolved') return pending(nr.status,nr.reason,domain,sourceRef);
+   }
+   if(pr && nr && pr.key!==nr.key) return pending('conflict','CONTRADICTORY_PEOPLE_NPC_REFERENCE',domain,sourceRef);
+   const r=pr||nr;
+   const evidence=[];
+   if(pr) evidence.push({type:'VERIFIED_PEOPLE_ID',id:ref.personId});
+   if(nr) evidence.push({type:'VERIFIED_WORLD_NPC_ID',id:ref.npcId});
+   if(pr && pr.linkedNpcId) evidence.push({type:'VERIFIED_PEOPLE_NPC_LINK',id:pr.linkedNpcId});
+   // This only proves the explicit reference's target within these rosters;
+   // it does not prove the caller's event truly exists in the saved game.
+   return success(r,domain,sourceRef,evidence);
+  };
+  return freeze({schema:'ART1C3.2-readonly-alias',snapshotCounts:freeze({people:valid?people.length:0,npcs:valid?npcs.length:0}),resolveReference});
+ }
+ function createAliasAudit({people=[],npcs=[],references=[]}={}) {
+  const index=createAliasIndex({people,npcs});
+  if(!Array.isArray(references)) return freeze({schema:'ART1C3.2-readonly-alias',resolved:freeze([]),unresolved:freeze([pending('unresolved','INVALID_REFERENCE_COLLECTION',null,null)]),conflicts:freeze([]),total:0});
+  const resolved=[],unresolved=[],conflicts=[];
+  for(const ref of references){ const r=index.resolveReference(ref);(r.status==='resolved'?resolved:r.status==='conflict'?conflicts:unresolved).push(r); }
+  return freeze({schema:'ART1C3.2-readonly-alias',resolved:freeze(resolved),unresolved:freeze(unresolved),conflicts:freeze(conflicts),total:references.length});
+ }
+ const api=freeze({createAliasIndex,createAliasAudit,domains});
+ if(typeof window!=='undefined') Object.defineProperty(window,'LifeSimAppearanceAliases',{value:api,writable:false,configurable:false});
+})();
+// ART.1C.4.2 — new-life-only persistent actor identity. NO portraits, descriptors or legacy commits.
+// Uses only explicit life creation + existing acknowledged save boundary. No render hooks.
+const ART1C42 = (() => {
+ 'use strict';
+ const own=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
+ const record=o=>o&&typeof o==='object'&&!Array.isArray(o);
+ const validId=x=>typeof x==='string'&&x.length>0&&x.length<=256&&x===x.trim();
+ const uuidRx=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+ const isUuid=s=>typeof s==='string'&&uuidRx.test(s);
+ const key=id=>'id:'+encodeURIComponent(id);
+ const result=(status,reason=null,fields={})=>Object.freeze({refSchemaVersion:2,status,reason,saveScopeId:null,actorNamespace:null,persistentActorId:null,sourceId:null,canonicalSnapshotKey:null,identityProvenance:null,snapshotRevision:null,appearanceIdentityId:null,artworkSubjectId:null,...fields});
+ function secureUuid(){
+  const c=typeof crypto==='object'?crypto:null;
+  if(!c)throw new Error('Secure identity generation is unavailable.');
+  if(typeof c.randomUUID==='function')return c.randomUUID();
+  if(typeof c.getRandomValues!=='function')throw new Error('Secure identity generation is unavailable.');
+  const b=new Uint8Array(16);c.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+  const s=Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');
+  return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;
+ }
+ function freshGuard(){
+  // Preserve an unsaved in-memory life as well as stored autosaves.
+  if(typeof S!=='undefined'&&S!==null)throw new Error('An active life already exists. Export it or use the confirmed Restart action.');
+  // Never overwrite a pre-existing autosave/legacy life via the Creator's Begin button.
+  // An intentional restart already confirms destruction/removes the keys in H15.
+  for(const k of [KEY,...LEGACY_KEYS]){
+   if(localStorage.getItem(k)!==null)throw new Error('A saved life already exists. Load or Export it, then use Restart to begin a different life.');
+  }
+  return true;
+ }
+ // Registry ownership is a global invariant within one saved life, including
+ // archived mappings. An alias is allowed ONLY with a verified current People
+ // record pointing to exactly one current world NPC; names never prove aliases.
+ function ownershipIssues(s){
+  const r=s.actorIdentityV1,issues=[],owners=new Map();
+  const people=rosterIndex(s.people),worlds=rosterIndex(s.npcs);
+  const add=(uuid,kind,source)=>{
+   if(!isUuid(uuid))return;
+   const items=owners.get(uuid)||[];items.push({kind,source});owners.set(uuid,items);
+  };
+  add(s.saveScopeId,'scope','saveScopeId');
+  add(s.playerActorId,'player','playerActorId');
+  for(const [source,uuid] of Object.entries(r.worldNpcActors))add(uuid,'world',source);
+  for(const [source,uuid] of Object.entries(r.peopleActors))add(uuid,'people',source);
+  for(const [uuid,entries] of owners){
+   if(entries.length<2)continue;
+   const world=entries.filter(x=>x.kind==='world');
+   const persons=entries.filter(x=>x.kind==='people');
+   let allowed=entries.every(x=>x.kind==='world'||x.kind==='people')&&world.length===1&&persons.length===entries.length-1;
+   if(allowed){
+    const w=world[0];
+    const liveWorld=[...worlds.entries()].find(([id])=>key(id)===w.source);
+    if(!liveWorld||liveWorld[1].length!==1)allowed=false;
+    if(allowed)for(const contact of persons){
+     const entry=[...people.entries()].find(([id])=>key(id)===contact.source);
+     if(!entry||entry[1].length!==1||entry[1][0].npcId!==liveWorld[0]){allowed=false;break}
+    }
+   }
+   if(!allowed)issues.push({reason:entries.some(x=>x.kind==='player'||x.kind==='scope')?'RESERVED_UUID_REUSED':'CONFLICTING_PERSISTENT_ACTOR_OWNERSHIP',uuid,entries});
+  }
+  return issues;
+ }
+ function validStateBase(s){
+  if(!record(s)||!isUuid(s.saveScopeId)||!isUuid(s.playerActorId)||s.saveScopeId===s.playerActorId)return false;
+  const r=s.actorIdentityV1;
+  if(!record(r)||r.schemaVersion!==1||r.saveScopeId!==s.saveScopeId||r.playerActorId!==s.playerActorId)return false;
+  if(!record(r.worldNpcActors)||!record(r.peopleActors)||!record(r.quarantine))return false;
+  const ids=[s.saveScopeId,s.playerActorId,...Object.values(r.worldNpcActors),...Object.values(r.peopleActors)];
+  return ids.every(isUuid);
+ }
+ function validState(s){return validStateBase(s)&&ownershipIssues(s).length===0}
+ function distinctUuid(reserved){
+  // Bounded secure retries: never overwrite or reroll an already persisted ID.
+  for(let attempt=0;attempt<12;attempt++){
+   const id=secureUuid();if(isUuid(id)&&!reserved.has(id)){reserved.add(id);return id}
+  }
+  throw new Error('Could not generate a unique secure actor identity.');
+ }
+ function newLife(s){
+  if(!record(s)||own(s,'saveScopeId')||own(s,'playerActorId')||own(s,'actorIdentityV1'))throw new Error('New-life identity requires a fresh state.');
+  const reserved=new Set();const scope=distinctUuid(reserved),player=distinctUuid(reserved);
+  s.saveScopeId=scope;s.playerActorId=player;
+  s.actorIdentityV1={schemaVersion:1,saveScopeId:scope,playerActorId:player,worldNpcActors:{},peopleActors:{},quarantine:{}};
+  return true;
+ }
+ function rosterIndex(rows){
+  const map=new Map();
+  if(!Array.isArray(rows))return map;
+  for(const row of rows){if(!record(row)||!validId(row.id))continue;const a=map.get(row.id)||[];a.push(row);map.set(row.id,a)}
+  return map;
+ }
+ function sync(s){
+  // Compatibility: legacy saved lives have no identity fields and are NEVER upgraded here.
+  if(!record(s)||!own(s,'actorIdentityV1'))return true;
+  if(!validStateBase(s))return false;
+  const r=s.actorIdentityV1;
+  // Reject corrupted owner claims BEFORE any new identity allocations.
+  const initialIssues=ownershipIssues(s);
+  if(initialIssues.length){
+   for(const issue of initialIssues)for(const item of issue.entries){
+    if(item.kind==='world'||item.kind==='people')r.quarantine[item.kind+':'+item.source]=issue.reason;
+   }
+   return false;
+  }
+  const reserved=new Set([s.saveScopeId,s.playerActorId,...Object.values(r.worldNpcActors),...Object.values(r.peopleActors)]);
+  const people=rosterIndex(s.people);const worlds=rosterIndex(s.npcs);
+  const note=(type,id,reason)=>{r.quarantine[type+':'+key(id)]=reason};
+  const groups=new Map();
+  for(const [id,rows] of people){
+   if(rows.length!==1){note('people',id,'DUPLICATE_PEOPLE_ID');continue}
+   const p=rows[0];if(p.npcId!=null&&p.npcId!==''){
+    if(!validId(p.npcId)){note('people',id,'INVALID_NPC_LINK');continue}
+    if((worlds.get(p.npcId)||[]).length!==1){note('people',id,'BROKEN_OR_DUPLICATE_WORLD_LINK');continue}
+    const group=groups.get(p.npcId)||[];group.push(id);groups.set(p.npcId,group);
+   }
+  }
+  for(const [id,rows] of worlds){
+   if(rows.length!==1){note('world',id,'DUPLICATE_WORLD_ID');continue}
+   const aliases=groups.get(id)||[];
+   const known=new Set([r.worldNpcActors[key(id)],...aliases.map(pid=>r.peopleActors[key(pid)])].filter(Boolean));
+   if(known.size>1){note('world',id,'CONFLICTING_PERSISTENT_ALIAS_OWNERS');for(const a of aliases)note('people',a,'CONFLICTING_PERSISTENT_ALIAS_OWNERS');continue}
+   const actor=known.size?Array.from(known)[0]:distinctUuid(reserved);
+   r.worldNpcActors[key(id)]=actor;
+   for(const a of aliases)r.peopleActors[key(a)]=actor;
+  }
+  for(const [id,rows] of people){
+   if(rows.length!==1)continue;
+   const p=rows[0];
+   if(p.npcId!=null&&p.npcId!=='')continue;
+   if(!own(r.peopleActors,key(id)))r.peopleActors[key(id)]=distinctUuid(reserved);
+  }
+  // Corrupt/imported registry UUIDs cannot merge unrelated active actors.
+  // Archived entries remain untouched; quarantine is additive, never destructive.
+  const byActor=new Map();
+  const append=(actor,item)=>{if(!isUuid(actor))return;const a=byActor.get(actor)||[];a.push(item);byActor.set(actor,a)};
+  for(const [id,rows] of worlds)if(rows.length===1)append(r.worldNpcActors[key(id)],{kind:'world',id});
+  for(const [id,rows] of people)if(rows.length===1)append(r.peopleActors[key(id)],{kind:'people',id,npcId:rows[0].npcId});
+  for(const entries of byActor.values()){
+   const w=entries.filter(x=>x.kind==='world');
+   const p=entries.filter(x=>x.kind==='people');
+   const incompatible=w.length>1 || (w.length===0&&p.length>1) || (w.length===1&&p.some(x=>x.npcId!==w[0].id));
+   if(incompatible)for(const item of entries)note(item.kind,item.id,'CONFLICTING_PERSISTENT_ACTOR_OWNERSHIP');
+  }
+  const issues=ownershipIssues(s);
+  for(const issue of issues)for(const item of issue.entries){
+   if(item.kind==='world'||item.kind==='people')note(item.kind,decodeURIComponent(item.source.slice(3)),issue.reason);
+  }
+  return validState(s);
+ }
+ function resolve(s,kind,recordData){
+  if(!validStateBase(s))return result('unresolved','NO_VERIFIED_PERSISTENT_LIFE');
+  if(ownershipIssues(s).length)return result('conflict','INVALID_PERSISTENT_ACTOR_OWNERSHIP',{saveScopeId:s.saveScopeId});
+  const scope=s.saveScopeId,r=s.actorIdentityV1;
+  if(kind==='player')return result('resolved',null,{saveScopeId:scope,actorNamespace:'player',persistentActorId:s.playerActorId,canonicalSnapshotKey:'h15:player:save-scoped',identityProvenance:'NEW_LIFE_PLAYER_UUID'});
+  if(kind!=='person'&&kind!=='npc')return result('unresolved','INVALID_KIND');
+  if(!window.LifeSimAppearanceIdentity)return result('unresolved','IDENTITY_RESOLVER_UNAVAILABLE');
+  const index=window.LifeSimAppearanceIdentity.createIndex({people:s.people||[],npcs:s.npcs||[]});
+  const v=index.resolve(kind,recordData);
+  if(v.status!=='resolved')return result(v.status,v.reason,{saveScopeId:scope});
+  const map=v.namespace==='world-npc'?r.worldNpcActors:r.peopleActors;
+  const actor=map[key(v.sourceId)];
+  if(!isUuid(actor))return result('unresolved','ACTOR_NOT_REGISTERED_OR_QUARANTINED',{saveScopeId:scope,canonicalSnapshotKey:v.key,sourceId:v.sourceId});
+  if(own(r.quarantine,(v.namespace==='world-npc'?'world':'people')+':'+key(v.sourceId)))return result('conflict','QUARANTINED_SOURCE',{saveScopeId:scope});
+  return result('resolved',null,{saveScopeId:scope,actorNamespace:v.namespace==='world-npc'?'worldNpc':'peopleOnly',persistentActorId:actor,sourceId:v.sourceId,canonicalSnapshotKey:v.key,identityProvenance:'VERIFIED_SAVE_SCOPED_SOURCE_ID'});
+ }
+ function planActorIdentityMigration(raw,provenance={}){
+  // No parsing/normalization/storage writes/UUID generation to live game state.
+  if(typeof raw!=='string')return Object.freeze({status:'blocked',reason:'INVALID_RAW_SAVE',backupStatus:'NOT_CAPTURED',proposedFields:Object.freeze([])});
+  let parsed;try{parsed=JSON.parse(raw)}catch(_){return Object.freeze({status:'blocked',reason:'INVALID_JSON',backupStatus:'NOT_CAPTURED',proposedFields:Object.freeze([])})}
+  if(!record(parsed)||typeof parsed.name!=='string'||!parsed.name.trim()||(!parsed.dob&&!Number.isFinite(Number(parsed.age)))||(parsed.school!=null&&!record(parsed.school)))return Object.freeze({status:'blocked',reason:'INVALID_SAVE_ENVELOPE',backupStatus:'NOT_CAPTURED',proposedFields:Object.freeze([])});
+  const p=rosterIndex(parsed.people),n=rosterIndex(parsed.npcs);
+  const collisions=[];
+  for(const [id,a] of p)if(a.length>1)collisions.push('DUPLICATE_PEOPLE_ID:'+encodeURIComponent(id));
+  for(const [id,a] of n)if(a.length>1)collisions.push('DUPLICATE_WORLD_ID:'+encodeURIComponent(id));
+  for(const [id,a] of p)if(a.length===1&&validId(a[0].npcId)&&(n.get(a[0].npcId)||[]).length!==1)collisions.push('BROKEN_NPC_LINK:'+encodeURIComponent(id));
+  const ready=!!parsed.saveScopeId&&!!parsed.playerActorId&&!!parsed.actorIdentityV1;
+  return Object.freeze({status:collisions.length?'conflict':ready?'existing-identity':'approval-required',reason:collisions.length?'CONFLICTING_LEGACY_IDENTITIES':ready?'EXISTING_FIELDS_REQUIRE_VALIDATION':'LEGACY_COMMIT_DISABLED',sourceKey:typeof provenance.sourceKey==='string'?provenance.sourceKey:null,sourceVersion:own(parsed,'version')?parsed.version:null,backupStatus:'NOT_CAPTURED',proposedFields:Object.freeze(ready?[]:['saveScopeId','playerActorId','actorIdentityV1']),conflicts:Object.freeze(collisions.sort()),requiresConsent:!ready});
+ }
+ return Object.freeze({schemaVersion:1,freshGuard,newLife,sync,resolve,planActorIdentityMigration,validState});
+})();
+if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimPersistentActors',{value:ART1C42,writable:false,configurable:false});
+// ART.1C.4.3 — verified NEW-LIFE appearance identity persistence only.
+// No portrait art, reservations, new natural traits, read-path allocations or legacy migrations.
+const ART1C43 = (() => {
+ 'use strict';
+ const own=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
+ const object=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
+ const uuidRx=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+ const uuid=x=>typeof x==='string'&&uuidRx.test(x);
+ const id=x=>typeof x==='string'&&x.length>0&&x.length<=256&&x===x.trim();
+ const sourceKey=x=>'id:'+encodeURIComponent(x);
+ const traits=()=>({eyeColor:null,eyeShape:null,noseShape:null,jawline:null,naturalHairColor:null,naturalHairTexture:null,facialProportions:null});
+ const result=(status,reason=null,fields={})=>Object.freeze({status,reason,saveScopeId:null,persistentActorId:null,appearanceIdentityId:null,descriptor:null,...fields});
+ function actorReady(s){return object(s)&&typeof ART1C42!=='undefined'&&ART1C42.validState(s)}
+ function secureUnique(reserved){
+  const c=typeof crypto==='object'?crypto:null;
+  if(!c)throw new Error('Secure appearance identity generator unavailable');
+  for(let attempt=0;attempt<12;attempt++){
+   let v;
+   if(typeof c.randomUUID==='function')v=c.randomUUID();
+   else if(typeof c.getRandomValues==='function'){
+    const bytes=new Uint8Array(16);c.getRandomValues(bytes);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+    const z=Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('');
+    v=`${z.slice(0,8)}-${z.slice(8,12)}-${z.slice(12,16)}-${z.slice(16,20)}-${z.slice(20)}`;
+   }else throw new Error('Secure appearance identity generator unavailable');
+   if(uuid(v)&&!reserved.has(v)){reserved.add(v);return v}
+  }
+  throw new Error('Could not allocate a distinct secure appearance identity');
+ }
+ function authoritativeOwners(s){
+  const r=s.actorIdentityV1;
+  return new Set([s.saveScopeId,s.playerActorId,...Object.values(r.worldNpcActors),...Object.values(r.peopleActors)]);
+ }
+ function verifiedActorSet(s){
+  // A snapshot-scoped set; archived actor IDs are only *retained*, never newly generated.
+  const r=s.actorIdentityV1,actors=new Set([s.playerActorId]);
+  const world=new Map(),people=new Map(),personById=new Map();
+  for(const n of Array.isArray(s.npcs)?s.npcs:[])if(object(n)&&id(n.id))world.set(n.id,(world.get(n.id)||0)+1);
+  for(const p of Array.isArray(s.people)?s.people:[])if(object(p)&&id(p.id)){people.set(p.id,(people.get(p.id)||0)+1);personById.set(p.id,p)}
+  for(const [raw,actor] of Object.entries(r.worldNpcActors)){
+   // Source key is stored encoded; reject non-canonical forms.
+   let value;try{value=decodeURIComponent(raw.slice(3))}catch(_){continue}
+   if(raw!==sourceKey(value)||world.get(value)!==1||own(r.quarantine,'world:'+raw))continue;
+   actors.add(actor);
+  }
+  for(const [raw,actor] of Object.entries(r.peopleActors)){
+   let value;try{value=decodeURIComponent(raw.slice(3))}catch(_){continue}
+   if(raw!==sourceKey(value)||people.get(value)!==1||own(r.quarantine,'people:'+raw))continue;
+   const p=personById.get(value);
+   if(!p)continue;
+   if(p.npcId!=null&&p.npcId!==''){
+    if(world.get(p.npcId)!==1||r.worldNpcActors[sourceKey(p.npcId)]!==actor||own(r.quarantine,'world:'+sourceKey(p.npcId)))continue;
+   }
+   actors.add(actor);
+  }
+  return actors;
+ }
+ function validDescriptor(d,actor,s,seen){
+  if(!object(d)||d.schemaVersion!==1||d.descriptorRevision!==0||d.validationStatus!=='partial')return false;
+  if(d.saveScopeId!==s.saveScopeId||d.persistentActorId!==actor||!uuid(d.appearanceIdentityId))return false;
+  if(seen.has(d.appearanceIdentityId))return false;
+  seen.add(d.appearanceIdentityId);
+  if(d.appearanceIdentityId===s.saveScopeId||d.appearanceIdentityId===s.playerActorId)return false;
+  if(d.cosmeticAuthority!==(actor===s.playerActorId?'S.avatarLookH15':null))return false;
+  if(d.artworkSubjectId!==null||d.artworkAssetId!==null||d.reservationId!==null)return false;
+  if(d.traitProvenance!=='UNKNOWN'||!object(d.naturalTraits))return false;
+  const allowed=['eyeColor','eyeShape','noseShape','jawline','naturalHairColor','naturalHairTexture','facialProportions'];
+  if(Object.keys(d.naturalTraits).length!==allowed.length||allowed.some(k=>!own(d.naturalTraits,k)||d.naturalTraits[k]!==null))return false;
+  return true;
+ }
+ function actorOwnedWithoutQuarantine(s,actor){
+  if(actor===s.playerActorId)return true;
+  const r=s.actorIdentityV1;
+  for(const [source,a] of Object.entries(r.worldNpcActors))if(a===actor&&!own(r.quarantine,'world:'+source))return true;
+  for(const [source,a] of Object.entries(r.peopleActors))if(a===actor&&!own(r.quarantine,'people:'+source))return true;
+  return false;
+ }
+ function validState(s){
+  if(!actorReady(s)||!own(s,'appearanceIdentityV1'))return false;
+  const a=s.appearanceIdentityV1;
+  if(!object(a)||a.schemaVersion!==1||a.saveScopeId!==s.saveScopeId||a.revision!==0||!object(a.descriptorsByActor)||!object(a.quarantine))return false;
+  const reserved=authoritativeOwners(s),seen=new Set(reserved);
+  for(const [actor,d] of Object.entries(a.descriptorsByActor)){
+   if(!uuid(actor)||!reserved.has(actor)||!actorOwnedWithoutQuarantine(s,actor)||!validDescriptor(d,actor,s,seen))return false;
+  }
+  return true;
+ }
+ function entry(s,actor,used){
+  return {schemaVersion:1,saveScopeId:s.saveScopeId,persistentActorId:actor,appearanceIdentityId:secureUnique(used),descriptorRevision:0,validationStatus:'partial',traitProvenance:'UNKNOWN',naturalTraits:traits(),cosmeticAuthority:actor===s.playerActorId?'S.avatarLookH15':null,artworkSubjectId:null,artworkAssetId:null,reservationId:null};
+ }
+ function newLife(s){
+  if(!actorReady(s)||own(s,'appearanceIdentityV1'))return false;
+  s.appearanceIdentityV1={schemaVersion:1,saveScopeId:s.saveScopeId,revision:0,descriptorsByActor:{},quarantine:{}};
+  if(sync(s))return true;
+  delete s.appearanceIdentityV1;return false;
+ }
+ function sync(s){
+  // No appearance changes to legacy or pre-ART.1C.4.3 lives.
+  if(!object(s)||!own(s,'appearanceIdentityV1'))return true;
+  if(!validState(s))return false;
+  const a=s.appearanceIdentityV1,eligible=verifiedActorSet(s),used=authoritativeOwners(s);
+  for(const d of Object.values(a.descriptorsByActor))used.add(d.appearanceIdentityId);
+  // Stage allocations before writing to the actual registry; failures don't replace saved IDs.
+  const additions={};
+  for(const actor of eligible)if(!own(a.descriptorsByActor,actor)){
+   try{additions[actor]=entry(s,actor,used)}catch(_){return false}
+  }
+  // New entries are constructed with distinct secure UUIDs from the verified owner set.
+  // Avoid a second full-roster validation in the save hot path.
+  Object.assign(a.descriptorsByActor,additions);
+  return true;
+ }
+ function resolve(s,kind,recordData){
+  if(!object(s)||!own(s,'appearanceIdentityV1'))return result('unresolved','APPEARANCE_IDENTITY_NOT_INITIALIZED');
+  if(!validState(s))return result('conflict','INVALID_APPEARANCE_OR_ACTOR_OWNERSHIP');
+  const ref=ART1C42.resolve(s,kind,recordData);
+  if(ref.status!=='resolved')return result(ref.status,ref.reason,{saveScopeId:s.saveScopeId});
+  const actor=ref.persistentActorId,d=s.appearanceIdentityV1.descriptorsByActor[actor];
+  if(!d)return result('unresolved','DESCRIPTOR_NOT_INITIALIZED',{saveScopeId:s.saveScopeId,persistentActorId:actor});
+  return result('resolved',null,{saveScopeId:s.saveScopeId,persistentActorId:actor,appearanceIdentityId:d.appearanceIdentityId,descriptor:Object.freeze({...d,naturalTraits:Object.freeze({...d.naturalTraits})})});
+ }
+ return Object.freeze({schemaVersion:1,newLife,sync,validState,resolve});
+})();
+if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimAppearancePersistence',{value:ART1C43,writable:false,configurable:false});
+// ART.1C.4.4-I1 — READ-ONLY, production-disabled reservation inspections.
+// No IndexedDB access, reservation mutations, actor allocations, automatic art selection or render hooks.
+const ART1C44I1 = (() => {
+ 'use strict';
+ const own=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
+ const obj=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
+ const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(x);
+ const safe=x=>typeof x==='string'&&x.length>0&&x.length<=256&&x.trim()===x;
+ const reply=(status,reason=null,extra={})=>Object.freeze({status,reason,authoritative:false,committed:false,...extra});
+ const deny=(reason,extra={})=>reply('CONFLICT',reason,extra);
+ const actorAPI=()=>typeof window!=='undefined'?window.LifeSimPersistentActors:null;
+ const appearanceAPI=()=>typeof window!=='undefined'?window.LifeSimAppearancePersistence:null;
+ const sourceKey=x=>'id:'+encodeURIComponent(x);
+ const recordFields=['schemaVersion','saveScopeId','persistentActorId','appearanceIdentityId','artworkSubjectId','idempotencyKey','revision','ownershipState','approvalReference'];
+ const receiptFields=['schemaVersion','saveScopeId','persistentActorId','appearanceIdentityId','artworkSubjectId','idempotencyKey','revision','ownershipState','approvalReference'];
+ const cleanSave=s=>obj(s)&&uuid(s.saveScopeId);
+ // Public inputs are untrusted JSON. Never coerce an explicitly malformed
+ // revision constraint into an unconstrained inspection.
+ function optionsError(options,allowed){
+  if(!obj(options))return deny('INVALID_OPTIONS_SHAPE');
+  if(Object.keys(options).some(k=>!allowed.includes(k)))return deny('INVALID_OPTIONS_FIELDS');
+  for(const k of allowed)if(own(options,k)){
+   const n=options[k];
+   if(!Number.isSafeInteger(n)||n<(k==='expectedRevision'?1:0))return deny('INVALID_'+k.replace(/([A-Z])/g,'_$1').toUpperCase());
+  }
+  return null;
+ }
+ // Unexpected errors in external identity resolvers may not authenticate a
+ // corrupted input. Keep the error distinct and never upgrade it to success.
+ function guarded(f){
+  try{return f()}catch(e){return deny('VALIDATION_EXCEPTION',{errorType:e&&typeof e.name==='string'?e.name:'Error'});}
+ }
+ function capabilities(){return Object.freeze({schemaVersion:1,productionReservationWrites:false,productionLedgerEnabled:false,canCommit:false,canAssignPortrait:false,autoInitIndexedDB:false,readOnly:true,source:'ART1C4_4_I1'});}
+ function stateGate(s){
+  if(!obj(s))return deny('INVALID_SAVE_STATE');
+  const hasActor=own(s,'actorIdentityV1'),hasAppearance=own(s,'appearanceIdentityV1');
+  if(!hasActor&&!hasAppearance){
+   if(own(s,'saveScopeId')||own(s,'playerActorId'))return deny('MODERN_IDENTITY_REGISTRIES_MISSING');
+   return reply('LEGACY_UNSUPPORTED','IDENTITY_OR_APPEARANCE_NOT_PRESENT');
+  }
+  if(!hasActor||!hasAppearance)return deny('PARTIAL_IDENTITY_REGISTRIES');
+  if(!obj(s.actorIdentityV1))return deny('ACTOR_REGISTRY_MALFORMED');
+  if(!obj(s.appearanceIdentityV1))return deny('APPEARANCE_REGISTRY_MALFORMED');
+  if(!cleanSave(s))return deny('INVALID_SAVE_SCOPE');
+  if(s.actorIdentityV1.schemaVersion!==1)return reply('UNSUPPORTED_SCHEMA','ACTOR_SCHEMA');
+  if(s.appearanceIdentityV1.schemaVersion!==1)return reply('UNSUPPORTED_SCHEMA','APPEARANCE_SCHEMA');
+  const a=actorAPI(),p=appearanceAPI();
+  if(!a||!p||typeof a.validState!=='function'||typeof p.validState!=='function')return reply('UNRESOLVED','IDENTITY_APIS_MISSING');
+  if(!a.validState(s))return deny('ACTOR_OWNERSHIP_INVALID');
+  if(!p.validState(s))return deny('APPEARANCE_OWNERSHIP_INVALID');
+  return reply('VERIFIED',null,{saveScopeId:s.saveScopeId});
+ }
+ function validateOwner(s,kind,source){
+  const gate=stateGate(s);if(gate.status!=='VERIFIED')return gate;
+  if(!['player','npc','person'].includes(kind))return reply('UNRESOLVED','INVALID_KIND');
+  const actor=actorAPI().resolve(s,kind,source);
+  if(actor.status!=='resolved')return reply(actor.status==='conflict'?'CONFLICT':'UNRESOLVED',actor.reason||'ACTOR_UNRESOLVED');
+  const appearance=appearanceAPI().resolve(s,kind,source);
+  if(appearance.status!=='resolved')return reply(appearance.status==='conflict'?'CONFLICT':'UNRESOLVED',appearance.reason||'APPEARANCE_UNRESOLVED');
+  if(actor.saveScopeId!==s.saveScopeId||appearance.saveScopeId!==s.saveScopeId)return reply('FOREIGN_SCOPE','OWNER_SCOPE_MISMATCH');
+  if(!uuid(actor.persistentActorId)||!uuid(appearance.appearanceIdentityId)||actor.persistentActorId!==appearance.persistentActorId)return deny('OWNER_APPEARANCE_MISMATCH');
+  const d=appearance.descriptor;
+  if(!obj(d)||d.artworkSubjectId!==null||d.artworkAssetId!==null||d.reservationId!==null)return deny('ARTWORK_ALREADY_PRESENT_OR_UNVERIFIED');
+  return reply('VERIFIED',null,{saveScopeId:s.saveScopeId,persistentActorId:actor.persistentActorId,appearanceIdentityId:appearance.appearanceIdentityId,actorNamespace:actor.actorNamespace});
+ }
+ // This index is built ONCE per explicit ledger inspection. It contains only
+ // live roster actors with current, nonquarantined ID/alias provenance.
+ // Actor and appearance registries MUST already have passed their full validators.
+ function verifiedOwners(s){
+  const owner=new Map(),r=s.actorIdentityV1,descs=s.appearanceIdentityV1.descriptorsByActor;
+  const worlds=new Map(),people=new Map();
+  for(const n of Array.isArray(s.npcs)?s.npcs:[])if(obj(n)&&safe(n.id)){
+   const row=worlds.get(n.id)||[];row.push(n);worlds.set(n.id,row);
+  }
+  for(const p of Array.isArray(s.people)?s.people:[])if(obj(p)&&safe(p.id)){
+   const row=people.get(p.id)||[];row.push(p);people.set(p.id,row);
+  }
+  function put(actor){
+   const d=descs[actor];if(!uuid(actor)||!obj(d)||!uuid(d.appearanceIdentityId))return;
+   if(owner.has(actor)&&owner.get(actor)!==d.appearanceIdentityId)return;
+   owner.set(actor,d.appearanceIdentityId);
+  }
+  put(s.playerActorId);
+  for(const [id,rows] of worlds){
+   if(rows.length!==1)continue;
+   const source=sourceKey(id);if(own(r.quarantine,'world:'+source))continue;
+   put(r.worldNpcActors[source]);
+  }
+  for(const [id,rows] of people){
+   if(rows.length!==1)continue;
+   const source=sourceKey(id),p=rows[0];if(own(r.quarantine,'people:'+source))continue;
+   const actor=r.peopleActors[source];
+   if(p.npcId!=null&&p.npcId!==''){
+    if(!safe(p.npcId)||!worlds.has(p.npcId)||worlds.get(p.npcId).length!==1||
+       own(r.quarantine,'world:'+sourceKey(p.npcId))||r.worldNpcActors[sourceKey(p.npcId)]!==actor)continue;
+   }
+   put(actor);
+  }
+  return owner;
+ }
+ function checkReservationRecord(s,record,owners,options={}){
+  if(!obj(record)||recordFields.some(k=>!own(record,k)))return deny('RECORD_REQUIRED_FIELDS_MISSING');
+  if(Object.keys(record).some(k=>!recordFields.includes(k)))return deny('RECORD_UNSUPPORTED_FIELDS');
+  if(record.schemaVersion!==1)return reply('UNSUPPORTED_SCHEMA','RESERVATION_SCHEMA');
+  if(!uuid(record.saveScopeId)||record.saveScopeId!==s.saveScopeId)return reply('FOREIGN_SCOPE','RESERVATION_SCOPE_MISMATCH');
+  if(!uuid(record.persistentActorId)||!uuid(record.appearanceIdentityId)||record.persistentActorId===record.appearanceIdentityId||record.saveScopeId===record.persistentActorId||record.saveScopeId===record.appearanceIdentityId)return deny('INVALID_RESERVATION_UUIDS');
+  if(!safe(record.artworkSubjectId)||!safe(record.idempotencyKey)||!Number.isSafeInteger(record.revision)||record.revision<1)return deny('INVALID_RESERVATION_FIELDS');
+  if(!['PROPOSED','PENDING','RESERVED','ARCHIVED','RELEASED','CONFLICT'].includes(record.ownershipState))return deny('INVALID_LIFECYCLE_STATE');
+  // Synthetic test fixtures can be inspected but can NEVER authorize real-game ownership.
+  if(record.approvalReference!=='SYNTHETIC_TEST_ONLY')return reply('UNRESOLVED','APPROVAL_NOT_VERIFIABLE');
+  if(!/^synthetic-subject-[a-z0-9-]+$/.test(record.artworkSubjectId)||!/^synthetic-token-[a-z0-9-]+$/.test(record.idempotencyKey))return deny('PILOT_OR_UNAPPROVED_ARTWORK');
+  if(!owners.has(record.persistentActorId))return reply('UNRESOLVED','UNKNOWN_OR_ARCHIVED_ACTOR');
+  if(owners.get(record.persistentActorId)!==record.appearanceIdentityId)return deny('APPEARANCE_OWNER_CONFLICT');
+  if(options.expectedRevision!==undefined&&options.expectedRevision!==record.revision)return reply('UNRESOLVED','STALE_LEDGER');
+  return reply('STRUCTURALLY_VALID',null,{lifecycle:record.ownershipState,syntheticOnly:true});
+ }
+ function validateReservationRecord(s,record,options={}){
+  const gate=stateGate(s);if(gate.status!=='VERIFIED')return gate;
+  const invalid=optionsError(options,['expectedRevision']);if(invalid)return invalid;
+  return checkReservationRecord(s,record,verifiedOwners(s),options);
+ }
+ function validateLedgerSnapshot(s,snapshot,options={}){
+  const gate=stateGate(s);if(gate.status!=='VERIFIED')return gate;
+  const invalid=optionsError(options,['expectedLedgerRevision','expectedGameRevision']);if(invalid)return invalid;
+  if(!obj(snapshot))return reply('UNRESOLVED','LEDGER_UNAVAILABLE');
+  if(!own(snapshot,'schemaVersion')||snapshot.schemaVersion===null)return reply('UNSUPPORTED_SCHEMA','LEDGER_SCHEMA_MISSING');
+  if(snapshot.schemaVersion!==1)return reply('UNSUPPORTED_SCHEMA','LEDGER_SCHEMA');
+  if(!Array.isArray(snapshot.scopes)||!Array.isArray(snapshot.reservations)||!Array.isArray(snapshot.receipts))return deny('LEDGER_SHAPE_INVALID');
+  const scopes=new Map();
+  for(const sc of snapshot.scopes){
+   if(!obj(sc)||!uuid(sc.saveScopeId)||!Number.isSafeInteger(sc.revision)||sc.revision<0||scopes.has(sc.saveScopeId))return deny('SCOPE_REVISION_INVALID');
+   scopes.set(sc.saveScopeId,sc.revision);
+  }
+  if(snapshot.scopes.some(x=>x.saveScopeId!==s.saveScopeId))return reply('FOREIGN_SCOPE','LEDGER_FOREIGN_SCOPE');
+  const subjects=new Set(),owners=new Set(),tokens=new Map(),revisions=new Set(),verified=verifiedOwners(s);let maxRev=0;
+  for(const r of snapshot.reservations){
+   const check=checkReservationRecord(s,r,verified);
+   if(check.status!=='STRUCTURALLY_VALID')return reply(check.status,check.reason,{recordIndex:snapshot.reservations.indexOf(r)});
+   const sk=r.saveScopeId+'\0'+r.artworkSubjectId,ok=r.saveScopeId+'\0'+r.appearanceIdentityId,tk=r.saveScopeId+'\0'+r.idempotencyKey;
+   if(subjects.has(sk))return deny('SUBJECT_CONFLICT');if(owners.has(ok))return deny('OWNER_CONFLICT');if(tokens.has(tk))return deny('TOKEN_CONFLICT');
+   if(revisions.has(r.revision))return deny('DUPLICATE_REVISION');
+   subjects.add(sk);owners.add(ok);tokens.set(tk,r);revisions.add(r.revision);maxRev=Math.max(maxRev,r.revision);
+  }
+  const receiptKeys=new Set();
+  for(const receipt of snapshot.receipts){
+   if(!obj(receipt))return deny('RECEIPT_INVALID');
+   if(!own(receipt,'schemaVersion')||receipt.schemaVersion===null)return reply('UNSUPPORTED_SCHEMA','RECEIPT_SCHEMA_MISSING');
+   if(receipt.schemaVersion!==1)return reply('UNSUPPORTED_SCHEMA','RECEIPT_SCHEMA');
+   if(receiptFields.some(k=>!own(receipt,k)))return deny('RECEIPT_REQUIRED_FIELDS_MISSING');
+   if(!safe(receipt.idempotencyKey)||!uuid(receipt.saveScopeId)||Object.keys(receipt).some(k=>!receiptFields.includes(k)))return deny('RECEIPT_INVALID');
+   const tk=receipt.saveScopeId+'\0'+receipt.idempotencyKey;
+   if(receiptKeys.has(tk))return deny('DUPLICATE_RECEIPT');receiptKeys.add(tk);
+   const match=tokens.get(tk);if(!match)return deny('ORPHAN_RECEIPT');
+   if(receiptFields.some(k=>receipt[k]!==match[k]))return deny('RECEIPT_CONFLICT');
+  }
+  if(receiptKeys.size!==tokens.size)return deny('RECEIPT_MISSING');
+  if(snapshot.reservations.length){
+   if(!scopes.has(s.saveScopeId))return deny('SCOPE_MISSING');
+   if(scopes.get(s.saveScopeId)!==maxRev)return reply('UNRESOLVED','STALE_LEDGER');
+   if(revisions.size!==maxRev)return reply('UNRESOLVED','REVISION_HISTORY_INCOMPLETE');
+  }else if(scopes.size&&scopes.get(s.saveScopeId)!==0)return deny('ORPHAN_SCOPE_REVISION');
+  const actualLedgerRevision=scopes.has(s.saveScopeId)?scopes.get(s.saveScopeId):0;
+  if(options.expectedLedgerRevision!==undefined&&options.expectedLedgerRevision!==actualLedgerRevision)return reply('UNRESOLVED','STALE_LEDGER');
+  if(options.expectedGameRevision!==undefined)return reply('UNRESOLVED','GAME_REVISION_UNVERIFIABLE');
+  // Structurally valid synthetic snapshot != a durable, authenticated production ledger.
+  return reply(snapshot.reservations.length?'STRUCTURALLY_CONSISTENT_UNVERIFIED':'UNASSIGNED',null,{reservationCount:snapshot.reservations.length,receiptCount:snapshot.receipts.length,gameRevisionVerified:false,syntheticOnly:true});
+ }
+ function inspectConsistency(s,snapshot,options={}){
+  const result=validateLedgerSnapshot(s,snapshot,options);
+  return Object.freeze({...result,productionAuthorityVerified:false,allocationAllowed:false});
+ }
+ function describeAvailability(){return reply('DISABLED','PRODUCTION_RESERVATION_LEDGER_NOT_IMPLEMENTED',{canAllocate:false,fallback:'EXISTING_H15_SVG'});}
+ return Object.freeze({schemaVersion:1,capabilities,
+  validateOwner:(...args)=>guarded(()=>validateOwner(...args)),
+  validateReservationRecord:(...args)=>guarded(()=>validateReservationRecord(...args)),
+  validateLedgerSnapshot:(...args)=>guarded(()=>validateLedgerSnapshot(...args)),
+  inspectConsistency:(...args)=>guarded(()=>inspectConsistency(...args)),
+  describeAvailability});
+})();
+if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimArtworkReservations',{value:ART1C44I1,writable:false,configurable:false});
+// ART-PROFILE-MVP.1 — opt-in, session-only illustrated art PREVIEW; never ownership or save data.
+// The approved loader is the only image source. No manifest is requested before the gallery is opened.
+(function(){
+ 'use strict';
+ const label='Preview Manhwa Portrait';
+ let modalEpoch=0;
+ const svgByRoot=new WeakMap();
+ const galleryRequests=new WeakMap();
+ function controls(){return `<div class="art-mvp-controls"><button type="button" class="small primary" data-art-mvp-open aria-expanded="false">✦ ${label}</button><button type="button" class="small ghost" data-art-mvp-svg>Use original SVG</button><span class="art-mvp-note" aria-live="polite">SVG active · Illustrations are temporary previews, never assignments.</span></div>`;}
+ function gallery(){return `<section class="art-mvp-gallery hidden" aria-label="Approved manhwa portrait gallery"><div class="art-mvp-gallery-heading"><h3>Approved manhwa art gallery</h3><button type="button" class="small ghost" data-art-mvp-hide>Hide gallery</button></div><p class="muted-text">12 approved age-specific illustrations · 11 illustrated subjects. These are sample artwork previews only, not your character's assigned portrait.</p><div class="art-mvp-grid" role="group" aria-label="Choose an illustration"></div><p class="art-mvp-gallery-status" role="status" aria-live="polite">Loading approved illustrations…</p></section>`;}
+ // Preserve original H15 editor and its cosmetic save handlers verbatim.
+ const originalEditor=h15PortraitEditor;
+ h15PortraitEditor=function(){
+  const wrap=document.createElement('div');wrap.innerHTML=originalEditor();
+  const panel=wrap.querySelector('.h15-portrait-preview');
+  if(panel){const svg=panel.querySelector('svg');if(svg){const stage=document.createElement('div');stage.className='art-mvp-stage art-mvp-player-stage';stage.setAttribute('data-art-mvp-stage','');svg.replaceWith(stage);stage.append(svg);}panel.insertAdjacentHTML('afterend',`<div class="art-mvp-root" data-art-mvp-player>${controls()}${gallery()}</div>`);}
+  return wrap.innerHTML;
+ };
+ // Only the actual People profile portrait is decorated. Cards and interactions are unchanged.
+ const originalProfile=profileHtml;
+ profileHtml=function(p){
+  const wrap=document.createElement('div');wrap.innerHTML=originalProfile(p);
+  const content=wrap.querySelector('.profile');const portrait=wrap.querySelector('.h15-profile-portrait');
+  if(content&&portrait&&p&&p.id!=null){portrait.classList.add('art-mvp-stage');portrait.setAttribute('data-art-mvp-stage','');const root=document.createElement('div');root.className='art-mvp-root art-mvp-person-root';root.dataset.artMvpPerson=String(p.id);root.innerHTML=controls()+gallery();content.querySelector('.pf-head')?.insertAdjacentElement('afterend',root);}
+  return wrap.innerHTML;
+ };
+ // Lifecycle tokens invalidate old requests on every new dialog, close, or actor switch.
+ const originalOpenModal=openModal,originalCloseModal=closeChoiceModal;
+ openModal=function(title,html){modalEpoch++;return originalOpenModal(title,html);};
+ closeChoiceModal=function(){modalEpoch++;return originalCloseModal();};
+ const current=()=>document.querySelector('#choice-overlay:not(.hidden) #choice-content .art-mvp-root');
+ function same(root,epoch){
+  if(!root||!root.isConnected||current()!==root||modalEpoch!==epoch)return false;
+  const id=root.dataset.artMvpPerson;
+  if(id!=null)return !!S&&!!personById(id)&&document.querySelector('#choice-title')?.textContent==='Profile';
+  return !!S&&document.querySelector('#choice-title')?.textContent==='Customize character portrait';
+ }
+ function stageFor(root){return root.matches('[data-art-mvp-player]')?root.parentElement?.querySelector('[data-art-mvp-stage]'):root.parentElement?.querySelector('.pf-head [data-art-mvp-stage]');}
+ function resetStage(root){
+  const prior=stageFor(root);if(!prior)return null;
+  if(!svgByRoot.has(root))svgByRoot.set(root,prior.innerHTML);
+  // Replace the *node*, not just its contents: the loader checks target.isConnected.
+  // A delayed mount to the old detached node can never overwrite restored SVG.
+  const next=prior.cloneNode(false);next.classList.remove('art-mvp-image-active');next.innerHTML=svgByRoot.get(root);prior.replaceWith(next);
+  root.querySelector('.art-mvp-note').textContent='SVG active · Illustrations are temporary previews, never assignments.';
+  root.querySelectorAll('[data-art-mvp-select]').forEach(b=>b.setAttribute('aria-pressed','false'));
+  return next;
+ }
+ async function openGallery(root){
+  const epoch=modalEpoch,area=root.querySelector('.art-mvp-gallery'),grid=area?.querySelector('.art-mvp-grid'),status=area?.querySelector('.art-mvp-gallery-status');
+  if(!area||!grid)return;
+  if(!area.classList.contains('hidden')){galleryRequests.set(root,{});area.classList.add('hidden');root.querySelector('[data-art-mvp-open]').setAttribute('aria-expanded','false');return;}
+  area.classList.remove('hidden');root.querySelector('[data-art-mvp-open]').setAttribute('aria-expanded','true');
+  if(grid.children.length)return;
+  const request={};galleryRequests.set(root,request);
+  status.textContent='Loading approved local artwork…';
+  try{
+   const manifest=await window.LifeSimPortraitAssets.loadManifest();
+   if(!same(root,epoch)||area.classList.contains('hidden')||galleryRequests.get(root)!==request)return;
+   for(const entry of manifest.portraits){
+    const btn=document.createElement('button');btn.type='button';btn.className='art-mvp-item';btn.dataset.artMvpSelect=entry.artId;btn.setAttribute('aria-pressed','false');
+    const thumb=document.createElement('span');thumb.className='art-mvp-thumb';thumb.textContent='Loading…';
+    const details=document.createElement('span');details.className='art-mvp-item-text';
+    const title=document.createElement('strong');title.textContent=`${entry.pilotId} · ${entry.subjectLabel}`;
+    const age=document.createElement('small');age.textContent=`Illustrated age ${entry.illustratedAge}`;
+    details.append(title,age);btn.append(thumb,details);grid.append(btn);
+    // Mount each image using the existing asset-loader's decode and race safety.
+    window.LifeSimPortraitAssets.mount(thumb,entry.artId,{displayWidth:40,alt:`${entry.pilotId}, ${entry.subjectLabel}, illustrated age ${entry.illustratedAge}`,lazy:false}).then(img=>{
+     if(!img&&same(root,epoch)&&thumb.isConnected)thumb.textContent='Image unavailable';
+    });
+   }
+   status.textContent='Choose an illustration to preview inside this profile. P03 (16) and P06 (24) are variants of the same subject.';
+  }catch(_){if(same(root,epoch)&&galleryRequests.get(root)===request)status.textContent='Artwork gallery unavailable. Your original SVG portrait is unchanged.';}
+ }
+ async function preview(root,artId){
+  const epoch=modalEpoch,stage=resetStage(root),note=root.querySelector('.art-mvp-note');if(!stage)return;
+  const choice=window.LifeSimPortraitAssets.resolve(artId,{displayWidth:320});
+  if(!choice){note.textContent='Artwork unavailable — original SVG restored.';return;}
+  const btn=root.querySelectorAll('[data-art-mvp-select]');btn.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.artMvpSelect===artId)));
+  note.textContent=`Loading ${choice.pilotId} artwork preview…`;
+  const image=await window.LifeSimPortraitAssets.mount(stage,artId,{displayWidth:320,alt:`Temporary artwork preview: ${choice.pilotId}`,lazy:false});
+  if(!same(root,epoch)||!stage.isConnected)return;
+  if(image){stage.classList.add('art-mvp-image-active');note.textContent=`PREVIEW ONLY · ${choice.pilotId} · Not assigned to this character`;}
+  else{note.textContent='Could not decode artwork — original SVG retained.';btn.forEach(b=>b.setAttribute('aria-pressed','false'));}
+ }
+ document.addEventListener('click',e=>{
+  const b=e.target?.closest?.('button[data-art-mvp-open],button[data-art-mvp-svg],button[data-art-mvp-hide],button[data-art-mvp-select]');
+  if(!b)return;const root=b.closest('.art-mvp-root');if(!root||current()!==root)return;
+  if(b.hasAttribute('data-art-mvp-open')){openGallery(root);return;}
+  if(b.hasAttribute('data-art-mvp-hide')){galleryRequests.set(root,{});root.querySelector('.art-mvp-gallery').classList.add('hidden');root.querySelector('[data-art-mvp-open]').setAttribute('aria-expanded','false');return;}
+  if(b.hasAttribute('data-art-mvp-svg')){resetStage(root);return;}
+  if(b.dataset.artMvpSelect)preview(root,b.dataset.artMvpSelect);
+ });
+ // Read-only test probe, not accessible through saved data or an assignment API.
+ window.LifeSimManhwaPreview=Object.freeze({version:'ART-PROFILE-MVP.1',previewOnly:true,usesAuthoritativeReservations:false});
+})();
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}
@@ -17069,7 +17973,7 @@ document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{mo
 document.querySelectorAll('[data-random]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();randomField(b.dataset.random)}));$('random-all').addEventListener('click',randomize);
 $('begin').addEventListener('click',()=>{try{$('creator-error').hidden=true;initializeNewLife()}catch(err){console.error('Start-game error',err);$('creator-error').hidden=false;$('creator-error').textContent='Could not start life: '+(err?.message||err)}});
 $('load-last').addEventListener('click',()=>loadLast());$('import-btn').addEventListener('click',importFile);$('import-file').addEventListener('change',e=>importSaveFile(e.target.files?.[0]));
-$('save').addEventListener('click',()=>{save();toast('Saved')});$('export').addEventListener('click',exportSave);$('pause').addEventListener('click',()=>$('overlay').classList.remove('hidden'));$('close-menu').addEventListener('click',()=>$('overlay').classList.add('hidden'));$('menu-save').addEventListener('click',()=>{save();toast('Saved')});$('menu-export').addEventListener('click',exportSave);$('menu-import').addEventListener('click',importFile);$('menu-new').addEventListener('click',restart);$('close-choice').addEventListener('click',closeChoiceModal);
+$('save').addEventListener('click',()=>{if(save())toast('Saved')});$('export').addEventListener('click',exportSave);$('pause').addEventListener('click',()=>$('overlay').classList.remove('hidden'));$('close-menu').addEventListener('click',()=>$('overlay').classList.add('hidden'));$('menu-save').addEventListener('click',()=>{if(save())toast('Saved')});$('menu-export').addEventListener('click',exportSave);$('menu-import').addEventListener('click',importFile);$('menu-new').addEventListener('click',restart);$('close-choice').addEventListener('click',closeChoiceModal);
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;active=b.dataset.tab;render()});$('panel-host').addEventListener('click',handlePanelClick);$('event-actions').addEventListener('click',handlePanelClick);$('choice-content').addEventListener('click',handleModalClick);$('age-up').addEventListener('click',ageUp);$('next-day').addEventListener('click',()=>{nextDay();save();render()});$('ff-btn').addEventListener('click',()=>{if(S)openFastForward()});$('log-drawer').addEventListener('toggle',()=>{UI.logOpen=$('log-drawer').open;saveUI()});$('open-journal').addEventListener('click',()=>{if(!S)return;active='world';UI.subTab.world='journal';saveUI();render()});$('planner-btn').addEventListener('click',()=>document.body.classList.toggle('planner-open'));$('clear-log').addEventListener('click',()=>{if(!S)return;if(confirm('Clear the visible life log? Important milestones remain in the journal.')){S.log=[];save();render()}});
 $('needs-hud').addEventListener('click',e=>{const b=e.target.closest('[data-need]');if(!b||!S)return;const k=b.dataset.need;if(k==='social'){active='people';render()}else if(k==='comfort'){active='places';render()}else act(needAction(k))});
 $('choice-overlay').addEventListener('click',e=>{if(e.target===$('choice-overlay'))closeChoiceModal()});document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('choice-overlay').classList.contains('hidden'))closeChoiceModal();else $('overlay').classList.toggle('hidden')});

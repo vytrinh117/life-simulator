@@ -1,0 +1,662 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "life-sim-h15-art1c2-manifest-v1",
+  "createdFrom": "ART1C1_12_Approved_Masters_Registration_COMPLETE(2).zip",
+  "originalMasterPolicy": "PRESERVE_IN_SEPARATE_AUTHORITATIVE_ART_ARCHIVE",
+  "sourceOriginalsDeployed": false,
+  "deliveryBase": "project-relative",
+  "defaultWidth": 320,
+  "allowAutomaticGameActorAssignment": false,
+  "fallback": "EXISTING_H15_SVG",
+  "subjectsCount": 11,
+  "portraits": [
+    {
+      "artId": "LSM-PILOT-P01",
+      "pilotId": "P01",
+      "subjectId": "pilot-p01",
+      "referenceId": "ART1-O3-01",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Father",
+      "illustratedAge": 44,
+      "ageVariant": "age44",
+      "presentation": "Male",
+      "sourceMaster": {
+        "filename": "P01_father_age44_master.png",
+        "archivePath": "approved_masters/P01_father_age44_master.png",
+        "sha256": "2a056b2eb21634869c3d58754bf03e72c28f62f74403dffca0798c661f479a21",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2256750,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p01/p01_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 4642,
+          "sha256": "e6d9c1e3869737f4d1c95717ceda27ec4820849a99ef3edc9c5c7023f5add823"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p01/p01_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 19342,
+          "sha256": "d5c02f1b96e67000d4b49463f343ba820c9716ec837ff365d88b56b806c5edce"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p01/p01_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 62884,
+          "sha256": "bfb620084feab149474ae1d880c8f260d0d262d666545e611d8f7811f6f5874c"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P02",
+      "pilotId": "P02",
+      "subjectId": "pilot-p02",
+      "referenceId": "ART1-O3-02",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Mother",
+      "illustratedAge": 42,
+      "ageVariant": "age42",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P02_mother_age42_master.png",
+        "archivePath": "approved_masters/P02_mother_age42_master.png",
+        "sha256": "d808cfc9265b2172964f117dd90771784c3b186df9ecea0bd457bebea54174a0",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2580578,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p02/p02_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 6734,
+          "sha256": "b158fb0ec0b740b215b897589895ceebe207d6eb5b8f9ce8c04c46aa6d4d42d9"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p02/p02_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 31672,
+          "sha256": "57ad1d456ba68f879be854014e43f92a2f93049e782b8ea693c45382f76569fe"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p02/p02_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 103238,
+          "sha256": "c0f14a76b4174215acaacecffd9cfed98da07f8c4427856a30e6298659463932"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P03",
+      "pilotId": "P03",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART1-O3-03",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 16,
+      "ageVariant": "teen16",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P03_player_age16_master.png",
+        "archivePath": "approved_masters/P03_player_age16_master.png",
+        "sha256": "fc24a745961d74ce2626a75e7ca84ce9609e2754bb437b0e4ead86e59767df4d",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2997164,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p03/p03_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8832,
+          "sha256": "b917d4eda49c5ca6f1746bd888b4ffc9df95d4872ee96a78f6785fed6feb2cd7"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p03/p03_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 42278,
+          "sha256": "f08df7380723dbf8712859acbbfa4dd0debab1444dfc9b2bc450e0b9c04c6895"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p03/p03_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 141272,
+          "sha256": "0c1bc43dc00adf664dbfaf6e742fecda0b1ddc813897741c85e70b6a08b764e6"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P04",
+      "pilotId": "P04",
+      "subjectId": "pilot-p04",
+      "referenceId": "ART1-O3-04",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Older Sister",
+      "illustratedAge": 19,
+      "ageVariant": "age19",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P04_older_sister_age19_approved_revision.png",
+        "archivePath": "approved_masters/P04_older_sister_age19_approved_revision.png",
+        "sha256": "ccd77d4ea65c6b1030c3e9e35331a1bfc3b6e4ef2e05b4f083b03b46a6baa20b",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2599754,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p04/p04_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7762,
+          "sha256": "5fe18a7e9b06e2d697cbebd25dcfe566f28599bb5c2afb61693c2411cb38a8a8"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p04/p04_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 34830,
+          "sha256": "6fea0f35f00d0548a06baa243da66ceca20865b538a4897ee9167a9ab08b4d32"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p04/p04_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 109588,
+          "sha256": "da4062124fcf8fd3a2c513f27253406d502cbdb9d80ba1403854181cb5c9ce28"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P05",
+      "pilotId": "P05",
+      "subjectId": "pilot-p05",
+      "referenceId": "ART1-O3-05",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Younger Brother",
+      "illustratedAge": 10,
+      "ageVariant": "age10",
+      "presentation": "Male",
+      "sourceMaster": {
+        "filename": "P05_younger_brother_age10_master.png",
+        "archivePath": "approved_masters/P05_younger_brother_age10_master.png",
+        "sha256": "fa9083b68bb708aec00f7fbd9c725d1e8201a153a5432cd1c596b979ddd296d5",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2499853,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p05/p05_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7860,
+          "sha256": "8893c77082423ce4977f38360657878a5a0d3ea126781daaaafd7619e42d3816"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p05/p05_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 33682,
+          "sha256": "8df3bf7abcb2fb611d242aa6766db2aa35500b596aef6ff978a9eb7bef33f9ab"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p05/p05_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 101852,
+          "sha256": "f00e5eee282c8edfbd5232ea174c8c1a4024e2a622d31579f01a6e81b394721d"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P06",
+      "pilotId": "P06",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART1-O3-03",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Same Player / Daughter",
+      "illustratedAge": 24,
+      "ageVariant": "youngAdult24",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P06_player_age24_master.png",
+        "archivePath": "approved_masters/P06_player_age24_master.png",
+        "sha256": "997c67e5b953a164a0ca89abef10465856c5a884e8a94b1f57c71a638200758e",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2882538,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p06/p06_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8074,
+          "sha256": "98c9305b33bc37417a50859ba108f5a52a28447a68f8c571215f708196f80a99"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p06/p06_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 37512,
+          "sha256": "bb2941db4757aa8e1f305fcaa5321ed9a50d644da834a6452fa19cb403eb76ea"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p06/p06_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 130458,
+          "sha256": "91b3a36f78a1d524915e47c085d0e70122a31d70989b90aba3e7f52227e0c500"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P07",
+      "pilotId": "P07",
+      "subjectId": "pilot-p07",
+      "referenceId": "ART1-B-07",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Male Classmate",
+      "illustratedAge": 16,
+      "ageVariant": "age16",
+      "presentation": "Male",
+      "sourceMaster": {
+        "filename": "P07_male_classmate_age16_master.png",
+        "archivePath": "approved_masters/P07_male_classmate_age16_master.png",
+        "sha256": "859a38a228a3d86140fcd061ce685f6e3f9667abf33043b51d065fb7f4477c4f",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2432364,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p07/p07_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8772,
+          "sha256": "9a8e6988a9698740091e216eeed5fa67ed2d238a5ecebfd00ed387140fa2af96"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p07/p07_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 34802,
+          "sha256": "4777bd33714533d02b4a8a16f53978d98c94d070b8faa04aeab514733106ca77"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p07/p07_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 97332,
+          "sha256": "54ff812e48e03ffe20b4084e1d7bbca480a9771547e3f08168a04d53909cfa1d"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P08",
+      "pilotId": "P08",
+      "subjectId": "pilot-p08",
+      "referenceId": "ART1-C-05",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Young Adult Male",
+      "illustratedAge": 24,
+      "ageVariant": "age24",
+      "presentation": "Male",
+      "sourceMaster": {
+        "filename": "P08_young_adult_man_age24_approved_dark_hair_apron.png",
+        "archivePath": "approved_masters/P08_young_adult_man_age24_approved_dark_hair_apron.png",
+        "sha256": "027958f98437cb0120890fba3e22ed8c9e8df9caf65780565122a7c4d982fac5",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2397373,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p08/p08_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8368,
+          "sha256": "d3bb1e4abb7c3cefcd06c480980c9c097d65a8f645f08a11564ca37d4592c503"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p08/p08_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 34940,
+          "sha256": "2240cbacf98de6699386c62e483444d574c636fb96610c031c806c26645ba78f"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p08/p08_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 96582,
+          "sha256": "8a12eac17fe085e943b3d0a4459553d776fa2f09fda0e469316be7856c913294"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P09",
+      "pilotId": "P09",
+      "subjectId": "pilot-p09",
+      "referenceId": "ART1-D-08",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Mature Professional Woman",
+      "illustratedAge": 45,
+      "ageVariant": "age45",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P09_mature_professional_woman_age45_master.png",
+        "archivePath": "approved_masters/P09_mature_professional_woman_age45_master.png",
+        "sha256": "28362c33f96a2241c570d5a201c11d611dee26e28c55ebc1bfee21373b739705",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2407710,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p09/p09_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7268,
+          "sha256": "b86e683f964b81bb42902ada0a0ded435ec7ba1a51405ef6c846dfcfb506479f"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p09/p09_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 33450,
+          "sha256": "e9879fc512037aa658486fcbc7c230a647570d59fbe41cc6bba30f416b5765f1"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p09/p09_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 99618,
+          "sha256": "2d1cd107b763260a5c5e5f765cdfcfd01f09755b9b7699fd93b6b2e09b141c9e"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P10",
+      "pilotId": "P10",
+      "subjectId": "pilot-p10",
+      "referenceId": "ART1-E-07",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Elderly Man",
+      "illustratedAge": 76,
+      "ageVariant": "age76",
+      "presentation": "Male",
+      "sourceMaster": {
+        "filename": "P10_elderly_man_age76_master.png",
+        "archivePath": "approved_masters/P10_elderly_man_age76_master.png",
+        "sha256": "063a15d22a1e00e87d3e605d12f0446675a52a830bdf69f4dc3b4a4b30218a0a",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2959256,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p10/p10_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 9358,
+          "sha256": "967aadb19fea2198593a9f101d6e86ffa81c59ada7ffba5fe91cb1a60918acf8"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p10/p10_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 45924,
+          "sha256": "1b0b201466236b8cd5fd62f932e7cb650ba990ca141b7db728cc47f62e82fd9f"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p10/p10_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 148940,
+          "sha256": "06be479e54fe35136f4457b71fb5e96d1033ef1224a4dd3a6cce4c484fa663ab"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P11",
+      "pilotId": "P11",
+      "subjectId": "pilot-p11",
+      "referenceId": "ART1-E-08",
+      "referenceStatus": "APPROVED_CONCEPT",
+      "subjectLabel": "Elderly Woman",
+      "illustratedAge": 79,
+      "ageVariant": "age79",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P11_elderly_woman_age79_master.png",
+        "archivePath": "approved_masters/P11_elderly_woman_age79_master.png",
+        "sha256": "4e89e8e60c8201ba9f52d93ebee4324df800c0a69f8a6e249f2cdc467e5233c3",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 2710088,
+        "format": "PNG",
+        "colorMode": "RGB",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p11/p11_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8692,
+          "sha256": "2c0a4434155c2bc3fd9b13c32ec7d017d89a445cf66a4377d9014277dfd61f25"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p11/p11_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 40970,
+          "sha256": "0be0657dbd3b9f858471a00e2cadf1c6b145476531c1bae744d01d78438cbbc4"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p11/p11_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 125780,
+          "sha256": "ef9a68de01313fda517566f00609deabef385ac56f3e281d499040901020ec0d"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-PILOT-P12",
+      "pilotId": "P12",
+      "subjectId": "pilot-p12",
+      "referenceId": "NEW_UNILLUSTRATED",
+      "referenceStatus": "NEW_ORIGINAL_DESIGN",
+      "subjectLabel": "Original Female Teenage Classmate",
+      "illustratedAge": 15,
+      "ageVariant": "age15",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "P12_teenage_girl_age15_master.png",
+        "archivePath": "approved_masters/P12_teenage_girl_age15_master.png",
+        "sha256": "a51ce5dc6c8d60bd7cc8c07a42b796f3369a6f54029576653bc68500a711f3e8",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3397285,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-approved",
+      "approvalStatus": "USER_APPROVED_ART1C1",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/p12/p12_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7602,
+          "sha256": "a5f144167390c036a446e0a41d66ebc913cd72721e690265e0efd1f64a315987"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/p12/p12_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 32834,
+          "sha256": "d1cb0dc31f25714e40bea94931c39e8b29a1278fb83519081744926235393f48"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/p12/p12_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 101902,
+          "sha256": "21fc8a299f0dfba374776e424a0bd88c237caa3db6b617275ff1b6e4b429a2df"
+        }
+      },
+      "gameEntityId": null
+    }
+  ]
+}
