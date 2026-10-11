@@ -657,6 +657,336 @@
         }
       },
       "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-01",
+      "pilotId": "AGEA-01",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-01",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 0,
+      "ageVariant": "agea00",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-01_Newborn_Age0_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-01_Newborn_Age0_APPROVED.png",
+        "sha256": "21e00ee48c132482c39cd14cc2ad775218445a694ea5eb832bf4e72d054db1d8",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3070108,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea01/agea01_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7126,
+          "sha256": "efa412a941dd0d60d1210d2c6d722cad25dcc389585ecda04c2acaa599d015c9"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea01/agea01_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 31066,
+          "sha256": "37bb92f987349efbdd21c5acd2a87c09597e950363e2fb6226407a956cb54e3f"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea01/agea01_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 87636,
+          "sha256": "f0a898585912ebcbd36662bf4bbe8d6feb4382168a74d7cba32f10ff566275ab"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-02",
+      "pilotId": "AGEA-02",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-02",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 3,
+      "ageVariant": "agea03",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-02_Toddler_Age3_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-02_Toddler_Age3_APPROVED.png",
+        "sha256": "4792b445d240cb5bf156bfe4596d869d5d77555d88005b9fddd48eaa7aac358e",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3300132,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea02/agea02_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 7734,
+          "sha256": "06bec74c782be8f599bd76e7d756f15128a795e9bf883a67921a6f87faa540ed"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea02/agea02_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 34266,
+          "sha256": "27681f9a08729cfbf6679af749ac94a723047cbb2bd686684399b9c5d6512f5c"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea02/agea02_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 106494,
+          "sha256": "d8285b61ccd24cde91933ccd377692cd3275206af9b036abf70b59a33537eab8"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-03",
+      "pilotId": "AGEA-03",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-03",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 7,
+      "ageVariant": "agea07",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-03_Child_Age7_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-03_Child_Age7_APPROVED.png",
+        "sha256": "482399d6d624d84226e290acfc6f7586146ca6d83191dfc4d2d41578484352f8",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3321518,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea03/agea03_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8188,
+          "sha256": "e757e17ed7388eaf709ab03b86483c769b7be482dee28c8875f680e8d99e7481"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea03/agea03_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 36210,
+          "sha256": "56f2ed0c7226128e0d126b8a2aded73da9413a8d3b837a161c5448764094e204"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea03/agea03_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 111668,
+          "sha256": "28140bd037b65af220cdea946324eb9b6bb4473a311ea2bf451f2825da9e3019"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-04",
+      "pilotId": "AGEA-04",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-04",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 11,
+      "ageVariant": "agea11",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-04_Preteen_Age11_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-04_Preteen_Age11_APPROVED.png",
+        "sha256": "fbd91a9378946a389406062167f17e12cc55113760cc37ab4ab1795b7389bc87",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3567648,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea04/agea04_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8720,
+          "sha256": "ee90eaa5dc5d009eba2396ed15fe15d793b7adc1dbbfe4d294f781d572ede82f"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea04/agea04_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 41936,
+          "sha256": "2e805edcefe47cfa474250d952e6ced1ccb2ede1d610fd12a52c5e2c29e0f468"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea04/agea04_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 138692,
+          "sha256": "a66e501883c90fe28d9e5ff25aed32bf59142712e0326375f3782574bb8fc828"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-05",
+      "pilotId": "AGEA-05",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-05",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 19,
+      "ageVariant": "agea19",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-05_YoungAdult_Age19_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-05_YoungAdult_Age19_APPROVED.png",
+        "sha256": "0d6df6f55ccaf9e64e2a16af32b8f5de3d06554b17499b2ecf74ff51f6cbaf6b",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3655982,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea05/agea05_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8996,
+          "sha256": "a1beb666da403dea504f297de62440b05b0bc8bfd2d2c41fed19b0c40fe93f6f"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea05/agea05_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 45330,
+          "sha256": "e92ccbac5f3d45da2ef223606d5875b137a9844d9759cfa439676a86da81cf29"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea05/agea05_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 150044,
+          "sha256": "66fbf25e7b3b6cc644f45b359d651d315fc18d513a4282625f80f5e3aab22bc9"
+        }
+      },
+      "gameEntityId": null
+    },
+    {
+      "artId": "LSM-AGEA-06",
+      "pilotId": "AGEA-06",
+      "subjectId": "pilot-player-daughter",
+      "referenceId": "ART-AGEA-06",
+      "referenceStatus": "USER_APPROVED_2026-10-11",
+      "subjectLabel": "Female Player / Daughter",
+      "illustratedAge": 30,
+      "ageVariant": "agea30",
+      "presentation": "Female",
+      "sourceMaster": {
+        "filename": "ART-AGEA-06_Adult_Age30_APPROVED.png",
+        "archivePath": "approved_png_masters/ART-AGEA-06_Adult_Age30_APPROVED.png",
+        "sha256": "d10cc049f7bfce25501c14cdec468b77442eb8f02a9ff47d10537484e83423dc",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3641376,
+        "format": "PNG",
+        "colorMode": "RGBA",
+        "alphaFullyOpaque": true,
+        "sourceArchiveRequiredForMaster": true
+      },
+      "aspectRatio": "3:4",
+      "productionRevision": "1.0-user-approved-agea",
+      "approvalStatus": "USER_APPROVED_AGEA",
+      "availabilityStatus": "DELIVERY_WEBP_AVAILABLE_NO_GAME_ASSIGNMENT",
+      "fallback": "EXISTING_H15_SVG",
+      "delivery": {
+        "128": {
+          "path": "assets/art/manhwa/portraits/agea06/agea06_w128.webp",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 171,
+          "bytes": 8898,
+          "sha256": "d6bd35baae647135993cfa3b970880a497816a219a83c2046670a3fd7f8b1e9c"
+        },
+        "320": {
+          "path": "assets/art/manhwa/portraits/agea06/agea06_w320.webp",
+          "mime": "image/webp",
+          "width": 320,
+          "height": 427,
+          "bytes": 42332,
+          "sha256": "1e37b23ee2055d4f449f2964dabfdecc259d85c31649ff02b2a7a60ca8674cee"
+        },
+        "640": {
+          "path": "assets/art/manhwa/portraits/agea06/agea06_w640.webp",
+          "mime": "image/webp",
+          "width": 640,
+          "height": 853,
+          "bytes": 140092,
+          "sha256": "321d32d51f7891a6b47aaeafac979c0f4d40d9f225d43b068a0c49aca8b03718"
+        }
+      },
+      "gameEntityId": null
     }
   ]
 }

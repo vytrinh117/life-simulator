@@ -760,6 +760,20 @@ body.planner-open .planner-close{display:inline-flex}
 .art-mvp-person-root{grid-column:1/-1}
 @media(max-width:520px){.art-mvp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.art-mvp-player-stage{width:105px}.art-mvp-thumb{height:100px}.art-mvp-controls button{flex:1 1 auto}}
 
+/* ART-PROFILE-LIVE.1 — compact, accessible MANUAL display preference controls. */
+.art-live-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 9px;background:var(--panel2,var(--panel));border:1px solid var(--line);border-radius:10px}
+.art-live-actions>button{min-height:31px;white-space:normal;text-align:center}
+.art-live-actions button:disabled{opacity:.52;cursor:not-allowed}
+.art-live-state{flex:1 1 180px;font-size:11px;color:var(--muted);line-height:1.45;overflow-wrap:anywhere}
+.art-mvp-gallery{padding:9px 10px}
+.art-mvp-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-height:min(280px,40vh);gap:6px}
+.art-mvp-thumb{height:86px}
+.art-mvp-item{padding:5px!important}
+.art-mvp-item-text strong{font-size:10px}
+.art-mvp-item-text small{font-size:9px}
+.art-mvp-stage.art-live-active>img,.h15-self-portrait.art-live-active>img{width:100%;height:100%;display:block;object-fit:contain!important;aspect-ratio:auto!important}
+@media(max-width:520px){.art-mvp-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:min(265px,42vh)}.art-mvp-thumb{height:100px}.art-live-actions>button{flex:1 1 130px}.art-live-state{flex-basis:100%}}
+
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}
 .dot-school{background:var(--tone-school)}.dot-exam{background:var(--bad)}.dot-homework{background:var(--warn)}.dot-club{background:var(--accent)}.dot-competition{background:var(--tone-food)}.dot-social{background:var(--good)}.dot-holiday{background:var(--tone-holiday)}.dot-birthday{background:var(--tone-gifts)}.dot-decision{background:var(--info)}.dot-other{background:var(--tone-misc)}

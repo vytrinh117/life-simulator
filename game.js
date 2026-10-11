@@ -17037,7 +17037,7 @@ document.addEventListener('click',e=>{if(e.target?.closest?.('#h15-self-photo')&
 (function (scope) {
  'use strict';
  const manifestFile = 'assets/art/manhwa/manifest.v1.json';
- const pathRule = /^assets\/art\/manhwa\/portraits\/p(?:0[1-9]|1[0-2])\/p(?:0[1-9]|1[0-2])_w(?:128|320|640)\.webp$/;
+ const pathRule = /^(?:assets\/art\/manhwa\/portraits\/p(?:0[1-9]|1[0-2])\/p(?:0[1-9]|1[0-2])_w(?:128|320|640)\.webp|assets\/art\/manhwa\/portraits\/agea0[1-6]\/agea0[1-6]_w(?:128|320|640)\.webp)$/;
  let manifestCache = null;
  let manifestPromise = null;
  // An older asynchronous mount may not overwrite a newer request on the same node.
@@ -17058,16 +17058,23 @@ document.addEventListener('click',e=>{if(e.target?.closest?.('#h15-self-photo')&
   catch (_) { return null; }
  }
  function assertValid(data) {
-  if (!data || data.schemaVersion !== 1 || !Array.isArray(data.portraits) || data.portraits.length !== 12 || data.allowAutomaticGameActorAssignment !== false) throw new Error('Invalid portrait manifest');
-  const ids = new Set();
+  if (!data || data.schemaVersion !== 1 || !Array.isArray(data.portraits) || data.portraits.length !== 18 || data.allowAutomaticGameActorAssignment !== false) throw new Error('Invalid portrait manifest');
+  const ids = new Set(), variants = new Set(), paths = new Set(), pilotIds = new Set();
   for (const entry of data.portraits) {
    if (!entry || typeof entry.artId !== 'string' || ids.has(entry.artId) || !entry.delivery || entry.gameEntityId != null) throw new Error('Invalid portrait record');
-   ids.add(entry.artId);
+   if (typeof entry.pilotId !== 'string' || pilotIds.has(entry.pilotId) || !Number.isSafeInteger(entry.illustratedAge) || entry.illustratedAge < 0 || !entry.subjectId || typeof entry.ageVariant !== 'string' || entry.presentation !== 'Female' && entry.presentation !== 'Male') throw new Error('Invalid portrait identity');
+   if (!((/^P(?:0[1-9]|1[0-2])$/.test(entry.pilotId) && entry.approvalStatus === 'USER_APPROVED_ART1C1') || (/^AGEA-0[1-6]$/.test(entry.pilotId) && entry.artId === 'LSM-' + entry.pilotId && entry.approvalStatus === 'USER_APPROVED_AGEA' && entry.subjectId === 'pilot-player-daughter' && entry.presentation === 'Female' && ({'AGEA-01':0,'AGEA-02':3,'AGEA-03':7,'AGEA-04':11,'AGEA-05':19,'AGEA-06':30})[entry.pilotId] === entry.illustratedAge))) throw new Error('Unapproved portrait');
+   const variant = entry.subjectId + ':' + entry.illustratedAge;
+   if (variants.has(variant)) throw new Error('Duplicate illustrated subject age');
+   variants.add(variant); pilotIds.add(entry.pilotId); ids.add(entry.artId);
    for (const width of ['128', '320', '640']) {
     const asset = entry.delivery[width];
-    if (!asset || asset.mime !== 'image/webp' || !localURL(asset.path) || asset.width !== Number(width) || asset.height <= 0) throw new Error('Invalid portrait delivery path');
+    if (!asset || asset.mime !== 'image/webp' || !localURL(asset.path) || asset.width !== Number(width) || asset.height !== Math.round(Number(width)*4/3) || !/^[a-f0-9]{64}$/.test(asset.sha256) || !Number.isSafeInteger(asset.bytes) || asset.bytes <= 0 || paths.has(asset.path)) throw new Error('Invalid portrait delivery path');
+    if (entry.pilotId.startsWith('AGEA-') && asset.path !== 'assets/art/manhwa/portraits/' + entry.pilotId.toLowerCase().replace('-','') + '/' + entry.pilotId.toLowerCase().replace('-','') + '_w' + width + '.webp') throw new Error('Invalid AGEA path');
+    paths.add(asset.path);
    }
   }
+  if (data.portraits.filter(p => /^AGEA-0[1-6]$/.test(p.pilotId)).length !== 6 || new Set(data.portraits.map(p=>p.subjectId)).size !== 11) throw new Error('Invalid approved catalog counts');
   const teen = data.portraits.find(p=>p.pilotId === 'P03'), adult = data.portraits.find(p=>p.pilotId === 'P06');
   if (!teen || !adult || teen.subjectId !== adult.subjectId || teen.artId === adult.artId || teen.ageVariant === adult.ageVariant) throw new Error('Invalid aging identity association');
   return data;
@@ -17796,7 +17803,7 @@ if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimArtworkReser
  const svgByRoot=new WeakMap();
  const galleryRequests=new WeakMap();
  function controls(){return `<div class="art-mvp-controls"><button type="button" class="small primary" data-art-mvp-open aria-expanded="false">✦ ${label}</button><button type="button" class="small ghost" data-art-mvp-svg>Use original SVG</button><span class="art-mvp-note" aria-live="polite">SVG active · Illustrations are temporary previews, never assignments.</span></div>`;}
- function gallery(){return `<section class="art-mvp-gallery hidden" aria-label="Approved manhwa portrait gallery"><div class="art-mvp-gallery-heading"><h3>Approved manhwa art gallery</h3><button type="button" class="small ghost" data-art-mvp-hide>Hide gallery</button></div><p class="muted-text">12 approved age-specific illustrations · 11 illustrated subjects. These are sample artwork previews only, not your character's assigned portrait.</p><div class="art-mvp-grid" role="group" aria-label="Choose an illustration"></div><p class="art-mvp-gallery-status" role="status" aria-live="polite">Loading approved illustrations…</p></section>`;}
+ function gallery(){return `<section class="art-mvp-gallery hidden" aria-label="Approved manhwa portrait gallery"><div class="art-mvp-gallery-heading"><h3>Approved manhwa art gallery</h3><button type="button" class="small ghost" data-art-mvp-hide>Hide gallery</button></div><p class="muted-text">18 approved age-specific illustrations · 11 illustrated subjects. These are sample artwork previews only, not your character's assigned portrait.</p><div class="art-mvp-grid" role="group" aria-label="Choose an illustration"></div><p class="art-mvp-gallery-status" role="status" aria-live="polite">Loading approved illustrations…</p></section>`;}
  // Preserve original H15 editor and its cosmetic save handlers verbatim.
  const originalEditor=h15PortraitEditor;
  h15PortraitEditor=function(){
@@ -17858,7 +17865,7 @@ if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimArtworkReser
      if(!img&&same(root,epoch)&&thumb.isConnected)thumb.textContent='Image unavailable';
     });
    }
-   status.textContent='Choose an illustration to preview inside this profile. P03 (16) and P06 (24) are variants of the same subject.';
+   status.textContent='Choose an illustration to preview inside this profile. AGEA-01–06, P03 (16) and P06 (24) all depict the same illustrated subject.';
   }catch(_){if(same(root,epoch)&&galleryRequests.get(root)===request)status.textContent='Artwork gallery unavailable. Your original SVG portrait is unchanged.';}
  }
  async function preview(root,artId){
@@ -17882,6 +17889,160 @@ if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimArtworkReser
  });
  // Read-only test probe, not accessible through saved data or an assignment API.
  window.LifeSimManhwaPreview=Object.freeze({version:'ART-PROFILE-MVP.1',previewOnly:true,usesAuthoritativeReservations:false});
+})();
+// ART-PROFILE-LIVE.1 — manually confirmed, scope-bound, NON-AUTHORITATIVE display preferences.
+// Never a reservation, artwork assignment, actor migration or alternate save authority.
+(function(){
+ 'use strict';
+ const KEY='manhwaDisplayPreferencesV1',MODE='MANUAL_DISPLAY_PREFERENCE';
+ const plain=o=>!!o&&typeof o==='object'&&!Array.isArray(o);
+ const uuid=s=>typeof s==='string'&&/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/.test(s);
+ const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+ const API=()=>window.LifeSimArtworkReservations;
+ const catalog=()=>window.LifeSimPortraitAssets;
+ function identity(kind,record){
+  if(!S||!API()||!API().validateOwner)return null;
+  const v=API().validateOwner(S,kind,record);
+  return v.status==='VERIFIED'&&uuid(v.persistentActorId)&&uuid(v.appearanceIdentityId)&&v.saveScopeId===S.saveScopeId?v:null;
+ }
+ function target(root){
+  if(!root||!S)return null;
+  if(root.hasAttribute('data-art-mvp-player'))return {kind:'player',record:undefined,actor:S,age:S.age,gender:S.gender==='Girl'?'Female':S.gender==='Boy'?'Male':null,role:'player',name:[S.name,S.surname].filter(Boolean).join(' ')};
+  const p=personById(root.dataset.artMvpPerson);
+  if(!p)return null;
+  const n=p.npcId?npcById(p.npcId):null;
+  return {kind:'person',record:p,actor:p,age:personAge(p),gender:(n&&n.gender)||p.gender||null,role:String(p.relation||p.role||'').toLowerCase(),context:String(p.roleLabel||p.metAt||p.metThrough||p.role||'').toLowerCase(),name:p.fullName||p.name};
+ }
+ function eligibility(t,entry){
+  if(!t||!entry||!['USER_APPROVED_ART1C1','USER_APPROVED_AGEA'].includes(entry.approvalStatus)||entry.gameEntityId!==null)return {ok:false,reason:'Unapproved artwork or unavailable character'};
+  const age=Number(t.age),g=t.gender;
+  if(!Number.isSafeInteger(age)||age!==entry.illustratedAge)return {ok:false,reason:`Age mismatch: artwork is age ${entry.illustratedAge}; current age is ${Number.isFinite(age)?age:'unknown'}.`};
+  if(g!=='Male'&&g!=='Female')return {ok:false,reason:'Character gender is not verified'};
+  if(entry.presentation!==g)return {ok:false,reason:`Portrait presentation (${entry.presentation}) does not match this character`};
+  const pilot=entry.pilotId,role=t.role,context=t.context||'';
+  if(entry.approvalStatus==='USER_APPROVED_AGEA')return {ok:/^AGEA-0[1-6]$/.test(pilot)&&entry.subjectId==='pilot-player-daughter'&&role==='player'&&g==='Female',reason:'AGEA artwork is approved for the verified female Player only'};
+  if(pilot==='P03'||pilot==='P06')return {ok:role==='player'&&g==='Female',reason:'This pilot is approved for the female Player/daughter only'};
+  if(pilot==='P01'||pilot==='P02')return {ok:role==='father'&&pilot==='P01'||role==='mother'&&pilot==='P02',reason:'Requires a verified father or mother relationship'};
+  if(pilot==='P04'||pilot==='P05')return {ok:(role==='sibling'&&context.includes(pilot==='P04'?'older sister':'younger brother'))||(role==='older sibling'&&pilot==='P04'&&g==='Female')||(role==='younger sibling'&&pilot==='P05'&&g==='Male'),reason:'Requires the corresponding verified sibling role'};
+  if(pilot==='P07'||pilot==='P12')return {ok:/(classmate|schoolmate)/.test(context)||/(classmate|schoolmate)/.test(role),reason:'A verified classmate context is required'};
+  if(pilot==='P09')return {ok:/professional|career|office|business/.test(context),reason:'A verified professional character context is required'};
+  // P08 and P10/P11 are age/presentation-specific, not family ownership claims.
+  return {ok:['P08','P10','P11'].includes(pilot),reason:'Unsupported role'};
+ }
+ function validPrefs(s){
+  const v=s&&s[KEY];if(!plain(v)||v.schemaVersion!==1||v.saveScopeId!==s.saveScopeId||!uuid(v.saveScopeId)||!plain(v.bindingsByAppearance))return null;
+  if(Object.keys(v).some(k=>!['schemaVersion','saveScopeId','bindingsByAppearance'].includes(k)))return null;
+  const claimed=new Map();
+  for(const [appearance,b] of Object.entries(v.bindingsByAppearance)){
+   if(!uuid(appearance)||!plain(b)||Object.keys(b).some(k=>!['persistentActorId','appearanceIdentityId','subjectId','selectedByUser','mode'].includes(k))||
+      !uuid(b.persistentActorId)||b.appearanceIdentityId!==appearance||typeof b.subjectId!=='string'||!/^pilot-(?:p\d\d|player-daughter)$/.test(b.subjectId)||b.selectedByUser!==true||b.mode!==MODE)return null;
+   if(claimed.has(b.subjectId)&&claimed.get(b.subjectId)!==appearance)return null;
+   claimed.set(b.subjectId,appearance);
+  }
+  return v;
+ }
+ function saved(t){const v=S&&validPrefs(S);if(!t||!v)return null;const id=identity(t.kind,t.record);if(!id)return null;const b=v.bindingsByAppearance[id.appearanceIdentityId];return b&&b.persistentActorId===id.persistentActorId?{...b,...id}:null;}
+ function allowed(t,entry){const i=t&&identity(t.kind,t.record);return i?eligibility(t,entry):{ok:false,reason:'Verified actor and appearance identities are required'};}
+ async function selectedVariant(t,preference){
+  try{const manifest=await catalog().loadManifest();
+   // Use only one exact approved age variant of the same illustration subject.
+   const entry=manifest.portraits.find(e=>e.subjectId===preference.subjectId&&e.illustratedAge===Number(t.age)&&allowed(t,e).ok);
+   return entry||null;
+  }catch(_){return null;}
+ }
+ let sidebarEpoch=0;
+ async function showSaved(node,t,preference,width,isCurrent){
+  if(!node||!preference)return false;
+  const original=node.innerHTML;
+  const entry=await selectedVariant(t,preference);
+  if(!entry||!node.isConnected||!isCurrent())return false;
+  const img=await catalog().mount(node,entry.artId,{displayWidth:width,alt:`Saved visual preference: ${entry.subjectLabel}, age ${entry.illustratedAge}`,lazy:false});
+  if(img&&isCurrent()&&saved(t)?.subjectId===entry.subjectId){node.classList.add('art-live-active');return true;}
+  if(node.isConnected&&isCurrent())node.innerHTML=original;
+  return false;
+ }
+ const priorHeader=renderHeader;
+ renderHeader=function(){
+  const r=priorHeader.apply(this,arguments),epoch=++sidebarEpoch,node=document.querySelector('#h15-self-portrait');
+  const t=S&&{kind:'player',record:undefined,actor:S,age:S.age,gender:S.gender==='Girl'?'Female':S.gender==='Boy'?'Male':null,role:'player',name:S.name};
+  const b=t&&saved(t);
+  if(b&&node)showSaved(node,t,b,128,()=>sidebarEpoch===epoch&&node===document.querySelector('#h15-self-portrait')&&S===t.actor&&S.age===t.age);
+  return r;
+ };
+ function controlsAddon(){return `<div class="art-live-actions"><button type="button" class="small primary" data-art-live-use disabled>Use for this character</button><button type="button" class="small ghost" data-art-live-remove>Remove saved portrait · Use SVG</button><span class="art-live-state" role="status" aria-live="polite">Preview only · No saved artwork</span></div>`;}
+ const priorEditor=h15PortraitEditor;
+ h15PortraitEditor=function(){const node=document.createElement('div');node.innerHTML=priorEditor();node.querySelector('.art-mvp-controls')?.insertAdjacentHTML('afterend',controlsAddon());return node.innerHTML;};
+ const priorProfile=profileHtml;
+ profileHtml=function(p){const node=document.createElement('div');node.innerHTML=priorProfile(p);node.querySelector('.art-mvp-controls')?.insertAdjacentHTML('afterend',controlsAddon());return node.innerHTML;};
+ const priorModal=openModal;
+ openModal=function(title,markup){const r=priorModal.apply(this,arguments);const root=document.querySelector('#choice-overlay:not(.hidden) #choice-content .art-mvp-root');if(root){root.dataset.artLiveToken=String(++modalToken);refresh(root,true);}return r;};
+ let modalToken=0;
+ const activeRoot=root=>root&&root.isConnected&&root===document.querySelector('#choice-overlay:not(.hidden) #choice-content .art-mvp-root');
+ function stage(root){return root.hasAttribute('data-art-mvp-player')?root.parentElement?.querySelector('[data-art-mvp-stage]'):root.parentElement?.querySelector('.pf-head [data-art-mvp-stage]');}
+ async function refresh(root,initial=false){
+  if(!activeRoot(root))return;const t=target(root),b=t&&saved(t),state=root.querySelector('.art-live-state');
+  if(state)state.textContent=b?`Saved for this character · ${b.subjectId} (manual visual preference only)`:'No saved portrait · SVG is your default';
+  const remove=root.querySelector('[data-art-live-remove]');if(remove)remove.disabled=!b;
+  if(initial&&b){
+   // Seed MVP's private SVG backup BEFORE an asynchronous saved image replaces the stage.
+   // Without this, choosing SVG later could restore the already mounted WebP instead.
+   root.querySelector('[data-art-mvp-svg]')?.click();
+   const node=stage(root),token=root.dataset.artLiveToken,who=t&&identity(t.kind,t.record);
+   if(node&&who)showSaved(node,t,b,320,()=>activeRoot(root)&&root.dataset.artLiveToken===token&&identity(t.kind,t.record)?.appearanceIdentityId===who.appearanceIdentityId&&t.age===(target(root)?.age)).then(shown=>{if(shown&&activeRoot(root)&&root.dataset.artLiveToken===token){const note=root.querySelector('.art-mvp-note');if(note)note.textContent='Saved illustrated portrait · manual display preference only, not an exclusive reservation.';}});
+  }
+ }
+ async function previewEligibility(root,artId){
+  const token=root.dataset.artLiveToken;
+  const use=root.querySelector('[data-art-live-use]'),state=root.querySelector('.art-live-state');if(use)use.disabled=true;
+  try{const m=await catalog().loadManifest();if(!activeRoot(root)||root.dataset.artLiveToken!==token||root.dataset.artLiveSelected!==artId)return;
+   const e=m.portraits.find(x=>x.artId===artId);const gate=allowed(target(root),e);
+   const existing=validPrefs(S),who=identity(target(root)?.kind,target(root)?.record);
+   if(gate.ok&&who&&existing&&Object.entries(existing.bindingsByAppearance).some(([a,b])=>a!==who.appearanceIdentityId&&b.subjectId===e.subjectId)){gate.ok=false;gate.reason='This illustration subject is already selected by another character in this life. Remove that preference first.';}
+   if(use)use.disabled=!gate.ok;
+   if(state)state.textContent=gate.ok?`Eligible · ${e.pilotId} · Select “Use for this character” to save`:`PREVIEW ONLY · ${gate.reason}`;
+  }catch(_){if(activeRoot(root)&&state)state.textContent='Artwork catalog unavailable · SVG remains active';}
+ }
+ function update(kind,record,subjectId,remove){
+  const who=identity(kind,record);if(!who)return {ok:false,reason:'Unverified character identity'};
+  const existing=S[KEY];const valid=existing==null||validPrefs(S);if(!valid)return {ok:false,reason:'Malformed saved portrait preferences — no changes made'};
+  const bindings={...(valid?valid.bindingsByAppearance:{})};
+  if(remove)delete bindings[who.appearanceIdentityId];
+  else{
+   if(Object.entries(bindings).some(([a,b])=>a!==who.appearanceIdentityId&&b.subjectId===subjectId))return {ok:false,reason:'Illustration already used by another actor in this life'};
+   bindings[who.appearanceIdentityId]={persistentActorId:who.persistentActorId,appearanceIdentityId:who.appearanceIdentityId,subjectId,selectedByUser:true,mode:MODE};
+  }
+  const candidate={schemaVersion:1,saveScopeId:S.saveScopeId,bindingsByAppearance:bindings};
+  const had=own(S,KEY),prior=S[KEY];S[KEY]=candidate;
+  if(save()===true)return {ok:true};
+  if(had)S[KEY]=prior;else delete S[KEY];return {ok:false,reason:'Save was not acknowledged. Previous in-memory preference restored.'};
+ }
+ document.addEventListener('click',async ev=>{
+  const btn=ev.target?.closest?.('[data-art-mvp-select], [data-art-live-use], [data-art-live-remove], [data-art-mvp-svg]');
+  if(!btn)return;const root=btn.closest('.art-mvp-root');if(!activeRoot(root))return;
+  if(btn.dataset.artMvpSelect){root.dataset.artLiveSelected=btn.dataset.artMvpSelect;previewEligibility(root,btn.dataset.artMvpSelect);return;}
+  if(btn.hasAttribute('data-art-mvp-svg')){root.dataset.artLiveSelected='';root.querySelector('[data-art-live-use]').disabled=true;return;}
+  if(btn.hasAttribute('data-art-live-use')){
+   if(btn.disabled)return;const t=target(root),id=root.dataset.artLiveSelected,token=root.dataset.artLiveToken;
+   btn.disabled=true;
+   const m=await catalog().loadManifest().catch(()=>null),entry=m?.portraits.find(e=>e.artId===id);
+   if(!activeRoot(root)||token!==root.dataset.artLiveToken)return;
+   const gate=allowed(t,entry);if(!gate.ok){root.querySelector('.art-live-state').textContent=`Not saved · ${gate.reason}`;return;}
+   if(!confirm(`Use ${entry.pilotId} (${entry.subjectLabel}, age ${entry.illustratedAge}) as a saved visual portrait for ${t.name}? This does NOT reserve the artwork.`))return;
+   const before=identity(t.kind,t.record),current=target(root);if(!before||!current||identity(current.kind,current.record)?.appearanceIdentityId!==before.appearanceIdentityId||current.age!==t.age)return;
+   const outcome=update(t.kind,t.record,entry.subjectId,false);
+   root.querySelector('.art-live-state').textContent=outcome.ok?'Saved visual preference · not an artwork reservation':outcome.reason;
+   if(outcome.ok){renderHeader();refresh(root,false);}return;
+  }
+  if(btn.hasAttribute('data-art-live-remove')){
+   const t=target(root),existing=t&&saved(t);if(!existing)return;
+   if(!confirm(`Remove the saved illustrated portrait for ${t.name} and use the original SVG?`))return;
+   const outcome=update(t.kind,t.record,null,true);
+   root.querySelector('.art-live-state').textContent=outcome.ok?'Saved portrait removed · original SVG active':outcome.reason;
+   if(outcome.ok){root.dataset.artLiveSelected='';root.querySelector('[data-art-mvp-svg]')?.click();renderHeader();refresh(root,false);}return;
+  }
+ });
+ // Read-only feature probe, never an ownership or reservation writer.
+ window.LifeSimManhwaDisplay=Object.freeze({version:'ART-PROFILE-LIVE.1',nonAuthoritative:true,inspect:()=>S?Object.freeze({supported:!!validPrefs(S),scope:S.saveScopeId||null,entries:validPrefs(S)?Object.keys(validPrefs(S).bindingsByAppearance).length:0}):null});
 })();
 
 // ---------- UI helpers ----------
