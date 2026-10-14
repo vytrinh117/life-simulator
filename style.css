@@ -773,6 +773,41 @@ body.planner-open .planner-close{display:inline-flex}
 .art-mvp-item-text small{font-size:9px}
 .art-mvp-stage.art-live-active>img,.h15-self-portrait.art-live-active>img{width:100%;height:100%;display:block;object-fit:contain!important;aspect-ratio:auto!important}
 @media(max-width:520px){.art-mvp-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:min(265px,42vh)}.art-mvp-thumb{height:100px}.art-live-actions>button{flex:1 1 130px}.art-live-state{flex-basis:100%}}
+/* UNI.2 — compact registration inside existing Education → University card. */
+.uni2-reg{border-top:1px solid var(--border,#dddddd);margin-top:1.3rem;padding-top:1rem}
+.uni2-reg details{margin:.7rem 0;padding:.5rem .7rem;border:1px solid var(--border,#dddddd);border-radius:10px}
+.uni2-reg details>summary{cursor:pointer;font-weight:650;padding:.4rem 0}
+.uni2-course{display:flex;gap:.7rem;align-items:center;justify-content:space-between;padding:.65rem .25rem;border-bottom:1px solid var(--border,#dddddd)}
+.uni2-course span{min-width:0;overflow-wrap:anywhere}
+.uni2-course small{display:block;font-size:.8em;line-height:1.5}
+.uni2-course button{flex:none;min-width:5.5rem}
+.uni2-reg li{padding:.35rem 0;overflow-wrap:anywhere}
+.uni2-reg button:focus-visible,.uni2-reg summary:focus-visible{outline:3px solid var(--accent,#8f7ddd);outline-offset:2px}
+@media(max-width:540px){.uni2-course{align-items:flex-start;flex-direction:column}.uni2-course button{min-height:40px}}
+
+/* UNI.3 only: compact accessible schedule, no art or global re-theme */
+.uni3-wrap{margin-top:1.1rem;padding:1rem;border:1px solid var(--line, #d7dbe7);border-radius:12px;} .uni3-wrap details{margin:.65rem 0;padding:.5rem;border:1px solid var(--line,#d7dbe7);border-radius:8px;} .uni3-list{padding-left:1rem;list-style:none;} .uni3-class{padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.6rem;justify-content:space-between;border-bottom:1px solid var(--line,#d7dbe7);} .uni3-class span{min-width:0;overflow-wrap:anywhere;} .uni3-class small{display:block;margin-top:.25rem;} .uni3-wrap button:focus-visible{outline:3px solid currentColor;outline-offset:3px;} @media(max-width:680px){.uni3-wrap{padding:.55rem}.uni3-class{display:block}.uni3-class .inline-actions{margin-top:.5rem;display:flex;flex-wrap:wrap}}
+/* UNI.4 — compact inline syllabus; no changes to approved artwork */
+.uni4-wrap{margin-top:1rem;padding:.9rem;border:1px solid var(--border, #d8dce5);border-radius:12px;max-width:100%;min-width:0;overflow-wrap:anywhere}
+.uni4-wrap details{margin:.55rem 0;padding:.5rem;border:1px solid var(--border, #d8dce5);border-radius:8px}
+.uni4-wrap summary{cursor:pointer;font-weight:600}
+.uni4-list{list-style:none;padding:0;display:grid;gap:.6rem}
+.uni4-list li{padding:.55rem;border-bottom:1px solid var(--border, #d8dce5);min-width:0}
+.uni4-list .inline-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.uni4-wrap button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.uni4-wrap button:focus-visible{outline:3px solid currentColor;outline-offset:2px}
+@media(max-width:560px){.uni4-wrap{padding:.5rem}.uni4-wrap details{padding:.35rem}.uni4-list .inline-actions button{flex:1 1 100%}}
+
+/* UNI.8.7 Career Center — source-owned existing actions, compact keyboard navigation */
+.uni87-nav{border:1px solid var(--line, #c7c4c9);border-radius:12px;padding:12px;margin:12px 0;background:var(--panel-bg,transparent)}
+.uni87-tablist{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.uni87-tablist button.uni87-active{outline:2px solid currentColor;outline-offset:1px;font-weight:700}
+.uni87-tablist button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+.uni87-subtitle{font-size:.9em;opacity:.85}
+[data-uni87-panel][hidden],.uni87-overview[hidden]{display:none!important}
+.uni87-overview{padding:12px 4px}
+@media(max-width:650px){.uni87-tablist{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr))}.uni87-nav{padding:9px}}
+@media(prefers-reduced-motion:reduce){.uni87-nav *,[data-uni87-panel]{scroll-behavior:auto!important;animation:none!important}}
 
 /* theme tokens for categories & calendar dots */
 .tone-food{--tone:var(--tone-food)}.tone-books{--tone:var(--tone-books)}.tone-toys{--tone:var(--tone-toys)}.tone-arts{--tone:var(--tone-arts)}.tone-school{--tone:var(--tone-school)}.tone-clothes{--tone:var(--tone-clothes)}.tone-beauty{--tone:var(--tone-beauty)}.tone-sports{--tone:var(--tone-sports)}.tone-tech{--tone:var(--tone-tech)}.tone-gifts{--tone:var(--tone-gifts)}.tone-weather{--tone:var(--tone-weather)}.tone-home{--tone:var(--tone-home)}.tone-transport{--tone:var(--tone-transport)}.tone-misc{--tone:var(--tone-misc)}

@@ -396,6 +396,7 @@ function ground(days,reason){if(S.age>=18)return;const until=addDays(currentDate
 
 // ---------- Obligation registry (calendar events ARE obligations) ----------
 const OBLIGATION_DEFS={
+ universityClassUNI3:{category:'School',icon:'🎓',start:510,end:585,grace:585,required:true,importance:2,location:'University'},
  schoolDay:{category:'School',icon:'🏫',start:480,end:900,grace:660,required:true,importance:2,location:'School'},
  exam:{category:'Exam',icon:'📝',start:540,end:615,grace:660,required:true,importance:3,location:'School'},
  clubSession:{category:'Club',icon:'🎨',start:930,end:1020,grace:960,required:false,importance:1,location:'School'},
@@ -443,6 +444,11 @@ function processCalendar(){tierTick();curfewCallCheck();
  ensureLifecycleContainers();if(typeof reconcileOccasions6C1==='function')reconcileOccasions6C1('calendar');const now=nowStamp();
  for(const ev of [...S.calendar]){
   if(isTerminal(ev.status))continue;normalizeCalendarEvent(ev);
+  if(ev.type==='universityInternshipUNI8'){if(typeof uni8InterviewTick==='function')uni8InterviewTick(ev);else setCalendarStatus(ev,'Cancelled','Internship module unavailable');continue;}
+  if(ev.type==='universityCampusUNI6'){if(typeof uni6CalendarTick==='function')uni6CalendarTick(ev);else setCalendarStatus(ev,'Cancelled','Campus Life module unavailable');continue;}
+  if(ev.type==='universitySupportUNI5'){if(typeof uni5CalendarTick==='function')uni5CalendarTick(ev);else setCalendarStatus(ev,'Cancelled','University support unavailable');continue;}
+  if(ev.type==='universityAssessmentUNI4'){if(typeof uni4CalendarTick==='function')uni4CalendarTick(ev);else setCalendarStatus(ev,'Cancelled','University assessment module unavailable');continue;}
+  if(ev.type==='universityClassUNI3'){if(typeof uni3CalendarTick==='function')uni3CalendarTick(ev);else setCalendarStatus(ev,'Cancelled','University classroom module unavailable');continue;}
   if(ev.type==='scheduledCallH8'){if(typeof h8CalendarTick==='function')h8CalendarTick(ev);continue;}
   if(ev.type==='schoolPublicVisitH9'){if(typeof h9CalendarTick==='function')h9CalendarTick(ev);continue;}
   if(ev.type==='microbusinessOrder'){microbusinessOrderCalendarTick5D5(ev);continue;}
@@ -2170,7 +2176,7 @@ function holidayHtml(){
 
 // ---------- v7.2 Month calendar, date agenda & Life Planner ----------
 let calView=null,calSelected=null,calFilter=null;
-const CAL_CATS={promCourtBallot:'School',workDay:'Work',wedding:'Family',program:'Activity',trip:'Family',conference:'School',term:'School',prom:'Social',tryout:'Club',plan:'Social',election:'Club',schoolDay:'School',exam:'Exam',homework:'Homework',clubSession:'Club',schoolEvent:'Competition',party:'Social',holiday:'Holiday',birthday:'Birthday',decision:'Decision',generic:'Other'};
+const CAL_CATS={universityClassUNI3:'School',promCourtBallot:'School',workDay:'Work',wedding:'Family',program:'Activity',trip:'Family',conference:'School',term:'School',prom:'Social',tryout:'Club',plan:'Social',election:'Club',schoolDay:'School',exam:'Exam',homework:'Homework',clubSession:'Club',schoolEvent:'Competition',party:'Social',holiday:'Holiday',birthday:'Birthday',decision:'Decision',generic:'Other'};
 const CAL_TONE={School:'school',Exam:'exam',Homework:'homework',Club:'club',Competition:'competition',Social:'social',Holiday:'holiday',Birthday:'birthday',Decision:'decision',Other:'other'};
 function calShift(n){const v=calView||currentDate().slice(0,7),[y,m]=v.split('-').map(Number);calView=isoDate(new Date(Date.UTC(y,m-1+n,1))).slice(0,7)}
 function monthLabel(ym){const [y,m]=ym.split('-').map(Number);return new Date(Date.UTC(y,m-1,1)).toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'})}
@@ -2275,7 +2281,7 @@ function generateHousehold({kids=1,childAge=S.age,key=poolKey(),schoolId=null,sc
 function npcAge(n){return parseISO(currentDate()).getUTCFullYear()-n.birthYear}
 function ensureRoster(){
  S.npcs=Array.isArray(S.npcs)?S.npcs:[];S.households=Array.isArray(S.households)?S.households:[];
- if(S.age<3)return;const peers=S.npcs.filter(n=>Math.abs(npcAge(n)-S.age)<=1);
+ if(S.age<3)return;const peers=S.npcs.filter(n=>!n.professionalRole&&!n.studentUNI6&&Math.abs(npcAge(n)-S.age)<=1);
  let guard=0;while(peers.length<28&&guard++<40){const made=generateHousehold({kids:chance(30)?2:1});peers.push(...made.filter(n=>Math.abs(npcAge(n)-S.age)<=1))}
 }
 function npcById(id){return (S.npcs||[]).find(n=>n.id===id)||null}
@@ -2299,7 +2305,7 @@ function addStagePeople(){
  normalizePeople();S.npcs=Array.isArray(S.npcs)?S.npcs:[];S.households=Array.isArray(S.households)?S.households:[];migratePeopleNames();if(S.people.filter(p=>p.roleLabel==='classmate').length>=2)S.flags['stage-classmate2']=true;ensureRoster();
  const slots=[[3,'neighbor','neighbor'],[6,'classmate','classmate'],[10,'classmate2','classmate'],[13,'schoolfriend','school friend'],[18,'acquaintance','acquaintance']];
  for(const [age,key,label] of slots){if(S.age<age||S.flags[`stage-${key}`])continue;if(key==='classmate2'&&S.flags['stage-classmate']&&S.people.filter(p=>p.roleLabel==='classmate').length>=2){S.flags[`stage-${key}`]=true;continue}
-  const taken=new Set(S.people.map(p=>p.npcId).filter(Boolean)),npc=S.npcs.find(n=>!taken.has(n.id)&&Math.abs(npcAge(n)-S.age)<=1)||generateHousehold({kids:1})[0];
+  const taken=new Set(S.people.map(p=>p.npcId).filter(Boolean)),npc=S.npcs.find(n=>!n.professionalRole&&!n.studentUNI6&&!taken.has(n.id)&&Math.abs(npcAge(n)-S.age)<=1)||generateHousehold({kids:1})[0];
   S.people.push(Object.assign(personFromNpc(npc,'friend',label),{metDate:undefined}));S.flags[`stage-${key}`]=true}
 }
 // ---------- Availability: NPCs have their own day ----------
@@ -2945,7 +2951,7 @@ function groupTick(){
  if(kind==='chat'&&canUsePhone()){const m=typeof maybeGroupMessage3C4==='function'?maybeGroupMessage3C4(g,{force:true}):null;if(m){S.needs.social=clamp(S.needs.social+4);return}log('Group chat unavailable','The group wants to chat, but the communication path is not fully set up yet.');return}
  if(kind==='excluded'){queueEvent({type:'groupExcluded',title:`${firstName(a)} seems left out`,text:`Lately ${firstName(a)} has been quiet in the group — like they are on the outside of every conversation.`,participants:[a.id],priority:2,expiresDays:2,choices:[{id:'include',label:'Make an effort to include them'},{id:'ask',label:'Ask them privately if they are okay'},{id:'ignore',label:'It is probably nothing'}]});return}
  if(kind==='argument'&&b){queueEvent({type:'groupArgument',title:`${firstName(a)} and ${firstName(b)} are fighting`,text:'The group splits into sides over something that started small.',participants:[a.id,b.id],priority:3,expiresDays:2,choices:[{id:'mediate',label:'Try to mediate'},{id:'sideA',label:`Side with ${firstName(a)}`},{id:'sideB',label:`Side with ${firstName(b)}`},{id:'out',label:'Stay out of it'}]});return}
- if(kind==='newMember'){const n=(S.npcs||[]).find(x=>Math.abs(npcAge(x)-S.age)<=1&&!S.people.some(p=>p.npcId===x.id));if(!n)return;const p=personFromNpc(n,'friend','friend of friends');p.rel=52;p.introducedBy=a.id;p.introducedById=a.id;if(typeof recordMeetingProvenance4A4==='function')recordMeetingProvenance4A4(p,{sourceType:'mutualFriend',introducedById:a.id,metVia:'friend of friends'});S.people.push(p);g.members.push(p.id);log('New in the group',`${firstName(a)} brings ${p.name} along. They fit in surprisingly fast.`);return}
+ if(kind==='newMember'){const n=(S.npcs||[]).find(x=>!x.professionalRole&&Math.abs(npcAge(x)-S.age)<=1&&!S.people.some(p=>p.npcId===x.id));if(!n)return;const p=personFromNpc(n,'friend','friend of friends');p.rel=52;p.introducedBy=a.id;p.introducedById=a.id;if(typeof recordMeetingProvenance4A4==='function')recordMeetingProvenance4A4(p,{sourceType:'mutualFriend',introducedById:a.id,metVia:'friend of friends'});S.people.push(p);g.members.push(p.id);log('New in the group',`${firstName(a)} brings ${p.name} along. They fit in surprisingly fast.`);return}
  if(kind==='outing'){npcInvitesPlayer(a);const inv=S.events.find(e=>e.type==='invitation'&&e.participants?.[0]===a.id&&e.status==='Open');if(inv){inv.title=`Group outing: ${inv.title.split(': ')[1]||'hang out'}`;inv.text=`${firstName(a)} is organizing something for the whole group. `+inv.text;const pl=S.plans.find(x=>x.id===inv.payload?.planId);if(pl){pl.groupId=g.id;pl.title=`Group outing (${g.name})`}}}
 }
 function handleGroupEvent(e,id){const [a,b]=(e.participants||[]).map(personById);let s;
@@ -5412,7 +5418,7 @@ function coupleAgeOK(a,b){const x=npcAge(a),y=npcAge(b);if(x<13||y<13)return fal
 function npcCouples(){return (S.npcCouples=S.npcCouples||[])}
 function coupleOf(npcId){return npcCouples().find(c=>c.status==='dating'&&(c.a===npcId||c.b===npcId))}
 function partnerNpcOf(npcId){const c=coupleOf(npcId);return c?npcById(c.a===npcId?c.b:c.a):null}
-function makeNpcCouple(a,b,why='started dating'){if(!a||!b||a.id===b.id||coupleOf(a.id)||coupleOf(b.id)||!coupleAgeOK(a,b)||!npcsCompatible(a,b))return null;const c={id:uid('cpl'),a:a.id,b:b.id,since:currentDate(),strength:45+Math.floor(Math.random()*20),status:'dating',why};npcCouples().push(c);syncCoupleNames(c);return c}
+function makeNpcCouple(a,b,why='started dating'){if(!a||!b||a.professionalRole||b.professionalRole||a.id===b.id||coupleOf(a.id)||coupleOf(b.id)||!coupleAgeOK(a,b)||!npcsCompatible(a,b))return null;const c={id:uid('cpl'),a:a.id,b:b.id,since:currentDate(),strength:45+Math.floor(Math.random()*20),status:'dating',why};npcCouples().push(c);syncCoupleNames(c);return c}
 function syncCoupleNames(c){const a=npcById(c.a),b=npcById(c.b);for(const p of S.people){if(p.npcId===c.a)p.datingNpc=c.status==='dating'?b?.fullName:null;if(p.npcId===c.b)p.datingNpc=c.status==='dating'?a?.fullName:null}if(a)a.datingId=c.status==='dating'?c.b:null;if(b)b.datingId=c.status==='dating'?c.a:null}
 const BREAKUP_REASONS=['they kept fighting about small things','they drifted apart over the summer','one of them liked someone else','their parents did not approve','they wanted different things','one of them is moving away'];
 function breakNpcCouple(c,reason=rand(BREAKUP_REASONS)){c.status='broken';c.endedDate=currentDate();c.reason=reason;syncCoupleNames(c);const pa=S.people.find(p=>p.npcId===c.a||p.npcId===c.b);if(pa&&!SIM.skipping&&tierRank(pa)>=1){const o=npcById(pa.npcId===c.a?c.b:c.a);log(`${firstName(pa)} and ${o?.firstName||'their partner'} broke up`,`From what you hear, ${reason}.`);if(tierRank(pa)>=2&&chance(60))queueEvent({type:'helpRequest',title:`${firstName(pa)} is heartbroken`,text:`${firstName(pa)} and ${o?.firstName} broke up — ${reason}.`,participants:[pa.id],priority:3,expiresDays:1,choices:[{id:'help',label:'Be there for them'},{id:'later',label:'Text them later'}]})}}
@@ -5420,7 +5426,7 @@ function migrateNpcDating(){for(const p of S.people){if(!p.datingNpc||!p.npcId)c
 function npcCoupleTick(){
  migrateNpcDating();
  for(const c of npcCouples().filter(c=>c.status==='dating')){c.strength=clamp(c.strength+(Math.random()*6-3.2));const a=npcById(c.a),b=npcById(c.b);if(!a||!b||!coupleAgeOK(a,b)){breakNpcCouple(c,'life took them in different directions');continue}if(c.strength<15&&chance(30))breakNpcCouple(c)}
- if(chance(10)){const pool=(S.npcs||[]).filter(n=>npcAge(n)>=13&&!coupleOf(n.id)&&!S.people.some(p=>p.npcId===n.id&&p.id===S.romance?.partnerId));const a=rand(pool),b=a&&rand(pool.filter(x=>x.id!==a.id&&coupleAgeOK(a,x)&&npcsCompatible(a,x)));if(a&&b){const c=makeNpcCouple(a,b);const known=S.people.find(p=>p.npcId===a.id||p.npcId===b.id);if(c&&known&&!SIM.skipping&&tierRank(known)>=1){const o=npcById(known.npcId===a.id?b.id:a.id);log('News',`${firstName(known)} is dating ${o.fullName} now.`);loveTriangleCheck(known)}}}
+ if(chance(10)){const pool=(S.npcs||[]).filter(n=>!n.professionalRole&&npcAge(n)>=13&&!coupleOf(n.id)&&!S.people.some(p=>p.npcId===n.id&&p.id===S.romance?.partnerId));const a=rand(pool),b=a&&rand(pool.filter(x=>x.id!==a.id&&coupleAgeOK(a,x)&&npcsCompatible(a,x)));if(a&&b){const c=makeNpcCouple(a,b);const known=S.people.find(p=>p.npcId===a.id||p.npcId===b.id);if(c&&known&&!SIM.skipping&&tierRank(known)>=1){const o=npcById(known.npcId===a.id?b.id:a.id);log('News',`${firstName(known)} is dating ${o.fullName} now.`);loveTriangleCheck(known)}}}
  if(!SIM.skipping&&chance(4)){const c=rand(npcCouples().filter(c=>c.status==='dating'));const p=c&&S.people.find(x=>(x.npcId===c.a||x.npcId===c.b)&&tierRank(x)>=2);if(p){const o=partnerNpcOf(p.npcId);queueEvent({type:'loveAdvice',title:`${firstName(p)} needs relationship advice`,text:`"${o.firstName} and I keep ${rand(['arguing about nothing','missing each other\'s messages','disagreeing about how much time to spend together'])}. What should I do?"`,participants:[p.id],payload:{coupleId:c.id},priority:2,expiresDays:2,choices:[{id:'talk',label:'Tell them to talk honestly'},{id:'space',label:'Suggest a little space'},{id:'breakup',label:'Tell them to break up'},{id:'neutral',label:'Just listen'}]})}}
 }
 function loveTriangleCheck(known){if(SIM.skipping)return;const L=known.love;if(!L||!['crushOne','crushMutual','noticing'].includes(L.stage)||!eligibleRomance(known))return;if(L.stage==='noticing'&&(known.attraction||0)<50)return;queueEvent({type:'triangle',title:`Your crush is dating someone`,text:`${firstName(known)} is going out with ${known.datingNpc}. You find out between classes.`,participants:[known.id],priority:3,expiresDays:2,choices:[{id:'happy',label:'Be happy for them'},{id:'sad',label:'Feel it, quietly'},{id:'confess',label:'Tell them how you feel anyway'}]})}
@@ -5623,17 +5629,17 @@ function uniAwardOdds(k){const u=S.uni,g=u.lastSemGpa||0;return k==='dean'?(g>=3
 function applyUniAward(k,quiet=false){const u=S.uni;if(!u?.enrolled||!u.awardWindow||currentDate()>u.awardWindow.to){if(!quiet)toast('No scholarship window is open right now (it opens after each semester).');return}if(u.awardWindow.applied[k]){if(!quiet)toast('Already applied.');return}u.awardWindow.applied[k]=true;scheduleFollowUp('uniAward',{k,sem:u.semKey,odds:uniAwardOdds(k)},{days:14,minute:600});if(!quiet){advanceTime(30,{silent:true});log(`Applied: ${UNI_AWARDS[k].label}`,'Results in about two weeks.')}}
 function uniYearTick(){
  const u=S.uniApps;
- if(S.uni?.enrolled){const {a,key}=uniSemesterInfo();if(!a.semester)return;if(S.uni.semKey!==key){if(S.uni.semKey)closeUniSemester();const newYear=S.uni.yearKey!==a.key;if(newYear){S.uni.yearKey=a.key;S.uni.year++;if(S.uni.year>4){finishUniversity();return}renewScholarship()}S.uni.semKey=key;chargeSemester()}return}
- if(u?.choice&&S.education?.highSchoolDone&&!S.uni){const x=UNIS.find(y=>y.id===u.choice),{a,key}=uniSemesterInfo();if(a.semester&&currentDate()>=a.start){S.uni={enrolled:true,school:x.name,tier:x.tier,tuition:x.tuition,year:1,yearKey:a.key,semKey:key,gpa:0,semGpas:[],semStudy:0,started:currentDate(),rankAward:rankAwardAtGrad(),tierAid:!!S.education?.tierAidEligible};chargeSemester();if(!SIM.skipping){log(`🎒 First day at ${x.name}`,'Lecture halls, a campus map you cannot read, and a thousand new faces. Declare your major in Education → University.',true);notify('Declare your major','Education → University',{sourceType:'major',sourceId:'major-'+S.uni.started,tab:'school'})}else declareMajor(Object.keys(MAJORS).find(k=>majorBonus(k).talent)||'business')}}
+ if(S.uni?.enrolled){const {a,key}=uniSemesterInfo();if(!a.semester)return;if(S.uni.semKey!==key){if(S.uni.semKey){const priorKey=S.uni.semKey,modern=typeof uni4HasModernTerm==='function'&&uni4HasModernTerm(priorKey);if(modern)uni4FinalizeTerm(priorKey);const legacyGrade=!modern&&uni2AllowsLegacyGpa(priorKey);uni2CloseTerm(priorKey);if(legacyGrade)closeUniSemester();else S.uni.semStudy=0;}const newYear=S.uni.yearKey!==a.key;if(newYear){S.uni.yearKey=a.key;S.uni.year++;if(S.uni.year>uni1DegreeYears(S.uni)){if(typeof uni4HasAnyModern==='function'&&uni4HasAnyModern()){S.uni.graduationReviewPending=true;S.uni.completedStudyAt=currentDate();S.uni.enrolled=false;return;}finishUniversity();return}renewScholarship()}S.uni.semKey=key;uni2OpenTerm()}return}
+ if(u?.choice&&S.education?.highSchoolDone&&!S.uni){const x=UNIS.find(y=>y.id===u.choice),{a,key}=uniSemesterInfo();if(x&&a.semester&&currentDate()>=a.start){S.uni={enrolled:true,school:x.name,tier:x.tier,tuition:x.tuition,year:1,yearKey:a.key,semKey:key,gpa:0,semGpas:[],semStudy:0,started:currentDate(),rankAward:rankAwardAtGrad(),tierAid:!!S.education?.tierAidEligible};uni1BindProgram(S,{fresh:true});uni2OpenTerm();if(!SIM.skipping){log(`🎒 First day at ${x.name}`,'Lecture halls, a campus map you cannot read, and a thousand new faces. Declare your major in Education → University.',true);notify('Declare your major','Education → University',{sourceType:'major',sourceId:'major-'+S.uni.started,tab:'school'})}else declareMajor(Object.keys(MAJORS).find(k=>majorBonus(k).talent)||'business')}}
 }
 function rankAwardAtGrad(){return S.education?.rankAwardAtGrad??0}
 function renewScholarship(){const s=S.uniApps?.scholarship;if(!s?.pct||!S.uni.semGpas?.length)return;if(S.uni.gpa<3){const i=SCH_TIERS.indexOf(s.pct),old=s.pct;s.pct=SCH_TIERS[i+1]||0;if(!SIM.skipping)log('Scholarship reduced',`Your GPA (${S.uni.gpa.toFixed(2)}) fell below 3.0, so your scholarship drops from ${old}% to ${s.pct}%. Bring it back up to keep the rest.`)}}
-function finishUniversity(){const u=S.uni;u.enrolled=false;u.graduated=currentDate();S.education.degree={school:u.school,gpa:u.gpa||3,dateISO:currentDate(),major:u.major||null};S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'🎓 University graduation',text:`Bachelor's degree from ${u.school} (GPA ${(u.gpa||3).toFixed(2)}).`});if(!SIM.skipping)log('🎓 Graduated from university',`Four years at ${u.school}. Caps in the air.`,true);if(housing().type==='dorm')S.housing={type:'parents',since:currentDate(),missed:0}}
+function finishUniversity(){const u=S.uni;if(!u||!u.enrolled)return;const dc=uni1BindProgram(S),kind=dc?.degreeType==='associate'?'Associate':"Bachelor's",years=uni1DegreeYears(u);u.enrolled=false;u.graduated=currentDate();S.education.degree={school:u.school,gpa:u.gpa||3,dateISO:currentDate(),major:u.major||null,degreeType:dc?.degreeType||'bachelor',creditBasis:'legacy-semester-timer',historicalCredits:dc?.historicalCredits||'unknown'};S.milestones.unshift({dateISO:currentDate(),age:S.age,title:'🎓 University graduation',text:`${kind} degree from ${u.school} (GPA ${(u.gpa||3).toFixed(2)}).`});if(!SIM.skipping)log('🎓 Graduated from university',`${years} years at ${u.school}. Caps in the air.`,true);if(housing().type==='dorm')S.housing={type:'parents',since:currentDate(),missed:0}}
 function uniStudy(){if(!S.uni?.enrolled)return;const mb=majorBonus(),g=practiceSkill(mb.skill,mb.mult);if(g===0&&S.lastFarmNote){toast(S.lastFarmNote);S.lastFarmNote=null;return}S.uni.semStudy=(S.uni.semStudy||0)+concentration()*mb.mult;advanceTime(120,{silent:true});log('Studying',`Library, coffee, notes${S.uni.major?` for ${majorInfo(S.uni.major).label}`:''}. (${S.uni.semStudy.toFixed(1)} study points this semester${bonusText(mb)?` • ${bonusText(mb)}`:''}.)`)}
 function joinCampusClub(){if(!S.uni?.enrolled)return;if(S.uni.club){toast(`You are already in ${S.uni.club}.`);return}S.uni.club=rand(mySchool()?.clubs||['Debate Society','Student Union','Coding Society','Theatre Society','Volunteer Corps']);addRep('leadership',2);advanceTime(60,{silent:true});log('Campus club',`You join the ${S.uni.club}.`)}
 function universityHtml(){
  if(S.uni?.enrolled){const u=S.uni,w=u.awardWindow&&currentDate()<=u.awardWindow.to?u.awardWindow:null,sch=S.uniApps?.scholarship;
-  return `<section class="card wide"><h3>University</h3>${statRow('School',esc(u.school))}${statRow('Year',`${CLASS_YEAR[u.year-1]||u.year} (${u.year} of 4)`)}${majorHtml()}${statRow('Cumulative GPA',u.semGpas?.length?u.gpa.toFixed(2):'—')}${u.semGpas?.length?`<small class="muted-text">Semesters: ${u.semGpas.map(x=>x.gpa.toFixed(2)).join(' • ')}</small>`:''}${sch?.pct?statRow('Senior-year scholarship',`${sch.pct}% (keep GPA ≥ 3.0)`):''}${u.rankAward?statRow('Class-rank award',money(u.rankAward)+'/year'):''}${statRow('Student loan balance',money(S.finance.uniDebt||0))}
+  return `<section class="card wide"><h3>University</h3>${statRow('School',esc(u.school))}${statRow('Year',`${CLASS_YEAR[u.year-1]||u.year} (${u.year} of ${uni1DegreeYears(u)})`)}${majorHtml()}${uni1ProgramHtml(u)}${statRow('University GPA record',u.semGpas?.length&&Number.isFinite(u.gpa)?u.gpa.toFixed(2):'—')}${u.semGpas?.length?`<small class="muted-text">Semesters: ${u.semGpas.map(x=>esc(x.sem||'term')+': '+x.gpa.toFixed(2)+(x.provenance==='UNI.4-verified'?' (verified)':' (historical/unverified)')).join(' • ')}</small>`:''}${sch?.pct?statRow('Senior-year scholarship',`${sch.pct}% (keep GPA ≥ 3.0)`):''}${u.rankAward?statRow('Class-rank award',money(u.rankAward)+'/year'):''}${statRow('Student loan balance',money(S.finance.uniDebt||0))}
   <div class="inline-actions"><button class="small" data-uni-study="1">Study (2 h)</button>${u.club?'':'<button class="small ghost" data-uni-club="1">Join a campus club</button>'}</div>${campusActionsHtml()}
   ${w?`<h4>Scholarships this semester (apply by ${formatDate(w.to)}; results in 2 weeks)</h4><div class="inline-actions">${Object.entries(UNI_AWARDS).map(([k,v])=>`<button class="small ${w.applied[k]?'ghost':''}" data-uni-award="${k}" ${w.applied[k]?'disabled':''}>${esc(v.label)} • ${money(v.amount)}${w.applied[k]?' ✓':''}</button>`).join('')}</div>`:'<p class="muted-text">University scholarships open for 2 weeks after each semester (Dean\'s List, department, leadership, financial need).</p>'}</section>`}
  if(S.education?.degree)return `<section class="card wide"><h3>University</h3><p>🎓 ${esc(S.education.degree.school)}${S.education.degree.major?` • ${esc(majorInfo(S.education.degree.major)?.label||'')}`:''} • GPA ${S.education.degree.gpa.toFixed(2)}</p></section>`;
@@ -5642,7 +5648,7 @@ function universityHtml(){
  return `<section class="card wide"><h3>University applications</h3>${inSenior()?`<p class="muted-text">Senior year: counselor in semester 1 • applications ${formatDate(tl.windowOpen)}–${formatDate(tl.windowClose)} • scholarship & student loan ${formatDate(tl.loanFrom)}–${formatDate(tl.loanTo)} • decisions around ${formatDate(tl.decisions)}.</p>`:'<p class="muted-text">Applications happen in senior year (Grade 12). Grades, clubs, awards and your essays all count.</p>'}
  ${cr?`<p>Average ${cr.avg.toFixed(1)} • class rank #${rankLabel(cr)} of ${cr.size}${title?` • <b>${title}</b>`:''}${ra.amount?` • class-rank award ${money(ra.amount)}/year (${ra.why})`:''} • application essay ${Math.round(u.essay)}% • scholarship essay ${Math.round(u.schEssay||0)}%</p>`:''}
  ${u.scholarship?`<p><b>Senior-year scholarship: ${u.scholarship.pct?u.scholarship.pct+'% of tuition, all years':'not awarded'}</b> <small class="muted-text">(${esc(u.scholarship.why)})</small></p>`:u.schApplied?'<p class="muted-text">Scholarship application sent — results come with your university decisions.</p>':''}
- <div class="uni-list">${UNIS.map(x=>{const d=u.decisions[x.id],ap=u.applied[x.id],inl=u.list.includes(x.id);return `<div class="uni-row"><span><b>${esc(x.name)}</b><small>${x.label} • fee ${x.fee?money(x.fee):'free'} • tuition ${money(x.tuition)}/yr</small></span><span><button class="small ghost" data-uni-brochure="${x.id}">Learn more</button>${d?`<b class="tag ${d==='Accepted'?'ok':''}">${d}</b>${d==='Accepted'&&!u.choice?` <button class="small primary" data-uni-enroll="${x.id}">Enroll</button>`:''}${u.choice===x.id?' ✅ Enrolled':''}`:ap?'<span class="tag">Applied</span>':`${inSenior()?`<button class="small ghost" data-uni-list="${x.id}">${inl?'Remove':'Add to list'}</button>`:''}${open&&inl?` <button class="small" data-uni-apply="${x.id}">Apply</button>`:''}`}</span></div>`}).join('')}</div>
+ <div class="uni-list">${UNIS.map(x=>{const d=u.decisions[x.id],ap=u.applied[x.id],inl=u.list.includes(x.id);return `<div class="uni-row"><span><b>${esc(x.name)}</b><small>${x.label} • ${uni1DegreeForInstitution(x.id)==='associate'?'Associate · 2 years / transfer':'Bachelor · 4 years'} • fee ${x.fee?money(x.fee):'free'} • tuition ${money(x.tuition)}/yr</small></span><span><button class="small ghost" data-uni-brochure="${x.id}">Learn more</button>${d?`<b class="tag ${d==='Accepted'?'ok':''}">${d}</b>${d==='Accepted'&&!u.choice?` <button class="small primary" data-uni-enroll="${x.id}">Enroll</button>`:''}${u.choice===x.id?' ✅ Enrolled':''}`:ap?'<span class="tag">Applied</span>':`${inSenior()?`<button class="small ghost" data-uni-list="${x.id}">${inl?'Remove':'Add to list'}</button>`:''}${open&&inl?` <button class="small" data-uni-apply="${x.id}">Apply</button>`:''}`}</span></div>`}).join('')}</div>
  ${inSenior()?`<div class="inline-actions"><button class="small" data-uni-essay="1">Application essay (1.5 h)</button><button class="small" data-sch-essay="1">Scholarship essay (1.5 h)</button>${midOpen&&!u.schApplied?'<button class="small primary" data-sch-apply="1">Apply for the senior scholarship</button>':''}${midOpen&&!u.loan?'<button class="small" data-uni-loan="1">Apply for the interest-free student loan</button>':''}</div>`:''}${u.loan?`<p class="muted-text">Student loan: up to ${money(u.loan.amount)}/year, interest-free.</p>`:''}</section>`}
 function uniFollowUp(f){if(healthFollowUp(f))return true;if(familyFollowUp(f))return true;
  if(f.type==='waitlist'){const u=uniState();if(u.decisions[f.payload.id]!=='Waitlisted')return true;u.decisions[f.payload.id]=chance(45)?'Accepted':'Rejected';if(!SIM.skipping)log('Waitlist update',`${UNIS.find(y=>y.id===f.payload.id).name}: ${u.decisions[f.payload.id]}.`,u.decisions[f.payload.id]==='Accepted');return true}
@@ -5680,7 +5686,7 @@ function brochureHtml(x){return `<p class="muted-text">${esc(x.setting)} • ${e
  ${statRow('Tuition',`${money(x.tuition)}/year • application fee ${x.fee?money(x.fee):'free'}`)}${statRow('Dorms',x.dorm?`Yes — ${money(x.dorm)}/month`:'No dorms (commuter school)')}${statRow('Greek life',GREEK_LABEL[x.greek])}${statRow('Campus events',x.events.replace(/^./,c=>c.toUpperCase()))}
  <h4>Facilities</h4><div class="fac-list">${Object.entries(FACILITY).map(([k,l])=>`<span class="fac ${x.fac.includes(k)?'yes':'no'}">${x.fac.includes(k)?'':'✕ '}${l}</span>`).join('')}</div>
  <h4>Signature clubs</h4><p>${x.clubs.map(esc).join(' • ')}</p>
- <h4>Known for</h4><p>${x.strengths.map(esc).join(' • ')}</p>
+ <h4>Degree pathway</h4><p>${uni1DegreeForInstitution(x.id)==='associate'?'2-year Associate · 60-credit catalog · possible transfer by separate application':'4-year Bachelor · 120-credit catalog'}. Course registration is not available yet.</p><h4>Known for</h4><p>${x.strengths.map(esc).join(' • ')}</p>
  <h4>Big events</h4><p>${x.concert?`Annual concert headlined by ${esc(x.concert)}.`:x.festival?`No big-name concert, but ${esc(x.festival)}.`:'No big annual events.'}</p>`}
 function openBrochure(id){const x=uniById(id);if(!x)return;openModal(`${x.name} • brochure`,brochureHtml(x))}
 // ---------- living there ----------
@@ -5717,7 +5723,7 @@ const MAJORS={
 function majorInfo(id){return MAJORS[id]||null}
 function majorBonus(id=S.uni?.major){const m=majorInfo(id);if(!m)return {mult:1,talent:null,strength:false,skill:'knowledge'};const talent=(S.talents||[]).find(t=>m.talents.includes(t))||null,school=mySchool()||UNIS.find(x=>x.name===S.uni?.school),strength=!!school?.strengths?.some(s=>m.aliases.includes(s));return {mult:1+(talent?.30:0)+(strength?.10:0),talent,strength,skill:m.skill}}
 function bonusText(b){return [b.talent?`+30% (${b.talent} talent)`:'',b.strength?'+10% (a strength of this school)':''].filter(Boolean).join(' • ')}
-function declareMajor(id){const u=S.uni,m=majorInfo(id);if(!u?.enrolled||!m)return;if(u.major===id){toast('That is already your major.');return}if(u.major&&(u.majorChanged||u.year>1)){toast('You can change your major only once, during your first year.');return}const old=u.major;if(old)u.majorChanged=true;u.major=id;const b=majorBonus(id);log(old?`Changed major: ${m.label}`:`Declared major: ${m.label}`,`${b.talent||b.strength?`Study bonus: ${bonusText(b)}.`:'No talent match — progress at the normal pace.'}${m.jobs.length?` Good fit for: ${m.jobs.map(j=>D.jobs.adult.find(x=>x.id===j)?.title||j).join(', ')}.`:''}`,true)}
+function declareMajor(id){const u=S.uni,m=majorInfo(id);if(!u?.enrolled||!m)return;const sid=uni1InstitutionId(u,S);if(!sid||!uni1RouteEligibility(sid,id).ok){toast('This major has no valid degree route at your school.');return;}if(u.major===id){toast('That is already your major.');return}if(typeof uni2MajorChangeAllowed==='function'&&!uni2MajorChangeAllowed()){toast('Drop all registered courses during add/drop before changing majors. After the deadline, your major is locked for this term.');return;}if(u.major&&(u.majorChanged||u.year>1)){toast('You can change your major only once, during your first year.');return}const old=u.major;if(old)u.majorChanged=true;u.major=id;uni1BindProgram(S);const b=majorBonus(id);log(old?`Changed major: ${m.label}`:`Declared major: ${m.label}`,`${b.talent||b.strength?`Study bonus: ${bonusText(b)}.`:'No talent match — progress at the normal pace.'}${m.jobs.length?` Good fit for: ${m.jobs.map(j=>D.jobs.adult.find(x=>x.id===j)?.title||j).join(', ')}.`:''}`,true)}
 function majorFitsJob(jobId){const m=majorInfo(S.education?.degree?.major);return !!m&&m.jobs.includes(jobId)}
 function majorHtml(){const u=S.uni;if(!u?.enrolled)return '';const canChange=!u.major||(!u.majorChanged&&u.year===1);const opts=Object.entries(MAJORS).map(([k,m])=>{const b=majorBonus(k);return `<option value="${k}" ${u.major===k?'selected':''}>${b.talent?'★ ':''}${esc(m.label)}${b.strength?' (school strength)':''}</option>`}).join('');const b=majorBonus();
  return `<div class="major-box">${u.major?`<p><b>Major: ${esc(majorInfo(u.major).label)}</b>${bonusText(b)?` <small class="muted-text">• ${esc(bonusText(b))}</small>`:''}</p>`:'<p class="urgent-text">You have not declared a major yet.</p>'}${canChange?`<div class="inline-actions"><select id="major-pick" aria-label="Major">${opts}</select><button class="small" data-major-declare="1">${u.major?'Change major (once, first year only)':'Declare major'}</button></div><small class="muted-text">★ = matches one of your talents (+30% study progress). Majors listed as this school's strengths add +10%.</small>`:''}</div>`}
@@ -14105,7 +14111,7 @@ function h6CandidatePool(venue){
  if((S.people||[]).filter(p=>!isFamilyPerson(p)).length>=50)return [];
  const sid=venue==='School'?playerCurrentSchoolId4A2():null;
  return (S.npcs||[]).filter(n=>{
-  if(!n?.id||!n.fullName||taken.has(n.id)||n.movedAway)return false;
+  if(!n?.id||!n.fullName||n.professionalRole||taken.has(n.id)||n.movedAway)return false;
   const age=npcAge(n),delta=Math.abs(age-S.age);
   if(S.age<18?(age<8||age>18||delta>2):(age<18||delta>8))return false;
   if(venue==='School'&&(!sid||n.currentSchoolId!==sid))return false;
@@ -14288,7 +14294,7 @@ function h7LinkedCandidates(matchmaker){
  if(!matchmaker||!matchmakerEligible3B4(matchmaker))return [];
  const known=new Set((S.people||[]).map(p=>p.npcId).filter(Boolean));
  const npcList=(S.npcs||[]).filter(n=>{
-  if(!n?.id||!h7Edge(matchmaker,n.id))return false;
+  if(!n?.id||n.professionalRole||!h7Edge(matchmaker,n.id))return false;
   const p=(S.people||[]).find(x=>x.npcId===n.id);
   if(p)return candidatePersonEligible3B4(p);
   return !known.has(n.id)&&npcCandidateEligible3B4(n);
@@ -18044,6 +18050,3567 @@ if(typeof window!=='undefined')Object.defineProperty(window,'LifeSimArtworkReser
  // Read-only feature probe, never an ownership or reservation writer.
  window.LifeSimManhwaDisplay=Object.freeze({version:'ART-PROFILE-LIVE.1',nonAuthoritative:true,inspect:()=>S?Object.freeze({supported:!!validPrefs(S),scope:S.saveScopeId||null,entries:validPrefs(S)?Object.keys(validPrefs(S).bindingsByAppearance).length:0}):null});
 })();
+// UNI.1 — Canonical degree/course CONTRACTS ONLY (no registration, attendance, credits or grading).
+// Stable IDs are independent of array order and never reference display names.
+const UNI1_SCHEMA = 1;
+const UNI1_GENED_TOPICS = [
+ ['writing1','College Composition'],['math1','Quantitative Reasoning'],['science1','Scientific Inquiry'],
+ ['humanities1','World Cultures'],['social1','Society and Citizenship'],
+ ['writing2','Research Writing'],['math2','Data Literacy'],['science2','Science and Ethics'],
+ ['humanities2','Historical Perspectives'],['social2','Social Research'],
+ ['communication','Public Speaking'],['digital','Digital Information Literacy']
+];
+const UNI1_MAJOR_TOPICS = {
+ cs:['Programming','Algorithms','Databases','Networks','Software Engineering','Cybersecurity'],
+ engineering:['Engineering Design','Statics','Materials','Thermodynamics','Circuits','Systems'],
+ business:['Management','Accounting','Marketing','Operations','Finance','Strategy'],
+ economics:['Microeconomics','Macroeconomics','Statistics','Econometrics','Markets','Policy'],
+ law:['Government','Legal Reasoning','Ethics','Public Policy','Constitutional Studies','Advocacy'],
+ fineArts:['Drawing','Painting','Sculpture','Art History','Studio Practice','Exhibition'],
+ design:['Visual Design','Typography','Interaction Design','Research','Prototyping','Portfolio'],
+ music:['Music Theory','Ear Training','Performance','Composition','Music History','Ensemble'],
+ media:['Media Writing','Journalism','Production','Media Ethics','Audience Research','Broadcast'],
+ literature:['Literary Analysis','Poetry','Narrative','Literary History','Criticism','Publishing'],
+ education:['Learning Theory','Curriculum','Pedagogy','Assessment','Inclusive Education','Teaching Practice'],
+ psychology:['Psychological Science','Development','Cognition','Research Methods','Social Psychology','Counseling'],
+ biology:['Cell Biology','Genetics','Ecology','Physiology','Microbiology','Research Methods'],
+ nursing:['Anatomy','Health Assessment','Patient Care','Pharmacology','Clinical Reasoning','Public Health'],
+ sports:['Anatomy','Exercise Science','Coaching','Biomechanics','Nutrition','Training Methods'],
+ culinary:['Kitchen Foundations','Food Safety','Baking','Nutrition','Menu Design','Hospitality Operations']
+};
+const UNI1_COURSES = {};
+function uni1MakeCourse(id,title,group,major,prerequisites=[]){
+ if(UNI1_COURSES[id])throw Error('UNI.1 duplicate catalog course '+id);
+ UNI1_COURSES[id] = Object.freeze({id,title,credits:3,group,major:major||null,prerequisites:Object.freeze(prerequisites.slice()),minimumPass:'D',schema:UNI1_SCHEMA});
+ return id;
+}
+const UNI1_GENED_IDS = UNI1_GENED_TOPICS.map(([slug,title],i)=>uni1MakeCourse('uni1-ge-'+slug,title,'generalEducation',null,i>=5?[`uni1-ge-${UNI1_GENED_TOPICS[i-5][0]}`]:[]));
+const UNI1_MAJOR_COURSES = {};
+for(const [major,topics] of Object.entries(UNI1_MAJOR_TOPICS)){
+ const core=[],elective=[],capstone=[];
+ for(let i=0;i<16;i++){
+  const idx=String(i+1).padStart(2,'0');
+  const prereqs=i<5?['uni1-ge-writing1',...(i===0?['uni1-ge-math1']:[])]:[core[i-5]];
+  core.push(uni1MakeCourse(`uni1-core-${major}-${idx}`,`${topics[i%topics.length]} ${i<6?'I':i<12?'II':'III'}${i>=6?' · '+(Math.floor(i/6)+1):''}`,'majorCore',major,prereqs));
+ }
+ for(let i=0;i<10;i++)elective.push(uni1MakeCourse(`uni1-elective-${major}-${String(i+1).padStart(2,'0')}`,`${topics[i%topics.length]}: Applied Topic ${i+1}`,'electives',major,[core[i%5]]));
+ capstone.push(uni1MakeCourse(`uni1-capstone-${major}-01`,`${MAJORS[major].label} Capstone: Proposal`,'capstone',major,[core[10],core[11]]));
+ capstone.push(uni1MakeCourse(`uni1-capstone-${major}-02`,`${MAJORS[major].label} Capstone: Presentation`,'capstone',major,[core[12]]));
+ UNI1_MAJOR_COURSES[major]=Object.freeze({core:Object.freeze(core),elective:Object.freeze(elective),capstone:Object.freeze(capstone)});
+}
+// 60 credit Associate = 30 GE + 18 major + 12 elective; 120 credit Bachelor = 36 GE + 48 major + 30 elective + 6 capstone.
+const UNI1_CREDIT_PLAN = Object.freeze({associate:Object.freeze({years:2,terms:4,total:60,generalEducation:30,majorCore:18,electives:12,capstone:0}),bachelor:Object.freeze({years:4,terms:8,total:120,generalEducation:36,majorCore:48,electives:30,capstone:6})});
+const UNI1_PROGRAMS = {};
+function uni1DegreeForInstitution(id){const school=UNIS.find(x=>x.id===id);return !school?null:school.tier==='community'?'associate':'bachelor'}
+function uni1ProgramId(institutionId,majorId){return `uni1-program-${institutionId}-${majorId}`}
+for(const institution of UNIS)for(const majorId of Object.keys(MAJORS)){
+ const degree=uni1DegreeForInstitution(institution.id),plan=UNI1_CREDIT_PLAN[degree],mc=UNI1_MAJOR_COURSES[majorId];
+ const groups={generalEducation:UNI1_GENED_IDS.slice(0,plan.generalEducation/3),majorCore:mc.core.slice(0,plan.majorCore/3),electives:mc.elective.slice(0,plan.electives/3),capstone:mc.capstone.slice(0,plan.capstone/3)};
+ const ids=[...groups.generalEducation,...groups.majorCore,...groups.electives,...groups.capstone];
+ const terms=Array.from({length:plan.terms},(_,i)=>Object.freeze({term:i+1,year:Math.floor(i/2)+1,semester:i%2+1,targetCredits:15,courseIds:Object.freeze(ids.slice(i*5,(i+1)*5))}));
+ const transfer=degree==='associate'?Object.freeze({eligibleAfterDegreeAudit:true,requiresAcceptance:true,automaticAdmission:false,automaticCredits:false,targetInstitutionIds:Object.freeze(UNIS.filter(x=>x.tier!=='community').map(x=>x.id)),targetProgramIds:Object.freeze(UNIS.filter(x=>x.tier!=='community').map(x=>uni1ProgramId(x.id,majorId))),potentialPortableGeneralEducationCredits:plan.generalEducation}):null;
+ const id=uni1ProgramId(institution.id,majorId);
+ UNI1_PROGRAMS[id]=Object.freeze({id,schema:UNI1_SCHEMA,institutionId:institution.id,majorId,degree,years:plan.years,termCount:plan.terms,totalCredits:plan.total,creditsByGroup:Object.freeze(Object.fromEntries(Object.entries(plan).filter(([k])=>['generalEducation','majorCore','electives','capstone'].includes(k)))),requirements:Object.freeze(Object.fromEntries(Object.entries(groups).map(([k,v])=>[k,Object.freeze(v)]))),requiredCourseIds:Object.freeze(ids),terms:Object.freeze(terms),transfer});
+}
+Object.freeze(UNI1_COURSES);Object.freeze(UNI1_PROGRAMS);
+function uni1ProgramFor(institutionId,majorId){if(typeof institutionId!=='string'||!MAJORS[majorId])return null;return UNI1_PROGRAMS[uni1ProgramId(institutionId,majorId)]||null}
+// Strict routes: community school cannot issue bachelor's and other institutions cannot issue Associate via this catalog.
+function uni1RouteEligibility(institutionId,majorId,requestedDegree){
+ const school=UNIS.find(x=>x.id===institutionId);
+ if(!school)return {ok:false,reason:'unknown-institution'};
+ if(!majorInfo(majorId))return {ok:false,reason:'unknown-major'};
+ const degree=uni1DegreeForInstitution(institutionId);
+ if(requestedDegree!=null&&requestedDegree!==degree)return {ok:false,reason:'degree-route-unavailable'};
+ const program=uni1ProgramFor(institutionId,majorId);
+ return program?{ok:true,programId:program.id,degree,years:program.years,credits:program.total}:{ok:false,reason:'program-unavailable'};
+}
+function uni1EntryEligibility(institutionId,majorId,life=S){
+ const route=uni1RouteEligibility(institutionId,majorId);
+ if(!route.ok)return route;
+ if(!life?.education?.highSchoolDone)return {ok:false,reason:'high-school-completion-required'};
+ if(life.uniApps?.decisions?.[institutionId]!=='Accepted')return {ok:false,reason:'admission-acceptance-required'};
+ if(life.uniApps?.choice&&life.uniApps.choice!==institutionId)return {ok:false,reason:'different-enrollment-choice'};
+ return route;
+}
+function uni1TransferEligibility(associateProgramId,targetProgramId,{associateDegreeAudited=false,targetAccepted=false}={}){
+ const source=UNI1_PROGRAMS[associateProgramId],target=UNI1_PROGRAMS[targetProgramId];
+ if(!source||!target||source.degree!=='associate'||target.degree!=='bachelor'||source.majorId!==target.majorId)
+  return {ok:false,reason:'invalid-transfer-route'};
+ if(!associateDegreeAudited)return {ok:false,reason:'associate-audit-required'};
+ if(!targetAccepted)return {ok:false,reason:'destination-acceptance-required'};
+ // UNI.1 does not post credits; this is only a possible evaluation, not a transfer transaction.
+ return {ok:true,sourceProgramId:source.id,targetProgramId:target.id,possibleGeneralEducationReviewCredits:source.creditsByGroup.generalEducation,guaranteedCredits:0,postedCredits:0};
+}
+function uni1CourseEligibility(programId,courseId,completedIds=[]){
+ const p=UNI1_PROGRAMS[programId],c=UNI1_COURSES[courseId];
+ if(!p||!c||!p.requiredCourseIds.includes(courseId))return {ok:false,reason:'course-outside-program'};
+ const done=Array.isArray(completedIds)?new Set(completedIds):new Set();
+ if(done.has(courseId))return {ok:false,reason:'already-completed'};
+ const missing=c.prerequisites.filter(x=>!done.has(x));
+ return missing.length?{ok:false,reason:'prerequisites-missing',missing}:{ok:true,credits:c.credits};
+}
+function uni1Readiness(institutionId,majorId,talents=[]){
+ const x=UNIS.find(x=>x.id===institutionId),m=majorInfo(majorId);
+ if(!x||!m)return null;
+ const matchedTalent=talents.find(t=>m.talents.includes(t))||null;
+ const schoolStrength=!!x.strengths?.some(t=>m.aliases.includes(t));
+ return {matchedTalent,schoolStrength,studyMultiplier:1+(matchedTalent?.30:0)+(schoolStrength?.10:0),creditReduction:0,waivesPrerequisites:false};
+}
+function uni1InstitutionId(u,life){
+ const sid=u.institutionId;
+ if(sid&&UNIS.some(x=>x.id===sid))return sid;
+ const byName=UNIS.find(x=>x.name===u.school);
+ if(byName)return byName.id;
+ const choice=life.uniApps?.choice;
+ // Only fall back to a chosen application when the enrolled school's name does not contradict it.
+ return !u.school&&UNIS.some(x=>x.id===choice)?choice:null;
+}
+function uni1BindProgram(life,{fresh=false}={}){
+ if(!life?.uni||typeof life.uni!=='object')return null;
+ const u=life.uni;
+ const institutionId=uni1InstitutionId(u,life);
+ if(!institutionId)return null;
+ if(!u.degreeContract||u.degreeContract.schema!==UNI1_SCHEMA){
+  // Never manufacture credit completion out of years, GPA, tuition, past study points or graduation date.
+  u.degreeContract={schema:UNI1_SCHEMA,institutionId,majorId:null,programId:null,degreeType:uni1DegreeForInstitution(institutionId),intendedYears:UNI1_CREDIT_PLAN[uni1DegreeForInstitution(institutionId)].years,requiredCredits:UNI1_CREDIT_PLAN[uni1DegreeForInstitution(institutionId)].total,verifiedEarnedCredits:0,completedCourseIds:[],historicalCredits:fresh?'none':'unknown',migrationSource:fresh?'new-uni1':'pre-uni1-semester-history',historicalSemesterCount:fresh?0:(Array.isArray(u.semGpas)?u.semGpas.length:0)};
+ }
+ const contract=u.degreeContract;
+ // Do not trust a dangling, mismatched or cross-campus historical programId.
+ if(contract.institutionId!==institutionId){contract.institutionId=institutionId;contract.programId=null;contract.majorId=null;}
+ const degree=uni1DegreeForInstitution(institutionId),plan=UNI1_CREDIT_PLAN[degree];
+ contract.degreeType=degree;contract.intendedYears=plan.years;contract.requiredCredits=plan.total;
+ const route=uni1RouteEligibility(institutionId,u.major,degree);
+ contract.majorId=route.ok?u.major:null;
+ contract.programId=route.ok?route.programId:null;
+ return contract;
+}
+function uni1DegreeYears(u){if(!u)return 4;const id=uni1InstitutionId(u,S);return id?UNI1_CREDIT_PLAN[uni1DegreeForInstitution(id)].years:4}
+// Catalog planning only. Course registration, actual credit awards and verified graduation are UNI.2/UNI.9 work.
+function uni1ProgramHtml(u){
+ const c=uni1BindProgram(S),p=c?.programId?UNI1_PROGRAMS[c.programId]:null;
+ if(!c)return '<p class="muted-text">Degree program is not mapped. Historical university progress is preserved; no course credits were inferred.</p>';
+ const title=c.degreeType==='associate'?"Associate degree · transfer pathway":"Bachelor's degree";
+ return `<div class="uni1-plan" aria-label="University degree plan">${statRow('Degree pathway',`${title} · ${c.intendedYears} years / ${c.intendedYears*2} semesters`)}${p?statRow('Program',esc(MAJORS[p.majorId].label)): '<p class="muted-text">Declare a major to see its structured degree plan.</p>'}${statRow('Planned credit requirement',`${c.requiredCredits} credits · catalog planning only`)}<p class="muted-text">Course registration, actual earned credits and degree audit are not available yet (UNI.2 onward). ${c.historicalCredits==='unknown'?'Prior semester credits are unknown; your existing GPA and study history are preserved.':'No UNI.1 course credits have been awarded.'}${p?.transfer?' Transfer requires a separate application and evaluation; it is not automatic.':''}</p></div>`;
+}
+// H13.4 still owns validation/import; append an idempotent migration adapter to the same S.uni.
+const uni1PreviousMigrate=migrate;
+migrate=function(...args){const result=uni1PreviousMigrate.apply(this,args);uni1BindProgram(S);return result;};
+function uni1AuditCatalog(){
+ const errors=[];
+ if(UNIS.length!==12||new Set(UNIS.map(x=>x.id)).size!==12)errors.push('institution identities');
+ if(Object.keys(MAJORS).length!==16||Object.keys(UNI1_MAJOR_TOPICS).length!==16)errors.push('major identities');
+ if(Object.keys(UNI1_PROGRAMS).length!==192)errors.push('program count');
+ for(const p of Object.values(UNI1_PROGRAMS)){
+  const plan=UNI1_CREDIT_PLAN[p.degree];
+  if(!plan||p.totalCredits!==plan.total||p.terms.length!==plan.terms||p.years!==plan.years)errors.push(p.id+':duration');
+  if(p.degree!==uni1DegreeForInstitution(p.institutionId))errors.push(p.id+':route');
+  if(new Set(p.requiredCourseIds).size!==p.requiredCourseIds.length||p.requiredCourseIds.length*3!==p.totalCredits)errors.push(p.id+':overlap-or-credit');
+  for(const [group,ids] of Object.entries(p.requirements))if(ids.reduce((sum,id)=>sum+(UNI1_COURSES[id]?.credits||0),0)!==p.creditsByGroup[group]||ids.some(id=>UNI1_COURSES[id]?.group!==group))errors.push(p.id+':group-'+group);
+  const termById={};for(const term of p.terms){if(term.courseIds.length!==5||term.courseIds.reduce((v,id)=>v+(UNI1_COURSES[id]?.credits||0),0)!==15)errors.push(p.id+':term-'+term.term);for(const id of term.courseIds)termById[id]=term.term;}
+  if(Object.keys(termById).length!==p.requiredCourseIds.length)errors.push(p.id+':term-mapping');
+  for(const id of p.requiredCourseIds){const course=UNI1_COURSES[id];if(!course||course.prerequisites.some(pr=>!termById[pr]||termById[pr]>=termById[id]))errors.push(p.id+':prerequisite-'+id);}
+  if(p.transfer&&(p.degree!=='associate'||p.transfer.automaticAdmission||p.transfer.automaticCredits))errors.push(p.id+':transfer');
+ }
+ return {ok:errors.length===0,errors:errors.slice(0,30),institutions:UNIS.length,majors:Object.keys(MAJORS).length,programs:Object.keys(UNI1_PROGRAMS).length,courses:Object.keys(UNI1_COURSES).length,associatePrograms:Object.values(UNI1_PROGRAMS).filter(x=>x.degree==='associate').length,bachelorPrograms:Object.values(UNI1_PROGRAMS).filter(x=>x.degree==='bachelor').length};
+}
+// UNI.2 — Semester registration only. Authoritative UNI.1 catalog / S.uni;
+// registration never signifies grades, passes, GPA, earned credits or credit-audited graduation.
+const UNI2_SCHEMA=2, UNI2_MIN_COURSES=3, UNI2_MAX_COURSES=6, UNI2_WINDOW_DAYS=14;
+function uni2Calendar(date=currentDate()){
+ const a=academicInfo(date),n=a.semester,from=n===1?a.start:n===2?a.sem2Start:null;
+ return {a,key:n?`${a.key}-${n}`:null,from,to:from?addDays(from,UNI2_WINDOW_DAYS-1):null,
+  end:n===1?a.sem1End:n===2?a.end:null,semester:n};
+}
+function uni2Data(life=S){
+ const u=life?.uni;if(!u||typeof u!=='object')return null;
+ if(!u.termEnrollments||u.termEnrollments.schema!==UNI2_SCHEMA){
+  // No historical course register is inferred. Original semester was potentially already invoiced.
+  u.termEnrollments={schema:UNI2_SCHEMA,terms:{},quarantine:[],legacyActiveTermKey:typeof u.semKey==='string'?u.semKey:null};
+ }
+ const d=u.termEnrollments;
+ if(!d.terms||typeof d.terms!=='object'||Array.isArray(d.terms))d.terms={};
+ if(!Array.isArray(d.quarantine))d.quarantine=[];
+ for(const [key,t] of Object.entries(d.terms)){
+  if(!uni2ValidRecord(key,t,u)){
+   // Invalid payment records cannot be trusted; block another debit for the current term.
+   if(key===u.semKey)d.legacyActiveTermKey=key;
+   if(d.quarantine.length<30)d.quarantine.push({termKey:key,reason:'invalid-registration-record',detected:'UNI.2 migration'});
+   delete d.terms[key];
+  }
+ }
+ return d;
+}
+function uni2ValidRecord(key,t,u){
+ if(!t||typeof t!=='object'||key!==t.termKey||!/^\d{4}-[12]$/.test(key)||t.schema!==UNI2_SCHEMA)return false;
+ if(!['draft','confirmed','withdrawn','historical','missed'].includes(t.status))return false;
+ if(t.academicYear!==Number(key.slice(0,4))||t.semester!==Number(key.slice(-1))||!Number.isInteger(t.year)||t.year<1||t.year>10)return false;
+ const sid=uni1InstitutionId(u,S);
+ if(!sid||t.institutionId!==sid||t.majorId!==null&&(!MAJORS[t.majorId]||t.programId!==uni1ProgramId(sid,t.majorId)))return false;
+ if(t.majorId===null&&t.programId!==null)return false;
+ if(!Array.isArray(t.courseIds)||!Array.isArray(t.attemptedCourseIds)||!Array.isArray(t.withdrawnCourseIds)||!Array.isArray(t.history))return false;
+ const p=t.programId&&UNI1_PROGRAMS[t.programId];
+ if(t.courseIds.length>UNI2_MAX_COURSES||t.courseIds.length!==new Set(t.courseIds).size)return false;
+ for(const list of [t.courseIds,t.attemptedCourseIds,t.withdrawnCourseIds]){
+  if(list.length>80||list.length!==new Set(list).size||list.some(id=>typeof id!=='string'||!p||!p.requiredCourseIds.includes(id)))return false;
+ }
+ if(t.withdrawnCourseIds.some(id=>t.courseIds.includes(id)))return false;
+ if(t.status==='draft'&&(t.attemptedCourseIds.length||t.withdrawnCourseIds.length))return false;
+ if((t.status==='confirmed'||t.status==='withdrawn'||t.status==='historical')&&t.courseIds.some(id=>!t.attemptedCourseIds.includes(id)))return false;
+ if(!t.finance||!['pending','settled','legacy-unverified'].includes(t.finance.status))return false;
+ if(t.finance.status==='settled'&&(!t.finance.dateISO||!Number.isFinite(t.finance.tuition)))return false;
+ if(t.history.length>150)return false;
+ return true;
+}
+// A term has exactly one owner, even on repeated render/ticks and across reloads.
+function uni2EnsureTerm(){
+ const u=S?.uni;if(!u?.enrolled)return null;
+ const cal=uni2Calendar(),d=uni2Data(),sid=uni1InstitutionId(u,S);
+ if(!d||!sid||!cal.key||u.semKey!==cal.key||u.yearKey!==cal.a.key)return null;
+ if(d.terms[cal.key])return d.terms[cal.key];
+ const dc=uni1BindProgram(S),major=dc?.programId?u.major:null;
+ const legacy=d.legacyActiveTermKey===cal.key;
+ const term={schema:UNI2_SCHEMA,termKey:cal.key,institutionId:sid,programId:dc?.programId||null,majorId:major,
+  academicYear:cal.a.key,semester:cal.semester,year:u.year,opened:cal.from,deadline:cal.to,termEnd:cal.end,
+  courseIds:[],attemptedCourseIds:[],withdrawnCourseIds:[],history:[],status:'draft',
+  finance:{status:legacy?'legacy-unverified':'pending',source:legacy?'pre-UNI.2 semester; payment cannot be verified':'UNI.2 awaiting confirmation'}};
+ d.terms[cal.key]=term;return term;
+}
+function uni2OpenTerm(){const d=uni2Data();if(d)d.legacyActiveTermKey=null;uni2EnsureTerm();}
+function uni2AllowsLegacyGpa(key){
+ const u=S?.uni,d=uni2Data(),t=d?.terms[key];
+ if(!t)return true; // original pre-UNI.2 history (no course records)
+ if(t.finance.status==='legacy-unverified')return true;
+ return t.status==='confirmed'||t.status==='withdrawn'||(t.status==='historical'&&t.attemptedCourseIds.length>0);
+}
+function uni2CloseTerm(key){
+ const d=uni2Data();const t=d?.terms[key];if(!t)return;
+ if(t.status==='draft'&&t.courseIds.length===0)t.status='missed';
+ else if(t.status==='draft')t.status='missed';
+ else if(t.status==='confirmed'||t.status==='withdrawn')t.status='historical';
+ t.outcome='Course results not recorded (UNI.4 pending)';
+}
+function uni2Guard(){
+ const u=S?.uni;if(!u?.enrolled)return {ok:false,reason:'University enrollment required.'};
+ const dc=uni1BindProgram(S),sid=uni1InstitutionId(u,S),p=dc?.programId&&UNI1_PROGRAMS[dc.programId];
+ if(!sid||!UNIS.some(x=>x.id===sid&&x.name===u.school)||!p||p.institutionId!==sid||p.majorId!==u.major)
+  return {ok:false,reason:'Declare an eligible major at your enrolled school.'};
+ const c=uni2Calendar();if(!c.key||u.semKey!==c.key||u.yearKey!==c.a.key)return {ok:false,reason:'No active synchronized academic semester.'};
+ const t=uni2EnsureTerm();if(!t)return {ok:false,reason:'Cannot initialize the university term.'};
+ if(t.programId===null&&t.courseIds.length===0){t.programId=p.id;t.majorId=p.majorId;}
+ if(t.programId!==p.id||t.institutionId!==sid)return {ok:false,reason:'Saved term belongs to a different program; registration locked.'};
+ if(t.programId!==p.id&&t.status==='draft'&&!t.courseIds.length&&!t.attemptedCourseIds.length){t.programId=p.id;t.majorId=p.majorId;}
+ if(t.status==='historical'||t.status==='missed')return {ok:false,reason:'This semester is already closed.'};
+ return {ok:true,term:t,program:p,calendar:c,withinWindow:currentDate()>=c.from&&currentDate()<=c.to};
+}
+function uni2VerifiedCompleted(p){
+ const dc=S.uni?.degreeContract;
+ return Array.isArray(dc?.completedCourseIds)&&dc?.programId===p.id?dc.completedCourseIds.filter(id=>p.requiredCourseIds.includes(id)):[];
+}
+function uni2Offering(p,id,year,semester){
+ const i=p.terms.findIndex(t=>t.courseIds.includes(id));
+ return i>=0&&i<(year-1)*2+semester;
+}
+function uni2CourseGate(p,t,id){
+ if(typeof id!=='string'||!UNI1_COURSES[id]||!p.requiredCourseIds.includes(id))return {ok:false,reason:'Course outside this program.'};
+ if(!uni2Offering(p,id,t.year,t.semester))return {ok:false,reason:'Not offered in this semester yet.'};
+ if(t.courseIds.includes(id))return {ok:false,reason:'Already selected.'};
+ if(t.attemptedCourseIds.includes(id)||t.withdrawnCourseIds.includes(id))return {ok:false,reason:'Already attempted/withdrawn this semester.'};
+ const g=uni1CourseEligibility(p.id,id,uni2VerifiedCompleted(p));
+ return g.ok?{ok:true}:{ok:false,reason:g.reason==='prerequisites-missing'?`Missing verified prerequisites: ${g.missing.join(', ')}.`:g.reason};
+}
+function uni2LoadLabel(count){return count>=4&&count<=6?'Full-time (12–18 credits)':count===3?'Part-time (9 credits)':'Incomplete draft — select 3–6 courses (9–18 credits)';}
+function uni2Register(action,id){
+ const g=uni2Guard();if(!g.ok)return {ok:false,reason:g.reason};
+ const {term:t,program:p,withinWindow}=g;
+ if(action==='confirm'){
+  if(!withinWindow)return {ok:false,reason:'Add/drop deadline has passed; registration is closed.'};
+  if(t.status==='confirmed')return {ok:true,unchanged:true,term:t};
+  if(t.status!=='draft'||t.courseIds.length<UNI2_MIN_COURSES||t.courseIds.length>UNI2_MAX_COURSES)return {ok:false,reason:'Select 3–6 eligible courses (9–18 credits) before confirming.'};
+  // Recheck all persisted IDs independently of UI, including prerequisite/offer and duplication.
+  for(const cid of t.courseIds){const probe={...t,courseIds:[],attemptedCourseIds:[],withdrawnCourseIds:[]};const c=uni2CourseGate(p,probe,cid);if(!c.ok)return {ok:false,reason:`${cid}: ${c.reason}`};}
+  t.status='confirmed';t.attemptedCourseIds=t.courseIds.slice();t.history.push({action:'confirm',dateISO:currentDate(),courseIds:t.courseIds.slice()});
+  uni2Settle(t);return {ok:true,term:t};
+ }
+ if(action==='select'||action==='drop'){
+  if(!withinWindow)return {ok:false,reason:'Add/drop deadline has passed.'};
+  if(action==='select'){
+   if(t.status!=='draft'&&t.status!=='confirmed')return {ok:false,reason:'Term is not open for changes.'};
+   if(t.courseIds.length>=UNI2_MAX_COURSES)return {ok:false,reason:'Maximum 6 courses / 18 credits.'};
+   const gate=uni2CourseGate(p,t,id);if(!gate.ok)return gate;
+   t.courseIds.push(id);if(t.status==='confirmed')t.attemptedCourseIds.push(id);
+  }else{
+   if(!t.courseIds.includes(id))return {ok:false,reason:'Course not selected.'};
+   if(t.status==='confirmed'&&t.courseIds.length<=UNI2_MIN_COURSES)return {ok:false,reason:'Confirmed enrollment must retain at least 3 courses / 9 credits. Withdrawals after the deadline are recorded separately.'};
+   t.courseIds=t.courseIds.filter(x=>x!==id);
+   if(t.status==='confirmed'){
+    // Drop within window reverses active attempted load; retain an action audit trail.
+    t.attemptedCourseIds=t.attemptedCourseIds.filter(x=>x!==id);
+   }
+  }
+  t.history.push({action,courseId:id,dateISO:currentDate()});
+  return {ok:true,term:t};
+ }
+ if(action==='withdraw'){
+  if(withinWindow)return {ok:false,reason:'Use Drop during the add/drop window.'};
+  if(currentDate()>t.termEnd||t.status!=='confirmed'||!t.courseIds.includes(id))return {ok:false,reason:'Withdrawal is not available for this course/term.'};
+  t.courseIds=t.courseIds.filter(x=>x!==id);t.withdrawnCourseIds.push(id);
+  t.history.push({action:'withdraw',courseId:id,dateISO:currentDate()});
+  if(!t.courseIds.length)t.status='withdrawn';
+  return {ok:true,term:t};
+ }
+ return {ok:false,reason:'Unknown registration action.'};
+}
+function uni2Settle(t){
+ if(t.finance.status!=='pending')return; // never debit a possibly already-charged legacy term
+ const x=UNIS.find(v=>v.id===t.institutionId);if(!x)return;
+ const f=funding(x),before={money:S.money,debt:S.finance.uniDebt||0,aid:S.uni.nextSemAid},half=v=>Math.round(v/2);
+ // Exactly one pre-existing authority for financial mutations, no new per-credit formula.
+ t.finance={status:'settled',source:'existing chargeSemester() on confirmed UNI.2 enrollment',dateISO:currentDate(),
+  tuition:half(f.tuition),scholarship:half(f.scholarship),parents:half(f.parents),loanPlanned:half(f.loan),stipendPlanned:half(f.stipend)};
+ try{chargeSemester();}catch(error){S.money=before.money;S.finance.uniDebt=before.debt;S.uni.nextSemAid=before.aid;t.finance={status:'pending',source:'chargeSemester failed; needs retry'};throw error;}
+ t.finance.walletDelta=S.money-before.money;t.finance.debtDelta=(S.finance.uniDebt||0)-before.debt;
+}
+function uni2MajorChangeAllowed(){
+ const t=uni2EnsureTerm();return !t||(t.status==='draft'&&!t.courseIds.length&&!t.attemptedCourseIds.length&&!t.withdrawnCourseIds.length);
+}
+function uni2Migrate(){
+ const u=S?.uni;if(!u)return;
+ uni2Data(); // historical semesters remain unknown, never backfill courses or payments
+}
+const uni2EarlierMigrate=migrate;
+migrate=function(...args){const result=uni2EarlierMigrate.apply(this,args);uni2Migrate();return result;};
+function uni2Render(){
+ const u=S?.uni;if(!u?.enrolled)return '';
+ const a=uni2Calendar(),g=uni2Guard(),t=g.term,p=g.program,d=uni2Data();
+ const old=Object.values(d?.terms||{}).filter(x=>x.termKey!==a.key).sort((a,b)=>b.termKey.localeCompare(a.termKey));
+ const past=old.map(t=>`<p><b>${esc(t.termKey)}</b> · ${esc(t.status)} · ${t.courseIds.length*3} currently registered credits · ${t.attemptedCourseIds.length*3} recorded attempts · ${S.uni?.coursework?.terms?.[t.termKey]?.finalizedAt?'See UNI.4 verified transcript':'Course results historical/unknown'}</p>`).join('')||'<p class="muted-text">Earlier semester GPA history has no course-level registration records.</p>';
+ const hist=`<details><summary>Previous enrollment records</summary>${past}</details>`;
+ if(!g.ok)return `<div class="uni2-reg" data-uni2-panel="1"><h4>Semester enrollment · UNI.2</h4><p class="muted-text">${esc(g.reason)} Course registration opens after declaring a valid major and starting a term. No course credits have been awarded.</p>${hist}</div>`;
+ const can=g.withinWindow&&['draft','confirmed'].includes(t.status),selected=new Set(t.courseIds),completed=uni2VerifiedCompleted(p);
+ const active=t.courseIds.map(id=>{const c=UNI1_COURSES[id];return `<li>${esc(c.title)} <small>${esc(id)} · 3 credits</small> <button class="small ghost" data-uni2-drop="${esc(id)}" ${can?'':'disabled'}>Drop</button>${!g.withinWindow&&t.status==='confirmed'?` <button class="small" data-uni2-withdraw="${esc(id)}">Withdraw (W)</button>`:''}</li>`;}).join('');
+ const index=p.terms.find(x=>x.year===u.year&&x.semester===a.semester),recommended=new Set(index?.courseIds||[]);
+ const list=p.requiredCourseIds.map(id=>{const c=UNI1_COURSES[id],elig=uni2CourseGate(p,t,id),inTerm=selected.has(id),planned=p.terms.find(x=>x.courseIds.includes(id));
+  return `<div class="uni2-course"><span><b>${esc(c.title)}</b> ${recommended.has(id)?'<small>· Recommended</small>':''}<small> ${esc(id)} · ${esc(c.group)} · 3 credits · plan: year ${planned.year} semester ${planned.semester}${c.prerequisites.length?' · prereq: '+esc(c.prerequisites.join(', ')):''}</small>${!elig.ok&&!inTerm?`<small class="muted-text">${esc(elig.reason)}</small>`:''}</span> <button class="small" data-uni2-pick="${esc(id)}" ${can&&!inTerm&&elig.ok&&t.courseIds.length<UNI2_MAX_COURSES?'':'disabled'}>${inTerm?'Selected':'Select'}</button></div>`;}).join('');
+ const credits=t.courseIds.length*3,attempt=t.attemptedCourseIds.length*3,bill=t.finance.status==='settled'?`Paid/settled ${money(t.finance.tuition)} semester invoice; scholarship ${money(t.finance.scholarship)}; no refunds on add/drop.`:t.finance.status==='legacy-unverified'?'Legacy / unverified — prior tuition may already have been charged. No duplicate debit is permitted.':'Pending — charged once only upon first confirmed registration.';
+ return `<div class="uni2-reg" data-uni2-panel="1" aria-label="University course registration"><h4>Current semester · ${esc(t.termKey)}</h4><p>${esc(u.school)} · ${esc(MAJORS[p.majorId].label)} · Year ${u.year}, semester ${a.semester}</p><p>Registration window: ${esc(a.from)} through ${esc(a.to)} · ${can?'Open':currentDate()>a.to?'Closed':'Not open'} · ${esc(t.status)}</p>
+ <details open><summary>Course registration · ${recommended.size} recommended / 15 planned credits</summary><p class="muted-text">Select eligible catalog courses; later-term courses require verified prerequisite passes (UNI.4). UNI.2 selection does not itself award attendance, grades or credits; see UNI.3/UNI.4.</p>${list}</details>
+ <h4>Selected courses</h4><ul>${active||'<li>No courses selected yet.</li>'}</ul><p><b>${credits} registered/draft credits</b> · ${esc(uni2LoadLabel(t.courseIds.length))} · 3–6 courses required (confirmed drops cannot reduce below 3)</p>${t.status==='draft'?`<button class="small primary" data-uni2-confirm="1" ${can&&t.courseIds.length>=3?'':'disabled'}>Confirm enrollment</button>`:''}
+ <p class="muted-text">Attempted/committed: ${attempt} credits · verified earned: ${completed.length*3} credits (not inferred from GPA) · degree plan: ${p.totalCredits} required, ${p.degree==='associate'?'Associate':'Bachelor'}.</p>
+ <h4>Term finance</h4><p>${esc(bill)}</p>${hist}</div>`;
+}
+const uni2BeforeUniversityHtml=universityHtml;
+universityHtml=function(...args){let html=uni2BeforeUniversityHtml.apply(this,args);if(!S?.uni?.enrolled)return html;
+ const card=uni2Render(),pos=html.lastIndexOf('</section>');return pos>=0?html.slice(0,pos)+card+html.slice(pos):html+card;};
+const uni2BeforeProgramHtml=uni1ProgramHtml;
+uni1ProgramHtml=function(u){return uni2BeforeProgramHtml(u).replace('Course registration, actual earned credits and degree audit are not available yet (UNI.2 onward).','Course registration is available in the UNI.2 panel. Grades, verified course credits and degree audit are not available yet.');};
+const uni2BeforeUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{},action=d.uni2Pick?'select':d.uni2Drop?'drop':d.uni2Withdraw?'withdraw':d.uni2Confirm?'confirm':null;
+ if(action){const result=uni2Register(action,d.uni2Pick||d.uni2Drop||d.uni2Withdraw||null);toast(result.ok?(result.unchanged?'Enrollment already confirmed.':action==='confirm'?'Enrollment confirmed.':'Course registration updated.'):result.reason);if(result.ok){save();render();}return true;}
+ return uni2BeforeUniClick(b);};
+// UNI.3 — schedule, movement and evidenced attendance. No GPA, billing or course-credit writes.
+// Only UNI.2-confirmed courseIds authorize teaching meetings. UNI.3's event type is
+// dispatched explicitly by core72 processCalendar, never by generic obligations.
+const UNI3_SCHEMA=1, UNI3_TYPE='universityClassUNI3', UNI3_HORIZON=10;
+const UNI3_TERMINAL=['attended','late','missed','excused','cancelled'];
+function uni3ValidDay(date){if(typeof date!=='string'||!/^\d{4}-\d\d-\d\d$/.test(date))return false;
+ const a=academicInfo(date);return !!a.semester&&!isWeekend(date)&&!breakOn(date,a)&&!dayOffHoliday(date,a.region)&&!closureReason(date);
+}
+function uni3Now(){return {dateISO:currentDate(),minute:currentMinute()};}
+function uni3IsPast(date,minute){return date<currentDate()||(date===currentDate()&&minute<currentMinute());}
+function uni3ValidTerm(t){
+ if(!t||!['confirmed','historical','withdrawn'].includes(t.status))return false;
+ const p=UNI1_PROGRAMS[t.programId],u=S.uni;
+ return !!u?.enrolled&&!!p&&t.institutionId===uni1InstitutionId(u,S)&&p.institutionId===t.institutionId&&
+ p.majorId===t.majorId&&t.majorId===u.major&&u.degreeContract?.programId===t.programId&&t.programId===uni1ProgramId(t.institutionId,t.majorId)&&t.termKey===`${t.academicYear}-${t.semester}`&&
+ Array.isArray(t.courseIds)&&t.courseIds.every(id=>p.requiredCourseIds.includes(id))&&new Set(t.courseIds).size===t.courseIds.length;
+}
+function uni3State(){
+ if(!S?.uni)return null;
+ let s=S.uni.academicSchedule;
+ if(!s||s.schemaVersion!==UNI3_SCHEMA||!s.terms||typeof s.terms!=='object'||Array.isArray(s.terms)){
+  if(s&&S.uni.academicScheduleQuarantine==null)S.uni.academicScheduleQuarantine={reason:'Unsupported UNI.3 scheduling data',raw:s};
+  s=S.uni.academicSchedule={schemaVersion:UNI3_SCHEMA,terms:{},presence:{institutionId:null,roomId:null},bootstrappedAt:uni3Now()};
+ }
+ if(!s.presence||typeof s.presence!=='object')s.presence={institutionId:null,roomId:null};
+ if(!s.bootstrappedAt)s.bootstrappedAt=uni3Now();
+ return s;
+}
+function uni3Term(t){
+ const s=uni3State();if(!s||!uni3ValidTerm(t))return null;
+ let r=s.terms[t.termKey];
+ if(r&&(r.institutionId!==t.institutionId||r.programId!==t.programId||!r.plans||!r.receipts||typeof r.plans!=='object'||typeof r.receipts!=='object')){
+  (s.quarantine||(s.quarantine=[])).push({key:t.termKey,reason:'UNI.3 identity/structure mismatch'});
+  // Never silently accept forged attendance from an incompatible term.
+  delete s.terms[t.termKey];r=null;
+ }
+ if(!r){r=s.terms[t.termKey]={termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,plans:{},effective:{},receipts:{}};}
+ if(!r.effective||typeof r.effective!=='object')r.effective={};
+ return r;
+}
+function uni3Rooms(institutionId){
+ const c=CAMPUS[institutionId];if(!c)return {};
+ const rooms={hall:{id:`${institutionId}-uni3-hall`,label:'Main Teaching Hall',building:'Academic Centre',kind:'lecture'},
+ classroom:{id:`${institutionId}-uni3-class`,label:'Seminar Room 201',building:'Academic Centre',kind:'tutorial'},
+ library:{id:`${institutionId}-uni3-library`,label:'Library Study Room',building:'Library',kind:'tutorial'}};
+ if(c.fac.includes('labs'))rooms.lab={id:`${institutionId}-uni3-lab`,label:'Teaching Laboratory',building:'Science Building',kind:'lab'};
+ if(c.fac.includes('artStudio'))rooms.studio={id:`${institutionId}-uni3-studio`,label:'Studio Workshop',building:'Arts Building',kind:'studio'};
+ if(c.fac.includes('makerspace'))rooms.computer={id:`${institutionId}-uni3-computer`,label:'Computer Workshop',building:'Technology Building',kind:'lab'};
+ return rooms;
+}
+function uni3Practical(course,major,sid){
+ const m=(major||'').toLowerCase(),c=(course?.title||'').toLowerCase(),rooms=uni3Rooms(sid);
+ if(rooms.studio&&/art|design|music|film|fine/.test(m+' '+c))return {type:'Studio',room:rooms.studio,duration:115};
+ if(rooms.lab&&/bio|chem|nurs|engin|physics|science|health|comput|coding|environment/.test(m+' '+c))return {type:'Lab',room:rooms.lab,duration:115};
+ if(rooms.computer&&/comput|coding|program|engin/.test(m+' '+c))return {type:'Lab',room:rooms.computer,duration:115};
+ return {type:'Tutorial',room:rooms.classroom,duration:60};
+}
+// Ten independent weekday tracks. Two same-day meetings, morning and afternoon;
+// each track is clash-free even at a 6-course load and supports 115-minute labs.
+function uni3AssignPlan(t,r,id){
+ if(r.plans[id])return r.plans[id];
+ const used=new Set(Object.values(r.plans).filter(x=>x&&x.active).map(x=>x.track));
+ let track=-1;for(let i=0;i<10;i++)if(!used.has(i)){track=i;break;}
+ if(track<0)return null;
+ const rooms=uni3Rooms(t.institutionId),course=UNI1_COURSES[id],pr=uni3Practical(course,t.majorId,t.institutionId);
+ return r.plans[id]={courseId:id,track,active:true,meetings:[
+  {code:'L',weekday:1+Math.floor(track/2),start:track%2?615:510,end:(track%2?615:510)+75,type:'Lecture',roomId:rooms.hall.id},
+  {code:'P',weekday:1+Math.floor(track/2),start:track%2?915:780,end:(track%2?915:780)+pr.duration,type:pr.type,roomId:pr.room.id}]};
+}
+function uni3PlanValid(t,id,plan){
+ if(!plan||plan.courseId!==id||!Number.isInteger(plan.track)||plan.track<0||plan.track>=10||!Array.isArray(plan.meetings)||plan.meetings.length!==2)return false;
+ const track=plan.track,day=1+Math.floor(track/2),rooms=uni3Rooms(t.institutionId),p=uni3Practical(UNI1_COURSES[id],t.majorId,t.institutionId),l=plan.meetings[0],m=plan.meetings[1];
+ const lStart=track%2?615:510,mStart=track%2?915:780;
+ return !!rooms.hall&&l.code==='L'&&l.weekday===day&&l.start===lStart&&l.end===lStart+75&&l.type==='Lecture'&&l.roomId===rooms.hall.id&&
+ m.code==='P'&&m.weekday===day&&m.start===mStart&&m.end===mStart+p.duration&&m.type===p.type&&m.roomId===p.room.id;
+}
+function uni3SessionId(t,id,date,code){return `uni3|${t.institutionId}|${t.termKey}|${id}|${date}|${code}`;}
+function uni3Meeting(t,r,id,date,m){return {id:uni3SessionId(t,id,date,m.code),termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,courseId:id,
+ dateISO:date,code:m.code,start:m.start,end:m.end,roomId:m.roomId,type:m.type,calendarId:'cal-'+uni3SessionId(t,id,date,m.code)};}
+function uni3Actual(t,r,id,date,m){
+ const eff=r.effective[id],on=eff&&eff.dateISO&& (date>eff.dateISO||(date===eff.dateISO&&m.start+25>=eff.minute));
+ const a=academicInfo(date),start=t.semester===1?a.start:a.sem2Start,end=t.semester===1?a.sem1End:a.end;
+ return !!on&&date>=start&&date<=end&&a.key===t.academicYear&&a.semester===t.semester&&uni3ValidDay(date);
+}
+function uni3Status(session,r){return r?.receipts[session.id]?.status||(uni3IsPast(session.dateISO,session.end)?'missed':'scheduled');}
+function uni3CalendarEvent(session){return (S.calendar||[]).find(e=>e.id===session.calendarId)||null;}
+function uni3Receipt(session,status,reason='',more={}){
+ const d=uni3State(),r=d?.terms[session.termKey];if(!r)return {ok:false,reason:'Missing schedule record'};
+ const old=r.receipts[session.id];if(old&&UNI3_TERMINAL.includes(old.status))return {ok:false,reason:'Session already resolved',unchanged:true};
+ if(!UNI3_TERMINAL.includes(status))return {ok:false,reason:'Invalid result'};
+ const rec={...session,status,reason,resolved:uni3Now(),...more};r.receipts[session.id]=rec;
+ const ev=uni3CalendarEvent(session);if(ev)setCalendarStatus(ev,{attended:'Attended',late:'Attended',missed:'Missed',excused:'Excused',cancelled:'Cancelled'}[status],reason||status);
+ return {ok:true,receipt:rec};
+}
+function uni3MatchEvent(ev){
+ if(ev?.type!==UNI3_TYPE)return null;
+ const s=uni3State(),t=S.uni?.termEnrollments?.terms?.[ev.payload?.termKey],r=s?.terms?.[ev.payload?.termKey];
+ if(!uni3ValidTerm(t)||!r||!t.courseIds.includes(ev.payload?.courseId))return null;
+ const p=r.plans[ev.payload.courseId],m=p?.meetings?.find(x=>x.code===ev.payload?.code);
+ if(!p?.active||!uni3PlanValid(t,ev.payload.courseId,p)||!m||m.roomId!==ev.payload?.roomId||!/\d{4}-\d\d-\d\d/.test(ev.dateISO)||!uni3Actual(t,r,ev.payload.courseId,ev.dateISO,m))return null;
+ if(parseISO(ev.dateISO).getUTCDay()!==m.weekday)return null;
+ const session=uni3Meeting(t,r,ev.payload.courseId,ev.dateISO,m);
+ return session.calendarId===ev.id&&session.start===ev.startMinute&&session.end===ev.endMinute?session:null;
+}
+function uni3CalendarTick(ev){
+ const session=uni3MatchEvent(ev);
+ if(!session){setCalendarStatus(ev,'Cancelled','Inactive or invalid university class');return;}
+ const r=uni3State().terms[session.termKey],rec=r.receipts[session.id];
+ if(rec&&UNI3_TERMINAL.includes(rec.status)){setCalendarStatus(ev,{attended:'Attended',late:'Attended',missed:'Missed',excused:'Excused',cancelled:'Cancelled'}[rec.status],'Reconciled UNI.3 receipt');return;}
+ if(ev.status==='Attending'){if(session.dateISO<currentDate()||(session.dateISO===currentDate()&&currentMinute()>session.end+5))uni3Receipt(session,'missed','Interrupted class without completed attendance receipt');return;}
+ if(uni3IsPast(session.dateISO,session.end)){uni3Receipt(session,'missed',SIM.skipping?'No physical attendance during time skip':'Class ended without attendance');return;}
+ if(session.dateISO===currentDate()&&currentMinute()>=session.start&&ev.status==='Scheduled'){
+  setCalendarStatus(ev,'Due','Lecture begins');if(!SIM.skipping)notify('University class is starting',`${UNI1_COURSES[session.courseId].title} • ${timeLabel(session.start)} • ${session.roomId}`,{sourceType:UNI3_TYPE,sourceId:ev.id,tab:'school'});
+ }
+}
+function uni3Upcoming(t,r,from=currentDate(),days=UNI3_HORIZON){
+ const out=[];for(let i=0;i<days;i++){
+  const date=addDays(from,i);if(!uni3ValidDay(date))continue;
+  const dow=parseISO(date).getUTCDay();
+  for(const id of t.courseIds){const p=r.plans[id];if(!p?.active||!uni3PlanValid(t,id,p))continue;
+   for(const m of p.meetings)if(m.weekday===dow&&uni3Actual(t,r,id,date,m))out.push(uni3Meeting(t,r,id,date,m));
+  }
+ }
+ return out.sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||a.start-b.start||a.id.localeCompare(b.id));
+}
+function uni3Sync(){
+ if(!S?.uni)return;
+ const s=uni3State(),d=S.uni.termEnrollments,term=d?.terms?.[S.uni.semKey];
+ if(!S.uni.enrolled||!uni3ValidTerm(term)||term.termKey!==uni2Calendar().key){
+  for(const ev of S.calendar||[])if(ev.type===UNI3_TYPE&&!isTerminal(ev.status))setCalendarStatus(ev,'Cancelled','Not in an active confirmed university term');
+  if(S.location==='University')uni3ForceHome('University enrollment no longer active');return;
+ }
+ const r=uni3Term(term);if(!r)return;
+ for(const id of term.courseIds){
+  if(!r.effective[id])r.effective[id]=s.bootstrappedAt.dateISO<=currentDate()?uni3Now():s.bootstrappedAt;
+  const plan=uni3AssignPlan(term,r,id);if(plan)plan.active=true;
+ }
+ for(const [id,p] of Object.entries(r.plans))if(!term.courseIds.includes(id))p.active=false;
+ const upcoming=uni3Upcoming(term,r);
+ const wanted=new Set(upcoming.map(x=>x.calendarId));
+ for(const ev of S.calendar||[]){if(ev.type!==UNI3_TYPE||isTerminal(ev.status))continue;
+  if(ev.payload?.termKey!==term.termKey||!wanted.has(ev.id)){
+   // An in-progress attendance must finish; no duplicate after a term switch.
+   if(ev.status!=='Attending')setCalendarStatus(ev,'Cancelled','Class no longer on active rolling timetable');
+  }
+ }
+ for(const m of upcoming){if(r.receipts[m.id])continue;
+  if(!uni3CalendarEvent(m))createCalendarEvent({id:m.calendarId,type:UNI3_TYPE,title:`${UNI1_COURSES[m.courseId].title} · ${m.type}`,dateISO:m.dateISO,
+   minute:m.start,startMinute:m.start,endMinute:m.end,graceMinute:m.end,category:'School',required:true,location:m.roomId,sourceId:m.calendarId,
+   payload:{termKey:m.termKey,courseId:m.courseId,code:m.code,roomId:m.roomId}});
+ }
+ // Rolling class obligations are transient. Permanent truth is saved under receipts.
+ S.calendar=S.calendar.filter(ev=>ev.type!==UNI3_TYPE||!isTerminal(ev.status)||ev.dateISO>=addDays(currentDate(),-2));
+}
+function uni3Reconcile(){if(!S?.uni)return;uni3Sync();}
+function uni3Current(){
+ const t=S?.uni?.termEnrollments?.terms?.[S.uni?.semKey];if(!uni3ValidTerm(t)||t.termKey!==uni2Calendar().key)return null;
+ const r=uni3Term(t);return r?{t,r}:null;
+}
+function uni3Lookup(id){
+ if(typeof id!=='string')return null;
+ const cur=uni3Current();if(!cur)return null;
+ const m=uni3Upcoming(cur.t,cur.r,currentDate(),10).find(x=>x.id===id);
+ return m?{...cur,m}:null;
+}
+function uni3ForceHome(reason){const s=uni3State();if(s)s.presence={institutionId:null,roomId:null};if(S.location==='University')setPlayerLocation4C1('Home',{reason});}
+function uni3AtCampus(){const s=uni3State();return S.location==='University'&&!!S.uni?.enrolled&&s.presence?.institutionId===uni1InstitutionId(S.uni,S);}
+function uni3Travel(action,id){
+ if(action==='leave'){
+  if(!uni3AtCampus())return {ok:false,reason:'You are not on your university campus.'};
+  const mins=S.housing?.type==='dorm'?8:S.housing?.type==='parents'?35:25;
+  uni3ForceHome('Leaving university');advanceTime(mins,{silent:true});return {ok:true,minutes:mins};
+ }
+ const cur=uni3Current();if(!cur)return {ok:false,reason:'Confirmed current-term university courses required.'};
+ if(action==='campus'){
+  if(S.location!=='Home')return {ok:false,reason:'Return home from your current location before commuting.'};
+  if(!Number.isFinite(currentMinute())||currentMinute()<360||currentMinute()>1230)return {ok:false,reason:'University campus entry is open 06:00–20:30.'};
+  const mins=S.housing?.type==='dorm'?8:S.housing?.type==='parents'?35:25;
+  advanceTime(mins,{silent:true});if(!uni3Current())return {ok:false,reason:'Term closed during commute.'};
+  setPlayerLocation4C1('University',{reason:'UNI.3 campus commute'});uni3State().presence={institutionId:cur.t.institutionId,roomId:null};return {ok:true,minutes:mins};
+ }
+ if(action==='room'){
+  if(!uni3AtCampus())return {ok:false,reason:'Travel to university first.'};
+  const found=uni3Lookup(id);if(!found)return {ok:false,reason:'No active class with that ID.'};
+  if(found.m.dateISO!==currentDate()||currentMinute()>found.m.end)return {ok:false,reason:'Room travel is available only on the class date before it ends.'};
+  const mins=7;if(currentMinute()+mins>found.m.end)return {ok:false,reason:'The lecture will finish before you reach this room.'};advanceTime(mins,{silent:true});if(!uni3AtCampus())return {ok:false,reason:'Campus presence was lost.'};
+  uni3State().presence.roomId=found.m.roomId;return {ok:true,minutes:mins,roomId:found.m.roomId};
+ }
+ return {ok:false,reason:'Unknown university travel action.'};
+}
+function uni3Attend(id){
+ const found=uni3Lookup(id);if(!found)return {ok:false,reason:'No eligible session in the current term.'};
+ const {m,r,t}=found,cal=uni3CalendarEvent(m);
+ if(!t.courseIds.includes(m.courseId)||!cal||cal.type!==UNI3_TYPE||!uni3MatchEvent(cal))return {ok:false,reason:'Class is not an active registered Calendar meeting.'};
+ if(r.receipts[id]||isTerminal(cal.status))return {ok:false,reason:'Class already resolved.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==m.roomId)return {ok:false,reason:'Enter the correct university classroom to attend.'};
+ if(m.dateISO!==currentDate()||currentMinute()<m.start-5||currentMinute()>=m.end)return {ok:false,reason:'Attendance only opens five minutes before class and closes at the end.'};
+ if(currentMinute()>m.start+25)return {ok:false,reason:'Arrival exceeds the 25-minute late cutoff.'};
+ if(!Number.isFinite(S.health)||!Number.isFinite(S.energy)||S.health<20||S.energy<12)return {ok:false,reason:'Health or energy is too low to participate.'};
+ const occupied=S.calendar.find(e=>e.id!==cal.id&&!isTerminal(e.status)&&e.required&&['Attending','Due'].includes(e.status)&&e.dateISO===currentDate()&&e.startMinute<m.end&&e.endMinute>currentMinute());
+ if(occupied)return {ok:false,reason:'Another activity is in progress.'};
+ const late=Math.max(0,currentMinute()-m.start),duration=m.end-currentMinute();
+ if(duration<1||duration>180)return {ok:false,reason:'Invalid remaining class time.'};
+ cal.status='Attending';cal.history.push({from:'Due',to:'Attending',dateISO:currentDate(),minute:currentMinute(),reason:'Physical classroom check-in'});
+ // The canonical clock processes intermediate obligations; it must not miss this Attending class.
+ advanceTime(duration,{silent:true});
+ const result=uni3Receipt(m,late?'late':'attended',late?`${late} minutes late`:'Attended on time',{arrivalMinute:m.end-duration,lateMinutes:late,timeSpentMinutes:duration});
+ if(result.ok){S.energy=clamp(S.energy-3);S.stress=clamp(S.stress+1);if(!SIM.skipping)log(late?'Late university class':'University class attended',`${UNI1_COURSES[m.courseId].title}: ${m.type} (${duration} min) at ${m.roomId}.`);}
+ return result;
+}
+function uni3Excuse(id){
+ const found=uni3Lookup(id);if(!found)return {ok:false,reason:'No current active class.'};
+ const {m,r}=found;if(r.receipts[id])return {ok:false,reason:'Session already resolved.'};
+ const illness=S.healthState?.condition;
+ if(!illness||typeof illness!=='object'||!illness.id||!illness.started||illness.started>m.dateISO||!ILLNESSES[illness.type])return {ok:false,reason:'A verified active illness record is required; self-excuse is unavailable.'};
+ if(m.dateISO!==currentDate()||currentMinute()<m.start-60||currentMinute()>m.end)return {ok:false,reason:'Excuse can be requested only near the actual class.'};
+ return uni3Receipt(m,'excused','Existing active health episode',{excuseSource:illness.id});
+}
+function uni3Migrate(){
+ if(!S?.uni)return;const s=uni3State();if(S.location==='University'&&(!S.uni.enrolled||s.presence?.institutionId!==uni1InstitutionId(S.uni,S)))uni3ForceHome('Saved university location no longer valid');
+ for(const [key,r] of Object.entries(s.terms)){
+  const t=S.uni.termEnrollments?.terms?.[key];
+  if(!r||!t||r.institutionId!==t.institutionId||r.programId!==t.programId||!r.receipts||!r.plans){
+   (s.quarantine||(s.quarantine=[])).push({key,reason:'Incompatible historical schedule; retained in save quarantine'});
+   // Copy the untrusted record rather than assigning an attendance/pass to another term.
+   (s.invalidTerms||(s.invalidTerms={}))[key]=r;delete s.terms[key];continue;
+  }
+  const tracks=new Set();for(const [id,plan] of Object.entries(r.plans)){
+   if(!UNI1_PROGRAMS[t.programId]?.requiredCourseIds.includes(id)||!uni3PlanValid(t,id,plan)||plan.active&&tracks.has(plan.track)){
+    (s.invalidPlans||(s.invalidPlans=[])).push({termKey:key,id,reason:'Invalid timetable plan'});delete r.plans[id];continue;
+   }
+   if(plan.active)tracks.add(plan.track);
+  }
+  for(const [id,rec] of Object.entries(r.receipts)){
+   const plan=r.plans[rec?.courseId],meeting=plan?.meetings?.find(x=>x.code===rec?.code),expected=meeting&&uni3Meeting(t,r,rec.courseId,rec.dateISO,meeting);
+   if(!rec||rec.id!==id||!UNI3_TERMINAL.includes(rec.status)||rec.institutionId!==t.institutionId||rec.programId!==t.programId||!UNI1_COURSES[rec.courseId]||!UNI1_PROGRAMS[t.programId]?.requiredCourseIds.includes(rec.courseId)||!expected||expected.id!==id||expected.roomId!==rec.roomId||expected.start!==rec.start||expected.end!==rec.end||!uni3ValidDay(rec.dateISO)||parseISO(rec.dateISO).getUTCDay()!==meeting.weekday){
+    (s.invalidReceipts||(s.invalidReceipts=[])).push({termKey:key,id,reason:'Invalid class receipt'});delete r.receipts[id];
+   }
+  }
+ }
+}
+const uni3PreviousMigrate=migrate;
+migrate=function(...args){const result=uni3PreviousMigrate.apply(this,args);uni3Migrate();return result;};
+// UNI.2 controls registration; UNI.3 observes only a successful committed mutation.
+const uni3PreviousRegister=uni2Register;
+uni2Register=function(action,id){
+ const before=S.uni?.termEnrollments?.terms?.[S.uni?.semKey],previous=before?.courseIds?.slice()||[];
+ const result=uni3PreviousRegister(action,id);
+ if(result.ok&&!result.unchanged&&S.uni){
+  const s=uni3State(),t=S.uni.termEnrollments?.terms?.[S.uni.semKey];
+  if(t&&t.status==='confirmed'){
+   const r=uni3Term(t);if(r){for(const cid of t.courseIds)if(!previous.includes(cid)||!r.effective[cid]){r.effective[cid]=uni3Now();if(r.plans[cid])r.plans[cid].active=true;}
+    // A dropped/withdrawn class cancels only future sessions; past receipts remain.
+    for(const cid of previous)if(!t.courseIds.includes(cid)&&r.plans[cid])r.plans[cid].active=false;
+   }
+  }
+  uni3Sync();
+ }
+ return result;
+};
+// Generate at the canonical calendar boundary; never route through generic obligations.
+const uni3EarlierProcessCalendar=processCalendar;
+processCalendar=function(...args){if(S?.uni)uni3Sync();return uni3EarlierProcessCalendar.apply(this,args);};
+const uni3EarlierUniversityHtml=universityHtml;
+universityHtml=function(...args){const html=uni3EarlierUniversityHtml.apply(this,args);if(!S?.uni?.enrolled)return html;
+ const panel=uni3Html(),pos=html.lastIndexOf('</section>');return pos>=0?html.slice(0,pos)+panel+html.slice(pos):html+panel;
+};
+function uni3Html(){
+ const s=uni3State(),cur=uni3Current();
+ if(!cur)return `<div class="uni3-wrap"><h4>My Weekly Schedule · UNI.3</h4><p class="muted-text">Confirm current semester courses in UNI.2 to unlock physical university classes. No automatic attendance.</p></div>`;
+ const {t,r}=cur,now=currentDate(),weekStart=addDays(now,-((parseISO(now).getUTCDay()+6)%7)),all=uni3Upcoming(t,r,weekStart,7),today=all.filter(x=>x.dateISO===now),up=uni3Upcoming(t,r,now,10).find(x=>!uni3IsPast(x.dateISO,x.end)&&!r.receipts[x.id]);
+ const counts=t.courseIds.map(id=>{const rr=Object.values(r.receipts).filter(x=>x.courseId===id),present=rr.filter(x=>x.status==='attended'||x.status==='late').length;
+ return `<li>${esc(UNI1_COURSES[id].title)}: ${present} present (${rr.filter(x=>x.status==='late').length} late), ${rr.filter(x=>x.status==='missed').length} missed, ${rr.filter(x=>x.status==='excused').length} excused · ${rr.length} resolved meetings</li>`;}).join('');
+ const row=(m,actions=false)=>{const rec=r.receipts[m.id],status=rec?.status|| (uni3IsPast(m.dateISO,m.end)?'missed':m.dateISO===now&&currentMinute()>=m.start?'Due':'Upcoming'),rooms=uni3Rooms(t.institutionId),room=Object.values(rooms).find(x=>x.id===m.roomId),onDay=m.dateISO===now;
+  return `<li class="uni3-class"><span><b>${esc(UNI1_COURSES[m.courseId].title)} · ${esc(m.type)}</b><small>${esc(m.courseId)} · ${esc(m.dateISO)} · ${timeLabel(m.start)}–${timeLabel(m.end)} · ${esc(room?.building||'Academic Centre')} / ${esc(room?.label||m.roomId)} · ${esc(status)}</small></span>${!rec&&onDay&&actions?`<span class="inline-actions"><button class="small ghost" data-uni3-room="${esc(m.id)}">Go to room · 7 min</button><button class="small primary" data-uni3-attend="${esc(m.id)}">Attend ${esc(m.type)}</button><button class="small ghost" data-uni3-excuse="${esc(m.id)}">Request medical excuse</button></span>`:''}</li>`;};
+ const receipts=Object.values(r.receipts).sort((a,b)=>b.dateISO.localeCompare(a.dateISO)||b.start-a.start).slice(0,12);
+ return `<section class="uni3-wrap" data-uni3-panel="1" aria-label="University class timetable"><h4>My Weekly Schedule · UNI.3</h4>
+ <p>${esc(S.uni.school)} · ${esc(t.termKey)} · ${esc(t.courseIds.length)} confirmed courses · ${esc(t.courseIds.length*3)} registered credits (not earned)</p>
+ <p>Campus: <b>${esc(uni3AtCampus()?`On campus${s.presence.roomId?' · '+s.presence.roomId:''}`:S.location||'Home')}</b> · Commute is an in-game estimate, not real distance.</p>
+ <div class="inline-actions">${!uni3AtCampus()?'<button class="small primary" data-uni3-travel="campus">Travel to university</button>':'<button class="small ghost" data-uni3-travel="leave">Leave campus / Go home</button>'}</div>
+ <p>Next class: <b>${up?`${esc(UNI1_COURSES[up.courseId].title)} · ${esc(up.dateISO)} ${timeLabel(up.start)}`:'None in the current 7-day view'}</b></p>
+ <details open><summary>Today’s lectures / tutorials / labs (${today.length})</summary><ul class="uni3-list">${today.map(m=>row(m,true)).join('')||'<li>There are no scheduled classes today.</li>'}</ul></details>
+ <details><summary>Weekly Schedule · Monday–Sunday (${esc(weekStart)}–${esc(addDays(weekStart,6))})</summary><ul class="uni3-list">${all.map(row).join('')||'<li>No active teaching sessions this week (holiday, break or no confirmed courses).</li>'}</ul></details>
+ <details><summary>Attendance by course & history</summary><ul>${counts}</ul><h5>Recent verified outcomes</h5><ul>${receipts.map(x=>`<li>${esc(x.dateISO)} · ${esc(UNI1_COURSES[x.courseId]?.title||x.courseId)} ${esc(x.type)}: ${esc(x.status)}${x.lateMinutes?` (${x.lateMinutes} min late)`:''}</li>`).join('')||'<li>No attendance recorded. Previous legacy attendance remains unknown.</li>'}</ul></details>
+ <p class="muted-text">Lectures need the correct campus room and real in-game time. Late cutoff: 25 min. Holidays have no mandatory classes. Attendance does not award grades, passed courses or degree credits (UNI.4).</p></section>`;
+}
+const uni3EarlierUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{},action=d.uni3Travel?'travel':d.uni3Room?'room':d.uni3Attend?'attend':d.uni3Excuse?'excuse':null;
+ if(action){let result;
+  if(action==='travel')result=uni3Travel(d.uni3Travel);
+  else if(action==='room')result=uni3Travel('room',d.uni3Room);
+  else if(action==='attend')result=uni3Attend(d.uni3Attend);
+  else result=uni3Excuse(d.uni3Excuse);
+  toast(result.ok?`${action==='attend'?'Class attendance recorded':action==='travel'?'Campus travel completed':action==='room'?'Arrived at classroom':'Medical excuse recorded'}.`:result.reason||'Action unavailable');
+  if(result.ok){save();render();}return true;
+ }
+ return uni3EarlierUniClick(b);
+};
+// UNI.4 — source-backed course assessments, earned credits, and verified GPA.
+// UNI.2 owns enrollment/finances; UNI.3 owns lectures/location; core72 owns Calendar/clock.
+const UNI4_SCHEMA=1, UNI4_TYPE='universityAssessmentUNI4',UNI4_KINDS=['assignment','quiz','project','midterm','final'];
+const UNI4_WEIGHTS={assignment:15,quiz:15,project:20,midterm:20,final:30};
+const UNI4_TERMINAL=['completed','missed','cancelled','withdrawn','excused'];
+const UNI4_QUESTIONS={
+ cs:['What is the main purpose of a function in a program?',['Reuse a named computation','Store electrical energy','Design a physical keyboard'],0],
+ engineering:['Which principle guides a safe structural design?',['Ignore load limits','Account for forces and material strength','Use only appearance'],1],
+ business:['A company sells below its variable cost. What is an immediate concern?',['Higher profit per unit','Costs exceed revenue from each sale','No financial effect'],1],
+ economics:['When supply stays fixed and demand rises, what generally happens to equilibrium price?',['It rises','It must become zero','It cannot change'],0],
+ law:['What is the purpose of citing legal precedent?',['Replace all statutes','Support reasoning with prior relevant decisions','Avoid examining facts'],1],
+ fineArts:['Which element describes lightness or darkness in a drawing?',['Value','Tempo','Voltage'],0],
+ design:['Why use visual hierarchy in a layout?',['Make every element identical','Guide attention to important information','Remove all contrast'],1],
+ music:['What does tempo describe?',['The speed of music','The key signature only','The instrument material'],0],
+ media:['What should a journalist verify before publishing a claim?',['Number of emojis','Credibility of sources','Font size alone'],1],
+ literature:['Which technique uses a recurring object to suggest a larger idea?',['Symbolism','Long division','Calibration'],0],
+ education:['Why is formative assessment useful?',['It informs teaching during learning','It replaces all practice','It guarantees identical outcomes'],0],
+ psychology:['What is informed consent in research?',['Voluntary agreement after understanding the study','Secret data gathering','An automatic grade'],0],
+ biology:['What structure contains most genetic material in a eukaryotic cell?',['Cell membrane','Nucleus','Ribosome only'],1],
+ nursing:['Which action best supports patient safety?',['Verify identity and medication instructions','Guess medication doses','Ignore allergy records'],0],
+ sports:['What is progressive overload?',['Gradual increase in training demand','Avoiding all rest','Maximum exertion without progression'],0],
+ culinary:['Which practice reduces cross-contamination?',['Use the same unwashed board','Keep raw and cooked food separate','Store perishables warm'],1],
+ general:['What makes a research conclusion reliable?',['Evidence supported by documented methods','Guessing without sources','Choosing only convenient results'],0]
+};
+function uni4Now(){return {dateISO:currentDate(),minute:currentMinute()};}
+function uni4Past(date,minute){return date<currentDate()||(date===currentDate()&&currentMinute()>minute);}
+function uni4Audit(reason,key){const s=uni4State();if(s&&s.quarantine.length<40)s.quarantine.push({reason,key:String(key||'').slice(0,140)});}
+function uni4State(){if(!S?.uni)return null;let s=S.uni.coursework;
+ if(!s||s.schemaVersion!==UNI4_SCHEMA||!s.terms||typeof s.terms!=='object'||Array.isArray(s.terms)){
+  // Never trust another schema as genuine grades; retain only compact diagnostics.
+  if(s)S.uni.courseworkInvalid={reason:'unsupported coursework schema'};
+  s=S.uni.coursework={schemaVersion:UNI4_SCHEMA,bootstrappedAt:uni4Now(),terms:{},quarantine:[]};
+ }
+ if(!s.bootstrappedAt||typeof s.bootstrappedAt.dateISO!=='string')s.bootstrappedAt=uni4Now();
+ if(!Array.isArray(s.quarantine))s.quarantine=[];
+ return s;
+}
+function uni4ActiveTerm(t){if(!t||t.status!=='confirmed'||!uni3ValidTerm(t)||!S.uni?.enrolled||t.termKey!==S.uni.semKey)return false;
+ const p=UNI1_PROGRAMS[t.programId];return !!p&&t.majorId===S.uni.major&&p.requiredCourseIds.every(id=>typeof id==='string');}
+function uni4AssessmentId(t,id,kind){return `uni4|${t.institutionId}|${t.termKey}|${t.programId}|${id}|${kind}`;}
+function uni4DateValid(date,t){if(!uni3ValidDay(date))return false;const a=academicInfo(date);return a.key===t.academicYear&&a.semester===t.semester;}
+function uni4NextDate(date,t,latest){for(let i=0;i<25;i++){const x=addDays(date,i);if(x>latest)break;if(uni4DateValid(x,t))return x;}return null;}
+function uni4Point(score){return score>=90?['A',4,true]:score>=80?['B',3,true]:score>=70?['C',2,true]:score>=60?['D',1,true]:['F',0,false];}
+function uni4Term(t){const state=uni4State();if(!state||!uni4ActiveTerm(t))return null;let r=state.terms[t.termKey];
+ if(r&&(r.institutionId!==t.institutionId||r.programId!==t.programId||r.majorId!==t.majorId||r.termKey!==t.termKey||!r.courseRecords||typeof r.courseRecords!=='object')){
+  uni4Audit('term identity mismatch',t.termKey);delete state.terms[t.termKey];r=null;
+ }
+ if(!r){const start=state.bootstrappedAt,now=uni4Now(),effective=now.dateISO>t.opened?now:{dateISO:t.opened,minute:now.minute};
+  // Existing registrations acquire only future work; late migration cannot fake the lost semester.
+  const days=daysBetween(effective.dateISO,t.termEnd);
+  r=state.terms[t.termKey]={termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,effectiveAt:effective,courseRecords:{},migrationLimited:days<33,finalizedAt:null,termGpa:null};
+ }
+ return r;
+}
+function uni4Syllabus(t,r,id){const p=UNI1_PROGRAMS[t.programId];if(!p?.requiredCourseIds.includes(id))return null;
+ const effective=r.effectiveAt?.dateISO||currentDate(),end=t.termEnd,days=daysBetween(effective,end);
+ if(days<33)return null;
+ const courseIndex=p.requiredCourseIds.indexOf(id),dayShift=courseIndex%6;
+ const bases=[.16,.30,.62,.49,.88]; // midterm falls before the project, but displayed in kind order
+ const out={};
+ for(let j=0;j<UNI4_KINDS.length;j++){
+  const kind=UNI4_KINDS[j];let date=uni4NextDate(addDays(effective,Math.max(3,Math.floor(days*bases[j])+dayShift)),t,end);
+  if(['quiz','midterm','final'].includes(kind))for(let attempt=0;date&&attempt<20;attempt++){
+   const occupied=Object.values(r.courseRecords).some(c=>Object.values(c.assessments||{}).some(a=>['quiz','midterm','final'].includes(a.kind)&&a.dueAt===date));
+   if(!occupied)break;date=uni4NextDate(addDays(date,1),t,end);
+  }
+  if(!date)return null;
+  const exam=kind==='midterm'||kind==='final',work=kind==='assignment'||kind==='project';
+  const windowStart=exam||kind==='quiz'?1080:540,windowEnd=exam||kind==='quiz'?1170:1200;
+  const release=work?addDays(date,-Math.min(14,Math.max(3,Math.floor(days*.08)))):addDays(date,kind==='quiz'?-5:-7);
+  const safeRelease=release<effective?effective:release;
+  const room=exam?uni3Rooms(t.institutionId).hall?.id||null:null;
+  out[kind]={id:uni4AssessmentId(t,id,kind),kind,courseId:id,weight:UNI4_WEIGHTS[kind],releaseAt:safeRelease,dueAt:date,startMinute:windowStart,endMinute:windowEnd,roomId:room,
+   status:'scheduled',workSessions:0,preparation:0,answers:[],score:null,receipt:null};
+ }
+ // Real exam dates may coincide with classes in other courses; 18:00 is after all UNI.3 meetings (<= 17:10).
+ if(new Set([out.quiz.dueAt,out.midterm.dueAt,out.final.dueAt]).size!==3)return null;
+ return out;
+}
+function uni4Ensure(){const t=S.uni?.termEnrollments?.terms?.[S.uni?.semKey];if(!uni4ActiveTerm(t))return null;
+ const r=uni4Term(t);if(!r)return null;
+ for(const id of t.courseIds){if(!r.courseRecords[id]){
+  const assessments=uni4Syllabus(t,r,id);if(!assessments){r.migrationLimited=true;continue;}
+  r.courseRecords[id]={courseId:id,assessmentVersion:1,assessments,status:'active',finalPercent:null,letterGrade:null,gradePoints:null,passed:false,finalizedAt:null};
+ }}
+ for(const [id,c] of Object.entries(r.courseRecords))if(!t.courseIds.includes(id)&&c.status==='active'){
+  c.status=t.withdrawnCourseIds.includes(id)?'withdrawn':'dropped';if(c.status==='withdrawn'){c.letterGrade='W';c.passed=false;c.finalizedAt=uni4Now();}
+  for(const a of Object.values(c.assessments))if(!UNI4_TERMINAL.includes(a.status))a.status=c.status==='withdrawn'?'withdrawn':'cancelled';
+ }
+ return {t,r};
+}
+function uni4ValidCourse(t,c,id){if(!c||c.courseId!==id||c.assessmentVersion!==1||!UNI1_PROGRAMS[t.programId]?.requiredCourseIds.includes(id)||!c.assessments||typeof c.assessments!=='object')return false;
+ if(Object.keys(c.assessments).length!==5)return false;
+ for(const kind of UNI4_KINDS){const a=c.assessments[kind];if(!a||a.id!==uni4AssessmentId(t,id,kind)||a.weight!==UNI4_WEIGHTS[kind]||a.courseId!==id||a.kind!==kind||!['scheduled','due',...UNI4_TERMINAL].includes(a.status)||!uni4DateValid(a.dueAt,t)||a.releaseAt>a.dueAt||a.startMinute<0||a.endMinute>1439||a.endMinute<=a.startMinute||!Number.isInteger(a.workSessions)||a.workSessions<0||a.workSessions>3||!Number.isInteger(a.preparation)||a.preparation<0||a.preparation>2||!Array.isArray(a.answers)||a.answers.length>2||a.answers.some(v=>!Number.isInteger(v)||v<0||v>2))return false;
+  if(a.status==='completed'&&(!Number.isFinite(a.score)||a.score<0||a.score>100||!a.receipt||a.receipt.id!==a.id||a.receipt.score!==a.score||a.receipt.kind!==a.kind||a.receipt.dateISO<a.releaseAt||a.receipt.dateISO>a.dueAt||!Number.isFinite(a.skillEvidence)||a.skillEvidence<0||a.skillEvidence>100||!Number.isInteger(a.attendanceEvidence)||a.attendanceEvidence<0||a.attendanceEvidence>8))return false;
+  if(a.roomId&&a.roomId!==uni3Rooms(t.institutionId).hall?.id)return false;
+ }
+ return true;
+}
+function uni4Question(t,id,kind,index){const course=UNI1_COURSES[id],key=course?.group==='generalEducation'?'general':t.majorId;
+ const q=UNI4_QUESTIONS[key]||UNI4_QUESTIONS.general,other=UNI4_QUESTIONS.general;
+ return index===0?q:other;
+}
+function uni4AttendanceBonus(t,id){const receipts=Object.values(S.uni?.academicSchedule?.terms?.[t.termKey]?.receipts||{}).filter(x=>x.courseId===id&&x.dateISO<=currentDate());
+ const present=receipts.filter(x=>x.status==='attended'||x.status==='late').length,missed=receipts.filter(x=>x.status==='missed').length;
+ return Math.max(0,Math.min(8,Math.round(present*1.5-missed*.25)));}
+function uni4ComputeScore(t,id,a){const attendance=a.attendanceEvidence??uni4AttendanceBonus(t,id);if(a.kind==='assignment'||a.kind==='project'){
+  const skill=MAJORS[t.majorId]?.skill||'knowledge',lvl=Math.max(0,Math.min(100,Number(a.skillEvidence??S.skills?.[skill])||0));
+  return Math.min(100,Math.round(35+a.workSessions*16+Math.min(12,lvl*.12)+attendance));
+ }
+ const matched=a.answers.reduce((v,choice,i)=>v+(choice===uni4Question(t,id,a.kind,i)[2]?1:0),0);
+ const skill=MAJORS[t.majorId]?.skill||'knowledge',lvl=Math.max(0,Math.min(100,Number(a.skillEvidence??S.skills?.[skill])||0));
+ return Math.min(100,Math.round(25+matched*32+Math.min(11,lvl*.11)+a.preparation*3+attendance));
+}
+function uni4CurrentAssessment(id){const cur=uni4Ensure();if(!cur||typeof id!=='string')return null;
+ for(const cid of cur.t.courseIds){const c=cur.r.courseRecords[cid];if(c?.status!=='active'||!uni4ValidCourse(cur.t,c,cid))continue;
+  for(const a of Object.values(c.assessments))if(a.id===id)return {...cur,c,cid,a};}
+ return null;
+}
+function uni4Allowed(a){if(UNI4_TERMINAL.includes(a.status))return {ok:false,reason:'Assessment already resolved.'};
+ if(currentDate()<a.releaseAt)return {ok:false,reason:`Opens ${a.releaseAt}.`};
+ if(uni4Past(a.dueAt,a.endMinute))return {ok:false,reason:`Deadline passed ${a.dueAt}.`};
+ return {ok:true};}
+function uni4Action(type,id,choice){const f=uni4CurrentAssessment(id);if(!f)return {ok:false,reason:'No matching active university assessment.'};
+ const {t,cid,a}=f,g=uni4Allowed(a);if(!g.ok)return g;
+ if(!['Home','University'].includes(S.location)||S.location==='University'&&!uni3AtCampus())return {ok:false,reason:'Work at home or your own university campus.'};
+ if(!Number.isFinite(currentMinute())||S.energy<8||S.health<10)return {ok:false,reason:'Rest or recover before academic work.'};
+ const work=a.kind==='assignment'||a.kind==='project';
+ if(type==='prepare'){
+  if(work)return {ok:false,reason:'Use Work for assignment/project preparation.'};
+  if(a.preparation>=2)return {ok:false,reason:'Preparation cap reached.'};
+  if(currentDate()===a.dueAt&&currentMinute()>a.startMinute-45)return {ok:false,reason:'Prepare before your sitting starts.'};
+  advanceTime(45,{silent:true});a.preparation++;S.energy=clamp(S.energy-3);return {ok:true,preparation:a.preparation};
+ }
+ if(type==='work'){
+  if(!work)return {ok:false,reason:'Use the interactive assessment answers.'};
+  if(a.workSessions>=3)return {ok:false,reason:'Preparation complete; submit the work.'};
+  if(currentDate()===a.dueAt&&currentMinute()>a.endMinute-45)return {ok:false,reason:'Not enough time before deadline.'};
+  advanceTime(45,{silent:true});a.workSessions++;S.energy=clamp(S.energy-3);S.stress=clamp(S.stress+1);
+  return {ok:true,progress:a.workSessions};
+ }
+ if(type==='submit'){
+  if(!work||a.workSessions<2)return {ok:false,reason:'Complete at least two real work sessions before submitting.'};
+  const skill=MAJORS[t.majorId]?.skill||'knowledge';a.skillEvidence=Math.max(0,Math.min(100,Number(S.skills?.[skill])||0));a.attendanceEvidence=uni4AttendanceBonus(t,cid);
+  const score=uni4ComputeScore(t,cid,a);return uni4Commit(f,score);
+ }
+ if(type==='answer'){
+  if(work)return {ok:false,reason:'Complete work sessions and submit this assignment/project.'};
+  if(a.dueAt!==currentDate()||currentMinute()<a.startMinute||currentMinute()>a.endMinute-(a.kind==='quiz'?25:45))return {ok:false,reason:`Sit this assessment ${a.dueAt}, ${timeLabel(a.startMinute)}–${timeLabel(a.endMinute)}.`};
+  if(a.kind==='midterm'||a.kind==='final'){
+   if(!uni3AtCampus()||uni3State().presence?.roomId!==a.roomId)return {ok:false,reason:'Travel to the correct university campus and exam hall first.'};
+  }
+  if(!Number.isInteger(choice)||choice<0||choice>2)return {ok:false,reason:'Choose one of the offered answers.'};
+  if(a.answers.length>=2)return {ok:false,reason:'Question responses already recorded.'};
+  // Answer decisions are persisted before consuming time; no re-roll on reload.
+  a.answers.push(choice);advanceTime(a.kind==='quiz'?12:20,{silent:true});S.energy=clamp(S.energy-2);
+  if(a.answers.length===2){const skill=MAJORS[t.majorId]?.skill||'knowledge';a.skillEvidence=Math.max(0,Math.min(100,Number(S.skills?.[skill])||0));a.attendanceEvidence=uni4AttendanceBonus(t,cid);return uni4Commit(f,uni4ComputeScore(t,cid,a));}
+  return {ok:true,progress:a.answers.length};
+ }
+ return {ok:false,reason:'Unknown academic action.'};
+}
+function uni4Commit(f,score){const {t,cid,a}=f;if(UNI4_TERMINAL.includes(a.status))return {ok:false,reason:'Already finalized.'};
+ a.score=score;a.status='completed';a.receipt={id:a.id,dateISO:currentDate(),minute:currentMinute(),score,kind:a.kind};
+ const ev=(S.calendar||[]).find(e=>e.id==='cal-'+a.id);if(ev)setCalendarStatus(ev,'Completed','Verified UNI.4 assessment receipt');
+ uni4TryFinalizeCourse(t,f.r,f.c);return {ok:true,score};
+}
+function uni4Miss(t,r,c,a,reason='Assessment window expired'){
+ if(UNI4_TERMINAL.includes(a.status))return false;
+ a.status='missed';a.score=0;a.receipt={id:a.id,dateISO:currentDate(),minute:currentMinute(),score:0,reason};
+ const ev=(S.calendar||[]).find(e=>e.id==='cal-'+a.id);if(ev)setCalendarStatus(ev,'Missed',reason);
+ uni4TryFinalizeCourse(t,r,c);return true;
+}
+function uni4MedicalExcuse(id){const f=uni4CurrentAssessment(id);if(!f)return {ok:false,reason:'No active assessment.'};
+ const {a}=f,illness=S.healthState?.condition;
+ if(!illness||typeof illness!=='object'||!illness.id||!illness.started||illness.started>a.dueAt||!ILLNESSES[illness.type])return {ok:false,reason:'No verified active health episode; medical excusal unavailable.'};
+ if(a.dueAt!==currentDate()||currentMinute()<a.startMinute-60||currentMinute()>a.endMinute)return {ok:false,reason:'Medical excuse only available near the scheduled assessment.'};
+ if(UNI4_TERMINAL.includes(a.status))return {ok:false,reason:'Assessment already resolved.'};
+ a.status='excused';a.score=null;a.receipt={id:a.id,kind:a.kind,dateISO:currentDate(),minute:currentMinute(),excuseSource:illness.id,reason:'Existing illness — incomplete, no grade or credits'};
+ const ev=(S.calendar||[]).find(e=>e.id==='cal-'+a.id);if(ev)setCalendarStatus(ev,'Excused','Verified health episode; assessment remains incomplete');
+ return {ok:true,excused:true};
+}
+function uni4TryFinalizeCourse(t,r,c){if(c.finalizedAt||c.status!=='active'||!uni4ValidCourse(t,c,c.courseId))return false;
+ const assessments=Object.values(c.assessments);if(!assessments.every(a=>a.status==='completed'||a.status==='missed'))return false;
+ const sum=assessments.reduce((n,a)=>n+(a.score||0)*a.weight/100,0),[letter,points,passed]=uni4Point(sum);
+ c.finalPercent=Math.round(sum*100)/100;c.letterGrade=letter;c.gradePoints=points;c.passed=passed;c.finalizedAt=uni4Now();c.status='graded';
+ uni4ReconcileCredits();return true;
+}
+function uni4GradeEvidence(t,c){if(!c||c.status!=='graded'||!c.finalizedAt||!uni4ValidCourse(t,c,c.courseId))return null;
+ const list=Object.values(c.assessments);if(!list.every(a=>a.status==='completed'||a.status==='missed'))return null;
+ for(const a of list){if(a.status==='completed'&&a.score!==uni4ComputeScore(t,c.courseId,a))return null;if(a.status==='missed'&&a.score!==0)return null;}
+ const final=Math.round(list.reduce((n,a)=>n+a.score*a.weight/100,0)*100)/100;
+ const [l,points,passed]=uni4Point(final);
+ if(c.finalPercent!==final||c.letterGrade!==l||c.gradePoints!==points||c.passed!==passed)return null;
+ return {letter:l,points,passed,score:final};
+}
+function uni4ReconcileCredits(){const state=uni4State(),dc=S.uni?.degreeContract,p=dc?.programId&&UNI1_PROGRAMS[dc.programId];if(!state||!p)return;
+ const completed=new Set(),graded=[];
+ for(const [key,r] of Object.entries(state.terms)){
+  const t=S.uni.termEnrollments?.terms?.[key];if(!t||r.programId!==p.id||r.institutionId!==p.institutionId||r.majorId!==p.majorId)continue;
+  for(const [id,c] of Object.entries(r.courseRecords||{})){
+   if(!p.requiredCourseIds.includes(id)||!t.attemptedCourseIds.includes(id)||c.courseId!==id)continue;
+   const v=uni4GradeEvidence(t,c);if(!v)continue;
+   graded.push({key,id,points:v.points,score:v.score,passed:v.passed});if(v.passed)completed.add(id);
+  }
+ }
+ const sorted=[...completed].sort();dc.completedCourseIds=sorted;dc.verifiedEarnedCredits=Math.min(p.totalCredits,sorted.reduce((n,id)=>n+UNI1_COURSES[id].credits,0));
+ const sum=graded.reduce((n,x)=>n+x.points*UNI1_COURSES[x.id].credits,0),credits=graded.reduce((n,x)=>n+UNI1_COURSES[x.id].credits,0);
+ S.uni.verifiedCumulativeGpa=credits?Math.round(sum/credits*100)/100:null;
+}
+function uni4FinalizeTerm(key){const s=uni4State(),r=s?.terms?.[key],t=S.uni?.termEnrollments?.terms?.[key];
+ if(!r||!t||r.finalizedAt)return r||null;
+ if(r.institutionId!==t.institutionId||r.programId!==t.programId||r.majorId!==t.majorId){uni4Audit('close identity conflict',key);return null;}
+ for(const [id,c] of Object.entries(r.courseRecords)){
+  if(!uni4ValidCourse(t,c,id)){uni4Audit('invalid course outcome',id);continue;}
+  if(t.withdrawnCourseIds.includes(id)){c.status='withdrawn';c.letterGrade='W';c.passed=false;continue;}
+  if(!t.attemptedCourseIds.includes(id))continue;
+  // An older migrated, unassessable term remains unknown (not a guessed failure).
+  if(r.migrationLimited)continue;
+  for(const a of Object.values(c.assessments))if(!UNI4_TERMINAL.includes(a.status))uni4Miss(t,r,c,a,'Unsubmitted by semester close');
+  uni4TryFinalizeCourse(t,r,c);
+ }
+ const valid=Object.values(r.courseRecords).map(c=>({c,v:uni4GradeEvidence(t,c)})).filter(x=>x.v&&t.attemptedCourseIds.includes(x.c.courseId));
+ const denom=valid.reduce((n,x)=>n+UNI1_COURSES[x.c.courseId].credits,0),g=denom?Math.round(valid.reduce((n,x)=>n+x.v.points*UNI1_COURSES[x.c.courseId].credits,0)/denom*100)/100:null;
+ r.termGpa=g;r.finalizedAt=uni4Now();uni4ReconcileCredits();
+ if(g!==null){const u=S.uni;if(!Array.isArray(u.semGpas))u.semGpas=[];
+  if(!u.semGpas.some(x=>x.sem===key&&x.provenance==='UNI.4-verified'))u.semGpas.push({sem:key,year:t.year,gpa:g,provenance:'UNI.4-verified',gradedCourses:valid.length});
+  u.lastSemGpa=g;u.gpa=u.verifiedCumulativeGpa;u.awardWindow={from:currentDate(),to:addDays(currentDate(),14),applied:{}};
+  if(!SIM.skipping)notify('Verified university grades posted',`Term ${key}: ${g.toFixed(2)} GPA from actual coursework.`,{sourceType:'uni4Grade',sourceId:key,tab:'school'});
+ }
+ return r;
+}
+function uni4HasModernTerm(key){return !!uni4State()?.terms?.[key];}
+function uni4HasAnyModern(){return Object.keys(uni4State()?.terms||{}).length>0;}
+function uni4CalendarTick(ev){const key=ev.payload?.termKey,id=ev.payload?.courseId,kind=ev.payload?.kind,t=S.uni?.termEnrollments?.terms?.[key],r=uni4State()?.terms?.[key],c=r?.courseRecords?.[id],a=c?.assessments?.[kind];
+ if(!t||!r||!c||!a||a.id!=='uni4|'+t.institutionId+'|'+key+'|'+t.programId+'|'+id+'|'+kind||ev.id!=='cal-'+a.id||!uni4ValidCourse(t,c,id)||!t.courseIds.includes(id)){
+  setCalendarStatus(ev,'Cancelled','Ineligible or obsolete assessment');return;
+ }
+ if(UNI4_TERMINAL.includes(a.status)){setCalendarStatus(ev,{completed:'Completed',missed:'Missed',withdrawn:'Cancelled',cancelled:'Cancelled',excused:'Excused'}[a.status],'Reconciled UNI.4 evidence');return;}
+ if(uni4Past(a.dueAt,a.endMinute)){uni4Miss(t,r,c,a);return;}
+ if(currentDate()===a.dueAt&&currentMinute()>=a.startMinute&&ev.status==='Scheduled'){setCalendarStatus(ev,'Due','UNI.4 assessment window open');if(!SIM.skipping)notify('University '+a.kind+' due',UNI1_COURSES[id].title+' · '+timeLabel(a.startMinute),{sourceType:UNI4_TYPE,sourceId:ev.id,tab:'school'});}
+}
+function uni4Sync(){if(!S?.uni)return;const state=uni4State(),cur=uni4Ensure();
+ for(const ev of S.calendar||[])if(ev.type===UNI4_TYPE&&!isTerminal(ev.status)&&(!cur||ev.payload?.termKey!==cur.t.termKey))setCalendarStatus(ev,'Cancelled','Not an active UNI.4 term');
+ if(!cur)return;
+ const {t,r}=cur,upcoming=[];
+ for(const id of t.courseIds){const c=r.courseRecords[id];if(!c||c.status!=='active'||!uni4ValidCourse(t,c,id)){if(c)uni4Audit('invalid active course schema',id);continue;}
+  for(const a of Object.values(c.assessments)){
+   if(!UNI4_TERMINAL.includes(a.status)&&uni4Past(a.dueAt,a.endMinute))uni4Miss(t,r,c,a);
+   if(UNI4_TERMINAL.includes(a.status))continue;
+   if(a.dueAt>=currentDate()&&a.dueAt<=addDays(currentDate(),10))upcoming.push(a);
+  }
+ }
+ const wanted=new Set(upcoming.map(a=>'cal-'+a.id));
+ for(const ev of S.calendar||[])if(ev.type===UNI4_TYPE&&!isTerminal(ev.status)&&!wanted.has(ev.id))setCalendarStatus(ev,'Cancelled','Outside active assessment window');
+ for(const a of upcoming)if(!(S.calendar||[]).some(e=>e.id==='cal-'+a.id)){
+  const id=a.id,parts=id.split('|');createCalendarEvent({id:'cal-'+id,type:UNI4_TYPE,title:`University ${a.kind}: ${UNI1_COURSES[a.courseId].title}`,dateISO:a.dueAt,
+   startMinute:a.startMinute,endMinute:a.endMinute,graceMinute:a.endMinute,required:true,category:'School',sourceId:id,location:a.roomId||'University coursework',payload:{termKey:t.termKey,courseId:a.courseId,kind:a.kind}});
+ }
+ S.calendar=S.calendar.filter(ev=>ev.type!==UNI4_TYPE||!isTerminal(ev.status)||ev.dateISO>=addDays(currentDate(),-2));
+}
+function uni4Migrate(){if(!S?.uni)return;const s=uni4State();for(const [key,r] of Object.entries(s.terms)){
+ const t=S.uni.termEnrollments?.terms?.[key];if(!r||!t||r.termKey!==key||r.institutionId!==t.institutionId||r.programId!==t.programId||r.majorId!==t.majorId||!r.courseRecords||typeof r.courseRecords!=='object'||Array.isArray(r.courseRecords)){
+  uni4Audit('invalid term on migration',key);delete s.terms[key];continue;}
+ for(const [id,c] of Object.entries(r.courseRecords))if(!uni4ValidCourse(t,c,id)||!t.attemptedCourseIds.includes(id)){
+  uni4Audit('invalid course on migration',id);delete r.courseRecords[id];
+ }
+ }
+ uni4ReconcileCredits();
+}
+function uni4ExamTravel(){const cur=uni4Ensure();if(!cur)return {ok:false,reason:'No confirmed current-term courses.'};
+ if(!uni3AtCampus())return {ok:false,reason:'Travel to your university campus first using UNI.3.'};
+ if(!Number.isFinite(currentMinute())||currentMinute()>1220)return {ok:false,reason:'Exam building is closed.'};
+ if((S.calendar||[]).some(e=>e.status==='Attending'&&e.dateISO===currentDate()))return {ok:false,reason:'Finish the current committed event before walking to the exam hall.'};
+ const room=uni3Rooms(cur.t.institutionId).hall;if(!room)return {ok:false,reason:'Exam hall unavailable.'};
+ if(uni3State().presence.roomId===room.id)return {ok:true,unchanged:true};
+ advanceTime(7,{silent:true});if(!uni3AtCampus())return {ok:false,reason:'Campus location changed while walking.'};
+ uni3State().presence.roomId=room.id;return {ok:true,minutes:7};
+}
+function uni4Html(){if(!S?.uni?.enrolled)return '';
+ const cur=uni4Ensure(),s=uni4State(),dc=S.uni.degreeContract;
+ if(!cur)return `<section class="uni4-wrap"><h4>Coursework & Grades · UNI.4</h4><p>Confirm 3–6 real courses to receive assessment syllabi. Past course grades remain unknown unless verified.</p></section>`;
+ const {t,r}=cur;let list='';
+ for(const id of t.courseIds){const c=r.courseRecords[id];if(!c)continue;const rows=UNI4_KINDS.map(kind=>{const a=c.assessments[kind],status=a.status,work=kind==='assignment'||kind==='project';const eligible=uni4Allowed(a).ok;
+  const question=uni4Question(t,id,kind,Math.min(1,a.answers.length));
+  let actions='';
+  if(eligible&&!UNI4_TERMINAL.includes(status)){
+   if(work)actions=`<div class="inline-actions"><button class="small ghost" data-uni4-work="${esc(a.id)}">Work 45 min (${a.workSessions}/3)</button><button class="small primary" data-uni4-submit="${esc(a.id)}">Submit task</button></div>`;
+   else if(a.dueAt===currentDate()&&currentMinute()>=a.startMinute&&currentMinute()<=a.endMinute-(a.kind==='quiz'?25:45))actions=`<p>${esc(question[0])}</p><div class="inline-actions">${question[1].map((label,i)=>`<button class="small ghost" data-uni4-answer="${esc(a.id)}" data-uni4-choice="${i}">${esc(label)}</button>`).join('')}</div><small>Question ${a.answers.length+1} of 2 · Answers are final.</small>`;
+  }
+  if(eligible&&!UNI4_TERMINAL.includes(status)&&!work)actions+=`<button class="small ghost" data-uni4-prepare="${esc(a.id)}">Prepare 45 min (${a.preparation}/2)</button>`;
+  if(eligible&&!UNI4_TERMINAL.includes(status))actions+=`<button class="small ghost" data-uni4-excuse="${esc(a.id)}">Verified medical excuse (incomplete)</button>`;
+  return `<li><b>${esc(kind)} · ${a.weight}%</b> · ${esc(a.releaseAt)} to ${esc(a.dueAt)} ${timeLabel(a.startMinute)}–${timeLabel(a.endMinute)} · ${esc(status)}${status==='completed'?` · <b>${a.score}%</b>`:''}${work?` · ${a.workSessions} × 45 min preparation`:''}${a.roomId?' · university exam hall':''}${actions}</li>`;
+ }).join('');
+ list+=`<details><summary>${esc(UNI1_COURSES[id].title)} · ${esc(id)} · ${esc(c.letterGrade||'Not graded')}</summary><p>Five assessments total 100%. Verified grade requires actual completed/missed evidence. Project reflects ${esc(MAJORS[t.majorId].label)} skills.</p><ul class="uni4-list">${rows}</ul></details>`;
+ }
+ const hist=Object.entries(s.terms).flatMap(([key,rec])=>Object.values(rec.courseRecords||{}).filter(c=>c.finalizedAt).map(c=>`${key} · ${UNI1_COURSES[c.courseId]?.title||c.courseId}: ${c.letterGrade||'unknown'}${c.finalPercent!=null?' · '+c.finalPercent+'%':''}`)).slice(-24);
+ return `<section class="uni4-wrap" data-uni4-panel="1" aria-label="University coursework and gradebook"><h4>Coursework & Grades · UNI.4</h4>
+ <p><b>${esc(t.termKey)}</b> · ${t.courseIds.length} confirmed courses · ${dc?.verifiedEarnedCredits||0} verified earned / ${dc?.requiredCredits||'—'} required credits · Term GPA: ${r.termGpa==null?'Pending / N/A':Number(r.termGpa).toFixed(2)} · Modern cumulative GPA: ${S.uni.verifiedCumulativeGpa==null?'N/A':Number(S.uni.verifiedCumulativeGpa).toFixed(2)}</p>
+ <p class="muted-text">UNI.2 registration and UNI.3 attendance are separate from graded coursework. Prior legacy GPA/credits remain historical/unknown. No automatic credit-audited degree until UNI.9.</p>
+ ${r.migrationLimited?'<p class="urgent-text">Migration-limited semester: not enough remaining teaching days to grade safely; no fabricated missed assessments or earned credits.</p>':''}
+ <div class="inline-actions"><button class="small ghost" data-uni4-exam-room="1">Walk to university exam hall (7 min, from campus)</button></div>
+ <details open><summary>My course syllabi and active tasks (${t.courseIds.length})</summary>${list}</details>
+ <details><summary>Verified grades and transcript (${hist.length})</summary><ul>${hist.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>No verified outcomes yet. Older semester results are not reconstructed.</li>'}</ul></details></section>`;
+}
+const uni4OldMigrate=migrate;
+migrate=function(...args){const result=uni4OldMigrate.apply(this,args);uni4Migrate();return result;};
+const uni4OldRegister=uni2Register;
+uni2Register=function(action,id){const result=uni4OldRegister(action,id);if(result.ok&&!result.unchanged&&S.uni)uni4Sync();return result;};
+const uni4OldProcessCalendar=processCalendar;
+processCalendar=function(...args){if(S?.uni)uni4Sync();return uni4OldProcessCalendar.apply(this,args);};
+// UNI.1 is read-only planning; UNI.2 teaches registration. Update UNI.2's now-stale
+// grade message at the latest UI layer while keeping legacy-only provenance truthful.
+const uni4EarlierProgramHtml=uni1ProgramHtml;
+uni1ProgramHtml=function(u){return uni4EarlierProgramHtml(u).replace('Grades, verified course credits and degree audit are not available yet.', 'Verified grades/credits are available only for genuine UNI.4 outcomes; official degree audit is not available yet (UNI.9).');};
+const uni4OldUniversityHtml=universityHtml;
+universityHtml=function(...args){const html=uni4OldUniversityHtml.apply(this,args);if(!S?.uni?.enrolled)return S?.uni?.graduationReviewPending?html+'<section class="uni4-wrap"><h4>University studies · Pending academic review</h4><p>Scheduled years of study have ended, but no credit-audited degree has been awarded. UNI.9 will validate degree requirements and graduation. Prior authentic legacy degrees remain unchanged.</p></section>':html;
+ const panel=uni4Html(),idx=html.lastIndexOf('</section>');return idx>=0?html.slice(0,idx)+panel+html.slice(idx):html+panel;
+};
+const uni4OldUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{},action=d.uni4Work?'work':d.uni4Prepare?'prepare':d.uni4Submit?'submit':d.uni4Answer?'answer':d.uni4ExamRoom?'examroom':d.uni4Excuse?'excuse':null;
+ if(!action)return uni4OldUniClick(b);
+ const result=action==='examroom'?uni4ExamTravel():action==='excuse'?uni4MedicalExcuse(d.uni4Excuse):uni4Action(action,d.uni4Work||d.uni4Prepare||d.uni4Submit||d.uni4Answer,Number(d.uni4Choice));
+ toast(result.ok?'University coursework action recorded.':result.reason||'Action unavailable.');
+ if(result.ok){save();render();}return true;
+};
+// UNI.5.2 — durable professional faculty identity and per-course reference bindings.
+// The only NPC authority is the existing S.npcs / npcById; this branch stores references.
+// Office visits, tutoring and standing are not enabled until individually verified checkpoints.
+const UNI5_SCHEMA=1;
+const UNI5_GIVEN=['Amelia','Daniel','Sophie','Noah','Hana','Oliver','Mei','Lucas','Isabella','Minjun','Avery','Evelyn','Kai','Harper','Mina','Ethan','Yuna','Elijah','Nora','Theo','Linh','Aria','Jiho','Leah','Aaron','Sora','Chloe','Ian','Aiko','David','Maya','Huy','Emily','Alex','Rachel','Jin','Clara','Owen','Yuri','Gabriel'];
+const UNI5_LAST=['Bennett','Morgan','Park','Nguyen','Collins','Kim','Patel','Chen','Anderson','Lee','Rivera','Wilson','Martin','Le','Sato','Tran','Hughes','Turner','Tanaka','Young','Jensen','Walker','Han','Thompson','Davis','Kang','Ng','Mitchell','Reed','Phan','Shin','Adams','Cho','Choi','Seo','Pham','Miller','Garcia','Morris','Wright'];
+function uni5Hash(s){let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function uni5Professional(n){return !!n&&n.professionalRole==='universityFaculty'&&n.facultyUNI5?.schemaVersion===UNI5_SCHEMA;}
+function uni5State(){if(!S?.uni)return null;let s=S.uni.facultySupport;
+ if(!s||s.schemaVersion!==UNI5_SCHEMA||!s.courseFaculty||typeof s.courseFaculty!=='object'||Array.isArray(s.courseFaculty)||!s.advisers||typeof s.advisers!=='object'||Array.isArray(s.advisers)){
+  if(s)S.uni.facultySupportQuarantine={reason:'Unsupported or malformed UNI.5 staff schema; no actors or appointments trusted'};
+  s=S.uni.facultySupport={schemaVersion:UNI5_SCHEMA,courseFaculty:{},advisers:{},appointments:{},standing:{},recoveryPlans:{},quarantine:[]};
+ }
+ if(!Array.isArray(s.quarantine))s.quarantine=[];if(!s.appointments||typeof s.appointments!=='object'||Array.isArray(s.appointments))s.appointments={};
+ if(!s.standing||typeof s.standing!=='object')s.standing={};if(!s.recoveryPlans||typeof s.recoveryPlans!=='object')s.recoveryPlans={};return s;
+}
+function uni5Current(){const u=S?.uni,t=u?.termEnrollments?.terms?.[u?.semKey],cal=uni2Calendar();return t&&t.status==='confirmed'&&t.termKey===cal.key&&uni3ValidTerm(t)&&Array.isArray(t.courseIds)?t:null;}
+function uni5Identity(role,sid,programId,courseId=''){return 'uni5-npc|'+sid+'|'+programId+'|'+(courseId||'adviser')+'|'+role;}
+function uni5Name(id){const used=new Set([String(S.name||'').toLowerCase(),...(S.people||[]).map(p=>String(p.fullName||p.name||'').toLowerCase()),...(S.npcs||[]).filter(n=>n.id!==id).map(n=>String(n.fullName||'').toLowerCase())]);
+ const start=uni5Hash(id)%(UNI5_GIVEN.length*UNI5_LAST.length);
+ for(let i=0;i<UNI5_GIVEN.length*UNI5_LAST.length;i++){
+  const x=(start+i)%(UNI5_GIVEN.length*UNI5_LAST.length),name=UNI5_GIVEN[x%UNI5_GIVEN.length]+' '+UNI5_LAST[Math.floor(x/UNI5_GIVEN.length)];if(!used.has(name.toLowerCase()))return {firstName:UNI5_GIVEN[x%UNI5_GIVEN.length],surname:UNI5_LAST[Math.floor(x/UNI5_GIVEN.length)],fullName:name};
+ }return null;
+}
+function uni5RegisterActor(role,t,courseId=''){
+ if(!S?.uni||!t||!UNI1_PROGRAMS[t.programId]||!['professor','ta','adviser'].includes(role))return null;
+ const id=uni5Identity(role,t.institutionId,t.programId,courseId),n=npcById(id);
+ if(n)return uni5ActorValid(id,role,t,courseId)?n:null;
+ const name=uni5Name(id);if(!name)return null;
+ // Existing ART1C42 actor reconciliation owns persistent UUIDs, not this module.
+ const person={id,...name,birthYear:1970+uni5Hash(id)%18,professionalRole:'universityFaculty',facultyUNI5:{schemaVersion:1,role,institutionId:t.institutionId,programId:t.programId,courseId:courseId||null,createdForTerm:t.termKey},traits:['Studious'],goals:[],reputation:55};
+ S.npcs=Array.isArray(S.npcs)?S.npcs:[];S.npcs.push(person);return person;
+}
+function uni5ActorValid(id,role,t,courseId=''){
+ const n=npcById(id),f=n?.facultyUNI5;return !!n&&uni5Professional(n)&&n.id===uni5Identity(role,t.institutionId,t.programId,courseId)&&
+ f.role===role&&f.institutionId===t.institutionId&&f.programId===t.programId&&f.courseId===(courseId||null)&&typeof n.fullName==='string'&&n.fullName.includes(' ')&&
+ (S.npcs||[]).filter(x=>x.id===id).length===1&&(S.npcs||[]).filter(x=>x.fullName.toLowerCase()===n.fullName.toLowerCase()).length===1&&
+ !((S.people||[]).some(p=>p.npcId===id));
+}
+function uni5TaEligible(t,id){const c=UNI1_COURSES[id];if(!c)return false;
+ const m=uni3Practical(c,t.majorId,t.institutionId);
+ return m.type==='Lab'||m.type==='Studio'||c.group==='majorCore'&&/program|engineer|nurs|bio|studio|perform|design|coding/i.test(c.title);
+}
+function uni5CourseKey(t,id){return t.termKey+'|'+t.programId+'|'+id;}
+function uni5Bind(){const t=uni5Current(),s=uni5State();if(!s||!t)return {ok:false,reason:'No active verified UNI.2 course enrollment.'};
+ const key=t.institutionId+'|'+t.programId,old=s.advisers[key],expected=uni5Identity('adviser',t.institutionId,t.programId);
+ if(old&&old!==expected){uni5Quarantine('adviser-reference-mismatch',key);return {ok:false,reason:'Adviser reference mismatch'};}
+ const adviser=uni5RegisterActor('adviser',t);if(!adviser)return {ok:false,reason:'Academic adviser identity unavailable'};
+ s.advisers[key]=adviser.id;
+ for(const id of t.courseIds){if(!UNI1_PROGRAMS[t.programId].requiredCourseIds.includes(id))continue;
+  const k=uni5CourseKey(t,id),expectedProf=uni5Identity('professor',t.institutionId,t.programId,id),oldBinding=s.courseFaculty[k];
+  if(oldBinding&&(!oldBinding||oldBinding.institutionId!==t.institutionId||oldBinding.programId!==t.programId||oldBinding.courseId!==id||oldBinding.professorId!==expectedProf||oldBinding.taId&&oldBinding.taId!==uni5Identity('ta',t.institutionId,t.programId,id))){uni5Quarantine('course-faculty-reference-mismatch',k);continue;}
+  const professor=uni5RegisterActor('professor',t,id),ta=uni5TaEligible(t,id)?uni5RegisterActor('ta',t,id):null;
+  if(!professor||(uni5TaEligible(t,id)&&!ta)){uni5Quarantine('actor-binding-unavailable',k);continue;}
+  s.courseFaculty[k]={institutionId:t.institutionId,programId:t.programId,termKey:t.termKey,majorId:t.majorId,courseId:id,professorId:professor.id,taId:ta?.id||null};
+ }
+ return {ok:true,count:t.courseIds.filter(id=>uni5CurrentFaculty(id)!=null).length};
+}
+function uni5Quarantine(reason,key){const s=uni5State();if(s&&s.quarantine.length<48&&!s.quarantine.some(x=>x.reason===reason&&x.key===key))s.quarantine.push({reason,key:String(key).slice(0,180)});}
+function uni5CurrentFaculty(id){const t=uni5Current(),s=uni5State();if(!t||!t.courseIds.includes(id)||!UNI1_PROGRAMS[t.programId]?.requiredCourseIds.includes(id))return null;
+ const rec=s.courseFaculty[uni5CourseKey(t,id)];if(!rec||rec.programId!==t.programId||rec.institutionId!==t.institutionId||rec.termKey!==t.termKey||rec.majorId!==t.majorId||rec.courseId!==id||
+ !uni5ActorValid(rec.professorId,'professor',t,id)||rec.taId!==null&&(!uni5TaEligible(t,id)||!uni5ActorValid(rec.taId,'ta',t,id)))return null;
+ return {t,rec,professor:npcById(rec.professorId),ta:rec.taId?npcById(rec.taId):null};
+}
+function uni5Adviser(){const t=uni5Current(),s=uni5State();if(!t)return null;const id=s.advisers[t.institutionId+'|'+t.programId];return id&&uni5ActorValid(id,'adviser',t)?npcById(id):null;}
+function uni5FacultyHtml(){const t=uni5Current();if(!t)return '';
+ const adviser=uni5Adviser(),rows=t.courseIds.map(id=>{const f=uni5CurrentFaculty(id);return `<li><b>${esc(UNI1_COURSES[id]?.title||id)}</b> <small>${esc(id)}</small> — ${f?`Professor ${esc(f.professor.fullName)}${f.ta?' · TA '+esc(f.ta.fullName):''}`:'Faculty assignment unavailable (save/reference validation required)'}</li>`;}).join('');
+ return `<section class="uni5-wrap" data-uni5-panel="1"><h4>Faculty & Academic Support · UNI.5</h4><p><b>Academic adviser:</b> ${adviser?esc(adviser.fullName):'Unavailable — check actor identity'}. Professional university staff are not social friends.</p><details><summary>My faculty roster (${t.courseIds.length} courses)</summary><ul>${rows}</ul></details><p class="muted-text">Office hours, consultations and tutoring require separately verified UNI.5.3–5.4 gameplay.</p></section>`;
+}
+function uni5Migrate(){if(!S?.uni)return;const s=uni5State();for(const [k,v] of Object.entries(s.courseFaculty)){
+ const t=S.uni.termEnrollments?.terms?.[v?.termKey],p=t&&UNI1_PROGRAMS[t.programId];
+ if(!v||!t||!p||v.programId!==t.programId||v.institutionId!==t.institutionId||v.majorId!==t.majorId||v.courseId==null||!p.requiredCourseIds.includes(v.courseId)||
+ v.professorId!==uni5Identity('professor',t.institutionId,t.programId,v.courseId)||!uni5ActorValid(v.professorId,'professor',t,v.courseId)||
+ v.taId!==null&&(!uni5TaEligible(t,v.courseId)||!uni5ActorValid(v.taId,'ta',t,v.courseId))){uni5Quarantine('invalid-imported-faculty',k);delete s.courseFaculty[k];}
+ }
+ for(const [k,id] of Object.entries(s.advisers)){const [sid,pid]=k.split('|'),p=UNI1_PROGRAMS[pid];
+ if(!p||p.institutionId!==sid||!npcById(id)||!uni5Professional(npcById(id))){uni5Quarantine('invalid-imported-adviser',k);delete s.advisers[k];}
+ }
+ // The current term is eligible to allocate only if already confirmed; no legacy backfill.
+ if(uni5Current())uni5Bind();
+}
+const uni5OldRegister=uni2Register;
+uni2Register=function(...args){const out=uni5OldRegister.apply(this,args);if(out?.ok&&!out.unchanged&&uni5Current())uni5Bind();return out;};
+const uni5OldMigrate=migrate;
+migrate=function(...args){const result=uni5OldMigrate.apply(this,args);uni5Migrate();return result;};
+const uni5OldUniversityHtml=universityHtml;
+universityHtml=function(...args){const html=uni5OldUniversityHtml.apply(this,args);if(!uni5Current())return html;const panel=uni5FacultyHtml(),idx=html.lastIndexOf('</section>');return idx>=0?html.slice(0,idx)+panel+html.slice(idx):html+panel;};
+// UNI.5.3 — real, physical, calendar-backed university office appointments.
+const UNI5_EVENT_TYPE='universitySupportUNI5',UNI5_RECEIPT_TERMINAL=['attended','late','missed','cancelled'];
+function uni5OfficeRoom(t,kind='faculty'){
+ if(!t||!uni3Rooms(t.institutionId).classroom)return null;
+ return {id:`${t.institutionId}-uni5-${kind==='adviser'?'advising':kind==='tutoring'?'learning-centre':'faculty'}-office`,label:kind==='adviser'?'Academic Advising Office':kind==='tutoring'?'University Learning Centre':'Faculty Consultation Office',building:'University Student Centre'};
+}
+function uni5ValidAppointment(x,activeOnly=true){if(!x||x.schemaVersion!==1||!/^uni5-appt\|/.test(x.id)||!['office','adviser','tutoring'].includes(x.purpose)||!['booked','attending',...UNI5_RECEIPT_TERMINAL].includes(x.status))return false;
+ const t=S.uni?.termEnrollments?.terms?.[x.termKey],program=t&&UNI1_PROGRAMS[t.programId];if(!t||!program||t.programId!==x.programId||t.institutionId!==x.institutionId||x.majorId!==t.majorId)return false;
+ if(!t.courseIds.includes(x.courseId)&&x.purpose!=='adviser'&&activeOnly)return false;
+ if(activeOnly&&(!uni5Current()||uni5Current().termKey!==x.termKey))return false;
+ if(['office','tutoring'].includes(x.purpose)){
+  const rec=uni5State()?.courseFaculty?.[uni5CourseKey(t,x.courseId)];
+  if(!rec||!([rec.professorId,rec.taId].includes(x.actorId)))return false;
+  const role=rec.professorId===x.actorId?'professor':'ta';if(!uni5ActorValid(x.actorId,role,t,x.courseId))return false;
+ }else if(x.courseId!==null||!uni5ActorValid(x.actorId,'adviser',t))return false;
+ const room=uni5OfficeRoom(t,x.purpose==='adviser'?'adviser':x.purpose==='tutoring'?'tutoring':'faculty');
+ if(!room||x.roomId!==room.id||!/^\d{4}-\d\d-\d\d$/.test(x.dateISO)||!uni3ValidDay(x.dateISO)||x.dateISO<t.opened||x.dateISO>t.termEnd||!Number.isInteger(x.startMinute)||x.startMinute<540||x.startMinute>1020||x.endMinute!==x.startMinute+40)return false;
+ return x.id===uni5AppointmentId(x.institutionId,x.programId,x.termKey,x.actorId,x.dateISO,x.startMinute,x.purpose,x.courseId);
+}
+function uni5AppointmentId(sid,program,term,actor,date,start,purpose,course){return `uni5-appt|${sid}|${program}|${term}|${actor}|${date}|${start}|${purpose}|${course||'adviser'}`;}
+function uni5MeetingConflict(t,date,start,end,excluding=null){
+ // A restored/imported confirmed UNI.2 term can exist before the read-only portal
+ // has initialized UNI.3/UNI.4 plans. Reconcile their canonical authorities first:
+ // otherwise a seemingly open office slot could later collide with a tutorial.
+ if(!t)return 'No confirmed term';
+ let sc=uni3State()?.terms?.[t.termKey];
+ if(t.courseIds.some(id=>!sc?.plans?.[id])){uni3Sync();sc=uni3State()?.terms?.[t.termKey];}
+ if(!uni4State()?.terms?.[t.termKey])uni4Ensure();
+ // A real UNI.3 lecture/class schedule owns teaching commitments even if its rolling calendar entry isn't created yet.
+ const r=uni3State()?.terms?.[t.termKey];if(r){for(const m of uni3Upcoming(t,r,date,1))if(m.dateISO===date&&m.start<end&&m.end>start)return 'Registered lecture/lab conflict';}
+ const course=uni4State()?.terms?.[t.termKey]?.courseRecords||{};
+ for(const c of Object.values(course))for(const a of Object.values(c.assessments||{}))if(['quiz','midterm','final'].includes(a.kind)&&a.dueAt===date&&a.startMinute<end&&a.endMinute>start&&a.status!=='missed'&&a.status!=='completed'&&a.status!=='withdrawn'&&a.status!=='cancelled')return 'University assessment conflict';
+ for(const x of Object.values(uni5State().appointments))if(x.id!==excluding&&['booked','attending'].includes(x.status)&&x.dateISO===date&&x.startMinute<end&&x.endMinute>start)return 'Another support appointment overlaps';
+ for(const ev of S.calendar||[])if(ev.id!==excluding&&!isTerminal(ev.status)&&ev.type!==UNI5_EVENT_TYPE&&ev.dateISO===date&&ev.required&&ev.startMinute<end&&ev.endMinute>start)return 'An existing required Calendar event overlaps';
+ return null;
+}
+function uni5Target(t,actorId,courseId,purpose){if(!t)return null;if(purpose==='adviser')return courseId==null&&uni5Adviser()?.id===actorId?{role:'adviser'}:null;
+ if(!['office','tutoring'].includes(purpose))return null;const f=uni5CurrentFaculty(courseId);if(!f)return null;
+ return f.professor.id===actorId?{role:'professor'}:f.ta?.id===actorId?{role:'ta'}:null;
+}
+function uni5Slots(actorId,courseId=null,purpose='office',limit=4){const t=uni5Current();if(!uni5Target(t,actorId,courseId,purpose))return [];
+ const offset=uni5Hash(actorId)%5,starts=[780,930],out=[];
+ for(let i=0;i<15&&out.length<limit;i++){
+  const date=addDays(currentDate(),i),wd=parseISO(date).getUTCDay();if(date>t.termEnd||!uni3ValidDay(date)||wd!==offset+1&&wd!==((offset+2)%5)+1)continue;
+  for(const minute of starts){if(date===currentDate()&&minute<currentMinute()+60)continue;
+   if(uni5MeetingConflict(t,date,minute,minute+40))continue;
+   out.push({dateISO:date,startMinute:minute,endMinute:minute+40,roomId:uni5OfficeRoom(t,purpose==='adviser'?'adviser':purpose==='tutoring'?'tutoring':'faculty').id});if(out.length>=limit)break;
+  }
+ }
+ return out;
+}
+function uni5Book(actorId,courseId,purpose,date,minute){const t=uni5Current();if(!t)return {ok:false,reason:'Confirmed active term required.'};if(!uni5Target(t,actorId,courseId,purpose))return {ok:false,reason:'This actor is not the authorized course instructor or adviser.'};
+ if(!uni5Slots(actorId,courseId,purpose,14).some(s=>s.dateISO===date&&s.startMinute===minute))return {ok:false,reason:'Slot is unavailable, too close, or conflicts with your schedule.'};
+ const s=uni5State(),id=uni5AppointmentId(t.institutionId,t.programId,t.termKey,actorId,date,minute,purpose,courseId),old=s.appointments[id];
+ if(old)return {ok:false,reason:'This appointment slot was already booked.',unchanged:true};
+ const room=uni5OfficeRoom(t,purpose==='adviser'?'adviser':purpose==='tutoring'?'tutoring':'faculty');if(!room)return {ok:false,reason:'Office building unavailable.'};
+ const x={schemaVersion:1,id,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,actorId,courseId:courseId||null,purpose,dateISO:date,startMinute:minute,endMinute:minute+40,roomId:room.id,status:'booked',bookedAt:{dateISO:currentDate(),minute:currentMinute()},receipt:null};
+ s.appointments[id]=x;createCalendarEvent({id:'cal-'+id,type:UNI5_EVENT_TYPE,title:purpose==='adviser'?'University adviser meeting':'Faculty office hours',dateISO:date,startMinute:minute,endMinute:minute+40,graceMinute:minute+10,required:true,category:'School',location:room.id,sourceId:id,payload:{appointmentId:id,termKey:t.termKey}});
+ return {ok:true,id,appointment:x};
+}
+function uni5Cancel(id){const x=uni5State()?.appointments?.[id];if(!x||!uni5ValidAppointment(x)||x.status!=='booked')return {ok:false,reason:'No current cancellable appointment.'};
+ if(x.dateISO<currentDate()||x.dateISO===currentDate()&&currentMinute()>x.startMinute-20)return {ok:false,reason:'Cancellation closes 20 minutes before the appointment.'};
+ x.status='cancelled';x.receipt={id:x.id,status:'cancelled',dateISO:currentDate(),minute:currentMinute()};const ev=(S.calendar||[]).find(e=>e.id==='cal-'+id);if(ev)setCalendarStatus(ev,'Cancelled','Player cancelled before deadline');return {ok:true};
+}
+function uni5OfficeTravel(id){const x=uni5State()?.appointments?.[id];if(!x||x.status!=='booked'||!uni5ValidAppointment(x))return {ok:false,reason:'No eligible future appointment.'};
+ if(!uni3AtCampus()||uni3State().presence.institutionId!==x.institutionId)return {ok:false,reason:'Commute to your own university campus first.'};
+ if(x.dateISO!==currentDate()||currentMinute()<x.startMinute-120||currentMinute()+7>x.endMinute)return {ok:false,reason:'Office walking opens within two hours of your scheduled meeting.'};
+ const t=uni5Current();if(uni5MeetingConflict(t,currentDate(),currentMinute(),currentMinute()+7,x.id))return {ok:false,reason:'Cannot walk through another required event.'};
+ advanceTime(7,{silent:true});if(!uni3AtCampus())return {ok:false,reason:'Campus presence was lost during office movement.'};uni3State().presence.roomId=x.roomId;return {ok:true,minutes:7,roomId:x.roomId};
+}
+function uni5SupportReceipt(id,topic='concept'){
+ const s=uni5State(),x=s.appointments[id],ev=(S.calendar||[]).find(e=>e.id==='cal-'+id);
+ if(!x||!uni5ValidAppointment(x)||x.status!=='booked'||!ev||ev.type!==UNI5_EVENT_TYPE||ev.payload?.appointmentId!==id)return {ok:false,reason:'Appointment or Calendar identity invalid.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==x.roomId)return {ok:false,reason:'Enter the correct university office first.'};
+ if(x.dateISO!==currentDate()||currentMinute()<x.startMinute-5||currentMinute()>x.startMinute+10)return {ok:false,reason:'Attend within five minutes early to ten minutes late.'};
+ if(S.energy<12||S.health<15)return {ok:false,reason:'Health and energy must be sufficient.'};
+ if(!['concept','feedback','assessment','strategy','practice'].includes(topic))return {ok:false,reason:'Unknown consultation request.'};
+ if(uni5MeetingConflict(uni5Current(),currentDate(),currentMinute(),x.endMinute,x.id))return {ok:false,reason:'Meeting conflicts with another required obligation.'};
+ if((S.calendar||[]).some(e=>e.id!==ev.id&&!isTerminal(e.status)&&e.status==='Attending'&&e.dateISO===currentDate()))return {ok:false,reason:'Another activity is already being attended.'};
+ const late=Math.max(0,currentMinute()-x.startMinute),duration=x.endMinute-currentMinute();if(duration<25||duration>45)return {ok:false,reason:'Not enough meeting time remains.'};
+ x.status='attending';setCalendarStatus(ev,'Attending','Physical university office arrival');advanceTime(duration,{silent:true});
+ x.status=late?'late':'attended';x.receipt={id,status:x.status,actorId:x.actorId,topic,lateMinutes:late,minutes:duration,completedAt:{dateISO:currentDate(),minute:currentMinute()},courseId:x.courseId,roomId:x.roomId};setCalendarStatus(ev,'Attended','UNI.5 physical support receipt');
+ S.energy=clamp(S.energy-3);S.stress=clamp(S.stress-2);
+ // Recorded, capped future-only effect. UNI.4 finalized assessment receipts remain untouched.
+ if(x.courseId){s.helpEvidence=s.helpEvidence||{};const key=x.termKey+'|'+x.courseId;const record=s.helpEvidence[key]||{sessions:0,minutes:0};if(record.sessions<2){record.sessions++;record.minutes+=duration;}s.helpEvidence[key]=record;}
+ return {ok:true,receipt:x.receipt};
+}
+function uni5CalendarTick(ev){const x=uni5State()?.appointments?.[ev.payload?.appointmentId];if(!x||ev.id!=='cal-'+x.id||!uni5ValidAppointment(x,false)){setCalendarStatus(ev,'Cancelled','Invalid or missing UNI.5 appointment');return;}
+ if(UNI5_RECEIPT_TERMINAL.includes(x.status)){setCalendarStatus(ev,x.status==='missed'?'Missed':x.status==='cancelled'?'Cancelled':'Attended','Reconciled support receipt');return;}
+ if(!uni5ValidAppointment(x,true)){x.status='cancelled';x.receipt={id:x.id,status:'cancelled',reason:'Course/institution no longer current'};setCalendarStatus(ev,'Cancelled','Ineligible university support meeting');return;}
+ if(x.status==='attending')return;
+ if(x.dateISO<currentDate()||x.dateISO===currentDate()&&currentMinute()>x.startMinute+10){x.status='missed';x.receipt={id:x.id,status:'missed',dateISO:currentDate(),minute:currentMinute()};setCalendarStatus(ev,'Missed','Did not attend campus office');return;}
+ if(x.dateISO===currentDate()&&currentMinute()>=x.startMinute&&ev.status==='Scheduled'){setCalendarStatus(ev,'Due','University consultation starts');if(!SIM.skipping)notify('University office hours','Your booked faculty support meeting starts now.',{sourceType:UNI5_EVENT_TYPE,sourceId:ev.id,tab:'school'});}
+}
+function uni5AppointmentsHtml(){const t=uni5Current();if(!t)return '';
+ const s=uni5State(),buttons=[];for(const id of t.courseIds.slice(0,6)){const f=uni5CurrentFaculty(id);if(!f)continue;for(const actor of [f.professor,f.ta].filter(Boolean)){
+  const slots=uni5Slots(actor.id,id,'office',1);const slot=slots[0];if(slot)buttons.push(`<div class="uni5-slot"><span>${esc(UNI1_COURSES[id].title)} · ${esc(actor.fullName)} · ${slot.dateISO} ${timeLabel(slot.startMinute)} (${slot.roomId})</span> <button class="small" data-uni5-book="${esc(actor.id)}" data-uni5-course="${esc(id)}" data-uni5-purpose="office" data-uni5-date="${slot.dateISO}" data-uni5-minute="${slot.startMinute}">Book office hour</button></div>`);
+ }}const adv=uni5Adviser();if(adv){const slot=uni5Slots(adv.id,null,'adviser',1)[0];if(slot)buttons.push(`<div class="uni5-slot">Academic adviser ${esc(adv.fullName)} · ${slot.dateISO} ${timeLabel(slot.startMinute)} <button class="small" data-uni5-book="${esc(adv.id)}" data-uni5-purpose="adviser" data-uni5-date="${slot.dateISO}" data-uni5-minute="${slot.startMinute}">Book adviser meeting</button></div>`);}
+ const active=Object.values(s.appointments).filter(x=>x.termKey===t.termKey).sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||a.startMinute-b.startMinute);
+ const history=active.slice(-25).map(x=>`<li><b>${esc(npcById(x.actorId)?.fullName||'Unavailable faculty')}</b> · ${x.dateISO} ${timeLabel(x.startMinute)} · ${esc(x.status)} · ${esc(x.roomId)} ${x.status==='booked'?`<button class="small" data-uni5-office="${esc(x.id)}">Walk to office (7 min)</button> <button class="small primary" data-uni5-attend="${esc(x.id)}">Discuss course</button> <button class="small ghost" data-uni5-cancel="${esc(x.id)}">Cancel</button>`:''}</li>`).join('');
+ return `<div data-uni5-appointments="1"><details><summary>Book office hours and advising (${buttons.length} available options)</summary>${buttons.join('')||'<p>No non-conflicting appointment slots within two weeks.</p>'}</details><details open><summary>My support appointments (${active.length})</summary><p class="muted-text">Travel to university using the existing UNI.3 campus button, then walk to the actual office. Consulting consumes time; it never changes an already graded assessment.</p><ul>${history||'<li>No university appointments booked.</li>'}</ul></details></div>`;
+}
+const uni5OfficePriorHtml=uni5FacultyHtml;
+uni5FacultyHtml=function(){const orig=uni5OfficePriorHtml();return orig?orig.replace('</section>',uni5AppointmentsHtml()+'</section>'):orig;};
+const uni5OfficeOldUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{},is=d.uni5Book?'book':d.uni5Office?'office':d.uni5Attend?'attend':d.uni5Cancel?'cancel':null;
+ if(!is)return uni5OfficeOldUniClick(b);
+ const result=is==='book'?uni5Book(d.uni5Book,d.uni5Course||null,d.uni5Purpose,d.uni5Date,Number(d.uni5Minute)):
+ is==='office'?uni5OfficeTravel(d.uni5Office):is==='attend'?uni5SupportReceipt(d.uni5Attend,'concept'):uni5Cancel(d.uni5Cancel);
+ toast(result.ok?'University support action recorded.':result.reason||'Support action unavailable.');if(result.ok){save();render();}return true;
+};
+// UNI.5.4 — course-specific, campus-based tutoring with bounded future skill practice.
+// Runs through UNI.5.3's real actor, booking, Calendar, room and attendance lifecycle.
+function uni5TutorEligible(id){const t=uni5Current(),f=uni5CurrentFaculty(id);return !!t&&!!f&&t.courseIds.includes(id)&&!t.withdrawnCourseIds.includes(id)&&!!MAJORS[t.majorId];}
+function uni5TutorTutor(id){const f=uni5CurrentFaculty(id);return f?.ta||f?.professor||null;}
+function uni5TutorState(){const s=uni5State();if(s&&!s.tutoringEffects)s.tutoringEffects={};return s;}
+const uni5TutorPriorBook=uni5Book;
+uni5Book=function(actorId,courseId,purpose,date,minute){
+ if(purpose!=='tutoring')return uni5TutorPriorBook(actorId,courseId,purpose,date,minute);
+ const t=uni5Current(),s=uni5TutorState(),staff=uni5TutorTutor(courseId);
+ if(!uni5TutorEligible(courseId)||!staff||staff.id!==actorId)return {ok:false,reason:'Tutoring requires an active course and its assigned TA/professor.'};
+ // At most four genuine booked/support attempts per course/term. Cancelled sessions release capacity.
+ const attempts=Object.values(s.appointments).filter(x=>x.termKey===t.termKey&&x.courseId===courseId&&x.purpose==='tutoring'&&x.status!=='cancelled').length;
+ if(attempts>=4)return {ok:false,reason:'Four tutoring sessions per course per term is the UNI.5 limit.'};
+ return uni5TutorPriorBook(actorId,courseId,purpose,date,minute);
+};
+const uni5TutorPriorReceipt=uni5SupportReceipt;
+uni5SupportReceipt=function(id,topic='concept'){
+ const x=uni5State()?.appointments?.[id],tutor=x?.purpose==='tutoring';
+ const out=uni5TutorPriorReceipt(id,tutor?'practice':topic);if(!out?.ok||!tutor)return out;
+ const t=S.uni.termEnrollments?.terms?.[x.termKey],s=uni5TutorState();if(!t||!UNI1_PROGRAMS[t.programId])return out;
+ const key=x.termKey+'|'+x.courseId,e=s.tutoringEffects[key]||{sessions:0,skill:MAJORS[t.majorId]?.skill||'knowledge',totalBonus:0};
+ if(e.sessions<2){const skill=MAJORS[t.majorId]?.skill||'knowledge';const was=Math.max(0,Math.min(100,Number(S.skills?.[skill])||0));
+  S.skills=S.skills||{};S.skills[skill]=Math.min(100,was+1);e.sessions++;e.totalBonus+=S.skills[skill]-was;e.skill=skill;e.lastReceiptId=id;
+ }
+ s.tutoringEffects[key]=e;return {...out,skillBonus:e.totalBonus};
+};
+function uni5TutoringHtml(){const t=uni5Current();if(!t)return '';
+ const s=uni5TutorState(),rows=[];
+ for(const id of t.courseIds){if(!uni5TutorEligible(id))continue;
+  const actor=uni5TutorTutor(id),slots=uni5Slots(actor.id,id,'tutoring',1),slot=slots[0],key=t.termKey+'|'+id,used=s.tutoringEffects[key]?.sessions||0;
+  rows.push(`<div class="uni5-tutor-row"><b>${esc(UNI1_COURSES[id].title)}</b> · ${esc(actor.fullName)} · learning centre · future skill practice ${used}/2 verified sessions
+  ${slot?`<button class="small" data-uni5-book="${esc(actor.id)}" data-uni5-course="${esc(id)}" data-uni5-purpose="tutoring" data-uni5-date="${slot.dateISO}" data-uni5-minute="${slot.startMinute}">Book tutorial ${slot.dateISO} ${timeLabel(slot.startMinute)}</button>`:'<small>No conflict-free tutoring slots within two weeks.</small>'}</div>`);
+ }
+ const hist=Object.values(s.appointments).filter(x=>x.termKey===t.termKey&&x.purpose==='tutoring').slice(-12).map(x=>`<li>${esc(UNI1_COURSES[x.courseId]?.title||x.courseId)} · ${x.dateISO} ${timeLabel(x.startMinute)} · ${esc(x.status)}${x.status==='booked'?` <button class="small" data-uni5-office="${esc(x.id)}">Walk to tutoring room</button> <button class="small primary" data-uni5-attend="${esc(x.id)}">Attend tutoring</button>`:''}</li>`).join('');
+ return `<details data-uni5-tutoring="1"><summary>University tutoring and study recovery (${rows.length} eligible courses)</summary><p class="muted-text">Group or individual TA/professor support uses a real 40-minute on-campus session. At most two sessions per course grant +1 future major skill each, never retroactive grade/credit/GPA. Up to four bookings/term.</p>${rows.join('')}<ul>${hist}</ul></details>`;
+}
+const uni5TutorPriorFacultyHtml=uni5FacultyHtml;
+uni5FacultyHtml=function(){const html=uni5TutorPriorFacultyHtml();return html?html.replace('</section>',uni5TutoringHtml()+'</section>'):html;};
+// UNI.5.5 — verified academic standing and professional adviser recovery planning.
+// Not a tuition, suspension, grade, scholarship or graduation authority.
+const UNI5_STANDING_SCHEMA=1,UNI5_PLANS=['tutoring','balanced-week','office-hours','load-review'];
+function uni5ModernEvidence(key){const s=S.uni?.coursework,r=s?.terms?.[key],t=S.uni?.termEnrollments?.terms?.[key],p=S.uni?.degreeContract?.programId&&UNI1_PROGRAMS[S.uni.degreeContract.programId];
+ if(!r||!t||!p||!r.finalizedAt||r.migrationLimited||r.termKey!==key||r.institutionId!==p.institutionId||r.programId!==p.id||r.majorId!==p.majorId||t.programId!==p.id||t.termKey!==key||!Array.isArray(t.attemptedCourseIds))return null;
+ let points=0,credits=0,grades=0;
+ for(const id of t.attemptedCourseIds){const c=r.courseRecords?.[id];if(!p.requiredCourseIds.includes(id)||!c)return null;
+  if(t.withdrawnCourseIds.includes(id)){if(c.status!=='withdrawn'||c.letterGrade!=='W')return null;continue;}
+  const ev=uni4GradeEvidence(t,c);if(!ev)return null;const weight=UNI1_COURSES[id].credits;credits+=weight;points+=ev.points*weight;grades++;
+ }
+ if(!credits||!grades)return null;
+ const g=Math.round(points/credits*100)/100;if(r.termGpa!==g)return null;
+ return {key,termGpa:g,points,credits,grades,source:'UNI.4-verified'};
+}
+function uni5StandingEvaluate(){if(!S.uni?.enrolled)return {status:'unknown',source:null,reason:'No current university enrollment'};
+ const p=S.uni.degreeContract?.programId,rows=Object.keys(S.uni?.coursework?.terms||{}).sort().map(uni5ModernEvidence).filter(Boolean);
+ if(!rows.length)return {status:'unknown',source:null,reason:'No fully verified modern graded semester'};
+ // Do not conflate W-only or unfinished semesters with evidence of poor grades.
+ const latest=rows[rows.length-1],totalPoints=rows.reduce((v,x)=>v+x.points,0),totalCredits=rows.reduce((v,x)=>v+x.credits,0),cumulative=Math.round(totalPoints/totalCredits*100)/100;
+ const lows=rows.length>=2&&rows[rows.length-2].termGpa<2&&latest.termGpa<2;
+ let status;if(latest.termGpa<2)status=lows?'probation':'warning';else if(cumulative<2)status='warning';else if(rows.some(x=>x.termGpa<2))status='recovered';else status='good';
+ return {status,source:latest.key,termGpa:latest.termGpa,cumulative,credits:totalCredits,eligibleTerms:rows.length,reason:status==='probation'?'Two successive verified low-GPA terms':status==='warning'?'Verified GPA is below 2.00':status==='recovered'?'Subsequent verified GPA and cumulative GPA meet 2.00':'Current verified academic standing meets 2.00'};
+}
+function uni5StandingReconcile(notices=true){if(!S?.uni)return null;const s=uni5State(),next=uni5StandingEvaluate(),old=s.standing||{};
+ if(old.schemaVersion===UNI5_STANDING_SCHEMA&&old.source===next.source&&old.status===next.status&&old.termGpa===next.termGpa&&old.cumulative===next.cumulative)return old;
+ const history=Array.isArray(old.history)?old.history.slice(-29):[];
+ if(next.source&&(!history.length||history[history.length-1].source!==next.source||history[history.length-1].status!==next.status))history.push({status:next.status,source:next.source,termGpa:next.termGpa,cumulative:next.cumulative,recordedAt:{dateISO:currentDate(),minute:currentMinute()},reason:next.reason});
+ const noticeKey=next.source&&['warning','probation','recovered'].includes(next.status)?`${next.source}|${next.status}`:null;
+ s.standing={schemaVersion:UNI5_STANDING_SCHEMA,...next,history,lastNoticeKey:old.lastNoticeKey||null};
+ if(notices&&noticeKey&&s.standing.lastNoticeKey!==noticeKey){s.standing.lastNoticeKey=noticeKey;if(!SIM.skipping)notify('University academic standing',`${next.status.toUpperCase()} after verified term ${next.source}: ${next.reason}. Book the assigned adviser for a recovery plan.`,{sourceType:'uni5Standing',sourceId:noticeKey,tab:'school'});}
+ return s.standing;
+}
+function uni5AdviserReceipt(){const t=uni5Current(),actor=uni5Adviser();if(!t||!actor)return null;
+ return Object.values(uni5State().appointments).filter(x=>x.termKey===t.termKey&&x.actorId===actor.id&&x.purpose==='adviser'&&['attended','late'].includes(x.status)&&x.receipt?.id===x.id).sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||a.startMinute-b.startMinute).at(-1)||null;
+}
+function uni5ChooseRecoveryPlan(plan){const t=uni5Current(),s=uni5State(),standing=uni5StandingReconcile(false),advisor=uni5AdviserReceipt();
+ if(!t||!advisor)return {ok:false,reason:'Attend an actual booked adviser meeting before choosing a support plan.'};
+ if(!UNI5_PLANS.includes(plan))return {ok:false,reason:'Choose an available recovery strategy.'};
+ if(!['warning','probation','recovered','good'].includes(standing.status))return {ok:false,reason:'No verified modern academic standing yet.'};
+ if(s.recoveryPlans[t.termKey])return {ok:false,reason:'This term already has a chosen adviser plan; use its scheduled follow-up.'};
+ const record={schemaVersion:1,termKey:t.termKey,programId:t.programId,adviserId:advisor.actorId,adviserReceiptId:advisor.receipt.id,plan,status:'active',createdAt:{dateISO:currentDate(),minute:currentMinute()},followUpId:null};
+ s.recoveryPlans[t.termKey]=record;return {ok:true,plan:record};
+}
+function uni5BookFollowup(){const t=uni5Current(),s=uni5State(),plan=t&&s.recoveryPlans[t.termKey],adv=uni5Adviser();
+ if(!plan||plan.status!=='active'||!adv||plan.adviserId!==adv.id)return {ok:false,reason:'Complete an adviser meeting and select a plan first.'};
+ if(plan.followUpId)return {ok:false,reason:'Follow-up already booked.'};
+ const slot=uni5Slots(adv.id,null,'adviser',3).find(x=>x.dateISO>currentDate()||(x.dateISO===currentDate()&&x.startMinute>=currentMinute()+120));
+ if(!slot)return {ok:false,reason:'No conflict-free follow-up slot is currently available.'};
+ const r=uni5Book(adv.id,null,'adviser',slot.dateISO,slot.startMinute);if(r.ok)plan.followUpId=r.id;return r;
+}
+function uni5StandingHtml(){if(!S?.uni?.enrolled)return '';
+ const s=uni5State(),standing=s.standing?.schemaVersion===UNI5_STANDING_SCHEMA?s.standing:uni5StandingEvaluate(),t=uni5Current(),receipt=uni5AdviserReceipt(),plan=t&&s.recoveryPlans[t.termKey];
+ const missed=Object.values(S.uni.academicSchedule?.terms?.[S.uni.semKey]?.receipts||{}).filter(r=>r.status==='missed').length;
+ const weak=missed>=3?`<p class="muted-text">Attendance support suggestion: ${missed} genuinely recorded missed university meetings; discuss study strategies with your adviser.</p>`:'';
+ return `<section class="uni5-standing" data-uni5-standing="1"><h4>Academic Standing & Adviser Plan</h4>
+ <p><b>${esc((standing.status||'unknown').toUpperCase())}</b> · evidence: ${esc(standing.source||'No fully verified UNI.4 term')} · Verified term GPA ${standing.termGpa==null?'N/A':Number(standing.termGpa).toFixed(2)} · Eligible cumulative GPA ${standing.cumulative==null?'N/A':Number(standing.cumulative).toFixed(2)}</p>
+ <p class="muted-text">First term below 2.00 = Warning; two consecutive verified low terms = Probation. Improvement to verified term and cumulative 2.00 supports recovery. Unknown historical GPA and W do not count as academic failure. No suspension or scholarship change.</p>${weak}
+ ${receipt&&!plan?`<div class="inline-actions">${UNI5_PLANS.map(id=>`<button class="small" data-uni5-plan="${id}">Choose ${id.replace(/-/g,' ')}</button>`).join('')}</div>`:!receipt?'<p class="muted-text">Book and physically attend an adviser appointment before choosing a recovery plan.</p>':''}
+ ${plan?`<p><b>Study plan:</b> ${esc(plan.plan.replace(/-/g,' '))} · ${esc(plan.status)} · Follow-up ${esc(plan.followUpId||'not yet booked')}</p>${!plan.followUpId?'<button class="small primary" data-uni5-followup="1">Book actual adviser follow-up</button>':''}`:''}
+ <details><summary>Verified standing history (${standing.history?.length||0})</summary><ul>${(standing.history||[]).map(x=>`<li>${esc(x.source)}: ${esc(x.status)} · ${Number(x.termGpa).toFixed(2)} verified term GPA</li>`).join('')}</ul></details></section>`;
+}
+const uni5StandingOldFinalize=uni4FinalizeTerm;
+uni4FinalizeTerm=function(key){const r=uni5StandingOldFinalize(key);if(r?.finalizedAt)uni5StandingReconcile(true);return r;};
+const uni5StandingOldMigrate=migrate;
+migrate=function(...args){const out=uni5StandingOldMigrate.apply(this,args);if(S?.uni&&(uni5State().standing?.schemaVersion===UNI5_STANDING_SCHEMA||Object.keys(S.uni.coursework?.terms||{}).some(k=>!!uni5ModernEvidence(k))))uni5StandingReconcile(false);return out;};
+const uni5StandingOldFacultyHtml=uni5FacultyHtml;
+uni5FacultyHtml=function(){const html=uni5StandingOldFacultyHtml();return html?html.replace('</section>',uni5StandingHtml()+'</section>'):html;};
+const uni5StandingOldUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni5Plan&&!d.uni5Followup)return uni5StandingOldUniClick(b);
+ const out=d.uni5Followup?uni5BookFollowup():uni5ChooseRecoveryPlan(d.uni5Plan);
+ toast(out.ok?'Academic advising plan recorded.':out.reason||'Adviser action unavailable.');if(out.ok){save();render();}return true;
+};
+// UNI.5.6 — narrow save/import integrity adapter for existing S.uni.facultySupport.
+// Staff are existing S.npcs; UNI.2/3/4 own enrollment, attendance and grades.
+const UNI5_SUPPORT_TOPICS=['concept','feedback','assessment','strategy','practice'];
+function uni5IntegrityQuarantine(reason,key){uni5Quarantine(reason,String(key).slice(0,180));}
+function uni5ReceiptValid(x){const r=x.receipt;if(!r||r.id!==x.id||r.status!==x.status)return false;
+ if(['attended','late'].includes(x.status))return r.actorId===x.actorId&&r.courseId===x.courseId&&r.roomId===x.roomId&&
+  UNI5_SUPPORT_TOPICS.includes(r.topic)&&Number.isInteger(r.minutes)&&r.minutes>=25&&r.minutes<=45&&
+  Number.isInteger(r.lateMinutes)&&r.lateMinutes>=0&&r.lateMinutes<=10&&
+  !!r.completedAt&&r.completedAt.dateISO===x.dateISO&&Number.isInteger(r.completedAt.minute)&&
+  r.completedAt.minute>=x.startMinute+25&&r.completedAt.minute<=x.endMinute+1;
+ if(x.status==='cancelled')return typeof r.reason==='string'||r.dateISO===x.dateISO||typeof r.dateISO==='string';
+ if(x.status==='missed')return typeof r.dateISO==='string'&&/^\d{4}-\d\d-\d\d$/.test(r.dateISO)&&Number.isInteger(r.minute)&&r.minute>=0&&r.minute<1440;
+ return false;
+}
+function uni5IntegrityMigrate(){if(!S?.uni)return {ok:true,checked:0,invalid:0};const s=uni5State();let checked=0,invalid=0;
+ // Previous version's roster validator executes first; never repair a missing actor by
+ // fabricating a new person for a historical receipt.
+ for(const [key,x] of Object.entries(s.appointments)){
+  checked++;
+  const valid=!!x&&key===x.id&&uni5ValidAppointment(x,false)&&
+   (x.status==='booked'?x.receipt===null:
+    x.status==='attending'?x.receipt===null:uni5ReceiptValid(x));
+  if(!valid){uni5IntegrityQuarantine('invalid-imported-appointment',key);delete s.appointments[key];invalid++;
+   const ev=(S.calendar||[]).find(e=>e.id==='cal-'+key&&e.type===UNI5_EVENT_TYPE);
+   if(ev&&!isTerminal(ev.status))setCalendarStatus(ev,'Cancelled','Invalid imported university appointment');
+   continue;
+  }
+  if(x.status==='attending'){
+   // Interrupted attendance cannot be asserted successful on restore. The unverified
+   // in-progress record is conserved as missed, not awarded extra help/skills.
+   x.status='missed';x.receipt={id:x.id,status:'missed',dateISO:currentDate(),minute:currentMinute(),reason:'Interrupted attendance not verified'};
+  }
+  const ev=(S.calendar||[]).find(e=>e.id==='cal-'+key);
+  if(ev&&(ev.type!==UNI5_EVENT_TYPE||ev.sourceId!==key||ev.payload?.appointmentId!==key||ev.dateISO!==x.dateISO||ev.startMinute!==x.startMinute)){
+   uni5IntegrityQuarantine('invalid-support-calendar-link',key);if(!isTerminal(ev.status))setCalendarStatus(ev,'Cancelled','Mismatched university support source');
+   if(x.status==='booked'){delete s.appointments[key];invalid++;}continue;
+  }
+  if(x.status==='booked'&&x.dateISO>=currentDate()&&!ev){
+   createCalendarEvent({id:'cal-'+key,type:UNI5_EVENT_TYPE,title:'University support appointment',dateISO:x.dateISO,startMinute:x.startMinute,endMinute:x.endMinute,graceMinute:x.startMinute+10,required:true,category:'School',location:x.roomId,sourceId:key,payload:{appointmentId:key,termKey:x.termKey}});
+  }
+  if(x.status==='booked'&&x.dateISO<currentDate()){
+   x.status='missed';x.receipt={id:x.id,status:'missed',dateISO:currentDate(),minute:currentMinute()};
+   if(ev&&!isTerminal(ev.status))setCalendarStatus(ev,'Missed','Past missed UNI.5 meeting restored');
+  }
+ }
+ // Do not trust imported future-skill benefit counters if their genuine tutor
+ // receipts are absent. Do not touch S.skills: that is owned by existing gameplay.
+ if(s.tutoringEffects&&typeof s.tutoringEffects==='object'&&!Array.isArray(s.tutoringEffects)){
+  for(const [key,v] of Object.entries(s.tutoringEffects)){
+   const parts=key.split('|'),term=parts[0],course=parts.slice(1).join('|');
+   const receipts=Object.values(s.appointments).filter(x=>x.termKey===term&&x.courseId===course&&x.purpose==='tutoring'&&['attended','late'].includes(x.status)&&uni5ReceiptValid(x));
+   if(!v||!UNI1_COURSES[course]||!S.uni.termEnrollments?.terms?.[term]?.attemptedCourseIds?.includes(course)||
+    !Number.isInteger(v.sessions)||v.sessions<0||v.sessions>2||!Number.isFinite(v.totalBonus)||v.totalBonus<0||v.totalBonus>2||v.sessions>receipts.length||v.totalBonus>v.sessions){
+    uni5IntegrityQuarantine('invalid-tutoring-benefit',key);delete s.tutoringEffects[key];invalid++;
+   }
+  }
+ }else if(s.tutoringEffects!=null){s.tutoringEffects={};uni5IntegrityQuarantine('invalid-tutoring-ledger','schema');invalid++;}
+ // Some sessions legitimately record general course help without a skill award.
+ if(s.helpEvidence&&typeof s.helpEvidence==='object'&&!Array.isArray(s.helpEvidence)){
+  for(const [key,v] of Object.entries(s.helpEvidence)){
+   const [term,...part]=key.split('|'),course=part.join('|');const receipts=Object.values(s.appointments).filter(x=>x.termKey===term&&x.courseId===course&&['attended','late'].includes(x.status)&&uni5ReceiptValid(x));
+   if(!v||!Number.isInteger(v.sessions)||v.sessions<0||v.sessions>2||!Number.isFinite(v.minutes)||v.minutes<0||v.minutes>90||v.sessions>receipts.length){
+    uni5IntegrityQuarantine('invalid-help-ledger',key);delete s.helpEvidence[key];invalid++;
+   }
+  }
+ }else if(s.helpEvidence!=null){s.helpEvidence={};uni5IntegrityQuarantine('invalid-help-ledger','schema');invalid++;}
+ for(const [key,p] of Object.entries(s.recoveryPlans)){
+  const t=S.uni.termEnrollments?.terms?.[key],a=s.appointments?.[p?.adviserReceiptId];
+  const valid=!!t&&!!p&&p.schemaVersion===1&&p.termKey===key&&p.programId===t.programId&&
+    UNI5_PLANS.includes(p.plan)&&p.status==='active'&&
+    a&&a.termKey===key&&a.purpose==='adviser'&&a.actorId===p.adviserId&&
+    ['attended','late'].includes(a.status)&&uni5ReceiptValid(a)&&
+    (p.followUpId===null||!!s.appointments[p.followUpId]&&s.appointments[p.followUpId].purpose==='adviser'&&s.appointments[p.followUpId].actorId===p.adviserId);
+  if(!valid){uni5IntegrityQuarantine('invalid-adviser-recovery-plan',key);delete s.recoveryPlans[key];invalid++;}
+ }
+ // Standing labels are always recomputed from UNI.4's verified course receipts;
+ // imported status/history is not a separate grade or academic sanctions engine.
+ if(Array.isArray(s.standing?.history)){
+  s.standing.history=s.standing.history.filter(x=>x&&/^\d{4}-[12]$/.test(x.source||'')&&
+   ['good','warning','probation','recovered'].includes(x.status)&&
+   Number.isFinite(x.termGpa)&&x.termGpa>=0&&x.termGpa<=4&&
+   Number.isFinite(x.cumulative)&&x.cumulative>=0&&x.cumulative<=4&&
+   !!uni5ModernEvidence(x.source)).slice(-30);
+ }
+ if(s.standing?.schemaVersion===UNI5_STANDING_SCHEMA||Object.keys(S.uni.coursework?.terms||{}).some(k=>!!uni5ModernEvidence(k)))uni5StandingReconcile(false);
+ return {ok:true,checked,invalid};
+}
+const uni5IntegrityOriginalMigrate=migrate;
+migrate=function(...args){const result=uni5IntegrityOriginalMigrate.apply(this,args);uni5IntegrityMigrate();return result;};
+const uni5IntegrityOriginalBook=uni5Book;
+uni5Book=function(...args){const s=uni5State(),t=uni5Current();
+ if(t&&Object.values(s.appointments).filter(x=>x.termKey===t.termKey&&x.status!=='cancelled').length>=48)return {ok:false,reason:'Semester support appointment limit reached (48).'};
+ return uni5IntegrityOriginalBook.apply(this,args);
+};
+// UNI.6.2 — canonical S.npcs university classmates; no separate NPC or friendship store.
+const UNI6_SCHEMA=1,UNI6_PEER_LIMIT=8;
+function uni6State(){if(!S?.uni)return null;let s=S.uni.campusLife;
+ if(!s||s.schemaVersion!==1||!s.peers||typeof s.peers!=='object'||Array.isArray(s.peers)||!s.courseRosters||typeof s.courseRosters!=='object'||Array.isArray(s.courseRosters)){
+  if(s)S.uni.campusLifeQuarantine={reason:'Malformed or unsupported Campus Life state; untrusted outcomes were not accepted'};
+  s=S.uni.campusLife={schemaVersion:1,peers:{},courseRosters:{},clubs:{},events:{},invitations:{},leadership:{},quarantine:[],introReceipts:{}};
+ }
+ for(const k of ['clubs','events','invitations','leadership','introReceipts'])if(!s[k]||typeof s[k]!=='object'||Array.isArray(s[k]))s[k]={};
+ if(!Array.isArray(s.quarantine))s.quarantine=[];return s;
+}
+function uni6Quarantine(reason,id){const s=uni6State();if(s&&s.quarantine.length<40&&!s.quarantine.some(x=>x.reason===reason&&x.id===String(id).slice(0,120)))s.quarantine.push({reason,id:String(id).slice(0,120)});}
+function uni6Term(){const t=typeof uni5Current==='function'?uni5Current():null;return t&&S.age>=18&&S.uni?.enrolled&&CAMPUS[t.institutionId]&&UNI1_PROGRAMS[t.programId]?.institutionId===t.institutionId?t:null;}
+function uni6PeerId(sid,slot){return `uni6-student|${sid}|${slot}`;}
+function uni6ValidStudent(id,sid){const n=npcById(id),v=n?.studentUNI6;return !!n&&/^uni6-student\|uni\d{1,2}\|[0-7]$/.test(id)&&v?.slot===Number(id.split('|')[2])&&v?.institutionId===id.split('|')[1]&&n.id===id&&!n.professionalRole&&!uni5Professional(n)&&v?.schemaVersion===1&&v.institutionId===sid&&typeof n.fullName==='string'&&n.fullName.includes(' ')&&Number.isInteger(n.birthYear)&&npcAge(n)>=18&&npcAge(n)<=30&&S.npcs.filter(x=>x.id===id).length===1&&S.npcs.filter(x=>x.fullName?.toLowerCase()===n.fullName.toLowerCase()).length===1;}
+function uni6AllocatePeer(t,slot){const id=uni6PeerId(t.institutionId,slot),existing=npcById(id);if(existing)return uni6ValidStudent(id,t.institutionId)?existing:null;
+ const names=uni5Name(id);if(!names)return null;const year=parseISO(currentDate()).getUTCFullYear();const n={id,...names,birthYear:year-(19+uni5Hash(id)%5),studentUNI6:{schemaVersion:1,institutionId:t.institutionId,cohort:t.academicYear,slot},traits:['Curious'],goals:['goodGrades'],clubDay:1+uni5Hash(id)%5,interest:'Campus life'};
+ S.npcs=Array.isArray(S.npcs)?S.npcs:[];S.npcs.push(n);return n;
+}
+function uni6RosterKey(t,id){return `${t.institutionId}|${t.termKey}|${t.programId}|${id}`;}
+function uni6SyncPeers(){const t=uni6Term(),s=uni6State();if(!t||!s)return {ok:false,reason:'Confirmed adult university course enrollment required.'};
+ const allowed=UNI1_PROGRAMS[t.programId]?.requiredCourseIds||[];if(!t.courseIds.every(id=>allowed.includes(id)))return {ok:false,reason:'Unverified university course IDs'};
+ const today=t.termKey;for(let i=0;i<t.courseIds.length;i++){
+  const courseId=t.courseIds[i],key=uni6RosterKey(t,courseId),slots=[(i*2)%UNI6_PEER_LIMIT,(i*2+1)%UNI6_PEER_LIMIT];
+  const actors=slots.map(slot=>uni6AllocatePeer(t,slot));if(actors.some(x=>!x)){uni6Quarantine('peer-identity-unavailable',key);continue;}
+  const ids=actors.map(n=>n.id),old=s.courseRosters[key];if(old&&!Array.isArray(old)){uni6Quarantine('malformed-roster',key);delete s.courseRosters[key];}
+  if(Array.isArray(s.courseRosters[key])&&s.courseRosters[key].join('|')!==ids.join('|')){uni6Quarantine('roster-identity-mismatch',key);continue;}
+  s.courseRosters[key]=ids;for(const n of actors){const rec=s.peers[n.id];if(rec&&(rec.institutionId!==t.institutionId||rec.actorId!==n.id)){uni6Quarantine('peer-provenance-mismatch',n.id);continue;}
+   s.peers[n.id]=rec||{actorId:n.id,institutionId:t.institutionId,met:false,firstMet:null};
+  }
+ }
+ for(const [key,ids] of Object.entries(s.courseRosters)){
+  const pieces=key.split('|');if(pieces.length!==4||!Array.isArray(ids)||ids.length!==2||new Set(ids).size!==2||!ids.every(id=>uni6ValidStudent(id,pieces[0]))){uni6Quarantine('invalid-roster',key);delete s.courseRosters[key];}
+ }
+ return {ok:true,courseCount:t.courseIds.length,peerCount:Object.keys(s.peers).length,term:today};
+}
+function uni6Classmates(courseId){const t=uni6Term();if(!t||!t.courseIds.includes(courseId))return [];const ids=uni6State()?.courseRosters?.[uni6RosterKey(t,courseId)]||[];return ids.filter(id=>uni6ValidStudent(id,t.institutionId)).map(id=>npcById(id));}
+function uni6NearClass(courseId){const t=uni6Term(),s=uni3State()?.terms?.[t?.termKey];if(!t||!s||!t.courseIds.includes(courseId)||!uni3AtCampus())return null;
+ const meetings=uni3Upcoming(t,s,currentDate(),1).filter(x=>x.courseId===courseId&&x.dateISO===currentDate()&&currentMinute()>=x.end&&currentMinute()<=x.end+25);
+ return meetings.find(m=>uni3State().presence.roomId===m.roomId)||null;
+}
+
+function uni6PeerBusy(id,date,minute,except){const n=npcById(id);if(!n?.studentUNI6)return true;
+ // Strict student-only schedule override; ordinary employed adult NPC availability is unchanged.
+ if(minute<420||minute>=1410)return true;
+ const t=uni6Term(),r=t&&uni3State()?.terms?.[t.termKey];if(!r)return true;
+ for(const m of uni3Upcoming(t,r,date,1))if(m.id!==except?.id&&m.start<=minute&&m.end>minute&&uni6Classmates(m.courseId).some(x=>x.id===id))return true;
+ return false;
+}
+function uni6PeerAction(id,courseId,action='introduce'){
+ const t=uni6Term(),s=uni6State();if(!t||!uni6Classmates(courseId).some(n=>n.id===id))return {ok:false,reason:'Student is not in a current verified shared course.'};
+ const n=npcById(id);if(!n||!uni6ValidStudent(id,t.institutionId))return {ok:false,reason:'University student identity unavailable.'};
+ const meeting=uni6NearClass(courseId);if(!meeting)return {ok:false,reason:'Meet the classmate in the correct university teaching room within 25 minutes after class.'};
+ if(S.energy<12||S.health<20)return {ok:false,reason:'Not enough health or energy for a campus conversation.'};
+ if(currentMinute()+12>meeting.end+35)return {ok:false,reason:'The classmate has already left the classroom.'};
+ const p=(S.people||[]).find(x=>x.npcId===id);
+ if(action==='introduce'&&p)return {ok:false,reason:'Already met; choose a class conversation instead.'};
+ if(action==='discuss'&&!p)return {ok:false,reason:'Introduce yourself first.'};
+ if(!['introduce','discuss'].includes(action))return {ok:false,reason:'Unknown peer action.'};
+ const key=`${t.termKey}|${id}|${action}|${currentDate()}`;if(s.introReceipts[key])return {ok:false,reason:'You have already had this conversation today.'};
+ if(action==='introduce'&&(S.people||[]).filter(q=>!isFamilyPerson(q)).length>=50)return {ok:false,reason:'The 50-person nonfamily contact limit is full.'};
+ if(action==='discuss'&&uni6PeerBusy(id,currentDate(),currentMinute(),meeting))return {ok:false,reason:'Your classmate is unavailable.'};
+ advanceTime(12,{silent:true});S.energy=clamp(S.energy-3);
+ if(action==='introduce'){
+  const made=personFromNpc(n,'friend','met university peer at class');made.rel=20;made.trust=45;
+  if((S.people||[]).some(q=>q.npcId===id))return {ok:false,reason:'Contact already exists.'};S.people.push(made);s.peers[id].met=true;s.peers[id].firstMet={dateISO:currentDate(),courseId};
+ }else {p.rel=clamp((p.rel??20)+2);p.trust=clamp((p.trust??45)+1);rememberPerson(p,`Discussed ${UNI1_COURSES[courseId].title} after university class.`);}
+ const receipt={id:key,actorId:id,courseId,termKey:t.termKey,status:action==='introduce'?'met':'talked',dateISO:currentDate(),roomId:meeting.roomId,minutes:12};s.introReceipts[key]=receipt;
+ return {ok:true,receipt};
+}
+function uni6PeopleHtml(){const t=uni6Term();if(!t)return '';const s=uni6State();let rows=[];
+ for(const id of t.courseIds){const list=uni6Classmates(id),near=uni6NearClass(id);rows.push(`<div class="uni6-course"><b>${esc(UNI1_COURSES[id]?.title||id)}</b> <small>${esc(id)}</small><ul>${list.map(n=>{const known=(S.people||[]).find(p=>p.npcId===n.id);return `<li><b>${esc(n.fullName)}</b> · ${known?'Known acquaintance':'Not yet met'} · ${near?'Available after this class':'Meet after a real lecture in this room'} ${near?`<button class="small" data-uni6-peer="${esc(n.id)}" data-uni6-course="${esc(id)}" data-uni6-action="${known?'discuss':'introduce'}">${known?'Talk about class':'Introduce yourself'}</button>`:''}</li>`}).join('')}</ul></div>`);}
+ return `<details data-uni6-classmates="1"><summary>Classmates (${Object.keys(s.peers).length} university students in this campus network)</summary><p>Genuine shared-course peers are world NPCs; no one joins your People list until you meet them at university. After class ends, use UNI.3 to enter the teaching room before class, then talk within 25 minutes afterward.</p>${rows.join('')}</details>`;
+}
+function uni6CampusLifeHtml(){return `<section data-uni6-campuslife="1" class="uni5-wrap"><h4>Campus Life</h4>${uni6PeopleHtml()}</section>`;}
+const uni6OldUniversityHtml=universityHtml;
+universityHtml=function(...args){const html=uni6OldUniversityHtml.apply(this,args);if(!uni6Term())return html;uni6SyncPeers();const panel=uni6CampusLifeHtml(),idx=html.lastIndexOf('</section>');return idx>=0?html.slice(0,idx)+panel+html.slice(idx):html+panel;};
+const uni6OldClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni6Peer)return uni6OldClick(b);const out=uni6PeerAction(d.uni6Peer,d.uni6Course,d.uni6Action);toast(out.ok?'University classmate interaction recorded.':out.reason);if(out.ok){save();render();}return true;};
+const uni6OldRegister=uni2Register;
+uni2Register=function(...args){const r=uni6OldRegister.apply(this,args);if(r?.ok&&uni6Term())uni6SyncPeers();return r;};
+// UNI.6.3 — institution-specific societies with real Calendar and campus attendance.
+const UNI6_CALENDAR_TYPE='universityCampusUNI6';
+function uni6ClubKey(t,name){return `uni6-club|${t.institutionId}|${t.termKey}|${name.replace(/[^a-zA-Z0-9]+/g,'-').toLowerCase().slice(0,60)}`;}
+function uni6Venues(sid){const c=CAMPUS[sid],r=uni3Rooms(sid);if(!c||!r.classroom)return {};
+ const v={union:{id:`${sid}-uni6-union`,label:'Student Union Hall',walk:7},seminar:{id:r.classroom.id,label:'Student Society Room',walk:7},study:{id:r.library.id,label:'Campus Library',walk:7}};
+ for(const [key,label] of [['gym','Gym'],['pool','Swimming Pool'],['stadium','Stadium'],['artStudio','Art Studio'],['theater','Theatre'],['labs','Science Laboratory'],['makerspace','Makerspace'],['concertHall','Concert Hall']])if(c.fac.includes(key))v[key]={id:`${sid}-uni6-${key}`,label,walk:7};
+ return v;
+}
+function uni6ClubVenue(sid,name){const v=uni6Venues(sid),n=String(name).toLowerCase();if(/dance|cheer|soccer|sport|esports/.test(n))return v.gym||v.stadium||v.union;
+ if(/design|art|fashion|drawing|photography|film/.test(n))return v.artStudio||v.theater||v.seminar;
+ if(/jazz|music|orchestra|ensemble|band|acappella|a cappella/.test(n))return v.concertHall||v.theater||v.seminar;
+ if(/robot|hack|coding|rocket|tech/.test(n))return v.makerspace||v.labs||v.seminar;
+ return v.seminar;
+}
+function uni6SupportConflict(t,date,start,end,excluded=null){
+ const u=uni5MeetingConflict(t,date,start,end,excluded);if(u)return u;
+ const cl=uni6State();for(const collection of [cl?.clubs,cl?.events,cl?.invitations,cl?.leadership])for(const x of Object.values(collection||{})){
+  if(x.id===excluded||x.calendarId===excluded||!['booked','joined','scheduled','attending'].includes(x.status)||x.dateISO!==date)continue;
+  if(x.startMinute<end&&x.endMinute>start)return 'Another campus obligation is scheduled.';
+ }
+ return null;
+}
+function uni6ClubCurrent(name){const t=uni6Term();if(!t||!CAMPUS[t.institutionId].clubs.includes(name))return null;
+ const x=uni6State().clubs[uni6ClubKey(t,name)];return x&&x.name===name&&x.institutionId===t.institutionId&&x.termKey===t.termKey?x:null;
+}
+function uni6ClubJoin(name){const t=uni6Term();if(!t||!CAMPUS[t.institutionId].clubs.includes(name))return {ok:false,reason:'Society not offered at your current institution.'};
+ const s=uni6State(),key=uni6ClubKey(t,name),old=s.clubs[key];if(old)return {ok:false,reason:'This term already contains a join/decline/leave decision.'};
+ if(Object.values(s.clubs).filter(x=>x.termKey===t.termKey&&x.status==='active').length>=3)return {ok:false,reason:'Only three active university clubs are allowed.'};
+ if(S.energy<10||S.health<20)return {ok:false,reason:'Health or energy too low for a membership interview.'};
+ // Accept for student organizations by default; specialty tryouts use a frozen, evidence-seeded decision.
+ const tryout=/robotics|rowing|orchestra|cheer|ensemble|fashion|rocket|esports/i.test(name),accepted=!tryout||uni5Hash(key+String(S.name||''))%100<70;
+ const x={schemaVersion:1,id:key,name,institutionId:t.institutionId,termKey:t.termKey,programId:t.programId,status:accepted?'active':'rejected',joinedOn:currentDate(),sessions:{},members:uni6Classmates(t.courseIds[0]).slice(0,2).map(n=>n.id),kind:'university-society'};
+ s.clubs[key]=x;return {ok:true,status:x.status,club:x};
+}
+function uni6ClubLeave(name){const x=uni6ClubCurrent(name);if(!x||x.status!=='active')return {ok:false,reason:'Not an active member.'};x.status='left';x.leftOn=currentDate();for(const ev of S.calendar||[])if(ev.type===UNI6_CALENDAR_TYPE&&ev.sourceId?.startsWith(x.id+'|')&&!isTerminal(ev.status))setCalendarStatus(ev,'Cancelled','Society membership ended');return {ok:true};}
+function uni6ClubSessions(t,x){const out=[],day=1+uni5Hash(x.id)%5;for(let i=0;i<14;i++){const date=addDays(currentDate(),i);if(date>t.termEnd||date<t.opened||!uni3ValidDay(date)||parseISO(date).getUTCDay()!==day)continue;
+ const venue=uni6ClubVenue(t.institutionId,x.name),start=1080,end=1140,id=`${x.id}|${date}`;
+ out.push({schemaVersion:1,id,kind:'club',clubId:x.id,institutionId:t.institutionId,termKey:t.termKey,programId:t.programId,dateISO:date,startMinute:start,endMinute:end,venueId:venue.id,calendarId:'cal-'+id,status:x.sessions[id]?.status||'scheduled'});
+ }return out;
+}
+function uni6ClubReconcile(){const t=uni6Term(),s=uni6State();if(!t||!s)return;for(const x of Object.values(s.clubs))if(x.status==='active'&&x.termKey===t.termKey&&x.institutionId===t.institutionId){
+ for(const v of uni6ClubSessions(t,x)){if(x.sessions[v.id])continue;if(!x.nextSession||x.nextSession.dateISO<v.dateISO)x.nextSession=x.nextSession&&x.nextSession.dateISO>=currentDate()?x.nextSession:v;
+ // Only a single upcoming occurrence per club is reserved until resolved; prevents Calendar spam.
+ if(x.nextSession?.id!==v.id)continue;
+ if(!(S.calendar||[]).some(e=>e.id===v.calendarId))createCalendarEvent({id:v.calendarId,type:UNI6_CALENDAR_TYPE,title:`${x.name} society practice`,dateISO:v.dateISO,startMinute:v.startMinute,endMinute:v.endMinute,graceMinute:v.startMinute+15,required:false,category:'Activity',location:v.venueId,sourceId:v.id,payload:{kind:'club',clubId:x.id,termKey:t.termKey,institutionId:t.institutionId,venueId:v.venueId}});
+ }
+ }}
+function uni6SessionFind(id){const t=uni6Term(),s=uni6State();if(!t||!s)return null;for(const x of Object.values(s.clubs))if(x.termKey===t.termKey&&x.institutionId===t.institutionId&&x.nextSession?.id===id&&x.status==='active')return {t,x,session:x.nextSession};return null;}
+function uni6CampusWalk(roomId,date,start,end){const t=uni6Term(),rooms=uni6Venues(t?.institutionId);if(!t||!Object.values(rooms).some(v=>v.id===roomId))return {ok:false,reason:'Unavailable or wrong-campus venue.'};
+ if(!uni3AtCampus()||uni3State().presence.institutionId!==t.institutionId)return {ok:false,reason:'Commute to your own university first.'};
+ if(currentDate()!==date||currentMinute()<start-120||currentMinute()+7>=end)return {ok:false,reason:'Venue walking is available within two hours of the session.'};
+ const conflict=uni6SupportConflict(t,currentDate(),currentMinute(),currentMinute()+7);if(conflict)return {ok:false,reason:conflict};
+ advanceTime(7,{silent:true});if(!uni3AtCampus())return {ok:false,reason:'Campus presence lost during movement.'};uni3State().presence.roomId=roomId;return {ok:true,minutes:7,roomId};
+}
+function uni6ClubWalk(id){const v=uni6SessionFind(id);return v?uni6CampusWalk(v.session.venueId,v.session.dateISO,v.session.startMinute,v.session.endMinute):{ok:false,reason:'No active campus society session.'};}
+function uni6ClubAttend(id){const found=uni6SessionFind(id);if(!found)return {ok:false,reason:'No eligible active session.'};const {t,x,session:v}=found,ev=(S.calendar||[]).find(e=>e.id===v.calendarId);
+ if(x.sessions[id]||!ev||ev.type!==UNI6_CALENDAR_TYPE||ev.sourceId!==id||isTerminal(ev.status))return {ok:false,reason:'Session already resolved or missing authoritative Calendar event.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==v.venueId)return {ok:false,reason:'Walk to the correct university society venue first.'};
+ if(v.dateISO!==currentDate()||currentMinute()<v.startMinute-5||currentMinute()>v.startMinute+15)return {ok:false,reason:'Practice opens five minutes early; late cutoff is 15 minutes.'};
+ if(S.energy<14||S.health<20)return {ok:false,reason:'Energy or health is insufficient for practice.'};
+ const conflict=uni6SupportConflict(t,v.dateISO,currentMinute(),v.endMinute,ev.id);if(conflict)return {ok:false,reason:conflict};
+ const late=Math.max(0,currentMinute()-v.startMinute);setCalendarStatus(ev,'Attending','Arrived in person at university society venue');advanceTime(v.endMinute-currentMinute(),{silent:true});
+ const rec={id,status:late?'late':'attended',actorId:null,termKey:v.termKey,clubId:x.id,dateISO:v.dateISO,venueId:v.venueId,minutes:60-late,lateMinutes:late};x.sessions[id]=rec;x.nextSession=null;
+ setCalendarStatus(ev,'Attended','University club physical attendance recorded');S.energy=clamp(S.energy-5);S.needs.social=clamp(S.needs.social+4);S.needs.fun=clamp(S.needs.fun+3);
+ return {ok:true,receipt:rec};
+}
+function uni6CalendarTick(ev){if(ev?.type!==UNI6_CALENDAR_TYPE)return;const id=ev.sourceId,found=uni6SessionFind(id);
+ // Next phases delegate additional kinds by extending this resolver rather than generic school obligations.
+ if(ev.payload?.kind!=='club'){if(typeof uni6CalendarOtherTick==='function')uni6CalendarOtherTick(ev);else setCalendarStatus(ev,'Cancelled','Unsupported campus event');return;}
+ if(!found||ev.payload?.clubId!==found.x.id||ev.payload?.institutionId!==found.t.institutionId){setCalendarStatus(ev,'Cancelled','Inactive or invalid campus society session');return;}
+ const {x,session:v}=found;
+ if(ev.status==='Attending')return;
+ if(x.sessions[id]){setCalendarStatus(ev,['attended','late'].includes(x.sessions[id].status)?'Attended':x.sessions[id].status==='missed'?'Missed':'Cancelled','Reconciled club receipt');return;}
+ if(v.dateISO<currentDate()||v.dateISO===currentDate()&&currentMinute()>v.startMinute+15){x.sessions[id]={id,status:'missed',clubId:x.id,dateISO:v.dateISO,venueId:v.venueId};x.nextSession=null;setCalendarStatus(ev,'Missed','Optional university practice not attended');return;}
+ if(v.dateISO===currentDate()&&currentMinute()>=v.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','University society practice begins');
+}
+function uni6ClubsHtml(){const t=uni6Term();if(!t)return '';uni6ClubReconcile();const s=uni6State(),rows=CAMPUS[t.institutionId].clubs.map(name=>{const x=uni6ClubCurrent(name),v=x?.nextSession;
+ return `<li><b>${esc(name)}</b> · ${esc(x?.status||'Not joined')} ${!x?`<button class="small" data-uni6-club-join="${esc(name)}">Apply to join</button>`:x.status==='active'?`<button class="small ghost" data-uni6-club-leave="${esc(name)}">Leave</button>`:''}${v?`<small> • ${v.dateISO} ${timeLabel(v.startMinute)} · ${esc(v.venueId)}</small> <button class="small" data-uni6-club-walk="${esc(v.id)}">Walk to practice</button> <button class="small primary" data-uni6-club-attend="${esc(v.id)}">Attend</button>`:''}</li>`}).join('');
+ const my=Object.values(s.clubs).filter(x=>x.termKey===t.termKey&&x.status==='active');return `<details data-uni6-clubs="1"><summary>Societies & clubs (${my.length}/3 joined)</summary><p>Only societies offered by this institution. Membership is voluntary, and skill/social effects require physically attending a scheduled practice. Use the UNI.3 campus commute first.</p><ul>${rows}</ul></details>`;}
+const uni6ClubOldCampusLifeHtml=uni6CampusLifeHtml;
+uni6CampusLifeHtml=function(){const h=uni6ClubOldCampusLifeHtml();return h.replace('</section>',uni6ClubsHtml()+'</section>');};
+const uni6ClubOldClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};const typ=d.uni6ClubJoin?'join':d.uni6ClubLeave?'leave':d.uni6ClubWalk?'walk':d.uni6ClubAttend?'attend':null;if(!typ)return uni6ClubOldClick(b);
+ const out=typ==='join'?uni6ClubJoin(d.uni6ClubJoin):typ==='leave'?uni6ClubLeave(d.uni6ClubLeave):typ==='walk'?uni6ClubWalk(d.uni6ClubWalk):uni6ClubAttend(d.uni6ClubAttend);
+ toast(out.ok?`University society action: ${out.status||'recorded'}.`:out.reason);if(out.ok){uni6ClubReconcile();save();render();}return true;};
+// Stop the obsolete locationless UNI.0 club shortcut from awarding free leadership.
+joinCampusClub=function(){toast('Open Campus Life → Societies to choose a real university club. Joining does not award leadership.');};
+// UNI.6.4 — institution-specific, opt-in, physical campus events.
+function uni6EventPeriod(sid){return ({weekly:7,'twice a month':14,monthly:28,rarely:42})[CAMPUS[sid]?.events]||28;}
+function uni6EventBlueprint(sid,index){const c=CAMPUS[sid],v=uni6Venues(sid);if(!c)return null;
+ const basic=[{kind:'fair',title:'University society showcase',room:v.union},{kind:'service',title:'Student community volunteer day',room:v.seminar},
+  {kind:'social',title:'Campus course mixer',room:v.union}];
+ if(c.fac.includes('artStudio'))basic.push({kind:'arts',title:'Student art exhibition',room:v.artStudio});
+ if(c.fac.includes('stadium'))basic.push({kind:'sport',title:'University intramural showcase',room:v.stadium});
+ if(c.greek!=='none')basic.push({kind:'greek',title:'Greek-life open social night',room:v.union});
+ if(c.concert)basic.push({kind:'concert',title:`${c.concert.split(' (')[0]} live on campus`,room:v.concertHall||v.union});
+ else if(c.festival)basic.push({kind:'festival',title:String(c.festival).replace(/^an?\s+/,'').replace(/^./,ch=>ch.toUpperCase()),room:v.union});
+ // Concert/festival are annual, not a weekly/random repeated draw.
+ const annual=basic.filter(x=>['concert','festival'].includes(x.kind));const ordinary=basic.filter(x=>!['concert','festival'].includes(x.kind));
+ return index%8===7&&annual.length?annual[0]:ordinary[index%ordinary.length];
+}
+function uni6EventReconcile(){const t=uni6Term(),s=uni6State();if(!t||!s)return;const rate=uni6EventPeriod(t.institutionId),today=currentDate();
+ // One initial near-term opportunity, then fixed frequency. No years of pre-generated content.
+ const anchor=t.opened&&t.opened>addDays(today,-365)?t.opened:today;
+ const base=addDays(anchor,Math.floor(Math.max(0,daysBetween(anchor,today))/rate)*rate+5);
+ for(let j=0;j<2;j++){
+  let date=addDays(base,j*rate),days=0;while(days++<8&&!uni3ValidDay(date))date=addDays(date,1);
+  if(date>t.termEnd||daysBetween(today,date)>32||date<today)continue;
+  const idx=Math.floor(Math.max(0,daysBetween(anchor,date))/rate),b=uni6EventBlueprint(t.institutionId,idx);if(!b||!b.room)continue;
+  const start=b.kind==='greek'?1140:1080,end=start+90,id=`uni6-event|${t.institutionId}|${t.termKey}|${date}|${b.kind}`,cal='cal-'+id;
+  if(s.events[id])continue;if(Object.keys(s.events).length>=70)break;
+  s.events[id]={schemaVersion:1,id,institutionId:t.institutionId,termKey:t.termKey,programId:t.programId,kind:b.kind,title:b.title,dateISO:date,startMinute:start,endMinute:end,venueId:b.room.id,calendarId:cal,status:'announced',joinedAt:null,receipt:null,memberIds:uni6Classmates(t.courseIds[0]).map(n=>n.id)};
+  createCalendarEvent({id:cal,type:UNI6_CALENDAR_TYPE,title:b.title,dateISO:date,startMinute:start,endMinute:end,graceMinute:start+15,category:'Social',required:false,location:b.room.id,sourceId:id,payload:{kind:'event',eventId:id,institutionId:t.institutionId,termKey:t.termKey,venueId:b.room.id}});
+ }
+}
+function uni6EventValid(e,active=true){const t=uni6Term();if(!e||e.schemaVersion!==1||!['announced','joined','declined','attended','late','missed','cancelled','expired'].includes(e.status)||!CAMPUS[e.institutionId]||
+ e.id!==`uni6-event|${e.institutionId}|${e.termKey}|${e.dateISO}|${e.kind}`||
+ !uni6Venues(e.institutionId)||!Object.values(uni6Venues(e.institutionId)).some(v=>v.id===e.venueId)||
+ !/^\d{4}-\d\d-\d\d$/.test(e.dateISO)||!Number.isInteger(e.startMinute)||e.endMinute!==e.startMinute+90||e.calendarId!=='cal-'+e.id)return false;
+ if(e.kind==='greek'&&CAMPUS[e.institutionId].greek==='none')return false;
+ if(e.kind==='concert'&&!CAMPUS[e.institutionId].concert||e.kind==='festival'&&!CAMPUS[e.institutionId].festival)return false;
+ return !active||!!t&&t.institutionId===e.institutionId&&t.termKey===e.termKey&&t.programId===e.programId;
+}
+function uni6EventRSVP(id,response){const t=uni6Term(),s=uni6State(),e=s?.events[id];if(!t||!uni6EventValid(e)||e.status!=='announced')return {ok:false,reason:'Event not open for RSVP at this university.'};
+ if(!['join','decline'].includes(response))return {ok:false,reason:'Unknown RSVP decision.'};
+ if(e.dateISO<currentDate()||e.dateISO===currentDate()&&currentMinute()>=e.startMinute-120)return {ok:false,reason:'RSVP closes two hours before the event.'};
+ if(response==='join'){const conflict=uni6SupportConflict(t,e.dateISO,e.startMinute,e.endMinute,e.calendarId);if(conflict)return {ok:false,reason:conflict};}
+ e.status=response==='join'?'joined':'declined';e.joinedAt={dateISO:currentDate(),minute:currentMinute(),response};if(response==='decline'){
+  e.receipt={id:e.id,status:'declined',dateISO:currentDate(),minutes:0};const cal=S.calendar.find(x=>x.id===e.calendarId);if(cal)setCalendarStatus(cal,'Cancelled','Invitation declined');
+ }
+ return {ok:true,status:e.status};
+}
+function uni6EventWalk(id){const e=uni6State()?.events[id];if(!uni6EventValid(e)||e.status!=='joined')return {ok:false,reason:'Event must first be joined by RSVP.'};return uni6CampusWalk(e.venueId,e.dateISO,e.startMinute,e.endMinute);}
+function uni6EventAttend(id){const t=uni6Term(),e=uni6State()?.events[id];if(!t||!uni6EventValid(e)||e.status!=='joined'||e.receipt)return {ok:false,reason:'Not joined or event already completed.'};
+ const cal=S.calendar.find(x=>x.id===e.calendarId);if(!cal||cal.type!==UNI6_CALENDAR_TYPE||cal.sourceId!==id||isTerminal(cal.status))return {ok:false,reason:'Calendar reference invalid or event closed.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==e.venueId)return {ok:false,reason:'Enter the correct University venue first.'};
+ if(currentDate()!==e.dateISO||currentMinute()<e.startMinute-5||currentMinute()>e.startMinute+15)return {ok:false,reason:'Outside the event arrival window.'};
+ if(S.energy<15||S.health<20)return {ok:false,reason:'Too tired or unwell to attend.'};
+ const conflict=uni6SupportConflict(t,e.dateISO,currentMinute(),e.endMinute,e.calendarId);if(conflict)return {ok:false,reason:conflict};
+ const late=Math.max(0,currentMinute()-e.startMinute);setCalendarStatus(cal,'Attending','Present at approved campus event venue');advanceTime(e.endMinute-currentMinute(),{silent:true});
+ e.status=late?'late':'attended';e.receipt={id,status:e.status,dateISO:e.dateISO,venueId:e.venueId,termKey:e.termKey,minutes:90-late,lateMinutes:late};
+ setCalendarStatus(cal,'Attended','Attended campus event in person');S.energy=clamp(S.energy-8);S.needs.fun=clamp(S.needs.fun+8);S.needs.social=clamp(S.needs.social+6);
+ return {ok:true,receipt:e.receipt};
+}
+function uni6CalendarOtherTick(ev){if(ev.payload?.kind!=='event'){setCalendarStatus(ev,'Cancelled','Unsupported UNI.6 obligation');return;}
+ const e=uni6State()?.events[ev.sourceId];if(!uni6EventValid(e,false)||e.calendarId!==ev.id||e.venueId!==ev.payload.venueId){setCalendarStatus(ev,'Cancelled','Invalid campus event reference');return;}
+ if(ev.status==='Attending')return;
+ if(e.receipt){setCalendarStatus(ev,['attended','late'].includes(e.status)?'Attended':e.status==='missed'?'Missed':'Cancelled','Reconciled source receipt');return;}
+ if(e.dateISO<currentDate()||e.dateISO===currentDate()&&currentMinute()>e.startMinute+15){
+  e.status=e.status==='joined'?'missed':e.status==='announced'?'expired':e.status;
+  e.receipt={id:e.id,status:e.status,dateISO:currentDate(),minutes:0};setCalendarStatus(ev,e.status==='missed'?'Missed':'Cancelled','Optional event RSVP/window ended');return;
+ }
+ if(e.dateISO===currentDate()&&currentMinute()>=e.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','Campus event begins');
+}
+function uni6EventsHtml(){const t=uni6Term();if(!t)return '';uni6EventReconcile();const e=Object.values(uni6State().events).filter(x=>x.termKey===t.termKey&&x.institutionId===t.institutionId).sort((a,b)=>a.dateISO.localeCompare(b.dateISO)).slice(-25);
+ return `<details data-uni6-events="1"><summary>Campus Events (${e.filter(x=>x.status==='joined').length} joined)</summary><p>RSVP from anywhere; physically commute and walk to the listed university venue to attend. Optional missed events do not affect academic attendance.</p><ul>${e.map(x=>`<li><b>${esc(x.title)}</b> · ${x.dateISO} ${timeLabel(x.startMinute)} · ${esc(x.venueId)} · ${esc(x.status)} ${x.status==='announced'?`<button class="small" data-uni6-event-join="${esc(x.id)}">RSVP yes</button> <button class="small ghost" data-uni6-event-decline="${esc(x.id)}">Decline</button>`:x.status==='joined'?`<button class="small" data-uni6-event-walk="${esc(x.id)}">Walk to venue</button> <button class="small primary" data-uni6-event-attend="${esc(x.id)}">Attend in person</button>`:''}</li>`).join('')}</ul></details>`;
+}
+const uni6EventOldCampusHtml=uni6CampusLifeHtml;
+uni6CampusLifeHtml=function(){return uni6EventOldCampusHtml().replace('</section>',uni6EventsHtml()+'</section>');};
+const uni6EventOldClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};const type=d.uni6EventJoin?'join':d.uni6EventDecline?'decline':d.uni6EventWalk?'walk':d.uni6EventAttend?'attend':null;if(!type)return uni6EventOldClick(b);
+ const id=d.uni6EventJoin||d.uni6EventDecline||d.uni6EventWalk||d.uni6EventAttend,out=type==='join'||type==='decline'?uni6EventRSVP(id,type):type==='walk'?uni6EventWalk(id):uni6EventAttend(id);
+ toast(out.ok?`Campus event ${out.status||'action'} recorded.`:out.reason);if(out.ok){save();render();}return true;};
+// Existing instant party/concert reward paths are replaced only for current modern UNI.6 terms.
+const uni6PriorGreek=greekParty;
+greekParty=function(){if(uni6Term()){toast('Open Campus Life → Campus Events to RSVP, commute, and attend a real scheduled Greek social.');return;}return uni6PriorGreek();};
+const uni6PriorCampusDaily=campusDaily;
+campusDaily=function(){if(uni6Term()){syncDormRent();uni6EventReconcile();return;}return uni6PriorCampusDaily();};
+const uni6PriorConcertChoice=campusEventChoice;
+campusEventChoice=function(e,id){if(uni6Term()&&e?.type==='campusConcert'){log('Campus performance invitation',id==='go'?'RSVP and attend physically using the Campus Events panel.':'You declined the informal campus concert invite.');return true;}return uni6PriorConcertChoice(e,id);};
+// UNI.6.5 — real accepted/refused peer invitations; canonical People and romance are sole relationship stores.
+function uni6PeerPerson(personId){const p=personById(personId),n=p&&npcById(p.npcId),t=uni6Term();return t&&n&&uni6ValidStudent(n.id,t.institutionId)&&uni6State().peers[n.id]?{t,p,n}:null;}
+function uni6StudentFree(p,date,minute){const x=uni6PeerPerson(p?.id);if(!x)return null;if(minute<420||minute>=1380)return {free:false,why:'University peer resting'};
+ // Student-specific, never modify unrelated employed adult NPC schedules.
+ const t=x.t,r=uni3State()?.terms?.[t.termKey];if(r)for(const m of uni3Upcoming(t,r,date,1))if(uni6Classmates(m.courseId).some(n=>n.id===x.n.id)&&m.start<=minute&&m.end>minute)return {free:false,why:'Shared-course lecture/lab'};
+ for(const i of Object.values(uni6State().invitations))if(i.status==='accepted'&&i.dateISO===date&&i.participantIds?.includes(x.n.id)&&i.startMinute<=minute&&i.endMinute>minute)return {free:false,why:'Another university meetup'};
+ return {free:true};}
+const uni6PriorNpcStatusAt=npcStatusAt;
+npcStatusAt=function(p,date=currentDate(),minute=currentMinute()){const res=uni6StudentFree(p,date,minute);return res||uni6PriorNpcStatusAt(p,date,minute);};
+function uni6InviteId(t,personId,kind,date,minute){return `uni6-invite|${t.institutionId}|${t.termKey}|${personId}|${kind}|${date}|${minute}`;}
+function uni6InviteVenue(t,kind){const v=uni6Venues(t.institutionId);return kind==='study'?v.study:kind==='lunch'?v.union:kind==='date'?v.union:v.seminar;}
+function uni6InviteSlot(t,personId,kind){for(let i=1;i<18;i++){const date=addDays(currentDate(),i);if(date>t.termEnd||!uni3ValidDay(date))continue;
+ const start=kind==='lunch'?1080:1110,end=start+60,conflict=uni6SupportConflict(t,date,start,end);
+ if(conflict)continue;const person=personById(personId);if(uni6StudentFree(person,date,start)?.free!==true)continue;
+ return {dateISO:date,startMinute:start,endMinute:end};
+ }return null;}
+function uni6InviteCreate(personId,kind='study'){
+ const match=uni6PeerPerson(personId);if(!match)return {ok:false,reason:'Only genuinely met, current university peers may be invited.'};
+ const {t,p,n}=match;if(!['study','lunch','society','date'].includes(kind))return {ok:false,reason:'Unknown campus activity.'};
+ if(kind==='date'){if(!isEstablishedPartner(p)&&!['goingOut','exclusive','official','inLove','superInLove'].includes(ensureLove(p).stage))return {ok:false,reason:'An established mutually consenting romantic stage is required to plan a date.'};
+  const r=romanceCompatibility(p);if(!r.eligible)return {ok:false,reason:'Romance orientation, commitment or age gate denied this date.'};
+ }
+ if(!uni3AtCampus()&&!canUsePhone())return {ok:false,reason:'Invite in person from your university campus or obtain a permitted working phone.'};
+ const prior=Object.values(uni6State().invitations).filter(i=>i.termKey===t.termKey&&i.personId===personId&&i.kind===kind);
+ if(prior.some(i=>!['attended','late','missed','cancelled'].includes(i.status)||!i.requestAt||daysBetween(i.requestAt,currentDate())<7))return {ok:false,reason:'The existing invitation outcome stands; this peer cannot be asked again immediately.'};
+ const slot=uni6InviteSlot(t,personId,kind);if(!slot)return {ok:false,reason:'No compatible future free-time meeting in the current term.'};
+ const id=uni6InviteId(t,personId,kind,slot.dateISO,slot.startMinute),s=uni6State(),old=s.invitations[id];if(old)return {ok:false,reason:'Request already answered; no reroll.',status:old.status};
+ if(Object.keys(s.invitations).length>=80)return {ok:false,reason:'Campus invitation history is full for this saved life.'};
+ // Stored deterministic refusal/acceptance, not mutable random draw on menu open.
+ const chanceValue=Math.min(95,25+(p.rel||0)*.55+(p.trust??50)*.22),roll=uni5Hash(id+'|'+(p.npcId||''))%100;
+ const busy=uni6StudentFree(p,slot.dateISO,slot.startMinute)?.free!==true;
+ const accepted=!busy&&roll<chanceValue;
+ const v=uni6InviteVenue(t,kind),x={schemaVersion:1,id,kind,termKey:t.termKey,programId:t.programId,institutionId:t.institutionId,personId:p.id,participantIds:[n.id],status:accepted?'accepted':busy?'busy':'refused',dateISO:slot.dateISO,startMinute:slot.startMinute,endMinute:slot.endMinute,venueId:v.id,calendarId:'cal-'+id,requestAt:currentDate(),reason:busy?'University peer has another obligation.':accepted?'Invite accepted.':'Peer politely declined; no consent to attend.',receipt:null};
+ s.invitations[id]=x;
+ if(accepted)createCalendarEvent({id:x.calendarId,type:UNI6_CALENDAR_TYPE,title:`Campus ${kind} with ${p.fullName||p.name}`,dateISO:slot.dateISO,startMinute:slot.startMinute,endMinute:slot.endMinute,graceMinute:slot.startMinute+15,required:false,category:'Social',location:v.id,sourceId:id,participants:[p.id],payload:{kind:'invitation',invitationId:id,termKey:t.termKey,institutionId:t.institutionId,venueId:v.id}});
+ return {ok:true,status:x.status,invitation:x};
+}
+function uni6InviteValid(i,active=true){const t=uni6Term(),p=i&&personById(i.personId),n=p&&npcById(p.npcId);if(!i||i.schemaVersion!==1||!['accepted','refused','busy','missed','attended','late','cancelled','expired'].includes(i.status)||!n||!uni6ValidStudent(n.id,i.institutionId)||
+ i.id!==uni6InviteId({institutionId:i.institutionId,termKey:i.termKey},i.personId,i.kind,i.dateISO,i.startMinute)||i.calendarId!=='cal-'+i.id||!Array.isArray(i.participantIds)||i.participantIds.length!==1||i.participantIds[0]!==n.id||
+ i.endMinute!==i.startMinute+60||!Object.values(uni6Venues(i.institutionId)).some(v=>v.id===i.venueId))return false;
+ return !active||!!t&&t.institutionId===i.institutionId&&t.termKey===i.termKey&&t.programId===i.programId;
+}
+function uni6InviteWalk(id){const x=uni6State()?.invitations[id];return uni6InviteValid(x)&&x.status==='accepted'?uni6CampusWalk(x.venueId,x.dateISO,x.startMinute,x.endMinute):{ok:false,reason:'No accepted current-term university invitation.'};}
+function uni6InviteAttend(id){const t=uni6Term(),x=uni6State()?.invitations[id];if(!t||!uni6InviteValid(x)||x.status!=='accepted'||x.receipt)return {ok:false,reason:'Invalid, rejected or already resolved invitation.'};
+ const ev=S.calendar.find(e=>e.id===x.calendarId);if(!ev||ev.type!==UNI6_CALENDAR_TYPE||ev.sourceId!==id||isTerminal(ev.status))return {ok:false,reason:'Invitation Calendar identity unavailable.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==x.venueId)return {ok:false,reason:'Physically enter the correct campus meeting location first.'};
+ if(currentDate()!==x.dateISO||currentMinute()<x.startMinute-5||currentMinute()>x.startMinute+15)return {ok:false,reason:'Invitation window closed or not open.'};
+ if(S.energy<12||S.health<20)return {ok:false,reason:'Insufficient energy/health for a campus meetup.'};
+ const conflict=uni6SupportConflict(t,x.dateISO,currentMinute(),x.endMinute,ev.id);if(conflict)return {ok:false,reason:conflict};
+ const p=personById(x.personId),n=npcById(p?.npcId);if(!p||!n)return {ok:false,reason:'Invited peer no longer resolves.'};
+ const late=Math.max(0,currentMinute()-x.startMinute);setCalendarStatus(ev,'Attending','Player and invited student at verified venue');advanceTime(x.endMinute-currentMinute(),{silent:true});
+ x.status=late?'late':'attended';x.receipt={id,status:x.status,participants:[n.id],personId:p.id,dateISO:x.dateISO,venueId:x.venueId,minutes:60-late};
+ setCalendarStatus(ev,'Attended','University meetup attended');p.rel=clamp((p.rel??20)+4);p.trust=clamp((p.trust??45)+2);rememberPerson(p,`Attended a university ${x.kind} meetup at ${CAMPUS[t.institutionId].city}.`,2);
+ S.needs.social=clamp(S.needs.social+5);S.energy=clamp(S.energy-4);return {ok:true,receipt:x.receipt};
+}
+function uni6InviteTick(ev){const x=uni6State()?.invitations[ev.sourceId];if(!uni6InviteValid(x,false)||x.calendarId!==ev.id||ev.payload?.invitationId!==x.id){setCalendarStatus(ev,'Cancelled','Invalid invitation reference');return;}
+ if(ev.status==='Attending')return;
+ if(x.receipt){setCalendarStatus(ev,['attended','late'].includes(x.status)?'Attended':'Cancelled','Reconciled invitation receipt');return;}
+ if(x.dateISO<currentDate()||x.dateISO===currentDate()&&currentMinute()>x.startMinute+15){x.status='missed';x.receipt={id:x.id,status:'missed',dateISO:currentDate(),minutes:0};setCalendarStatus(ev,'Missed','Optional invitation no-show');return;}
+ if(x.dateISO===currentDate()&&currentMinute()>=x.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','Accepted meetup begins');
+}
+const uni6InvitePriorOtherTick=uni6CalendarOtherTick;
+uni6CalendarOtherTick=function(ev){if(ev.payload?.kind==='invitation')uni6InviteTick(ev);else uni6InvitePriorOtherTick(ev);};
+function uni6SocialHtml(){const t=uni6Term();if(!t)return '';const s=uni6State(),known=(S.people||[]).filter(p=>uni6PeerPerson(p.id)),history=Object.values(s.invitations).filter(x=>x.institutionId===t.institutionId&&x.termKey===t.termKey).slice(-16);
+ return `<details data-uni6-social="1"><summary>University invitations & relationships (${history.filter(x=>x.status==='accepted').length} accepted)</summary><p>Invite known adult classmates, not faculty. Student availability, existing relationships, a working phone or campus presence, and real free time govern each request. Refusals are durable.</p>
+ ${known.slice(0,10).map(p=>`<div><b>${esc(p.fullName||p.name)}</b> · closeness ${Math.round(p.rel||0)} <button class="small" data-uni6-invite="${esc(p.id)}" data-uni6-kind="study">Invite to study</button><button class="small" data-uni6-invite="${esc(p.id)}" data-uni6-kind="lunch">Invite to campus café</button>${isEstablishedPartner(p)?`<button class="small" data-uni6-invite="${esc(p.id)}" data-uni6-kind="date">Propose a campus date</button>`:''}</div>`).join('')||'<p>Genuinely meet a classmate first to unlock campus invitations.</p>'}
+ <ul>${history.map(x=>`<li>${esc(personById(x.personId)?.fullName||'Unknown peer')} · ${esc(x.kind)} · ${x.dateISO} ${timeLabel(x.startMinute)} · ${esc(x.status)} ${x.status==='accepted'?`<button class="small" data-uni6-invite-walk="${esc(x.id)}">Walk to meeting</button> <button class="small primary" data-uni6-invite-attend="${esc(x.id)}">Meet in person</button>`:''}</li>`).join('')}</ul></details>`;
+}
+const uni6SocialOldCampusHtml=uni6CampusLifeHtml;
+uni6CampusLifeHtml=function(){return uni6SocialOldCampusHtml().replace('</section>',uni6SocialHtml()+'</section>');};
+const uni6SocialOldClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};const action=d.uni6Invite?'invite':d.uni6InviteWalk?'walk':d.uni6InviteAttend?'attend':null;if(!action)return uni6SocialOldClick(b);
+ const out=action==='invite'?uni6InviteCreate(d.uni6Invite,d.uni6Kind||'study'):action==='walk'?uni6InviteWalk(d.uni6InviteWalk):uni6InviteAttend(d.uni6InviteAttend);
+ toast(out.ok?'University invitation response saved: '+(out.status||'attended'):out.reason);if(out.ok){save();render();}return true;};
+// Bounded NPC-initiated invitation: no auto-acceptance, no phantom attendance.
+function uni6NpcInviteTick(){const t=uni6Term(),s=uni6State();if(!t||SIM.skipping||Object.keys(s.invitations).length>=70)return {ok:false,reason:'No active campus invitation window.'};
+ const week=Math.floor(Math.max(0,daysBetween(t.opened,currentDate()))/14);
+ if(week<1||week%2!==0)return {ok:false,reason:'No peer invitation opportunity this fortnight.'};
+ const known=S.people.filter(p=>uni6PeerPerson(p.id)&&(p.rel||0)>=45);
+ for(const p of known.slice(0,4)){const seed=`uni6-npc-invite|${t.termKey}|${p.npcId}|${week}`;
+  if(s.npcInviteWeeks?.[seed])continue;const slot=uni6InviteSlot(t,p.id,'study');if(!slot)continue;
+  const id=uni6InviteId(t,p.id,'study',slot.dateISO,slot.startMinute);
+  if(s.invitations[id]||Object.values(s.invitations).some(i=>i.termKey===t.termKey&&i.personId===p.id&&['offered','postponed','accepted'].includes(i.status)))continue;
+  if(uni5Hash(seed)%100>=40)continue;const v=uni6InviteVenue(t,'study');
+  s.npcInviteWeeks=s.npcInviteWeeks||{};if(Object.keys(s.npcInviteWeeks).length>=50)break;s.npcInviteWeeks[seed]=true;
+  s.invitations[id]={schemaVersion:1,id,origin:'npc',kind:'study',termKey:t.termKey,programId:t.programId,institutionId:t.institutionId,personId:p.id,participantIds:[p.npcId],status:'offered',requestAt:currentDate(),dateISO:slot.dateISO,startMinute:slot.startMinute,endMinute:slot.endMinute,venueId:v.id,calendarId:'cal-'+id,reason:'University peer invited you to a campus study session; please respond.',receipt:null};
+  return {ok:true,id};
+ }return {ok:false,reason:'No new bounded NPC invitation.'};
+}
+function uni6InviteRespond(id,answer){const t=uni6Term(),s=uni6State(),x=s?.invitations[id];if(!t||!x||x.origin!=='npc'||!['offered','postponed'].includes(x.status)||!['accept','decline','later'].includes(answer)||!uni6InviteValid(x))return {ok:false,reason:'NPC invitation unavailable or already answered.'};
+ if(currentDate()>x.dateISO||currentDate()===x.dateISO&&currentMinute()>=x.startMinute-120)return {ok:false,reason:'Invitation reply deadline passed.'};
+ if(answer==='later'){if(x.status==='postponed')return {ok:false,reason:'Already postponed once.'};x.status='postponed';return {ok:true,status:x.status};}
+ if(answer==='accept'){
+  const conflict=uni6SupportConflict(t,x.dateISO,x.startMinute,x.endMinute,x.calendarId);if(conflict)return {ok:false,reason:conflict};
+  if(uni6StudentFree(personById(x.personId),x.dateISO,x.startMinute)?.free===false)return {ok:false,reason:'Student participant is busy.'};
+  x.status='accepted';createCalendarEvent({id:x.calendarId,type:UNI6_CALENDAR_TYPE,title:`Campus study with ${personById(x.personId)?.fullName||'peer'}`,dateISO:x.dateISO,startMinute:x.startMinute,endMinute:x.endMinute,graceMinute:x.startMinute+15,required:false,category:'Social',location:x.venueId,sourceId:x.id,participants:[x.personId],payload:{kind:'invitation',invitationId:id,termKey:t.termKey,institutionId:t.institutionId,venueId:x.venueId}});
+ }else{x.status='refused';x.receipt={id,status:'refused',dateISO:currentDate(),minutes:0};}
+ return {ok:true,status:x.status};
+}
+const uni6NpcOldDaily=campusDaily;
+campusDaily=function(){const r=uni6NpcOldDaily();if(uni6Term())uni6NpcInviteTick();return r;};
+const uni6NpcPriorValid=uni6InviteValid;
+uni6InviteValid=function(x,active=true){if(x?.origin==='npc'&&['offered','postponed','refused'].includes(x.status)){
+ const copy={...x,status:'accepted'};return uni6NpcPriorValid(copy,active)&&x.participantIds?.length===1;
+ }return uni6NpcPriorValid(x,active);};
+const uni6NpcPriorSocialHtml=uni6SocialHtml;
+uni6SocialHtml=function(){const html=uni6NpcPriorSocialHtml();return html.replace('</ul></details>',`</ul><div class="uni6-received">${Object.values(uni6State().invitations).filter(x=>x.origin==='npc'&&['offered','postponed'].includes(x.status)).slice(-5).map(x=>`<p><b>${esc(personById(x.personId)?.fullName||'Campus student')}</b> invited you to study ${x.dateISO} ${timeLabel(x.startMinute)} <button class="small" data-uni6-invite-reply="${esc(x.id)}" data-uni6-answer="accept">Accept</button><button class="small ghost" data-uni6-invite-reply="${esc(x.id)}" data-uni6-answer="decline">Decline</button>${x.status==='offered'?`<button class="small" data-uni6-invite-reply="${esc(x.id)}" data-uni6-answer="later">Ask later</button>`:''}</p>`).join('')}</div></details>`);};
+const uni6NpcPriorClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni6InviteReply)return uni6NpcPriorClick(b);const out=uni6InviteRespond(d.uni6InviteReply,d.uni6Answer);toast(out.ok?'NPC invitation response: '+out.status:out.reason);if(out.ok){save();render();}return true;};
+// UNI.6.6 — university-only elections and student leadership, not K–12 council.
+const UNI6_ROLES=['representative','secretary','treasurer','vice-president','president'];
+function uni6ElectionKey(t){return `uni6-government|${t.institutionId}|${t.termKey}`;}
+function uni6ElectionWindow(t){let voteOpen=addDays(t.opened,17),voteBy=addDays(t.opened,20),resultsOn=addDays(t.opened,22);
+ while(!uni3ValidDay(voteOpen))voteOpen=addDays(voteOpen,1);
+ while(!uni3ValidDay(voteBy))voteBy=addDays(voteBy,1);
+ while(!uni3ValidDay(resultsOn))resultsOn=addDays(resultsOn,1);
+ return {applyBy:addDays(t.opened,16),voteOpen,voteBy,resultsOn};}
+function uni6ElectionCandidates(t){uni6SyncPeers();const candidateIds=[];
+ for(const id of t.courseIds){for(const n of uni6Classmates(id))if(!candidateIds.includes(n.id)){candidateIds.push(n.id);if(candidateIds.length>=3)break;}if(candidateIds.length>=3)break;}
+ return candidateIds.filter(id=>uni6ValidStudent(id,t.institutionId));}
+function uni6Election(){const t=uni6Term();if(!t)return null;const x=uni6State().leadership[uni6ElectionKey(t)];return x?.institutionId===t.institutionId&&x.termKey===t.termKey&&x.programId===t.programId?x:null;}
+function uni6LeadershipEligibility(t,role){if(!t||!UNI6_ROLES.includes(role))return 'Valid university student and role required.';
+ if(S.uni?.facultySupport?.standing?.status==='probation')return 'Academic probation: adviser consultation required before leadership candidacy.';
+ const count=Object.values(uni6State().clubs).filter(x=>x.status==='active'&&x.termKey===t.termKey&&x.institutionId===t.institutionId).length;
+ const sessions=Object.values(uni6State().clubs).filter(x=>x.termKey===t.termKey&&x.institutionId===t.institutionId).reduce((v,x)=>v+Object.values(x.sessions||{}).filter(r=>['attended','late'].includes(r.status)).length,0);
+ if(['secretary','treasurer'].includes(role)&&count<1)return 'Join at least one genuine university society first.';
+ if(['vice-president','president'].includes(role)&&(count<1||sessions<2))return 'Senior candidacy requires membership and two genuinely attended sessions.';
+ return null;
+}
+function uni6LeadershipApply(role){const t=uni6Term();if(!t)return {ok:false,reason:'Adult confirmed-term student required.'};const issue=uni6LeadershipEligibility(t,role);if(issue)return {ok:false,reason:issue};
+ const s=uni6State(),key=uni6ElectionKey(t),old=s.leadership[key];if(old)return {ok:false,reason:'Already entered or declined this university election.'};
+ const w=uni6ElectionWindow(t);if(currentDate()>w.applyBy)return {ok:false,reason:'Student government candidacy window closed.'};
+ const members=uni6ElectionCandidates(t);if(members.length<2)return {ok:false,reason:'Insufficient verified same-campus opponents.'};
+ const x={schemaVersion:1,id:key,institutionId:t.institutionId,termKey:t.termKey,programId:t.programId,role,candidateIds:members.slice(0,3),status:'running',appliedAt:currentDate(),campaignReceipts:{},voteReceipt:null,result:null,office:null,duties:{},...w};
+ s.leadership[key]=x;
+ createCalendarEvent({id:'cal-'+key,type:UNI6_CALENDAR_TYPE,title:'University student government election result',dateISO:w.resultsOn,startMinute:720,endMinute:780,graceMinute:780,required:false,category:'Social',location:`${t.institutionId}-uni6-union`,sourceId:key,payload:{kind:'election',electionId:key,termKey:t.termKey,institutionId:t.institutionId}});
+ return {ok:true,election:x};
+}
+function uni6CampaignSlot(x){for(let d=1;d<9;d++){const date=addDays(currentDate(),d);if(date>x.voteBy||!uni3ValidDay(date))continue;if(uni6SupportConflict(uni6Term(),date,1080,1120))continue;return {dateISO:date,startMinute:1080,endMinute:1120,venueId:`${x.institutionId}-uni6-union`};}return null;}
+function uni6CampaignPlan(){const x=uni6Election(),t=uni6Term();if(!x||x.status!=='running'||Object.keys(x.campaignReceipts).length>=2||currentDate()>=x.voteOpen)return {ok:false,reason:'Campaign window closed or capped.'};
+ if(x.campaignPlan?.status==='booked')return {ok:false,reason:'Existing campaign session must be resolved first.'};
+ const slot=uni6CampaignSlot(x);if(!slot)return {ok:false,reason:'No free campaign time.'};
+ const id=`${x.id}|campaign|${slot.dateISO}`,plan={id,kind:'campaign',calendarId:'cal-'+id,status:'booked',...slot};x.campaignPlan=plan;
+ createCalendarEvent({id:plan.calendarId,type:UNI6_CALENDAR_TYPE,title:'University election campaign',dateISO:slot.dateISO,startMinute:slot.startMinute,endMinute:slot.endMinute,graceMinute:slot.startMinute+10,required:false,category:'Social',location:slot.venueId,sourceId:id,payload:{kind:'campaign',electionId:x.id,termKey:t.termKey,institutionId:t.institutionId,venueId:slot.venueId}});
+ return {ok:true,plan};}
+function uni6LeadershipWalk(id){const x=uni6Election(),p=x&&(x.campaignPlan?.id===id?x.campaignPlan:x.duty?.id===id?x.duty:null);
+ if(!p||p.status!=='booked')return {ok:false,reason:'No eligible leadership appointment.'};return uni6CampusWalk(p.venueId,p.dateISO,p.startMinute,p.endMinute);}
+function uni6CampaignAttend(id){const x=uni6Election(),p=x?.campaignPlan;if(!x||x.status!=='running'||p?.id!==id||p.status!=='booked')return {ok:false,reason:'No eligible campaign.'};
+ const e=S.calendar.find(y=>y.id===p.calendarId);if(!e||isTerminal(e.status)||!uni3AtCampus()||uni3State().presence.roomId!==p.venueId||currentDate()!==p.dateISO||currentMinute()<p.startMinute-5||currentMinute()>p.startMinute+10)return {ok:false,reason:'Real campus campaign arrival required.'};
+ if(S.energy<12||S.health<20)return {ok:false,reason:'Health/energy too low.'};const conf=uni6SupportConflict(uni6Term(),p.dateISO,currentMinute(),p.endMinute,e.id);if(conf)return {ok:false,reason:conf};
+ setCalendarStatus(e,'Attending','Candidate physically campaigning');advanceTime(p.endMinute-currentMinute(),{silent:true});p.status='attended';x.campaignReceipts[id]={id,status:'attended',dateISO:p.dateISO,minutes:40,venueId:p.venueId};setCalendarStatus(e,'Attended','Campaign session receipt');S.energy=clamp(S.energy-5);return {ok:true,receipt:x.campaignReceipts[id]};}
+function uni6LeadershipVote(candidateId){const x=uni6Election(),t=uni6Term();if(!x||x.status!=='running'||!t||x.voteReceipt)return {ok:false,reason:'Vote unavailable or already cast.'};
+ if(candidateId!=='player'&&!x.candidateIds.includes(candidateId))return {ok:false,reason:'Not an eligible same-campus candidate.'};
+ if(currentDate()<x.voteOpen||currentDate()>x.voteBy||currentMinute()<720||currentMinute()>1200)return {ok:false,reason:'Voting opens 12:00–20:00 on election voting days.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==`${t.institutionId}-uni6-union`)return {ok:false,reason:'Commute to university and enter Student Union to vote.'};
+ const conf=uni6SupportConflict(t,currentDate(),currentMinute(),currentMinute()+20);if(conf)return {ok:false,reason:conf};
+ advanceTime(20,{silent:true});x.voteReceipt={id:x.id+'|vote',votedForId:candidateId,status:'cast',dateISO:currentDate(),minute:currentMinute(),minutes:20};return {ok:true,receipt:x.voteReceipt};}
+function uni6ResolveElection(){const x=uni6Election();if(!x||x.result)return {ok:false,reason:'Election absent or already resolved.'};if(currentDate()<x.resultsOn)return {ok:false,reason:'Results are not released yet.'};
+ const votes=x.voteReceipt?.votedForId,attendance=Object.keys(x.campaignReceipts).length,
+ playerScore=35+attendance*13+(votes==='player'?8:0)+Math.min(16,Math.max(0,(S.social?.reputation||40)-40)/3)+uni5Hash(x.id+'player')%19;
+ const rivals=x.candidateIds.map(id=>({id,score:38+uni5Hash(x.id+id)%43+(votes===id?8:0)}));const sorted=[{id:'player',score:playerScore},...rivals].sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
+ const winner=sorted[0];x.result={winnerId:winner.id,playerWon:winner.id==='player',scores:sorted,decidedOn:currentDate(),voteId:x.voteReceipt?.id||null,receiptKey:x.id+'|result'};
+ x.status=x.result.playerWon?'elected':'lost';if(x.result.playerWon)x.office={role:x.role,startedOn:currentDate(),endsOn:uni6Term().termEnd};
+ return {ok:true,result:x.result};}
+function uni6LeadershipDutyPlan(){const x=uni6Election(),t=uni6Term();if(!x||x.status!=='elected'||x.duty)return {ok:false,reason:'No unfulfilled office duty available.'};
+ for(let i=1;i<=14;i++){const date=addDays(currentDate(),i),start=1080,end=1140;if(date>t.termEnd||!uni3ValidDay(date)||uni6SupportConflict(t,date,start,end))continue;
+ const id=`${x.id}|duty|${date}`;x.duty={id,kind:'duty',dateISO:date,startMinute:start,endMinute:end,venueId:`${t.institutionId}-uni6-union`,calendarId:'cal-'+id,status:'booked'};
+ createCalendarEvent({id:x.duty.calendarId,type:UNI6_CALENDAR_TYPE,title:'Student representative community meeting',dateISO:date,startMinute:start,endMinute:end,graceMinute:start+10,required:false,category:'Social',location:x.duty.venueId,sourceId:id,payload:{kind:'duty',electionId:x.id,termKey:t.termKey,institutionId:t.institutionId,venueId:x.duty.venueId}});return {ok:true,duty:x.duty};
+ }return {ok:false,reason:'No conflict-free leadership duty slot.'};}
+function uni6LeadershipDutyAttend(id){const x=uni6Election(),d=x?.duty;if(!x||x.status!=='elected'||d?.id!==id||d.status!=='booked')return {ok:false,reason:'Not an active leadership duty.'};
+ const e=S.calendar.find(y=>y.id===d.calendarId);if(!e||isTerminal(e.status)||!uni3AtCampus()||uni3State().presence.roomId!==d.venueId||currentDate()!==d.dateISO||currentMinute()<d.startMinute-5||currentMinute()>d.startMinute+10)return {ok:false,reason:'Arrive in person at student government office hours.'};
+ if(S.energy<15||S.health<20)return {ok:false,reason:'Health/energy too low.'};const conf=uni6SupportConflict(uni6Term(),d.dateISO,currentMinute(),d.endMinute,e.id);if(conf)return {ok:false,reason:conf};
+ setCalendarStatus(e,'Attending','Elected representative working with students');advanceTime(d.endMinute-currentMinute(),{silent:true});d.status='attended';d.receipt={id,status:'attended',dateISO:d.dateISO,minutes:60};setCalendarStatus(e,'Attended','Leadership duty recorded');S.energy=clamp(S.energy-6);S.needs.social=clamp(S.needs.social+3);return {ok:true,receipt:d.receipt};}
+function uni6LeadershipTick(ev){const x=uni6State().leadership[ev.payload?.electionId];if(!x||x.institutionId!==ev.payload.institutionId||x.termKey!==ev.payload.termKey){setCalendarStatus(ev,'Cancelled','Invalid student government source');return;}
+ if(ev.payload.kind==='election'){if(x.result){setCalendarStatus(ev,'Completed','Election winner already determined');return;}if(ev.dateISO<=currentDate()&&currentMinute()>=ev.startMinute){uni6ResolveElection();if(x.result)setCalendarStatus(ev,'Completed','University student election resolved');}return;}
+ const p=ev.payload.kind==='campaign'?x.campaignPlan:x.duty;if(p?.calendarId!==ev.id){setCalendarStatus(ev,'Cancelled','Campaign/leadership obligation invalid');return;}
+ if(ev.status==='Attending')return;
+ if(p.status==='attended'){setCalendarStatus(ev,'Attended','Verified meeting receipt');return;}
+ if(p.dateISO<currentDate()||p.dateISO===currentDate()&&currentMinute()>p.startMinute+10){p.status='missed';p.receipt={id:p.id,status:'missed',dateISO:currentDate()};setCalendarStatus(ev,'Missed','University leadership no-show');if(p.kind==='duty'&&!p.penaltyApplied){p.penaltyApplied=true;if(S.social)S.social.reputation=clamp((S.social.reputation??40)-2);}return;}
+ if(p.dateISO===currentDate()&&currentMinute()>=p.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','Scheduled leadership activity starts');}
+const uni6LeadershipOldOther=uni6CalendarOtherTick;
+uni6CalendarOtherTick=function(ev){if(['election','campaign','duty'].includes(ev.payload?.kind))uni6LeadershipTick(ev);else uni6LeadershipOldOther(ev);};
+function uni6LeadershipHtml(){const t=uni6Term();if(!t)return '';const x=uni6Election(),w=uni6ElectionWindow(t),competitors=x?.candidateIds?.map(id=>npcById(id)).filter(Boolean)||uni6ElectionCandidates(t).map(id=>npcById(id));
+ return `<details data-uni6-leadership="1"><summary>Student Government & Elections</summary><p>Separate from K–12 school council. Candidates are real university students. Application ends ${w.applyBy}; voting ${w.voteOpen}–${w.voteBy}; results ${w.resultsOn}. Voting and campaigning require physical campus access.</p>
+ ${!x?`<div class="inline-actions">${UNI6_ROLES.map(role=>`<button class="small" data-uni6-leader-apply="${role}">Run for ${esc(role.replace('-', ' '))}</button>`).join('')}</div>`:`<p><b>${esc(x.role)}:</b> ${esc(x.status)} · ${x.result?`Winner: ${esc(x.result.winnerId==='player'?S.name:npcById(x.result.winnerId)?.fullName||'Verified NPC')}`:'Results pending'} </p>`}
+ <ul>${competitors.map(n=>`<li>${esc(n.fullName)} · age ${npcAge(n)} · ${esc(t.institutionId)} <small>Student candidate</small></li>`).join('')}</ul>
+ ${x?.status==='running'?`<div class="inline-actions"><button class="small" data-uni6-campaign-plan="1">Schedule a campaign</button>${x.campaignPlan?.status==='booked'?`<button class="small" data-uni6-leader-walk="${esc(x.campaignPlan.id)}">Walk to rally</button><button class="small primary" data-uni6-campaign-attend="${esc(x.campaignPlan.id)}">Campaign in person</button>`:''}<button class="small" data-uni6-leader-votewalk="1">Walk to student union to vote</button>${['player',...x.candidateIds].map(id=>`<button class="small" data-uni6-vote="${esc(id)}">Vote ${id==='player'?'for yourself':esc(npcById(id)?.fullName||id)}</button>`).join('')}</div>`:''}
+ ${x?.status==='elected'?`<div><b>Elected ${esc(x.role)}</b> — duties require actual participation. ${!x.duty?'<button class="small" data-uni6-duty-plan="1">Schedule committee work</button>':x.duty.status==='booked'?`<button class="small" data-uni6-leader-walk="${esc(x.duty.id)}">Walk to committee room</button><button class="small primary" data-uni6-duty-attend="${esc(x.duty.id)}">Attend committee meeting</button>`:`Session ${esc(x.duty.status)}`}</div>`:''}</details>`;}
+const uni6LeaderOldCampusHtml=uni6CampusLifeHtml;
+uni6CampusLifeHtml=function(){return uni6LeaderOldCampusHtml().replace('</section>',uni6LeadershipHtml()+'</section>');};
+const uni6LeaderOldClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};const kind=d.uni6LeaderApply?'apply':d.uni6CampaignPlan?'campaign':d.uni6LeaderWalk?'walk':d.uni6CampaignAttend?'campaignAttend':d.uni6Vote?'vote':d.uni6LeaderVotewalk?'voteWalk':d.uni6DutyPlan?'dutyPlan':d.uni6DutyAttend?'dutyAttend':null;if(!kind)return uni6LeaderOldClick(b);
+ const out=kind==='apply'?uni6LeadershipApply(d.uni6LeaderApply):kind==='campaign'?uni6CampaignPlan():kind==='walk'?uni6LeadershipWalk(d.uni6LeaderWalk):kind==='campaignAttend'?uni6CampaignAttend(d.uni6CampaignAttend):kind==='vote'?uni6LeadershipVote(d.uni6Vote):kind==='voteWalk'?uni6Term()?uni6CampusWalk(`${uni6Term().institutionId}-uni6-union`,currentDate(),720,1200):{ok:false,reason:'University only'}:kind==='dutyPlan'?uni6LeadershipDutyPlan():uni6LeadershipDutyAttend(d.uni6DutyAttend);
+ toast(out.ok?'University student leadership action recorded.':out.reason);if(out.ok){save();render();}return true;};
+// UNI.6.7 — bounded migration and hostile-import validation; no trust transfer to grades, People, or money.
+const UNI6_TERM_STATUSES=['confirmed','historical','withdrawn'];
+function uni6TermRecord(key,sid,program){const t=S.uni?.termEnrollments?.terms?.[key],p=t&&UNI1_PROGRAMS[t.programId];return t&&UNI6_TERM_STATUSES.includes(t.status)&&t.institutionId===sid&&t.programId===program&&p?.institutionId===sid?t:null;}
+function uni6IsRecord(r){return !!r&&typeof r==='object'&&!Array.isArray(r);}
+function uni6ImportInvalid(category,key,why){uni6Quarantine(category+'-'+why,key);return false;}
+function uni6ValidateReceiptCalendar(id,status,venue,date){const ev=(S.calendar||[]).find(x=>x.id==='cal-'+id&&x.type===UNI6_CALENDAR_TYPE&&x.sourceId===id);
+ return !!ev&&ev.dateISO===date&&(!venue||ev.location===venue)&&(['attended','late'].includes(status)?ev.status==='Attended':status==='missed'?ev.status==='Missed':status==='completed'?ev.status==='Completed':true);
+}
+function uni6IntegrityMigrate(){const s=uni6State();if(!s)return {ok:true,checked:0,invalid:0};let checked=0,invalid=0;
+ const quarantine=(kind,key,reason)=>{uni6ImportInvalid(kind,key,reason);invalid++;};
+ for(const [id,record] of Object.entries(s.peers)){
+  checked++;const match=/^uni6-student\|(uni\d{1,2})\|(\d)$/.exec(id);
+  if(!match||!CAMPUS[match[1]]||!uni6IsRecord(record)||record.actorId!==id||record.institutionId!==match[1]||!uni6ValidStudent(id,match[1])){quarantine('peer',id,'invalid-actor');delete s.peers[id];continue;}
+  const known=(S.people||[]).some(p=>p.npcId===id);if(record.met&&!known){quarantine('peer',id,'unverified-meeting');record.met=false;record.firstMet=null;}
+ }
+ for(const [key,ids] of Object.entries(s.courseRosters)){
+  checked++;const [sid,term,program,course]=key.split('|'),record=uni6TermRecord(term,sid,program);
+  if(!record||!record.attemptedCourseIds?.includes(course)||!UNI1_PROGRAMS[program]?.requiredCourseIds.includes(course)||!Array.isArray(ids)||ids.length!==2||new Set(ids).size!==2||!ids.every(id=>s.peers[id]&&uni6ValidStudent(id,sid))){quarantine('roster',key,'incompatible-course');delete s.courseRosters[key];}
+ }
+ for(const [key,receipt] of Object.entries(s.introReceipts)){
+  checked++;if(!uni6IsRecord(receipt)||receipt.id!==key||!['met','talked'].includes(receipt.status)||!/^\d{4}-[12]\|/.test(key)||!receipt.actorId||!s.peers[receipt.actorId]||!S.people?.some(p=>p.npcId===receipt.actorId)||!Number.isInteger(receipt.minutes)||receipt.minutes!==12||!/^\d{4}-\d\d-\d\d$/.test(receipt.dateISO)||typeof receipt.roomId!=='string'||!receipt.roomId.startsWith(s.peers[receipt.actorId].institutionId+'-uni3-')){
+   quarantine('introduction',key,'unverified-receipt');delete s.introReceipts[key];
+  }
+ }
+ for(const [key,x] of Object.entries(s.clubs)){
+  checked++;const t=x&&uni6TermRecord(x.termKey,x.institutionId,x.programId);
+  if(!uni6IsRecord(x)||key!==x.id||!t||!CAMPUS[x.institutionId].clubs.includes(x.name)||key!==uni6ClubKey(t,x.name)||!['active','left','rejected'].includes(x.status)||!uni6IsRecord(x.sessions)||Object.keys(x.sessions).length>40||!Array.isArray(x.members)||x.members.length>8||!x.members.every(id=>uni6ValidStudent(id,x.institutionId))){quarantine('club',key,'invalid-membership');delete s.clubs[key];continue;}
+  for(const [sid,r] of Object.entries(x.sessions)){
+   checked++;if(!uni6IsRecord(r)||r.id!==sid||r.clubId!==x.id||!['attended','late','missed'].includes(r.status)||!/^\d{4}-\d\d-\d\d$/.test(r.dateISO)||sid!==x.id+'|'+r.dateISO||r.venueId!==uni6ClubVenue(t.institutionId,x.name).id||!uni6ValidateReceiptCalendar(sid,r.status,r.venueId,r.dateISO)){
+    quarantine('club-receipt',sid,'invalid-provenance');delete x.sessions[sid];}
+  }
+  const v=x.nextSession;if(v&&(v.id!==x.id+'|'+v.dateISO||v.venueId!==uni6ClubVenue(t.institutionId,x.name).id||v.termKey!==t.termKey||!uni3ValidDay(v.dateISO)||x.status!=='active')){quarantine('club-next',key,'stale-future');x.nextSession=null;}
+ }
+ for(const [key,x] of Object.entries(s.events)){
+  checked++;const t=x&&uni6TermRecord(x.termKey,x.institutionId,x.programId);
+  if(!t||key!==x.id||!uni6EventValid(x,false)||!Array.isArray(x.memberIds)||x.memberIds.length>8||!x.memberIds.every(id=>uni6ValidStudent(id,x.institutionId))||
+   (['attended','late','missed'].includes(x.status)&&(!uni6IsRecord(x.receipt)||x.receipt.id!==key||x.receipt.status!==x.status||x.receipt.dateISO!==x.dateISO||!uni6ValidateReceiptCalendar(key,x.status,x.venueId,x.dateISO)))||
+   (x.status==='joined'&&!(S.calendar||[]).some(e=>e.id===x.calendarId&&e.type===UNI6_CALENDAR_TYPE&&e.sourceId===key))){quarantine('event',key,'invalid-source-receipt');delete s.events[key];}
+ }
+ for(const [key,x] of Object.entries(s.invitations)){
+  checked++;const t=x&&uni6TermRecord(x.termKey,x.institutionId,x.programId);
+  if(!t||key!==x.id||!uni6InviteValid(x,false)||
+   (['attended','late','missed'].includes(x.status)&&(!uni6IsRecord(x.receipt)||x.receipt.id!==key||x.receipt.status!==x.status||!uni6ValidateReceiptCalendar(key,x.status,x.venueId,x.dateISO)))||
+   (x.status==='accepted'&&!(S.calendar||[]).some(e=>e.id===x.calendarId&&e.type===UNI6_CALENDAR_TYPE&&e.sourceId===key))){quarantine('invitation',key,'invalid-contact-or-receipt');delete s.invitations[key];}
+ }
+ for(const [key,x] of Object.entries(s.leadership)){
+  checked++;const t=x&&uni6TermRecord(x.termKey,x.institutionId,x.programId);
+  if(!t||key!==x.id||key!==uni6ElectionKey(t)||!UNI6_ROLES.includes(x.role)||!Array.isArray(x.candidateIds)||x.candidateIds.length<2||x.candidateIds.length>3||new Set(x.candidateIds).size!==x.candidateIds.length||!x.candidateIds.every(id=>uni6ValidStudent(id,x.institutionId))||!['running','elected','lost','declined'].includes(x.status)||
+   ((x.status==='elected'||x.status==='lost')&&(!uni6IsRecord(x.result)||x.result.winnerId!=='player'&&!x.candidateIds.includes(x.result.winnerId)||x.result.playerWon!==(x.result.winnerId==='player')||!Array.isArray(x.result.scores)||x.result.scores.length!==x.candidateIds.length+1||x.result.scores[0]?.id!==x.result.winnerId||new Set(x.result.scores.map(v=>v.id)).size!==x.result.scores.length||x.result.scores.some(v=>!['player',...x.candidateIds].includes(v.id)||!Number.isFinite(v.score)||v.score<0||v.score>120)||!uni6ValidateReceiptCalendar(key,'completed',null,x.resultsOn)))||
+   (x.status==='elected'&&x.office?.role!==x.role)){quarantine('leadership',key,'invalid-election');delete s.leadership[key];continue;}
+  if(x.voteReceipt&&(!uni6IsRecord(x.voteReceipt)||x.voteReceipt.id!==key+'|vote'||!['player',...x.candidateIds].includes(x.voteReceipt.votedForId)||!Number.isInteger(x.voteReceipt.minutes)||x.voteReceipt.minutes!==20)){quarantine('vote',key,'invalid-ballot');x.voteReceipt=null;}
+ }
+ const trim=(obj,limit,kind)=>{const keys=Object.keys(obj);if(keys.length<=limit)return;for(const key of keys.slice(0,keys.length-limit)){quarantine(kind,key,'bounded');delete obj[key];}};
+ trim(s.courseRosters,80,'roster');trim(s.introReceipts,250,'intro');trim(s.clubs,36,'clubs');trim(s.events,70,'events');trim(s.invitations,80,'invites');trim(s.leadership,20,'elections');trim(s.peers,100,'peers');
+ if(s.npcInviteWeeks&&(!uni6IsRecord(s.npcInviteWeeks)||Object.keys(s.npcInviteWeeks).length>50))s.npcInviteWeeks={};
+ // Do not backfill historical participation or mint actors for imported unverified records.
+ for(const ev of S.calendar||[])if(ev.type===UNI6_CALENDAR_TYPE&&!isTerminal(ev.status)){
+  const exists=Object.values(s.clubs).some(x=>x.nextSession?.id===ev.sourceId)||s.events[ev.sourceId]||s.invitations[ev.sourceId]||Object.values(s.leadership).some(x=>x.id===ev.sourceId||x.campaignPlan?.id===ev.sourceId||x.duty?.id===ev.sourceId);
+  if(!exists)setCalendarStatus(ev,'Cancelled','Invalid or orphan UNI.6 source after import');
+ }
+ // Current confirmed registrations alone can generate new peer associations. No prior-term backfill.
+ if(uni6Term())uni6SyncPeers();return {ok:invalid===0,checked,invalid};
+}
+const uni6MigratePrevious=migrate;
+migrate=function(...args){const out=uni6MigratePrevious.apply(this,args);if(S?.uni)uni6IntegrityMigrate();return out;};
+
+// Finite long-run history: historical summaries are NOT attendance authorities or reward receipts.
+function uni6PruneHistory(){const s=uni6State();if(!s)return {events:0,invitations:0};
+ for(const [kind,source,terminal,days] of [
+  ['eventHistory',s.events,['attended','late','missed','declined','cancelled','expired'],120],
+  ['invitationHistory',s.invitations,['attended','late','missed','refused','busy','cancelled','expired'],120]]){
+  if(!Array.isArray(s[kind]))s[kind]=[];
+  for(const [id,x] of Object.entries(source)){
+   if(!x||!terminal.includes(x.status)||!/^\d{4}-\d\d-\d\d$/.test(x.dateISO)||daysBetween(x.dateISO,currentDate())<=days)continue;
+   s[kind].push({id:String(id).slice(0,190),status:x.status,dateISO:x.dateISO,institutionId:x.institutionId});
+   if(s[kind].length>40)s[kind].splice(0,s[kind].length-40);
+   const ev=(S.calendar||[]).find(e=>e.id===x.calendarId&&e.type===UNI6_CALENDAR_TYPE);
+   if(ev&&isTerminal(ev.status))S.calendar=S.calendar.filter(e=>e!==ev);
+   delete source[id];
+  }
+ }
+ return {events:Object.keys(s.events).length,invitations:Object.keys(s.invitations).length};
+}
+const uni6PrunePriorEvents=uni6EventReconcile;
+uni6EventReconcile=function(...args){if(S?.uni)uni6PruneHistory();return uni6PrunePriorEvents.apply(this,args);};
+// UNI.7.2 — PURE per-credit price preview. Does not mutate state, tuition or debt.
+const UNI7_POLICY='UNI7-per-credit-30-v1';
+function uni7Quote(t, ids){
+ if(!t||typeof t!=='object'||typeof t.institutionId!=='string'||typeof t.programId!=='string'||typeof t.termKey!=='string')return {ok:false,reason:'No valid registered university term.'};
+ const x=UNIS.find(z=>z.id===t.institutionId),p=UNI1_PROGRAMS[t.programId],selected=ids===undefined?t.courseIds:ids;
+ if(!x||!p||p.institutionId!==x.id||t.majorId!==p.majorId||!/^\d{4}-[12]$/.test(t.termKey)||!Array.isArray(selected)||selected.length>6||selected.length!==new Set(selected).size)return {ok:false,reason:'Invalid institution, program or course selection.'};
+ let credits=0;
+ for(const id of selected){const c=UNI1_COURSES[id];if(typeof id!=='string'||!p.requiredCourseIds.includes(id)||!c||!Number.isSafeInteger(c.credits)||c.credits<=0)return {ok:false,reason:'Course outside the verified academic catalog.'};credits+=c.credits;}
+ if(!Number.isSafeInteger(x.tuition)||x.tuition<=0||!Number.isSafeInteger(credits)||credits>18)return {ok:false,reason:'Invalid credit/tuition amount.'};
+ return {ok:true,policy:UNI7_POLICY,termKey:t.termKey,institutionId:x.id,programId:p.id,courseIds:selected.slice(),credits,annualTuition:x.tuition,normalAnnualCredits:30,termTuition:Math.round(x.tuition*credits/30),fees:0,payable:selected.length>=3&&selected.length<=6,tuitionPerCredit:x.tuition/30};
+}
+// UNI.7.3 — evidence-backed prospective awards and scholarship review, no money mutations.
+const UNI7_AID_SCHEMA=1;
+function uni7Data(){
+ if(!S.uni)return null;
+ let a=S.uni.financialAidUNI7;
+ if(!a){const grandfathered=Object.keys(S.uni.termEnrollments?.terms||{}).slice(0,120);
+  a=S.uni.financialAidUNI7={schemaVersion:UNI7_AID_SCHEMA,activatedAt:currentDate(),grandfatheredTerms:grandfathered,awards:{},reviews:{},allocations:{},quarantine:[]};
+ }
+ if(a.schemaVersion!==1||!Array.isArray(a.grandfatheredTerms)||!a.awards||typeof a.awards!=='object'||Array.isArray(a.awards)||!a.reviews||typeof a.reviews!=='object'||Array.isArray(a.reviews)){
+  S.uni.financialAidUNI7Invalid={reason:'unrecognized aid state; existing balances preserved'};
+  return null;
+ }
+ return a;
+}
+function uni7NextTerm(key){if(typeof key!=='string'||!/^\d{4}-[12]$/.test(key))return null;let y=Number(key.slice(0,4)),s=Number(key.slice(-1));return `${s===1?y:y+1}-${s===1?2:1}`;}
+function uni7Evidence(key){return typeof uni5ModernEvidence==='function'?uni5ModernEvidence(key):null;}
+function uni7AwardEligibility(k,key){
+ if(!UNI_AWARDS[k]||!S.uni?.enrolled)return {ok:false,reason:'Active university enrollment and valid award required.'};
+ const w=S.uni.awardWindow;if(!w||typeof w.from!=='string'||typeof w.to!=='string'||currentDate()<w.from||currentDate()>w.to)return {ok:false,reason:'The 14-day verified scholarship application window is closed.'};
+ if(key!==w.sourceTermKey&&key!==S.uni.semKey){ // existing legacy windows don't identify the verified source; require key validation below
+  return {ok:false,reason:'Award source term mismatch.'};
+ }
+ const e=uni7Evidence(key);if(k!=='need'&&!e)return {ok:false,reason:'This award requires finalized UNI.4 course evidence.'};
+ const st=typeof uni5StandingEvaluate==='function'?uni5StandingEvaluate():{status:'unknown'};
+ if(k==='dean'&&e.termGpa<3.7)return {ok:false,reason:'Dean scholarship requires verified term GPA 3.70 or higher.'};
+ if(k==='department'&&e.termGpa<3.2)return {ok:false,reason:'Department scholarship requires verified term GPA 3.20 or higher.'};
+ if(k==='leadership'){
+  const s=S.uni.campusLife;const work=Object.values(s?.clubs||{}).some(c=>c.termKey===key&&Object.values(c.sessions||{}).some(p=>p.status==='attended'||p.status==='late'));
+  const office=Object.values(s?.leadership||{}).some(x=>x.termKey===key&&x.result?.winner==='player'&&x.duty?.receipt);
+  if(!work&&!office)return {ok:false,reason:'Verified student activity attendance or fulfilled leadership duty required.'};
+ }
+ if(k==='need'&&!['Struggling','Modest','Middle class'].includes(S.wealth))return {ok:false,reason:'Current independently recorded financial need is insufficient.'};
+ if(st.status==='probation'&&k!=='need')return {ok:false,reason:'Academic probation restricts merit awards.'};
+ return {ok:true,sourceKey:key,targetKey:uni7NextTerm(key),termGpa:e?.termGpa??null};
+}
+function uni7FrozenDecision(k,key){let seed=`UNI7|${S.playerGuid||S.id||S.name||'player'}|${S.uni?.school||''}|${k}|${key}`,h=2166136261;
+ for(let i=0;i<seed.length;i++)h=Math.imul(h^seed.charCodeAt(i),16777619)>>>0;
+ return (h%100)<(k==='dean'?90:k==='department'?55:k==='leadership'?60:70);
+}
+function uni7ApplyAward(k,key){
+ const a=uni7Data();if(!a)return {ok:false,reason:'Aid state is invalid. Existing accounts were not changed.'};
+ const g=uni7AwardEligibility(k,key);if(!g.ok)return g;
+ const id=`uni7award|${S.uni.school}|${key}|${k}`,prior=a.awards[id];if(prior)return {ok:false,reason:'Already decided; award outcome cannot be rerolled.',decision:prior};
+ if(Object.keys(a.awards).length>=60)return {ok:false,reason:'Award history capacity reached.'};
+ const approved=uni7FrozenDecision(k,key);let record={schemaVersion:1,id,kind:k,institutionId:uni1InstitutionId(S.uni,S),sourceTermKey:key,targetTermKey:g.targetKey,amount:approved?UNI_AWARDS[k].amount:0,status:approved?'approved':'declined',decidedAt:currentDate(),source:g.termGpa===null?'recorded-need':'UNI.4-verified',sourceGpa:g.termGpa};
+ a.awards[id]=record;return {ok:true,decision:record};
+}
+function uni7ReviewScholarship(key){
+ const a=uni7Data(),s=S.uniApps?.scholarship;if(!a||!s||!Number.isInteger(s.pct)||s.pct<0||s.pct>100)return {ok:false,reason:'No valid senior-year scholarship.'};
+ if(a.reviews[key])return {ok:true,unchanged:true,review:a.reviews[key]};
+ const e=uni7Evidence(key);if(!e)return {ok:false,reason:'Awaiting finalized UNI.4 term evidence; no scholarship downgrade.'};
+ const old=s.pct,newPct=e.termGpa<3?SCH_TIERS[SCH_TIERS.indexOf(old)+1]||0:old;
+ const review={schemaVersion:1,sourceKey:key,termGpa:e.termGpa,previousPct:old,nextPct:newPct,status:newPct<old?'reduced':'renewed',recordedAt:currentDate()};a.reviews[key]=review;
+ // Any newly reviewed rate is prospective only. Existing paid invoice is immutable.
+ s.pct=newPct;return {ok:true,review};
+}
+// Existing annual renewal consults finalized evidence for new UNI.7 lives, never historical aggregate GPA.
+const uni7OriginalRenewScholarship=renewScholarship;
+renewScholarship=function(){const a=uni7Data(),keys=Object.keys(S.uni?.coursework?.terms||{}).filter(key=>!!uni7Evidence(key)).sort();
+ if(!a||!keys.length)return;return uni7ReviewScholarship(keys[keys.length-1]);};
+// Legacy outcome followups are preserved in historical saves; fresh UNI.7 decisions use the typed application above.
+const uni7OriginalApplyUniAward=applyUniAward;
+applyUniAward=function(k,quiet=false){const a=uni7Data(),w=S.uni?.awardWindow;
+ if(a&&w){const keys=Object.keys(S.uni?.coursework?.terms||{}).filter(key=>!!uni7Evidence(key)).sort();const key=keys[keys.length-1];
+  const result=key?uni7ApplyAward(k,key):{ok:false,reason:'No finalized UNI.4 academic term.'};if(!quiet)toast(result.ok?'Scholarship decision recorded for a future term.':result.reason);return result;
+ }return uni7OriginalApplyUniAward(k,quiet);
+};
+// UNI.7.4 — Scoped, exactly-once new-term financial settlement. No parallel wallet/debt authority.
+const UNI7_LOAN_LIMIT=30000,UNI7_SAFE_AMOUNT=10000000;
+function uni7EligibleNewTerm(t){const a=uni7Data();return !!a&&!!t&&t.finance?.status==='pending'&&!a.grandfatheredTerms.includes(t.termKey)&&!a.blocked;}
+function uni7LoanUsed(a,year){return Object.values(a.allocations||{}).filter(x=>x&&x.academicYear===year&&Number.isSafeInteger(x.loan)&&x.loan>=0).reduce((s,x)=>s+x.loan,0);}
+function uni7AwardToTerm(a,t){
+ let sum=0,ids=[];
+ for(const x of Object.values(a.awards||{})){
+  if(!x||x.status!=='approved'||x.targetTermKey!==t.termKey||x.institutionId!==t.institutionId||!UNI_AWARDS[x.kind]||x.amount!==UNI_AWARDS[x.kind].amount||!x.sourceTermKey||x.id!==`uni7award|${S.uni.school}|${x.sourceTermKey}|${x.kind}`||uni7NextTerm(x.sourceTermKey)!==t.termKey||!uni7FrozenDecision(x.kind,x.sourceTermKey))continue;
+  if(x.source!=='UNI.4-verified'&&x.source!=='recorded-need')continue;
+  if(x.kind!=='need'&&!uni7Evidence(x.sourceTermKey))continue;
+  if(ids.includes(x.id))continue;sum+=x.amount;ids.push(x.id);
+ }
+ return {sum,ids};
+}
+function uni7Coverage(t,amount,kind='initial'){
+ const a=uni7Data();if(!a||!Number.isSafeInteger(amount)||amount<0||amount>UNI7_SAFE_AMOUNT)return {ok:false,reason:'Financial amount/state invalid.'};
+ const senior=S.uniApps?.scholarship?.pct;
+ const pct=[0,25,50,75,100].includes(senior)?senior:0;
+ const school=UNIS.find(x=>x.id===t.institutionId);if(!school)return {ok:false,reason:'University price authority missing.'};
+ const seniorAid=Math.round(amount*pct/100),rank=kind==='initial'?Math.round(Math.max(0,Number(S.uni.rankAward)||0)/2):0;
+ const tier=kind==='initial'&&S.uni.tierAid&&['elite','top'].includes(school.tier)?4000:0;
+ const grant=kind==='initial'?uni7AwardToTerm(a,t):{sum:0,ids:[]};
+ const grantAid=kind==='initial'?grant.sum:0;
+ const other=(rank+tier+grantAid),scholarship=Math.min(amount,seniorAid+other),rest=amount-scholarship;
+ const parentFraction={Struggling:0,Modest:.25,'Middle class':.5,Comfortable:.75,Wealthy:1,'Extremely wealthy':1}[S.wealth]??.5;
+ const parents=Math.min(rest,Math.round(rest*parentFraction));let outstanding=rest-parents;
+ const loanApproval=Math.max(0,Math.min(UNI7_LOAN_LIMIT,Number.isSafeInteger(S.uniApps?.loan?.amount)?S.uniApps.loan.amount:0));
+ const left=Math.max(0,loanApproval-uni7LoanUsed(a,t.academicYear));
+ const loan=Math.min(left,outstanding);outstanding-=loan;
+ const wallet=outstanding;
+ if(!Number.isSafeInteger(S.money)||S.money<0||wallet>S.money)return {ok:false,reason:`Insufficient wallet funding: ${money(wallet)} needed, ${money(Math.max(0,S.money))} available. No automatic extra debt.`,shortfall:wallet-Math.max(0,S.money),amount,scholarship,parents,loan,wallet};
+ const stipend=kind==='initial'&&pct===100?Math.min(Math.round(STIPEND_CAP/2),Math.max(0,seniorAid+other-amount)):0;
+ return {ok:true,amount,scholarship,parents,loan,wallet,stipend,grantIds:grant.ids,annualLoanApproval:loanApproval,remainingLoanCap:left-loan,policy:UNI7_POLICY};
+}
+function uni7InvoiceId(t,tag='initial'){return `uni7|${t.institutionId}|${t.programId}|${t.termKey}|${tag}`;}
+function uni7Transaction(t,quote,tag='initial',amountOverride){
+ const a=uni7Data();if(!a)return {ok:false,reason:'Untrusted aid state; refusing monetary mutation.'};
+ if(!quote?.ok||!quote.payable||quote.termKey!==t.termKey||quote.institutionId!==t.institutionId||quote.programId!==t.programId)return {ok:false,reason:'Unverified credit quote.'};
+ if(S.uni?.termEnrollments?.terms?.[t.termKey]!==t||S.uni.semKey!==t.termKey||!Array.isArray(t.courseIds)||JSON.stringify(t.courseIds)!==JSON.stringify(quote.courseIds))return {ok:false,reason:'Term and quote do not match authoritative course enrollment.'};
+ if(tag==='initial'&&(t.status!=='draft'||t.finance?.status!=='pending'||!uni7EligibleNewTerm(t)))return {ok:false,reason:'This term was already settled or is historical/invalid.'};
+ if(tag!=='initial'&&(t.status!=='confirmed'||!t.finance?.uni7Invoice||t.finance.status!=='settled'))return {ok:false,reason:'Cannot amend an unverified settled invoice.'};
+ const id=uni7InvoiceId(t,tag),amount=amountOverride===undefined?quote.termTuition:amountOverride;
+ if((a.allocations||{})[id])return {ok:false,reason:'Invoice allocation already committed; replay refused.'};
+ const plan=uni7Coverage(t,amount,tag==='initial'?'initial':'amendment');if(!plan.ok)return plan;
+ const fin=t.finance,oldMoney=S.money,oldDebt=S.finance.uniDebt||0,oldAid=S.uni.nextSemAid,oldStatus=t.status,oldAttempts=t.attemptedCourseIds.slice(),oldHistory=t.history.slice(),oldAllocations={...(a.allocations||{})};
+ const record={schemaVersion:1,id,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,academicYear:t.academicYear,kind:tag,policy:UNI7_POLICY,courseIds:quote.courseIds.slice(),credits:quote.credits,billedCredits:quote.credits,amount,scholarship:plan.scholarship,grantIds:plan.grantIds,parents:plan.parents,loan:plan.loan,wallet:plan.wallet,stipend:plan.stipend,dateISO:currentDate(),status:'settled'};
+ try{
+  // All validations precede mutation. Local single-thread snapshot; not a claim of native multi-tab atomicity.
+  S.money=oldMoney-plan.wallet+plan.stipend;
+  S.finance.uniDebt=oldDebt+plan.loan;
+  if(!Number.isSafeInteger(S.money)||S.money<0||!Number.isSafeInteger(S.finance.uniDebt)||S.finance.uniDebt<0)throw Error('Financial account out of range.');
+  if(tag==='initial'){
+   t.finance={status:'settled',source:'UNI.7 verified per-credit settlement',dateISO:currentDate(),tuition:amount,scholarship:plan.scholarship,parents:plan.parents,loanPlanned:plan.loan,stipendPlanned:plan.stipend,walletDelta:-plan.wallet+plan.stipend,debtDelta:plan.loan,uni7Invoice:record,uni7Adjustments:[]};
+   t.status='confirmed';t.attemptedCourseIds=t.courseIds.slice();t.history.push({action:'confirm',dateISO:currentDate(),courseIds:t.courseIds.slice(),invoiceId:id});
+  } else {t.finance.uni7Adjustments.push(record);}
+  a.allocations={...oldAllocations,[id]:{id,academicYear:t.academicYear,loan:plan.loan,termKey:t.termKey}};
+  if(tag==='initial')S.uni.nextSemAid=0; // historic nextSemAid is never independently converted to new cash
+  return {ok:true,receipt:record,term:t};
+ }catch(error){S.money=oldMoney;S.finance.uniDebt=oldDebt;S.uni.nextSemAid=oldAid;t.status=oldStatus;t.finance=fin;t.attemptedCourseIds=oldAttempts;t.history=oldHistory;a.allocations=oldAllocations;return {ok:false,reason:'Payment rolled back safely: '+String(error.message||error).slice(0,100)};}
+}
+const uni7BeforeOpen=uni2OpenTerm;
+uni2OpenTerm=function(...args){if(S.uni)uni7Data();return uni7BeforeOpen.apply(this,args);};
+const uni7BeforeRegister=uni2Register;
+uni2Register=function(action,id){
+ if(action==='confirm'){
+  const safety=uni7Data();if(S.uni&&(!safety||safety.blocked))return {ok:false,reason:'Financial history is invalid/quarantined. Confirmation blocked to protect money and debt.'};
+  const g=uni2Guard();if(!g.ok)return {ok:false,reason:g.reason};const t=g.term;if(t.status==='confirmed')return {ok:true,unchanged:true,term:t};
+  if(uni7EligibleNewTerm(t)){
+   if(!g.withinWindow||t.status!=='draft'||t.courseIds.length<3||t.courseIds.length>6)return {ok:false,reason:'New UNI.7 term requires 3–6 courses inside add/drop window.'};
+   const p=g.program;
+   for(const cid of t.courseIds){const probe={...t,courseIds:[],attemptedCourseIds:[],withdrawnCourseIds:[]},c=uni2CourseGate(p,probe,cid);if(!c.ok)return {ok:false,reason:cid+': '+c.reason};}
+   const q=uni7Quote(t);if(!q.ok)return q;const out=uni7Transaction(t,q);
+   if(out.ok){if(typeof uni3Sync==='function')uni3Sync();if(typeof uni4Sync==='function')uni4Sync();if(typeof uni5Bind==='function')uni5Bind();if(typeof uni6SyncPeers==='function')uni6SyncPeers();}return out;
+  }
+ }
+ if(action==='select'){
+  const g=uni2Guard();if(g.ok&&g.term.status==='confirmed'&&g.term.finance?.uni7Invoice)return {ok:false,reason:'Additional course finance requires a verified amendment (UNI.7.5).'};
+ }
+ return uni7BeforeRegister(action,id);
+};
+// 7.4 baseline migration: do not mutate old money/debt or generate historical payments.
+const uni7BeforeMigrate=migrate;
+migrate=function(...args){const output=uni7BeforeMigrate.apply(this,args);if(S.uni)uni7Data();return output;};
+// UNI.7.5 — pre-funded course additions; no automatic refund on drop/withdraw.
+function uni7BilledAmount(t){const f=t?.finance;if(!f?.uni7Invoice||!Array.isArray(f.uni7Adjustments))return null;const all=[f.uni7Invoice,...f.uni7Adjustments];
+ if(all.some(x=>!x||!Number.isSafeInteger(x.amount)||x.amount<0||!x.id||x.termKey!==t.termKey||x.institutionId!==t.institutionId||x.programId!==t.programId)||new Set(all.map(x=>x.id)).size!==all.length)return null;
+ return all.reduce((v,x)=>v+x.amount,0);
+}
+function uni7AddCourse(id){
+ const g=uni2Guard();if(!g.ok)return {ok:false,reason:g.reason};const t=g.term;
+ if(!g.withinWindow||t.status!=='confirmed'||!t.finance?.uni7Invoice)return {ok:false,reason:'Verified paid term inside original add/drop window required.'};
+ if(t.courseIds.length>=6)return {ok:false,reason:'Six-course maximum.'};
+ const gate=uni2CourseGate(g.program,t,id);if(!gate.ok)return gate;
+ const base=uni7BilledAmount(t);if(base===null)return {ok:false,reason:'Missing/invalid original paid invoice; amendments locked.'};
+ const courseIds=[...t.courseIds,id],q=uni7Quote({...t,courseIds});if(!q.ok)return q;
+ const increment=Math.max(0,q.termTuition-base);
+ if(increment>0){const plan=uni7Coverage(t,increment,'amendment');if(!plan.ok)return plan;}
+ const oldCourses=t.courseIds.slice(),oldAttempts=t.attemptedCourseIds.slice(),oldHistory=t.history.slice();
+ t.courseIds=courseIds;t.attemptedCourseIds=[...t.attemptedCourseIds,id];
+ const tag=`add-${id}-${q.credits}`;
+ const receipt=increment?uni7Transaction(t,q,tag,increment):{ok:true,unchangedFinance:true};
+ if(!receipt.ok){t.courseIds=oldCourses;t.attemptedCourseIds=oldAttempts;t.history=oldHistory;return receipt;}
+ t.history.push({action:'select',courseId:id,dateISO:currentDate(),invoiceId:increment?uni7InvoiceId(t,tag):t.finance.uni7Invoice.id,noNewCharge:!increment});
+ if(typeof uni3Sync==='function')uni3Sync();if(typeof uni4Sync==='function')uni4Sync();if(typeof uni5Bind==='function')uni5Bind();if(typeof uni6SyncPeers==='function')uni6SyncPeers();
+ return {ok:true,term:t,receipt:receipt.receipt||null,unchangedFinance:!increment};
+}
+const uni7BeforeAmendRegister=uni2Register;
+uni2Register=function(action,id){if(action==='select'){const t=S.uni?.termEnrollments?.terms?.[S.uni?.semKey];if(t?.status==='confirmed'&&t.finance?.uni7Invoice)return uni7AddCourse(id);}return uni7BeforeAmendRegister(action,id);};
+// UNI.7.6 — import/restore validation and compact University → Finance controls.
+// No repairs to canonical wallet, debt, grades, completed credits, original settled UNI.2 terms.
+function uni7RecordValid(r,t,kind){
+ if(!r||typeof r!=='object'||r.schemaVersion!==1||r.policy!==UNI7_POLICY||r.status!=='settled'||r.termKey!==t.termKey||r.institutionId!==t.institutionId||r.programId!==t.programId||r.academicYear!==t.academicYear||!/^\d{4}-[12]$/.test(r.termKey)||!Array.isArray(r.courseIds)||r.courseIds.length<3||r.courseIds.length>6)return false;
+ const q=uni7Quote({...t,courseIds:r.courseIds});if(!q.ok||!q.payable||q.credits!==r.credits||r.billedCredits!==r.credits)return false;
+ for(const k of ['amount','scholarship','parents','loan','wallet','stipend'])if(!Number.isSafeInteger(r[k])||r[k]<0||r[k]>UNI7_SAFE_AMOUNT)return false;
+ if(r.amount!==r.scholarship+r.parents+r.loan+r.wallet||r.amount>q.termTuition)return false;
+ if(!Array.isArray(r.grantIds)||r.grantIds.length>4||new Set(r.grantIds).size!==r.grantIds.length)return false;
+ if(kind==='initial')return r.id===uni7InvoiceId(t,'initial')&&r.kind==='initial'&&r.amount===q.termTuition;
+ if(typeof r.kind!=='string'||!r.kind.startsWith('add-')||r.id!==uni7InvoiceId(t,r.kind))return false;
+ const expectedName=r.kind.slice(4).replace(/-\d+$/,'');const expectedCredit=Number(r.kind.match(/-(\d+)$/)?.[1]);
+ return typeof expectedName==='string'&&r.courseIds.includes(expectedName)&&expectedCredit===r.credits;
+}
+// An ID and a deterministic win are not academic evidence. Recheck each
+// imported award against the finalized UNI.4 source before using it for money.
+function uni7AwardSourceValid(aw){
+ if(!aw||!/^\d{4}-[12]$/.test(aw.sourceTermKey||'')||!/^\d{4}-\d{2}-\d{2}$/.test(aw.decidedAt||''))return false;
+ const e=uni7Evidence(aw.sourceTermKey),gpa=e?.termGpa;
+ if(aw.source==='UNI.4-verified'){
+  if(!e||!Number.isFinite(gpa)||gpa<0||gpa>4||aw.sourceGpa!==gpa)return false;
+ }else if(aw.source==='recorded-need'){
+  const t=S.uni?.termEnrollments?.terms?.[aw.sourceTermKey];
+  if(aw.kind!=='need'||aw.sourceGpa!==null||e||!t||!['confirmed','historical','withdrawn'].includes(t.status)||t.institutionId!==aw.institutionId)return false;
+ }else return false;
+ if(aw.kind!=='need'&&!e)return false;
+ if(aw.kind==='dean'&&gpa<3.7)return false;
+ if(aw.kind==='department'&&gpa<3.2)return false;
+ if(aw.kind==='leadership'){
+  const s=S.uni?.campusLife;
+  const practice=Object.values(s?.clubs||{}).some(c=>c.termKey===aw.sourceTermKey&&Object.values(c.sessions||{}).some(p=>p.status==='attended'||p.status==='late'));
+  const duty=Object.values(s?.leadership||{}).some(x=>x.termKey===aw.sourceTermKey&&x.result?.winner==='player'&&x.duty?.receipt);
+  if(!practice&&!duty)return false;
+ }
+ return true;
+}
+function uni7IntegrityCheck(){
+ const a=uni7Data();if(!a)return {ok:false,reason:'Unknown or invalid finance schema.'};
+ const fail=reason=>{a.blocked=true;if(!Array.isArray(a.quarantine))a.quarantine=[];if(a.quarantine.length<30&&!a.quarantine.some(x=>x.reason===reason))a.quarantine.push({reason,at:currentDate()});return {ok:false,reason};};
+ if(!Array.isArray(a.quarantine)||a.quarantine.length>30||!Array.isArray(a.grandfatheredTerms)||a.grandfatheredTerms.length>120||new Set(a.grandfatheredTerms).size!==a.grandfatheredTerms.length||a.grandfatheredTerms.some(x=>typeof x!=='string'||!/^\d{4}-[12]$/.test(x)))return fail('Invalid legacy-term index');
+ if(!a.allocations||typeof a.allocations!=='object'||Array.isArray(a.allocations)||Object.keys(a.allocations).length>200)return fail('Invalid or missing loan allocation index');
+ if(Object.keys(a.awards).length>60||Object.keys(a.reviews).length>60)return fail('Oversized aid journal');
+ const expected={};const school=S.uni?.school;
+ for(const [key,t] of Object.entries(S.uni?.termEnrollments?.terms||{})){
+  const f=t?.finance;if(!f||!f.uni7Invoice)continue;
+  if(f.status!=='settled'||a.grandfatheredTerms.includes(key)||!Array.isArray(f.uni7Adjustments)||f.uni7Adjustments.length>60)return fail('Invalid new-term invoice status/history');
+  const list=[f.uni7Invoice,...f.uni7Adjustments],seen=new Set();let prior=0;
+  for(let i=0;i<list.length;i++){
+   const r=list[i];if(!uni7RecordValid(r,t,i===0?'initial':'amendment')||seen.has(r.id))return fail('Invalid or forged invoice receipt');
+   seen.add(r.id);const q=uni7Quote({...t,courseIds:r.courseIds});
+   if(i>0&&(r.amount!==q.termTuition-prior||r.amount<=0))return fail('Invalid tuition amendment amount');
+   prior+=r.amount;const al=a.allocations[r.id];if(!al||al.id!==r.id||al.termKey!==key||al.academicYear!==t.academicYear||al.loan!==r.loan)return fail('Invoice/loan allocation mismatch');
+   for(const id of r.grantIds){const aw=a.awards[id];if(!aw||aw.status!=='approved'||aw.institutionId!==t.institutionId||aw.targetTermKey!==t.termKey||!UNI_AWARDS[aw.kind]||aw.amount!==UNI_AWARDS[aw.kind].amount||uni7NextTerm(aw.sourceTermKey)!==aw.targetTermKey)return fail('Unverified scholarship source');}
+   if(expected[r.id])return fail('Duplicate invoice identity');expected[r.id]=true;
+  }
+  if(f.tuition!==f.uni7Invoice.amount||f.debtDelta!==f.uni7Invoice.loan)return fail('Changed original financial snapshot');
+ }
+ const keys=Object.keys(a.allocations);if(keys.some(k=>!expected[k]))return fail('Orphan or fabricated loan allocation');
+ const years=new Set(Object.values(a.allocations).map(x=>x.academicYear));for(const year of years)if(uni7LoanUsed(a,year)>UNI7_LOAN_LIMIT)return fail('Cumulative yearly loan cap exceeded');
+ for(const [id,aw] of Object.entries(a.awards)){
+  if(!aw||!uni7AwardSourceValid(aw)||aw.id!==id||!UNI_AWARDS[aw.kind]||aw.targetTermKey!==uni7NextTerm(aw.sourceTermKey)||aw.institutionId!==uni1InstitutionId(S.uni,S)||!['approved','declined'].includes(aw.status)||aw.amount!==(aw.status==='approved'?UNI_AWARDS[aw.kind].amount:0)||uni7FrozenDecision(aw.kind,aw.sourceTermKey)!==(aw.status==='approved'))return fail('Unknown or forged grant result');
+ }
+ if(a.blocked)return {ok:false,reason:'Previously quarantined financial records require manual verified recovery.'};
+ return {ok:true};
+}
+const uni7BeforeIntegrityMigrate=migrate;
+migrate=function(...args){const out=uni7BeforeIntegrityMigrate.apply(this,args);if(S.uni)uni7IntegrityCheck();return out;};
+// Validate before any new approved disbursement/adjustment; an unrelated legacy balance is never 'fixed'.
+const uni7BeforeCoverage=uni7Coverage;
+uni7Coverage=function(...args){const check=uni7IntegrityCheck();return check.ok?uni7BeforeCoverage.apply(this,args):check;};
+function uni7FinanceHtml(){
+ const u=S.uni;if(!u?.enrolled)return '';
+ const t=u.termEnrollments?.terms?.[u.semKey],a=u.financialAidUNI7,school=UNIS.find(x=>x.name===u.school),q=t?uni7Quote(t):null;
+ const valid=q?.ok,pid=t?.programId&&UNI1_PROGRAMS[t.programId],v=t?.finance,inv=v?.uni7Invoice;
+ const lines=inv?`<p><b>Settled invoice</b> ${esc(inv.id)} · ${money(inv.amount)} for ${inv.credits} billed credits (${money(inv.amount/Math.max(1,inv.credits))}/credit average). Tuition aid ${money(inv.scholarship)}, parents ${money(inv.parents)}, disbursed loan ${money(inv.loan)}, player payment ${money(inv.wallet)}${inv.stipend?' · stipend '+money(inv.stipend):''}.</p>${(v.uni7Adjustments||[]).map(r=>`<p>Additional bill · ${money(r.amount)} · ${r.credits} billed credits · loan ${money(r.loan)} · wallet ${money(r.wallet)}</p>`).join('')}`:
+ v?.status==='settled'?`<p>Historical UNI.2 settled invoice: ${money(v.tuition)}. Original flat tuition and account changes remain unchanged; no fictional detailed payment receipt.</p>`:
+ v?.status==='legacy-unverified'?'<p>Legacy / unverified tuition history. No new bill or reconstructed payment may be assumed.</p>':
+ valid?`<p><b>Unpaid quote, not an invoice:</b> ${q.credits} credits × annual tuition ${money(q.annualTuition)} / 30 = ${money(q.termTuition)}. No mandatory new campus fees. ${q.payable?'Confirm 3–6 genuine classes only when fully funded.':'Select 3–6 eligible courses first.'}</p>`:'<p>No valid currently registered university term or verified quote.</p>';
+ const remaining=Math.max(0,Math.min(UNI7_LOAN_LIMIT,Number.isSafeInteger(S.uniApps?.loan?.amount)?S.uniApps.loan.amount:0)-uni7LoanUsed(a||{allocations:{}},t?.academicYear||u.yearKey));
+ const decisions=Object.values(a?.awards||{}).slice(-8).map(x=>`<li>${esc(UNI_AWARDS[x.kind]?.label||x.kind)} · ${esc(x.status)} · ${money(x.amount)} · for ${esc(x.targetTermKey)}</li>`).join('');
+ const w=u.awardWindow,keys=Object.keys(u.coursework?.terms||{}).filter(key=>uni7Evidence(key)).sort(),source=keys[keys.length-1];
+ const buttons=source&&w&&currentDate()>=w.from&&currentDate()<=w.to?Object.keys(UNI_AWARDS).map(k=>{const g=uni7AwardEligibility(k,source);const id=`uni7award|${u.school}|${source}|${k}`;return `<button class="small" data-uni7-award="${esc(k)}" data-uni7-source="${esc(source)}" ${g.ok&&!a?.awards?.[id]?'':'disabled'} title="${esc(g.ok?'Decision frozen on application':g.reason)}">Apply: ${esc(UNI_AWARDS[k].label)}</button>`;}).join(''):'<p>Applications open only during a genuine post-term award window; academic awards require finalized UNI.4 grades.</p>';
+ const review=source&&!a?.reviews?.[source]?`<button class="small ghost" data-uni7-review="${esc(source)}">Review senior scholarship from verified grades</button>`:'';
+ return `<details class="uni5-wrap" data-uni7-finance="1"><summary><b>Finance / Financial Aid</b> · ${esc(t?.termKey||'No active term')}</summary><p>${esc(school?.name||u.school)} · ${pid?esc(pid.majorId)+' · ':''}${esc(v?.status||'No invoice')}</p>${lines}<p>Original wallet ${money(S.money)} · student loan debt ${money(S.finance.uniDebt||0)} · annual approval remaining ${money(remaining)}. Parent support covers tuition only; housing costs remain separate.</p>${a?.blocked?'<p>Financial record validation blocked further settlements; balances were not altered.</p>':''}<h4>Future scholarship decisions</h4><ul>${decisions||'<li>No UNI.7 decisions yet.</li>'}</ul><div class="inline-actions">${buttons}${review}</div></details>`;
+}
+const uni7OldUniversityHtml=universityHtml;
+universityHtml=function(...args){let html=uni7OldUniversityHtml.apply(this,args);if(!S.uni?.enrolled)return html;const card=uni7FinanceHtml(),idx=html.lastIndexOf('</section>');return idx>=0?html.slice(0,idx)+card+html.slice(idx):html+card;};
+const uni7OldUniClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni7Award&&!d.uni7Review)return uni7OldUniClick(b);
+ const r=d.uni7Award?uni7ApplyAward(d.uni7Award,d.uni7Source):uni7ReviewScholarship(d.uni7Review);
+ toast(r.ok?'Verified university financial aid decision recorded.':r.reason);if(r.ok){save();render();}return true;};
+// Typed, optional financial application deadline: calendar notice only, never a monetary grant.
+function uni7CreateDeadline(key){
+ const u=S.uni,a=u?.financialAidUNI7,w=u?.awardWindow;
+ if(!u?.enrolled||!uni7Evidence(key)||!w||!w.to||!/^\d{4}-\d{2}-\d{2}$/.test(w.to))return null;
+ const id=`cal-uni7aid|${u.school}|${key}`;
+ return createCalendarEvent({id,type:'universityFinanceUNI7',title:'University financial aid application deadline',dateISO:w.to,startMinute:600,endMinute:660,graceMinute:660,required:false,category:'Education',location:'Education → University',sourceId:`uni7aid|${key}`,payload:{sourceTermKey:key,institutionId:uni1InstitutionId(u,S)}});
+}
+const uni7PreviousFinalize=uni4FinalizeTerm;
+uni4FinalizeTerm=function(key){const r=uni7PreviousFinalize(key);if(r?.finalizedAt&&uni7Evidence(key))uni7CreateDeadline(key);return r;};
+function uni7FinanceCalendarTick(ev){
+ if(ev.type!=='universityFinanceUNI7'||isTerminal(ev.status))return;
+ const key=ev.payload?.sourceTermKey,institutionId=ev.payload?.institutionId;
+ if(!/^\d{4}-[12]$/.test(key||'')||!UNIS.some(u=>u.id===institutionId)||ev.sourceId!==`uni7aid|${key}`){setCalendarStatus(ev,'Cancelled','Invalid university award deadline');return;}
+ const now=currentDate();if(now<ev.dateISO||(now===ev.dateISO&&currentMinute()<ev.endMinute))return;
+ const a=S.uni?.financialAidUNI7,applied=Object.values(a?.awards||{}).some(x=>x.sourceTermKey===key&&x.institutionId===institutionId);
+ setCalendarStatus(ev,applied?'Completed':'Expired',applied?'Scholarship decision filed in application window':'Financial aid application deadline passed; no award assumed');
+}
+const uni7PreviousProcessCalendar=processCalendar;
+processCalendar=function(...args){for(const e of (S.calendar||[]))if(e.type==='universityFinanceUNI7')uni7FinanceCalendarTick(e);return uni7PreviousProcessCalendar.apply(this,args);};
+// UNI.6.7 recovery: independently verifiable club-member conversations and two-person group study.
+// Keep UNI.6.2–6.6 modules and historical ZIPs unchanged. Canonical S.npcs and S.people remain authoritative.
+function uni6ClubContact(clubId,npcId){
+ const t=uni6Term(),s=uni6State(),x=s?.clubs[clubId],n=npcById(npcId);
+ if(!t||!x||x.status!=='active'||x.termKey!==t.termKey||x.institutionId!==t.institutionId||!x.members?.includes(npcId)||!uni6ValidStudent(npcId,t.institutionId))return {ok:false,reason:'Only a real current society member can be met.'};
+ const v=uni6ClubVenue(t.institutionId,x.name),today=currentDate(),last=Object.values(x.sessions||{}).find(r=>r.dateISO===today&&['attended','late'].includes(r.status)&&r.venueId===v.id&&uni6ValidateReceiptCalendar(r.id,r.status,v.id,today));
+ if(!last||!uni3AtCampus()||uni3State().presence.roomId!==v.id||currentMinute()>=(last.startMinute||1080)+160||currentMinute()<1080||S.energy<12||S.health<20)return {ok:false,reason:'Attend the real practice and meet the member at that venue shortly afterwards.'};
+ s.clubContacts=s.clubContacts&&typeof s.clubContacts==='object'&&!Array.isArray(s.clubContacts)?s.clubContacts:{};
+ const id=clubId+'|'+npcId+'|'+today;if(s.clubContacts[id])return {ok:false,reason:'This member conversation is already recorded today.'};
+ const p=(S.people||[]).find(p=>p.npcId===npcId);
+ if(!p&&(S.people||[]).filter(q=>!isFamilyPerson(q)).length>=50)return {ok:false,reason:'The 50 nonfamily contact limit is full.'};
+ advanceTime(12,{silent:true});S.energy=clamp(S.energy-2);
+ if(p){p.rel=clamp((p.rel??20)+2);p.trust=clamp((p.trust??45)+1);rememberPerson(p,'Talked with a fellow university society member after practice.',1);}
+ else {const fresh=personFromNpc(n,'friend','met university society member after practice');fresh.rel=20;fresh.trust=45;if(!S.people.some(q=>q.npcId===npcId))S.people.push(fresh);else return {ok:false,reason:'Identity was already linked.'};if(s.peers[npcId]){s.peers[npcId].met=true;s.peers[npcId].firstMet={dateISO:today,clubId};}}
+ const receipt={id,clubId,actorId:npcId,sessionId:last.id,dateISO:today,venueId:v.id,status:'met',minutes:12};s.clubContacts[id]=receipt;return {ok:true,receipt};
+}
+const uni6ClubContactHtmlBefore=uni6ClubsHtml;
+uni6ClubsHtml=function(){const h=uni6ClubContactHtmlBefore(),t=uni6Term();if(!t)return h;const rows=Object.values(uni6State().clubs).filter(x=>x.status==='active'&&x.termKey===t.termKey&&x.institutionId===t.institutionId&&x.members?.length).slice(0,3).map(x=>{
+ const v=uni6ClubVenue(t.institutionId,x.name),attended=Object.values(x.sessions||{}).some(r=>r.dateISO===currentDate()&&['attended','late'].includes(r.status)&&uni6ValidateReceiptCalendar(r.id,r.status,v.id,currentDate()));
+ return `<p><b>${esc(x.name)} members</b>: ${x.members.filter(id=>uni6ValidStudent(id,t.institutionId)).map(id=>{const n=npcById(id),contact=(S.people||[]).some(p=>p.npcId===id);return `${esc(n.fullName)} (${contact?'known':'not met'}) ${attended?`<button class="small" data-uni6-club-contact="${esc(x.id)}" data-uni6-club-npc="${esc(id)}">Meet member</button>`:''}`;}).join(' · ')}</p>`;
+ }).join('');return h.replace('</ul></details>','</ul>'+rows+'</details>');
+};
+const uni6ClubContactClickBefore=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni6ClubContact)return uni6ClubContactClickBefore(b);const out=uni6ClubContact(d.uni6ClubContact,d.uni6ClubNpc);toast(out.ok?'University society contact recorded.':out.reason);if(out.ok){save();render();}return true;};
+
+function uni6GroupId(t,personIds,date,start){return `uni6-group|${t.institutionId}|${t.termKey}|${personIds.slice().sort().join('+')}|${date}|${start}`;}
+function uni6GroupValid(x,active=true){if(!x||x.kind!=='group'||x.schemaVersion!==1||!['accepted','refused','busy','attended','late','missed','cancelled','expired'].includes(x.status)||!Array.isArray(x.personIds)||x.personIds.length!==2||new Set(x.personIds).size!==2||!Array.isArray(x.participantIds)||x.participantIds.length!==2||new Set(x.participantIds).size!==2)return false;
+ const t={institutionId:x.institutionId,termKey:x.termKey},persons=x.personIds.map(id=>personById(id));if(persons.some((p,i)=>!p||p.npcId!==x.participantIds[i]||!uni6ValidStudent(p.npcId,x.institutionId)))return false;
+ if(x.id!==uni6GroupId(t,x.personIds,x.dateISO,x.startMinute)||x.calendarId!=='cal-'+x.id||x.endMinute!==x.startMinute+60||x.venueId!==uni6Venues(x.institutionId).study?.id||!Array.isArray(x.consents)||x.consents.length!==2||x.consents.some(c=>!['accepted','refused','busy'].includes(c)))return false;
+ if(x.status==='accepted'&&x.consents.some(c=>c!=='accepted'))return false;
+ const cur=uni6Term();return !active||!!cur&&cur.institutionId===x.institutionId&&cur.termKey===x.termKey&&cur.programId===x.programId;
+}
+function uni6GroupInvite(firstId,secondId){const a=uni6PeerPerson(firstId),b=uni6PeerPerson(secondId),t=uni6Term(),s=uni6State();if(!t||!a||!b||a.n.id===b.n.id||a.p.id===b.p.id)return {ok:false,reason:'Meet two distinct university classmates before proposing group study.'};
+ if(!uni3AtCampus()&&!canUsePhone())return {ok:false,reason:'Campus presence or an eligible working phone is required.'};
+ if(Object.values(s.invitations).some(x=>x.kind==='group'&&x.termKey===t.termKey&&x.personIds?.includes(firstId)&&x.personIds?.includes(secondId)))return {ok:false,reason:'The existing group invitation outcome cannot be rerolled.'};
+ if(Object.keys(s.invitations).length>=80)return {ok:false,reason:'The invitation archive is full.'};
+ const personIds=[firstId,secondId].sort();let slot=null;for(let i=1;i<18;i++){const date=addDays(currentDate(),i);if(date>t.termEnd||!uni3ValidDay(date))continue;const start=1110,end=start+60;
+  if(uni6SupportConflict(t,date,start,end)||personIds.some(id=>uni6StudentFree(personById(id),date,start)?.free!==true))continue;slot={dateISO:date,startMinute:start,endMinute:end};break;
+ }if(!slot)return {ok:false,reason:'No shared free-time window is available.'};
+ const id=uni6GroupId(t,personIds,slot.dateISO,slot.startMinute),people=personIds.map(pid=>personById(pid)),consents=people.map(p=>(uni5Hash(id+'|'+p.npcId)%100)<Math.min(95,25+(p.rel||0)*.55+(p.trust??45)*.22)?'accepted':'refused'),status=consents.every(c=>c==='accepted')?'accepted':'refused';
+ const x={schemaVersion:1,id,origin:'player',kind:'group',institutionId:t.institutionId,termKey:t.termKey,programId:t.programId,personId:personIds[0],personIds,participantIds:people.map(p=>p.npcId),consents,status,reason:status==='accepted'?'Both classmates accepted.':'At least one classmate declined.',requestAt:currentDate(),...slot,venueId:uni6Venues(t.institutionId).study.id,calendarId:'cal-'+id,receipt:null};s.invitations[id]=x;
+ if(status==='accepted')createCalendarEvent({id:x.calendarId,type:UNI6_CALENDAR_TYPE,title:'University group study',dateISO:x.dateISO,startMinute:x.startMinute,endMinute:x.endMinute,graceMinute:x.startMinute+15,required:false,category:'Social',location:x.venueId,sourceId:id,participants:personIds,payload:{kind:'invitation',invitationId:id,termKey:t.termKey,institutionId:t.institutionId,venueId:x.venueId}});
+ return {ok:true,status,invitation:x};
+}
+const uni6GroupPrevValid=uni6InviteValid;
+uni6InviteValid=function(x,active=true){return x?.kind==='group'?uni6GroupValid(x,active):uni6GroupPrevValid(x,active);};
+const uni6GroupPrevWalk=uni6InviteWalk;
+uni6InviteWalk=function(id){const x=uni6State()?.invitations[id];return x?.kind!=='group'?uni6GroupPrevWalk(id):uni6GroupValid(x)&&x.status==='accepted'?uni6CampusWalk(x.venueId,x.dateISO,x.startMinute,x.endMinute):{ok:false,reason:'No accepted group study meeting to visit.'};};
+function uni6GroupAttend(id){const x=uni6State()?.invitations[id],t=uni6Term();if(!t||!uni6GroupValid(x)||x.status!=='accepted'||x.receipt)return {ok:false,reason:'Group study is not accepted or has already ended.'};
+ const ev=(S.calendar||[]).find(e=>e.id===x.calendarId&&e.sourceId===id&&e.type===UNI6_CALENDAR_TYPE);if(!ev||isTerminal(ev.status))return {ok:false,reason:'Valid group Calendar entry required.'};
+ if(!uni3AtCampus()||uni3State().presence.roomId!==x.venueId||currentDate()!==x.dateISO||currentMinute()<x.startMinute-5||currentMinute()>x.startMinute+15)return {ok:false,reason:'Group members must meet at the correct university venue and time.'};
+ if(S.energy<12||S.health<20)return {ok:false,reason:'Not enough health or energy for group study.'};
+ const conflict=uni6SupportConflict(t,x.dateISO,currentMinute(),x.endMinute,ev.id);if(conflict)return {ok:false,reason:conflict};
+ if(x.personIds.some(pid=>!personById(pid)||!uni6ValidStudent(personById(pid).npcId,t.institutionId)))return {ok:false,reason:'A participant is not available.'};
+ const late=Math.max(0,currentMinute()-x.startMinute);setCalendarStatus(ev,'Attending','All invited students and player physically present');advanceTime(x.endMinute-currentMinute(),{silent:true});x.status=late?'late':'attended';x.receipt={id,status:x.status,participants:x.participantIds.slice(),personIds:x.personIds.slice(),dateISO:x.dateISO,venueId:x.venueId,minutes:60-late};setCalendarStatus(ev,'Attended','Consented university group study completed');
+ for(const pid of x.personIds){const p=personById(pid);p.rel=clamp((p.rel??20)+3);p.trust=clamp((p.trust??45)+1);rememberPerson(p,'Studied together in a real university campus group.',2);}
+ S.needs.social=clamp(S.needs.social+5);S.energy=clamp(S.energy-4);return {ok:true,receipt:x.receipt};}
+const uni6GroupPrevAttend=uni6InviteAttend;
+uni6InviteAttend=function(id){const x=uni6State()?.invitations[id];return x?.kind==='group'?uni6GroupAttend(id):uni6GroupPrevAttend(id);};
+const uni6GroupPrevTick=uni6InviteTick;
+uni6InviteTick=function(ev){const x=uni6State()?.invitations[ev.sourceId];if(x?.kind!=='group')return uni6GroupPrevTick(ev);
+ if(!uni6GroupValid(x,false)||ev.id!==x.calendarId){setCalendarStatus(ev,'Cancelled','Invalid group meeting');return;}
+ if(x.receipt){setCalendarStatus(ev,['attended','late'].includes(x.status)?'Attended':'Missed','Reconciled campus group meeting');return;}
+ if(x.dateISO<currentDate()||x.dateISO===currentDate()&&currentMinute()>x.startMinute+15){x.status='missed';x.receipt={id:x.id,status:'missed',dateISO:currentDate(),minutes:0};setCalendarStatus(ev,'Missed','Optional group study no-show');return;}
+ if(x.dateISO===currentDate()&&currentMinute()>=x.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','University group study begins');};
+const uni6GroupPrevHtml=uni6SocialHtml;
+uni6SocialHtml=function(){const html=uni6GroupPrevHtml(),t=uni6Term();if(!t)return html;const known=(S.people||[]).filter(p=>uni6PeerPerson(p.id)).slice(0,6),pairs=[];
+ for(let i=0;i<known.length&&pairs.length<5;i++)for(let j=i+1;j<known.length&&pairs.length<5;j++)pairs.push(`<p><b>${esc(known[i].fullName||known[i].name)} + ${esc(known[j].fullName||known[j].name)}</b> <button class="small" data-uni6-group-first="${esc(known[i].id)}" data-uni6-group-second="${esc(known[j].id)}">Invite both to study</button></p>`);
+ const hist=Object.values(uni6State().invitations).filter(x=>x.kind==='group'&&x.termKey===t.termKey).slice(-8).map(x=>`<p>Group: ${x.personIds.map(pid=>esc(personById(pid)?.fullName||'Unknown student')).join(' + ')} · ${esc(x.status)} ${x.dateISO} ${timeLabel(x.startMinute)} ${x.status==='accepted'?`<button class="small" data-uni6-invite-walk="${esc(x.id)}">Walk to group</button><button class="small" data-uni6-invite-attend="${esc(x.id)}">Attend group</button>`:''}</p>`).join('');
+ return html.replace('</ul>','</ul><div data-uni6-groups="1"><b>Group study · two consenting classmates</b>'+pairs.join('')+hist+'</div>');};
+const uni6GroupPrevClick=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni6GroupFirst)return uni6GroupPrevClick(b);const out=uni6GroupInvite(d.uni6GroupFirst,d.uni6GroupSecond);toast(out.ok?'Group invitation saved: '+out.status:out.reason);if(out.ok){save();render();}return true;};
+
+const uni6RecoveryPrevIntegrity=uni6IntegrityMigrate;
+uni6IntegrityMigrate=function(){const result=uni6RecoveryPrevIntegrity();const s=uni6State();if(!s)return result;
+ s.clubContacts=s.clubContacts&&typeof s.clubContacts==='object'&&!Array.isArray(s.clubContacts)?s.clubContacts:{};
+ for(const [id,r] of Object.entries(s.clubContacts)){
+  const x=s.clubs[r?.clubId],session=x?.sessions?.[r?.sessionId],n=r&&npcById(r.actorId),p=n&&(S.people||[]).find(q=>q.npcId===n.id);
+  if(!x||!session||!['attended','late'].includes(session.status)||!uni6ValidateReceiptCalendar(session.id,session.status,r.venueId,r.dateISO)||!uni6ValidStudent(r.actorId,x.institutionId)||!x.members.includes(r.actorId)||!p||r.status!=='met'||r.id!==id||id!==r.clubId+'|'+r.actorId+'|'+r.dateISO||r.venueId!==session.venueId||r.minutes!==12){uni6Quarantine('invalid-club-contact',id);delete s.clubContacts[id];result.invalid++;}
+ }
+ const ids=Object.keys(s.clubContacts);if(ids.length>120)for(const id of ids.slice(0,ids.length-120)){uni6Quarantine('club-contact-bounded',id);delete s.clubContacts[id];result.invalid++;}
+ // Group records are also checked by the base UNI.6.7 validator through the wrapped uni6InviteValid.
+ result.ok=result.invalid===0;return result;};
+// UNI.8.2 — read-only catalog and verifiable opportunities; NO award, job, pay or save mutations.
+const UNI8_SCHEMA=1;
+const UNI8_FAMILIES={
+ cs:['Software Engineering','Nimbus Software','Engineering'],engineering:['Engineering Design','Brightline Group','Operations'],
+ business:['Business Operations','Meridian Partners','Business'],economics:['Economic Research','Meridian Partners','Business'],
+ law:['Public Affairs Research','Brightline Group','Operations'],fineArts:['Gallery Studio','Studio Halcyon','Design'],
+ design:['Design Studio','Studio Halcyon','Design'],music:['Performance Production','Studio Halcyon','Design'],
+ media:['Media Production','Studio Halcyon','Design'],literature:['Editorial Research','Brightline Group','Operations'],
+ education:['Learning Support','Brightline Group','Operations'],psychology:['Community Outreach','Brightline Group','Operations'],
+ biology:['Laboratory Research','Brightline Group','Operations'],nursing:['Clinical Support','Brightline Group','Operations'],
+ sports:['Athletic Coaching','Brightline Group','Operations'],culinary:['Hospitality Kitchen','Meridian Partners','Business']};
+function uni8ConfirmedTerm(){
+ const u=S?.uni;if(!u?.enrolled||S.age<18||!u.major||!MAJORS[u.major])return null;
+ const t=u.termEnrollments?.terms?.[u.semKey],p=t&&UNI1_PROGRAMS[t.programId],sid=uni1InstitutionId(u,S);
+ if(!t||!p||t.termKey!==u.semKey||t.institutionId!==sid||p.institutionId!==sid||p.majorId!==u.major||t.majorId!==u.major||t.status!=='confirmed'||t.courseIds?.length<3||t.courseIds?.length>6||!uni2ValidRecord(t.termKey,t,u))return null;
+ if(!t.courseIds.every(id=>p.requiredCourseIds.includes(id)))return null;
+ return t;
+}
+function uni8OfferList(t=uni8ConfirmedTerm()){
+ if(!t)return [];
+ const p=UNI1_PROGRAMS[t.programId],major=t.majorId,defs=UNI8_FAMILIES[major];if(!p||!defs)return [];
+ const [field,employer,department]=defs,base=`uni8-offer|${t.institutionId}|${t.programId}|${t.termKey}`;
+ const common={schemaVersion:1,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:major,field,department,employerId:employer.toLowerCase().replace(/[^a-z0-9]+/g,'-'),employer,period:'undergraduate',deadline:addDays(t.opened,70)};
+ return [
+  {...common,id:`${base}|local`,kind:'local',title:`${field} Community Intern`,worksiteId:`${t.institutionId}-uni8-local-${major}`,worksite:'Community Work Center',campus:false,minimumYear:1,requiredVerifiedGpa:null,requiredSkill:0,weeklyDay:6,startMinute:600,endMinute:780,weeklyHours:3,durationWeeks:4,payPerHour:0,paid:false,capacity:3,prestige:'community'},
+  {...common,id:`${base}|campus`,kind:'campus',title:`${field} Campus Assistant`,worksiteId:`${t.institutionId}-uni8-center-${major}`,worksite:'University Career & Innovation Center',campus:true,minimumYear:1,requiredVerifiedGpa:null,requiredSkill:0,weeklyDay:6,startMinute:840,endMinute:1020,weeklyHours:3,durationWeeks:4,payPerHour:14,paid:true,capacity:2,prestige:'campus'},
+  {...common,id:`${base}|selective`,kind:'selective',title:`${field} Professional Internship`,worksiteId:`${t.institutionId}-uni8-professional-${major}`,worksite:employer+' Worksite',campus:false,minimumYear:p.degreeType==='associate'?2:3,requiredVerifiedGpa:3.0,requiredSkill:30,weeklyDay:6,startMinute:540,endMinute:780,weeklyHours:4,durationWeeks:6,payPerHour:24,paid:true,capacity:1,prestige:'competitive'}
+ ];
+}
+function uni8OfferById(id){if(typeof id!=='string'||id.length>220)return null;return uni8OfferList().find(x=>x.id===id)||null;}
+function uni8Eligibility(id){
+ const t=uni8ConfirmedTerm(),offer=t&&uni8OfferById(id);
+ if(!t||!offer)return {ok:false,reason:'A matching adult, confirmed university term and major are required.'};
+ if(S.career?.job)return {ok:false,reason:'An existing adult job conflicts with a scheduled university internship; it will not be replaced.'};
+ if(currentDate()>offer.deadline||currentDate()>t.termEnd)return {ok:false,reason:'Application window is closed.'};
+ if(t.year<offer.minimumYear)return {ok:false,reason:`Requires academic year ${offer.minimumYear} or above.`};
+ const skill=MAJORS[offer.majorId]?.skill;
+ if(offer.requiredSkill&&(!skill||(Number(S.skills?.[skill])||0)<offer.requiredSkill))return {ok:false,reason:`Requires at least ${offer.requiredSkill} in ${skill} skill.`};
+ if(offer.requiredVerifiedGpa!==null){const standing=uni5StandingEvaluate();if(!standing.source||!uni5ModernEvidence(standing.source)||standing.termGpa<offer.requiredVerifiedGpa||['probation','warning'].includes(standing.status))return {ok:false,reason:'Requires current UNI.4-verified GPA 3.0 and eligible standing; legacy grades cannot qualify.'};}
+ return {ok:true,offer};
+}
+function uni8OpportunitiesHtml(){
+ const t=uni8ConfirmedTerm();if(!t)return `<section class="uni8-center" data-uni8-opportunities="1"><h4>Internships & Career Center</h4><p>Confirm 3–6 valid courses in an adult university term to unlock internship opportunities. No placements are awarded by browsing.</p></section>`;
+ const cards=uni8OfferList(t).map(o=>{const g=uni8Eligibility(o.id);return `<article class="uni8-offer"><h5>${esc(o.title)}</h5><p>${esc(o.employer)} · ${esc(o.worksite)} · ${esc(o.prestige)} · ${o.durationWeeks} weeks</p><small>${o.paid?`${money(o.payPerHour)}/hour (only real attended work)`: 'Unpaid experience'} · ${o.weeklyHours}h/week · Applications by ${esc(o.deadline)} · Capacity ${o.capacity}</small><p>${g.ok?'Eligible to prepare an application':`Unavailable: ${esc(g.reason)}`}</p></article>`}).join('');
+ return `<section class="uni8-center" data-uni8-opportunities="1"><h4>Internships & Career Center</h4><p>Available for ${esc(t.institutionId)} · ${esc(MAJORS[t.majorId]?.label)} · ${esc(t.termKey)}. Listings are not applications, jobs, credit or compensation.</p>${cards}</section>`;
+}
+const uni8OldUniversityHtml82=universityHtml;
+universityHtml=function(...args){const html=uni8OldUniversityHtml82.apply(this,args);if(!S?.uni?.enrolled)return html;const at=html.lastIndexOf('</section>');return at>=0?html.slice(0,at)+uni8OpportunitiesHtml()+html.slice(at):html+uni8OpportunitiesHtml();};
+// UNI.8.3 — real CV preparation, frozen applications and physically attended interviews.
+// Does not grant credits, salary, placement, job or grades.
+const UNI8_CAL_TYPE='universityInternshipUNI8';
+function uni8State(){
+ if(!S?.uni)return null;
+ const u=S.uni,old=u.internshipUNI8;
+ if(!old||old.schemaVersion!==1){u.internshipUNI8={schemaVersion:1,applications:{},placements:{},interviews:{},evaluations:{},fair:{},payroll:{},quarantine:[],cv:null,presence:null};}
+ const a=u.internshipUNI8;
+ for(const k of ['applications','placements','interviews','evaluations','fair','payroll'])if(!a[k]||typeof a[k]!=='object'||Array.isArray(a[k]))a[k]={};
+ if(!Array.isArray(a.quarantine))a.quarantine=[];return a;
+}
+function uni8CV(){
+ const t=uni8ConfirmedTerm();if(!t)return {ok:false,reason:'A current, confirmed university term is required.'};
+ const s=uni8State(),id=`uni8-cv|${t.institutionId}|${t.programId}|${t.termKey}`;
+ if(s.cv?.id===id)return {ok:false,unchanged:true,reason:'A CV has already been prepared for this term.'};
+ if(S.energy<10||S.health<20)return {ok:false,reason:'Insufficient energy or health to prepare the CV.'};
+ const skills={};for(const key of [MAJORS[t.majorId]?.skill])if(key&&Number.isFinite(S.skills?.[key]))skills[key]=Math.min(100,Math.max(0,S.skills[key]));
+ const standing=uni5StandingEvaluate(),e=standing.source&&uni5ModernEvidence(standing.source);
+ advanceTime(30,{silent:true});S.energy=clamp(S.energy-3);
+ s.cv={schemaVersion:1,id,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,dateISO:currentDate(),skills,verifiedAcademicTerm:e?.key||null,verifiedTermGpa:e?.termGpa??null,minutes:30};
+ return {ok:true,cv:s.cv};
+}
+function uni8InterviewSlot(t,offer){
+ const start=addDays(currentDate(),2),stop=addDays(currentDate(),12);
+ for(let d=start;d<=stop;d=addDays(d,1)){
+  if(d>t.termEnd||!uni3ValidDay(d)||[0,6].includes(parseISO(d).getUTCDay()))continue;
+  const minute=1110,conflict=uni6SupportConflict(t,d,minute-60,minute+30);
+  if(!conflict)return {dateISO:d,startMinute:minute,endMinute:minute+30};
+ }return null;
+}
+function uni8Apply(id){
+ const gate=uni8Eligibility(id);if(!gate.ok)return gate;
+ const offer=gate.offer,t=uni8ConfirmedTerm(),s=uni8State(),cvId=`uni8-cv|${t.institutionId}|${t.programId}|${t.termKey}`;
+ if(!s.cv||s.cv.id!==cvId)return {ok:false,reason:'Prepare a genuine term-specific CV before applying.'};
+ if(s.applications[id])return {ok:false,unchanged:true,reason:'This offer already has a frozen application or response.'};
+ if(Object.values(s.applications).filter(x=>x.termKey===t.termKey).length>=3)return {ok:false,reason:'Three internship applications maximum each term.'};
+ if(S.energy<7||S.health<20)return {ok:false,reason:'Insufficient energy/health to submit application.'};
+ const chanceBase=offer.kind==='local'?87:offer.kind==='campus'?78:62,hash=uni5Hash(`${id}|${S.name}|${s.cv.id}`)%100;
+ const invite=hash<chanceBase,slot=invite?uni8InterviewSlot(t,offer):null;
+ advanceTime(25,{silent:true});S.energy=clamp(S.energy-2);
+ const app={schemaVersion:1,id:`uni8-app|${id}`,offerId:id,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,cvId:s.cv.id,status:invite&&slot?'interview-scheduled':'rejected',reason:invite&&!slot?'No available interview slot in this term':invite?'Interview invitation':'Application not shortlisted',dateISO:currentDate(),decisionHash:hash,interviewId:slot?`uni8-interview|${id}`:null,interview:slot?{...slot,venueId:offer.worksiteId,completed:false}:null};
+ s.applications[id]=app;
+ if(app.status==='interview-scheduled'){
+  const calendarId=`cal-${app.interviewId}`;
+  createCalendarEvent({id:calendarId,type:UNI8_CAL_TYPE,title:`Internship interview · ${offer.title}`,sourceId:app.id,dateISO:slot.dateISO,startMinute:slot.startMinute,endMinute:slot.endMinute,graceMinute:slot.startMinute+12,location:offer.worksiteId,category:'Career',required:false,payload:{kind:'interview',offerId:id,appId:app.id,termKey:t.termKey,programId:t.programId}});
+ }
+ return {ok:true,application:app};
+}
+function uni8Application(id){return uni8State()?.applications?.[id]||null;}
+function uni8InterviewTravel(id){
+ const a=uni8Application(id),o=uni8OfferById(id),v=a?.interview;
+ if(!a||a.status!=='interview-scheduled'||!o||!v)return {ok:false,reason:'No eligible pending interview.'};
+ if(currentDate()!==v.dateISO||currentMinute()<v.startMinute-95||currentMinute()>v.startMinute+12)return {ok:false,reason:'Travel is available shortly before your interview.'};
+ const s=uni8State(),cost=o.campus?0:6,mins=o.campus?7:30;
+ if(o.campus&&!uni3AtCampus())return {ok:false,reason:'Commute to the correct university first.'};
+ if(!o.campus&&S.location!=='Home')return {ok:false,reason:'Depart from home for this employer worksite.'};
+ if(!o.campus&&S.money<cost)return {ok:false,reason:'Not enough wallet money for the actual commute.'};
+ const t=uni8ConfirmedTerm(),conflict=t&&uni6SupportConflict(t,currentDate(),currentMinute(),currentMinute()+mins,'cal-'+a.interviewId);
+ if(conflict)return {ok:false,reason:conflict};
+ if(cost)S.money-=cost;advanceTime(mins,{silent:true});
+ if(o.campus)uni3State().presence.roomId=o.worksiteId;
+ else setPlayerLocation4C1('Internship Worksite',{reason:'UNI.8 employer interview commute'});
+ s.presence={worksiteId:o.worksiteId,employerId:o.employerId,dateISO:currentDate(),kind:'interview',appId:a.id};
+ return {ok:true,minutes:mins,cost,worksiteId:o.worksiteId};
+}
+function uni8AttendInterview(id){
+ const a=uni8Application(id),o=uni8OfferById(id),v=a?.interview,s=uni8State();
+ if(!a||a.status!=='interview-scheduled'||!o||!v)return {ok:false,reason:'No active interview invitation.'};
+ const ev=S.calendar?.find(x=>x.id==='cal-'+a.interviewId);
+ if(!ev||ev.type!==UNI8_CAL_TYPE||ev.payload?.appId!==a.id||isTerminal(ev.status))return {ok:false,reason:'Missing valid interview Calendar event.'};
+ if(currentDate()!==v.dateISO||currentMinute()<v.startMinute-5||currentMinute()>v.startMinute+12)return {ok:false,reason:'Interview check-in is closed or not open yet.'};
+ if(!s.presence||s.presence.appId!==a.id||s.presence.worksiteId!==o.worksiteId||s.presence.dateISO!==currentDate())return {ok:false,reason:'Physically travel to this employer or campus worksite.'};
+ if(o.campus?(!uni3AtCampus()||uni3State().presence.roomId!==o.worksiteId):S.location!=='Internship Worksite')return {ok:false,reason:'Not physically at the assigned interview venue.'};
+ if(S.energy<9||S.health<20)return {ok:false,reason:'Not fit for the interview.'};
+ const conflict=uni6SupportConflict(uni8ConfirmedTerm(),v.dateISO,currentMinute(),v.endMinute,ev.id);if(conflict)return {ok:false,reason:conflict};
+ const currentSkill=Number(S.skills?.[MAJORS[o.majorId].skill])||0,score=45+currentSkill*.25+(a.decisionHash%20)-10+(o.kind==='selective'?-12:0),accepted=score>=45;
+ const late=currentMinute()>v.startMinute;
+ setCalendarStatus(ev,'Attending','Arrived at verified worksite');advanceTime(Math.max(20,v.endMinute-currentMinute()),{silent:true});S.energy=clamp(S.energy-4);
+ a.status=accepted?'offered':'rejected';a.reason=accepted?'Interview performance met employer threshold':'Interview outcome did not meet employer threshold';a.interview.completed=true;a.interview.attendedAt={dateISO:currentDate(),minute:currentMinute()};a.interview.outcomeScore=Math.round(score);a.interview.result=accepted?'offered':'rejected';
+ s.interviews[a.interviewId]={id:a.interviewId,appId:a.id,status:late?'late':'attended',dateISO:v.dateISO,venueId:o.worksiteId,score:Math.round(score),decision:a.status};
+ setCalendarStatus(ev,'Attended','Verified attended interview; decision frozen');
+ // After an off-campus interview the player remains at the employer; returning home is a separate real commute (UNI.8.4).
+ if(o.campus)s.presence=null;
+ return {ok:true,status:a.status,application:a};
+}
+function uni8InterviewTick(ev){
+ if(ev?.type!==UNI8_CAL_TYPE)return;
+ if(ev.payload?.kind!=='interview'){if(typeof uni8PlacementCalendarTick==='function')return uni8PlacementCalendarTick(ev);setCalendarStatus(ev,'Cancelled','Unsupported UNI.8 Calendar session');return;}
+ const a=uni8Application(ev.payload.offerId),v=a?.interview;
+ if(!a||a.id!==ev.payload.appId||a.interviewId!==ev.id.slice(4)||!v||v.dateISO!==ev.dateISO||v.startMinute!==ev.startMinute||a.termKey!==ev.payload.termKey){setCalendarStatus(ev,'Cancelled','Invalid internship interview source');return;}
+ if(ev.status==='Attending')return;
+ if(a.status==='offered'||a.status==='rejected'&&v.completed){setCalendarStatus(ev,'Attended','Interview previously resolved');return;}
+ if(a.status!=='interview-scheduled'){setCalendarStatus(ev,'Cancelled','Interview invitation no longer active');return;}
+ if(ev.dateISO<currentDate()||ev.dateISO===currentDate()&&currentMinute()>ev.startMinute+12){a.status='expired';a.reason='Interview missed';setCalendarStatus(ev,'Missed','Interview no-show');return;}
+ if(ev.dateISO===currentDate()&&currentMinute()>=ev.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','Interview check-in open');
+}
+function uni8ApplicationsHtml(){
+ const t=uni8ConfirmedTerm();if(!t)return '';
+ const s=S.uni?.internshipUNI8,cv=s?.cv,applications=s?.applications||{};
+ const actions=uni8OfferList(t).map(o=>{const a=applications[o.id],g=uni8Eligibility(o.id);return `<li>${esc(o.title)} · ${esc(a?.status||'Not applied')}${a?.status==='interview-scheduled'?` · ${esc(a.interview.dateISO)} ${timeLabel(a.interview.startMinute)} <button class="small" data-uni8-travel="${esc(o.id)}">Travel to interview</button> <button class="small" data-uni8-interview="${esc(o.id)}">Attend interview</button>`:!a?` <button class="small" data-uni8-apply="${esc(o.id)}" ${!g.ok?'disabled':''}>Apply</button>`:''}</li>`;}).join('');
+ return `<section class="uni8-applications" data-uni8-applications="1"><h4>CV, Applications & Interviews</h4><p>CV ${cv?.termKey===t.termKey?'prepared on '+esc(cv.dateISO):'not prepared'} · Interviews require actual venue travel, attendance, and an employer decision; none are automatic jobs.</p><button class="small" data-uni8-cv="1" ${cv?.termKey===t.termKey?'disabled':''}>Prepare CV (30 min)</button><ul>${actions}</ul></section>`;
+}
+const uni8UniversityHtmlBefore83=universityHtml;
+universityHtml=function(...args){const html=uni8UniversityHtmlBefore83.apply(this,args);if(!uni8ConfirmedTerm())return html;const at=html.lastIndexOf('</section>');return at>=0?html.slice(0,at)+uni8ApplicationsHtml()+html.slice(at):html+uni8ApplicationsHtml();};
+const uni8ClickBefore83=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni8Cv&&!d.uni8Apply&&!d.uni8Travel&&!d.uni8Interview)return uni8ClickBefore83(b);
+ const r=d.uni8Cv?uni8CV():d.uni8Apply?uni8Apply(d.uni8Apply):d.uni8Travel?uni8InterviewTravel(d.uni8Travel):uni8AttendInterview(d.uni8Interview);
+ toast(r.ok?'University career action recorded.':r.reason);if(r.ok){save();render();}return true;
+};
+// UNI.8.4 — accepted signed placements, stable professional supervisors, physical shifts.
+function uni8Placement(id){return S.uni?.internshipUNI8?.placements?.[id]||null;}
+function uni8ActivePlacement(){return Object.values(S.uni?.internshipUNI8?.placements||{}).find(x=>x.status==='active')||null;}
+function uni8MentorId(o){return `uni8-mentor|${o.employerId}|${o.institutionId}|${o.majorId}`;}
+function uni8MentorValid(id,o){const n=npcById(id),m=n?.internshipSupervisorUNI8;return !!n&&n.id===id&&id===uni8MentorId(o)&&n.professionalRole==='internshipSupervisorUNI8'&&m?.schemaVersion===1&&m.employerId===o.employerId&&m.institutionId===o.institutionId&&m.majorId===o.majorId&&typeof n.fullName==='string'&&n.fullName.includes(' ')&&(S.npcs||[]).filter(x=>x.id===id).length===1&&!(S.people||[]).some(p=>p.npcId===id);}
+function uni8CreateMentor(o){const id=uni8MentorId(o),old=npcById(id);if(old)return uni8MentorValid(id,o)?old:null;
+ const name=uni5Name(id);if(!name)return null;
+ const n={id,...name,birthYear:1970+uni5Hash(id)%24,professionalRole:'internshipSupervisorUNI8',internshipSupervisorUNI8:{schemaVersion:1,employerId:o.employerId,institutionId:o.institutionId,majorId:o.majorId,worksiteId:o.worksiteId},traits:['Professional'],goals:[]};
+ S.npcs.push(n);return n;
+}
+function uni8ShiftPlan(o,acceptDate){const dates=[],first=addDays(acceptDate,2);for(let d=first;dates.length<o.durationWeeks;d=addDays(d,1)){
+ if(d>addDays(acceptDate,70)||d>uni8ConfirmedTerm()?.termEnd)break;
+ if(parseISO(d).getUTCDay()!==o.weeklyDay)continue;
+ dates.push({id:`uni8-shift|${o.id}|${d}`,dateISO:d,startMinute:o.startMinute,endMinute:o.endMinute,worksiteId:o.worksiteId,status:'scheduled'});
+ }return dates;
+}
+function uni8AcceptOffer(offerId){const t=uni8ConfirmedTerm(),o=uni8OfferById(offerId),a=uni8Application(offerId),s=uni8State();
+ if(!t||!o||!a||a.status!=='offered'||a.interview?.result!=='offered'||!s.interviews?.[a.interviewId]||s.interviews[a.interviewId].decision!=='offered')return {ok:false,reason:'A genuine completed employer interview and valid offer are required.'};
+ if(uni8ActivePlacement()||S.career?.job)return {ok:false,reason:'Already committed to a conflicting internship or adult career.'};
+ if(currentDate()>addDays(a.interview.dateISO,14))return {ok:false,reason:'This employer offer expired.'};
+ const shifts=uni8ShiftPlan(o,currentDate());if(shifts.length<Math.min(2,o.durationWeeks))return {ok:false,reason:'Not enough valid remaining term dates to complete this placement.'};
+ for(const sh of shifts){const conflict=uni6SupportConflict(t,sh.dateISO,sh.startMinute,sh.endMinute);if(conflict)return {ok:false,reason:'Proposed placement conflicts with your academic or campus schedule: '+conflict};}
+ const mentor=uni8CreateMentor(o);if(!mentor)return {ok:false,reason:'Supervisor identity unavailable or conflicts with saved NPC records.'};
+ const id=`uni8-place|${offerId}`,placement={schemaVersion:1,id,offerId,appId:a.id,mentorId:mentor.id,termKey:t.termKey,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,employerId:o.employerId,worksiteId:o.worksiteId,worksite:o.worksite,campus:o.campus,status:'active',signedAt:currentDate(),endDate:shifts[shifts.length-1].dateISO,agreedWeeks:o.durationWeeks,paid:o.paid,payPerHour:o.payPerHour,shifts:{},attendance:{},hours:0,missed:0};
+ for(const sh of shifts){placement.shifts[sh.id]=sh;createCalendarEvent({id:'cal-'+sh.id,type:UNI8_CAL_TYPE,title:`University placement · ${o.title}`,sourceId:sh.id,dateISO:sh.dateISO,startMinute:sh.startMinute,endMinute:sh.endMinute,graceMinute:sh.startMinute+15,location:sh.worksiteId,category:'Career',required:false,payload:{kind:'shift',placementId:id,offerId,worksiteId:sh.worksiteId,termKey:t.termKey}});}
+ s.placements[id]=placement;a.status='accepted';a.placementId=id;return {ok:true,placement};
+}
+function uni8Shift(id){const p=uni8ActivePlacement();return p&&p.shifts?.[id]?{p,sh:p.shifts[id]}:null;}
+function uni8WorksiteTravel(id){const v=uni8Shift(id);if(!v)return {ok:false,reason:'No active signed placement shift.'};const {p,sh}=v;
+ if(sh.status!=='scheduled'||sh.dateISO!==currentDate()||currentMinute()<sh.startMinute-120||currentMinute()+7>sh.endMinute)return {ok:false,reason:'You can travel only before a real scheduled shift at the assigned worksite.'};
+ const minutes=p.campus?7:25,cost=p.campus?0:5;
+ if(p.campus&&!uni3AtCampus())return {ok:false,reason:'Travel to the correct university campus first.'};
+ if(!p.campus&&S.location!=='Home')return {ok:false,reason:'Depart from home for the off-campus employer.'};
+ if(S.career?.job)return {ok:false,reason:'Existing adult job conflicts with placement travel.'};
+ if(S.money<cost)return {ok:false,reason:'Cannot afford this real commute.'};
+ const t=uni8ConfirmedTerm(),reason=t&&uni6SupportConflict(t,currentDate(),currentMinute(),currentMinute()+minutes,'cal-'+id);
+ if(!t||reason)return {ok:false,reason:reason||'Current confirmed university term required.'};
+ if(cost)S.money-=cost;advanceTime(minutes,{silent:true});
+ if(p.campus)uni3State().presence.roomId=p.worksiteId;else setPlayerLocation4C1('Internship Worksite',{reason:'UNI.8 real employer commute'});
+ uni8State().presence={kind:'shift',placementId:p.id,worksiteId:p.worksiteId,employerId:p.employerId,dateISO:currentDate(),shiftId:id};
+ return {ok:true,minutes,cost};
+}
+function uni8AttendShift(id){const v=uni8Shift(id);if(!v)return {ok:false,reason:'No active signed shift.'};const {p,sh}=v,ev=S.calendar?.find(e=>e.id==='cal-'+id),pr=uni8State().presence;
+ if(sh.status!=='scheduled'||p.attendance[id]||!ev||ev.type!==UNI8_CAL_TYPE||ev.sourceId!==id||ev.payload?.placementId!==p.id||isTerminal(ev.status))return {ok:false,reason:'Shift already resolved or has an invalid Calendar source.'};
+ if(sh.dateISO!==currentDate()||currentMinute()<sh.startMinute-5||currentMinute()>sh.startMinute+15)return {ok:false,reason:'Shift check-in is not open.'};
+ if(!pr||pr.shiftId!==id||pr.placementId!==p.id||pr.worksiteId!==p.worksiteId||pr.dateISO!==currentDate())return {ok:false,reason:'Commute to the correct employer before attending.'};
+ if(p.campus?(!uni3AtCampus()||uni3State().presence.roomId!==p.worksiteId):S.location!=='Internship Worksite')return {ok:false,reason:'Wrong physical worksite.'};
+ if(S.energy<20||S.health<25||S.career?.job)return {ok:false,reason:'Not fit or available for this internship shift.'};
+ const t=uni8ConfirmedTerm(),conflict=t&&uni6SupportConflict(t,currentDate(),currentMinute(),sh.endMinute,ev.id);if(!t||conflict)return {ok:false,reason:conflict||'University term invalid.'};
+ const late=Math.max(0,currentMinute()-sh.startMinute),minutes=sh.endMinute-Math.max(sh.startMinute,currentMinute());if(minutes<30)return {ok:false,reason:'Insufficient working time before closing.'};
+ setCalendarStatus(ev,'Attending','Physically arrived at employer worksite');advanceTime(sh.endMinute-currentMinute(),{silent:true});
+ const receipt={schemaVersion:1,id,placementId:p.id,mentorId:p.mentorId,employerId:p.employerId,worksiteId:p.worksiteId,termKey:p.termKey,dateISO:sh.dateISO,minutes,status:late?'late':'attended',lateMinutes:late,paid:false};
+ p.attendance[id]=receipt;sh.status=receipt.status;p.hours+=Math.floor(minutes/60);S.energy=clamp(S.energy-18);S.needs.hunger=clamp(S.needs.hunger-10);S.stress=clamp((S.stress||0)+2);
+ setCalendarStatus(ev,'Attended','UNI.8 actual attended employer work shift');uni8State().presence=null;
+ if(typeof uni8PostPay==='function')uni8PostPay(p,receipt);
+ return {ok:true,receipt};
+}
+function uni8ReturnHome(){if(S.location!=='Internship Worksite')return {ok:false,reason:'You are not at an off-campus internship site.'};
+ if(S.money<5)return {ok:false,reason:'Insufficient money for return transit.'};
+ S.money-=5;advanceTime(25,{silent:true});setPlayerLocation4C1('Home',{reason:'Return from internship worksite'});uni8State().presence=null;return {ok:true,minutes:25,cost:5};
+}
+function uni8QuitPlacement(){const p=uni8ActivePlacement();if(!p)return {ok:false,reason:'No active placement.'};
+ p.status='quit';p.closedAt=currentDate();for(const sh of Object.values(p.shifts))if(sh.status==='scheduled'){sh.status='cancelled';const ev=S.calendar.find(e=>e.id==='cal-'+sh.id);if(ev&&!isTerminal(ev.status))setCalendarStatus(ev,'Cancelled','Signed placement quit');}
+ return {ok:true};
+}
+function uni8PlacementCalendarTick(ev){if(ev?.payload?.kind!=='shift'){setCalendarStatus(ev,'Cancelled','Invalid UNI.8 session type');return;}
+ const p=uni8Placement(ev.payload.placementId),sh=p?.shifts?.[ev.sourceId];
+ if(!p||!sh||sh.id!==ev.sourceId||p.id!==ev.payload.placementId||p.worksiteId!==ev.payload.worksiteId||p.termKey!==ev.payload.termKey){setCalendarStatus(ev,'Cancelled','Invalid internship shift source');return;}
+ if(p.status!=='active'||!S.uni?.enrolled||p.termKey!==S.uni.semKey){sh.status='cancelled';setCalendarStatus(ev,'Cancelled','Internship no longer active in verified student term');return;}
+ if(['attended','late'].includes(sh.status)){setCalendarStatus(ev,'Attended','Saved employer attendance receipt');return;}
+ if(sh.status==='cancelled'){setCalendarStatus(ev,'Cancelled','Placement shift cancelled');return;}
+ if(ev.status==='Attending')return;
+ if(ev.dateISO<currentDate()||ev.dateISO===currentDate()&&currentMinute()>ev.startMinute+15){sh.status='missed';p.missed++;setCalendarStatus(ev,'Missed','Internship shift not attended');return;}
+ if(ev.dateISO===currentDate()&&currentMinute()>=ev.startMinute&&ev.status==='Scheduled')setCalendarStatus(ev,'Due','Placement shift begins');
+}
+function uni8PlacementHtml(){const p=uni8ActivePlacement();if(!p)return '';
+ const mentor=npcById(p.mentorId),future=Object.values(p.shifts).filter(x=>x.status==='scheduled');const recent=Object.values(p.attendance);
+ return `<section data-uni8-placement="1"><h4>Signed Internship Placement</h4><p>${esc(p.worksite)} · ${p.paid?'Paid (only after verified shifts)':'Unpaid'} · Mentor ${esc(mentor?.fullName||'unavailable')} · ${p.hours} verified hours</p><p>Real shifts ${Object.values(p.shifts).length}, attended ${recent.length}, missed ${p.missed}. No automatic university credit or adult career.</p><ul>${future.slice(0,3).map(x=>`<li>${esc(x.dateISO)} ${timeLabel(x.startMinute)} <button class="small" data-uni8-worksite="${esc(x.id)}">Travel</button> <button class="small" data-uni8-shift="${esc(x.id)}">Attend shift</button></li>`).join('')}</ul><div class="inline-actions">${S.location==='Internship Worksite'?'<button class="small" data-uni8-return="1">Return home (25 min)</button>':''}<button class="small ghost" data-uni8-quit="1">Quit placement</button></div></section>`;
+}
+const uni8HtmlBefore84=universityHtml;
+universityHtml=function(...args){const html=uni8HtmlBefore84.apply(this,args);if(!S?.uni?.enrolled)return html;
+ const offered=Object.values(S.uni.internshipUNI8?.applications||{}).filter(a=>a.status==='offered').map(a=>`<button class="small" data-uni8-accept="${esc(a.offerId)}">Accept ${esc(uni8OfferById(a.offerId)?.title||'internship')} offer</button>`).join('');
+ const content=`<section data-uni8-contracts="1"><h4>Internship Contracts & Attendance</h4>${S.location==='Internship Worksite'?'<button class="small" data-uni8-return="1">Return home from employer (25 min)</button>':''}${offered||''}${uni8PlacementHtml()||'<p>Complete a real employer interview to receive an offer. Acceptance is never automatic.</p>'}</section>`;
+ const at=html.lastIndexOf('</section>');return at>=0?html.slice(0,at)+content+html.slice(at):html+content;};
+const uni8ClickBefore84=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni8Accept&&!d.uni8Worksite&&!d.uni8Shift&&!d.uni8Quit&&!d.uni8Return)return uni8ClickBefore84(b);
+ const r=d.uni8Accept?uni8AcceptOffer(d.uni8Accept):d.uni8Worksite?uni8WorksiteTravel(d.uni8Worksite):d.uni8Shift?uni8AttendShift(d.uni8Shift):d.uni8Quit?uni8QuitPlacement():uni8ReturnHome();
+ toast(r.ok?'Internship action recorded.':r.reason);if(r.ok){save();render();}return true;
+};
+// UNI.8.5 — source-linked payroll, in-person supervisor guidance and non-credit reviews.
+// Current wallet and earned-income fields remain the ONLY monetary authority.
+function uni8PaySource(p,r){
+ if(!p||!r||uni8Placement(p.id)!==p||p.id!==`uni8-place|${p.offerId}`||S.uni?.internshipUNI8?.applications?.[p.offerId]?.placementId!==p.id||S.uni.internshipUNI8.applications[p.offerId].status!=='accepted'||!Number.isSafeInteger(p.payPerHour)||p.payPerHour<0||p.payPerHour>1000)return null;
+ const o=uni8OfferById(p.offerId),sh=p.shifts?.[r.id],ev=S.calendar?.find(e=>e.id==='cal-'+r.id);
+ if(!o||p.status!=='active'||p.employerId!==o.employerId||p.worksiteId!==o.worksiteId||p.termKey!==o.termKey||p.payPerHour!==o.payPerHour||p.paid!==o.paid||!sh||sh.id!==r.id||sh.status!==r.status||!['attended','late'].includes(r.status)||p.attendance?.[r.id]!==r||!Number.isSafeInteger(r.minutes)||r.minutes<30||r.minutes>sh.endMinute-sh.startMinute||r.dateISO!==sh.dateISO||r.placementId!==p.id||r.mentorId!==p.mentorId||r.employerId!==p.employerId||r.worksiteId!==p.worksiteId||r.termKey!==p.termKey||!ev||ev.sourceId!==r.id||ev.type!==UNI8_CAL_TYPE||ev.status!=='Attended')return null;
+ const amount=o.paid?Math.round(r.minutes*o.payPerHour/60):0;
+ return Number.isSafeInteger(amount)&&amount>=0&&amount<=5000?{id:`uni8-pay|${r.id}`,amount,paid:o.paid}:null;
+}
+function uni8PostPay(p,r){
+ const source=uni8PaySource(p,r),state=S.uni?.internshipUNI8;
+ if(!source||!state||!Number.isSafeInteger(S.money)||S.money<0||!Number.isSafeInteger(S.finance?.earned??0)||(S.finance?.earned??0)<0)return {ok:false,reason:'Verified shift or account evidence unavailable.'};
+ if(Object.prototype.hasOwnProperty.call(state.payroll,source.id)||r.paid)return {ok:false,reason:'Already recorded (no duplicate payment).'};
+ if(!Number.isSafeInteger(S.money+source.amount)||!Number.isSafeInteger((S.finance.earned||0)+source.amount))return {ok:false,reason:'Invalid resulting balances.'};
+ const receipt={schemaVersion:1,id:source.id,placementId:p.id,shiftId:r.id,employerId:p.employerId,mentorId:p.mentorId,termKey:p.termKey,dateISO:r.dateISO,workMinutes:r.minutes,rate:p.payPerHour,amount:source.amount,status:source.paid?'paid':'unpaid',source:'real-uni8-shift'};
+ state.payroll[receipt.id]=receipt;r.paid=true;
+ if(source.amount){S.money+=source.amount;S.finance.earned=(S.finance.earned||0)+source.amount;}
+ return {ok:true,receipt};
+}
+function uni8CollectPay(shiftId){const state=uni8State(),p=Object.values(state.placements).find(x=>x.attendance?.[shiftId]);if(!p)return {ok:false,reason:'A genuine attended shift is required.'};return uni8PostPay(p,p.attendance[shiftId]);}
+function uni8MentorSession(){
+ const p=uni8ActivePlacement(),t=uni8ConfirmedTerm();if(!p||!t||p.termKey!==t.termKey)return {ok:false,reason:'An active confirmed student placement is required.'};
+ const o=uni8OfferById(p.offerId);if(!o||!uni8MentorValid(p.mentorId,o))return {ok:false,reason:'Supervisor identity cannot be verified.'};
+ const attended=Object.values(p.attendance).filter(r=>r.dateISO===currentDate()&&['attended','late'].includes(r.status)&&!!uni8PaySource(p,r));
+ if(!attended.length)return {ok:false,reason:'Attend a real shift before meeting your supervisor.'};
+ const today=attended[attended.length-1];p.mentorSessions=p.mentorSessions||{};
+ if(p.mentorSessions[today.id]||Object.keys(p.mentorSessions).length>=2)return {ok:false,reason:'Mentor guidance already attended for this shift or placement limit reached.'};
+ if(p.campus?(!uni3AtCampus()||uni3State().presence.roomId!==p.worksiteId):S.location!=='Internship Worksite')return {ok:false,reason:'Meet at the actual employer worksite.'};
+ if(S.energy<10||S.health<20||currentMinute()<p.shifts[today.id].endMinute||currentMinute()>p.shifts[today.id].endMinute+120)return {ok:false,reason:'Supervisor session must follow the completed shift with sufficient energy.'};
+ if(uni6SupportConflict(t,currentDate(),currentMinute(),currentMinute()+20))return {ok:false,reason:'Another confirmed obligation conflicts with this mentor meeting.'};
+ const id=`uni8-mentor-meet|${today.id}`,startMinute=currentMinute();advanceTime(20,{silent:true});S.energy=clamp(S.energy-4);
+ const result={schemaVersion:1,id,placementId:p.id,shiftId:today.id,mentorId:p.mentorId,employerId:p.employerId,worksiteId:p.worksiteId,dateISO:today.dateISO,startMinute,minutes:20,readinessPoints:1};p.mentorSessions[today.id]=result;
+ return {ok:true,receipt:result};
+}
+function uni8FinalReview(id){
+ const state=uni8State(),p=state.placements?.[id];if(!p||p.status!=='active'||state.evaluations[id])return {ok:false,reason:'There is no reviewable active placement.'};
+ const o=uni8OfferById(p.offerId);if(!o||!uni8MentorValid(p.mentorId,o)||p.employerId!==o.employerId||p.worksiteId!==o.worksiteId)return {ok:false,reason:'Cannot verify employer and supervisor.'};
+ const shifts=Object.values(p.shifts||{}),receipts=Object.values(p.attendance||{});
+ if(!shifts.length||shifts.some(sh=>sh.status==='scheduled')||currentDate()<p.endDate)return {ok:false,reason:'A final review requires the actual end of all scheduled shifts.'};
+ if(receipts.some(r=>!uni8PaySource(p,r))||receipts.reduce((v,r)=>v+Math.floor(r.minutes/60),0)!==p.hours)return {ok:false,reason:'Shift evidence is inconsistent; review blocked.'};
+ const attended=receipts.length,ontime=receipts.filter(r=>r.status==='attended').length,mentorCount=Object.keys(p.mentorSessions||{}).length,completed=attended>=Math.ceil(shifts.length*.75)&&p.missed<=Math.floor(shifts.length*.25);
+ const score=Math.max(0,Math.min(100,Math.round((attended/shifts.length)*65+(ontime/shifts.length)*20+mentorCount*7)));
+ const verdict=completed?(score>=85?'commended':'completed'):'incomplete';
+ const receipt={schemaVersion:1,id:`uni8-review|${p.id}`,placementId:p.id,mentorId:p.mentorId,employerId:p.employerId,majorId:p.majorId,termKey:p.termKey,worksiteId:p.worksiteId,reviewedAt:currentDate(),attendedShifts:attended,expectedShifts:shifts.length,verifiedHours:p.hours,mentorMeetings:mentorCount,score,verdict,academicCredits:0};
+ state.evaluations[id]=receipt;p.status=completed?'completed':'incomplete';p.closedAt=currentDate();return {ok:true,receipt};
+}
+function uni8PerformanceHtml(){const s=S.uni?.internshipUNI8;if(!s)return '';
+ const p=uni8ActivePlacement(),reviews=Object.values(s.evaluations||{}),amount=Object.values(s.payroll||{}).filter(r=>r.status==='paid').reduce((v,r)=>v+r.amount,0);
+ let controls='';if(p){const pending=Object.values(p.attendance||{}).filter(r=>r.paid===false).map(r=>`<button class="small" data-uni8-collect="${esc(r.id)}">Collect verified shift pay</button>`).join('');controls=`<button class="small" data-uni8-mentor="1">Meet supervisor after shift</button> <button class="small" data-uni8-review="${esc(p.id)}">Request final review</button>${pending}`;}
+ return `<section data-uni8-payreview="1"><h4>Internship payroll & reviews</h4><p>Verified paid income: ${money(amount)} · No academic credit or degree is granted. Unpaid placements do not produce cash.</p>${controls}<ul>${reviews.slice(-3).map(r=>`<li>${esc(r.verdict)} · ${r.verifiedHours} verified hours · score ${r.score}</li>`).join('')}</ul></section>`;
+}
+const uni8UniversityHtmlBefore85=universityHtml;
+universityHtml=function(...args){const html=uni8UniversityHtmlBefore85.apply(this,args);if(!S.uni?.internshipUNI8)return html;const at=html.lastIndexOf('</section>'),content=uni8PerformanceHtml();return at>=0?html.slice(0,at)+content+html.slice(at):html+content;};
+const uni8ClickBefore85=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni8Collect&&!d.uni8Mentor&&!d.uni8Review)return uni8ClickBefore85(b);
+ const r=d.uni8Collect?uni8CollectPay(d.uni8Collect):d.uni8Mentor?uni8MentorSession():uni8FinalReview(d.uni8Review);
+ toast(r.ok?'Internship source-backed record updated.':r.reason);if(r.ok){save();render();}return true;
+};
+// UNI.8.6 R1 — deterministic future career fair, RSVP, safe Calendar lifecycle ONLY.
+// Physical attendance, networking, recommendations, rewards and career readiness are NOT available.
+const UNI86_R1_VERSION=1,UNI86_R1_LIMIT=24;
+function uni86FairKey(t){return `uni86-fair|${t.institutionId}|${t.programId}|${t.majorId}|${t.termKey}|career-center`;}
+function uni86FairState(){const s=uni8State();if(!s)return null;
+ const f=s.fair;if(f.schemaVersion!==1||!f.records||typeof f.records!=='object'||Array.isArray(f.records)){
+  // Existing UNI.8.5 fair:{} is empty; invalid imports do not become claims of attendance.
+  if(Object.keys(f).length)return null; s.fair={schemaVersion:1,records:{}};
+ }return s.fair;
+}
+function uni86Term(){const t=uni8ConfirmedTerm(),c=t&&uni2Calendar();
+ return t&&c?.key===t.termKey&&t.opened<=currentDate()&&currentDate()<=t.termEnd&&
+ UNI1_PROGRAMS[t.programId]?.majorId===t.majorId&&UNI1_PROGRAMS[t.programId]?.institutionId===t.institutionId&&
+ !!CAMPUS[t.institutionId]&&!!uni3Rooms(t.institutionId).classroom?t:null;
+}
+function uni86Employers(t){const seen=new Set();return uni8OfferList(t).filter(o=>{
+ if(!o||o.institutionId!==t.institutionId||o.programId!==t.programId||o.termKey!==t.termKey||o.majorId!==t.majorId||typeof o.employerId!=='string'||!o.employerId||seen.has(o.employerId))return false;
+ seen.add(o.employerId);return true;
+ }).slice(0,4).map(o=>({employerId:o.employerId,name:o.employer,sourceOfferId:o.id,majorId:o.majorId}));}
+function uni86Overlap(a,b,c,d){return a<d&&b>c;}
+function uni86Conflict(t,date,start,end,excluding=null){
+ const campus=uni6SupportConflict(t,date,start,end,excluding);if(campus)return campus;
+ // Examine source truth, including obligations whose short-horizon Calendar events are absent.
+ const state=S.uni?.internshipUNI8;
+ for(const a of Object.values(state?.applications||{})){
+  const v=a?.interview;if(a?.status!=='interview-scheduled'||!v||a.termKey!==t.termKey||a.institutionId!==t.institutionId||v.dateISO!==date)continue;
+  if(uni86Overlap(v.startMinute,v.endMinute,start,end))return 'Verified internship interview overlaps the fair';
+ }
+ for(const p of Object.values(state?.placements||{})){
+  if(p?.status!=='active'||p.termKey!==t.termKey||p.institutionId!==t.institutionId)continue;
+  for(const sh of Object.values(p.shifts||{}))if(sh?.status==='scheduled'&&sh.dateISO===date&&uni86Overlap(sh.startMinute,sh.endMinute,start,end))return 'Signed internship shift overlaps the fair';
+ }
+ // The shared campus conflict helper may not include all UNI.6 planned/calendar event types;
+ // also examine independent typed Calendar obligations and canonical assessment records.
+ for(const e of S.calendar||[])if(e.id!==excluding&&!isTerminal(e.status)&&e.dateISO===date&&
+  uni86Overlap(e.startMinute,e.endMinute,start,end)&&(
+  e.type==='universityAssessmentUNI4'||
+  e.type==='universityCampusUNI6'||e.type==='universitySupportUNI5'||e.type==='universityClassUNI3'||e.required)){
+  // Ignore this fair's own reservation while rechecking it.
+  if(e.payload?.kind==='careerFair'&&e.id==='cal-'+uni86FairKey(t))continue;
+  return 'Calendar university or other required obligation overlaps';
+ }
+ return null;
+}
+function uni86FairValid(f,t=null){if(!f||f.schemaVersion!==1||typeof f!=='object'||!['announced','joined','declined','expired','missed','cancelled','attended','late'].includes(f.status))return false;
+ const p=UNI1_PROGRAMS[f.programId],term=S.uni?.termEnrollments?.terms?.[f.termKey],v=uni6Venues(f.institutionId).union;
+ if(!p||!term||!CAMPUS[f.institutionId]||!v||f.venueId!==v.id||f.id!==uni86FairKey(f)||p.institutionId!==f.institutionId||p.majorId!==f.majorId||
+ term.programId!==f.programId||term.majorId!==f.majorId||term.institutionId!==f.institutionId||term.termKey!==f.termKey||
+ !['confirmed','historical'].includes(term.status)||
+ (t&&(t.institutionId!==f.institutionId||t.programId!==f.programId||t.majorId!==f.majorId||t.termKey!==f.termKey)))return false;
+ if(typeof f.dateISO!=='string'||f.dateISO<term.opened||f.dateISO>term.termEnd||!uni3ValidDay(f.dateISO)||
+ !Number.isSafeInteger(f.startMinute)||!Number.isSafeInteger(f.endMinute)||
+ ![600,780,930].includes(f.startMinute)||f.endMinute!==f.startMinute+90||f.graceMinute!==f.startMinute+15||
+ typeof f.deadlineISO!=='string'||f.deadlineISO>=f.dateISO||f.deadlineISO<term.opened||!uni3ValidDay(f.deadlineISO)||
+ typeof f.plannedOn!=='string'||f.plannedOn>f.deadlineISO||f.plannedOn<term.opened)return false;
+ const actual=uni86Employers(term);
+ if(!Array.isArray(f.employers)||f.employers.length!==actual.length||actual.length<1||actual.some((o,i)=>JSON.stringify(o)!==JSON.stringify(f.employers[i])))return false;
+ return true;
+}
+function uni86FairDiscover(){const t=uni86Term();if(!t)return {ok:false,reason:'An adult currently confirmed valid university term is required.'};
+ const store=uni86FairState();if(!store)return {ok:false,reason:'Untrusted imported Career Fair state; cannot register.'};
+ const id=uni86FairKey(t),existing=store.records[id];
+ if(existing)return uni86FairValid(existing,t)?{ok:true,fair:existing}:{ok:false,reason:'Existing fair has invalid identity or schedule; registration blocked.'};
+ if(Object.keys(store.records).length>=UNI86_R1_LIMIT)return {ok:false,reason:'Bounded Career Fair history limit reached; no entries erased.'};
+ const venue=uni6Venues(t.institutionId).union,employers=uni86Employers(t);
+ if(!venue||!employers.length)return {ok:false,reason:'Campus Student Union or verified employer exhibitors unavailable.'};
+ // Finite deterministic 3–23-day search, earliest feasible weekday, stable slot preference.
+ for(let day=3;day<=23;day++){
+  const date=addDays(currentDate(),day),deadline=addDays(date,-2);
+  if(date>t.termEnd||deadline<currentDate()||!uni3ValidDay(date)||!uni3ValidDay(deadline))continue;
+  for(const start of [780,930,600]){
+   if(uni86Conflict(t,date,start,start+90))continue;
+   const f={schemaVersion:1,id,institutionId:t.institutionId,programId:t.programId,majorId:t.majorId,termKey:t.termKey,
+    dateISO:date,startMinute:start,endMinute:start+90,graceMinute:start+15,deadlineISO:deadline,
+    plannedOn:currentDate(),venueId:venue.id,venueName:venue.label,employers,status:'announced',decisionAt:null,calendarId:'cal-'+id};
+   store.records[id]=f;return {ok:true,fair:f};
+  }
+ }
+ return {ok:false,reason:'No conflict-free future weekday within 23 days and this confirmed term.'};
+}
+function uni86Event(f){return (S.calendar||[]).find(e=>e.id===f.calendarId)||null;}
+function uni86EventMatches(e,f){return !!e&&e.type===UNI8_CAL_TYPE&&e.id===f.calendarId&&e.sourceId===f.id&&e.payload?.kind==='careerFair'&&
+ e.payload.fairId===f.id&&e.payload.institutionId===f.institutionId&&e.payload.programId===f.programId&&
+ e.payload.majorId===f.majorId&&e.payload.termKey===f.termKey&&e.payload.venueId===f.venueId&&
+ e.dateISO===f.dateISO&&e.startMinute===f.startMinute&&e.endMinute===f.endMinute&&e.graceMinute===f.graceMinute&&e.location===f.venueId;}
+function uni86Decision(action){if(action!=='rsvp'&&action!=='decline')return {ok:false,reason:'Unknown action.'};
+ const t=uni86Term(),store=uni86FairState(),f=t&&store?.records?.[uni86FairKey(t)];
+ if(!t||!uni86FairValid(f,t)||f.status!=='announced')return {ok:false,reason:'No open, verified, undecided fair.'};
+ if(currentDate()>f.deadlineISO||currentDate()===f.deadlineISO&&currentMinute()>=1080)return {ok:false,reason:'The RSVP deadline has closed.'};
+ if(action==='rsvp'){
+  const conflict=uni86Conflict(t,f.dateISO,f.startMinute,f.endMinute,f.calendarId);
+  if(conflict)return {ok:false,reason:conflict};
+  if(uni86Event(f))return {ok:false,reason:'Conflicting or duplicate Calendar ID already exists.'};
+ }
+ f.status=action==='rsvp'?'joined':'declined';f.decisionAt={dateISO:currentDate(),minute:currentMinute()};
+ if(action==='rsvp')createCalendarEvent({id:f.calendarId,type:UNI8_CAL_TYPE,title:'University Career Fair · '+t.institutionId,
+  sourceId:f.id,dateISO:f.dateISO,startMinute:f.startMinute,endMinute:f.endMinute,graceMinute:f.graceMinute,
+  location:f.venueId,category:'Career',required:false,payload:{kind:'careerFair',fairId:f.id,institutionId:f.institutionId,programId:f.programId,majorId:f.majorId,termKey:f.termKey,venueId:f.venueId}});
+ return {ok:true,fair:f};
+}
+function uni86FairTick(e){if(e?.type!==UNI8_CAL_TYPE||e.payload?.kind!=='careerFair')return;
+ const store=uni86FairState(),f=store?.records?.[e.payload?.fairId],valid=uni86FairValid(f);
+ // R2: source-validated physical check-in is the only authority for terminal attendance.
+ if(valid&&['attended','late'].includes(f.status)){
+  if(typeof uni86R2AttendanceValid==='function'&&uni86R2AttendanceValid(f,e)){if(e.status!=='Attended')setCalendarStatus(e,'Attended','Verified physical Career Fair check-in');}
+  else if(!isTerminal(e.status)||e.status==='Attended')setCalendarStatus(e,'Cancelled','Unverified attendance provenance');
+  return;
+ }
+ if(!valid||!uni86EventMatches(e,f)||f.status!=='joined'){
+  if(!isTerminal(e.status))setCalendarStatus(e,'Cancelled',valid?'Career Fair RSVP no longer active':'Invalid Career Fair source');return;
+ }
+ if(isTerminal(e.status))return;
+ // R1 has no check-in; an in-window Due state is informational only.
+ if(currentDate()>f.dateISO||currentDate()===f.dateISO&&currentMinute()>f.graceMinute){
+  f.status='missed';setCalendarStatus(e,'Missed','Career Fair not attended; physical attendance reserved for R2');return;
+ }
+ const t=uni86Term();if(!t||t.termKey!==f.termKey||uni86Conflict(t,f.dateISO,f.startMinute,f.endMinute,f.calendarId)){
+  f.status='cancelled';setCalendarStatus(e,'Cancelled','Student term invalidated or incompatible obligation now overlaps');return;
+ }
+ if(currentDate()===f.dateISO&&currentMinute()>=f.startMinute&&e.status==='Scheduled')setCalendarStatus(e,'Due','Career Fair window open; check-in unavailable until R2');
+}
+// Branch first; pre-existing interview/shift dispatch stays untouched.
+const uni86PreviousInternshipTick=uni8InterviewTick;
+uni8InterviewTick=function(e){if(e?.type!==UNI8_CAL_TYPE)return;
+ if(e.payload?.kind==='careerFair')return uni86FairTick(e);
+ if(e.payload?.kind==='interview'||e.payload?.kind==='shift')return uni86PreviousInternshipTick(e);
+ setCalendarStatus(e,'Cancelled','Unsupported internship Calendar payload');
+};
+function uni86FairReconcile(){const store=uni86FairState();if(!store)return;
+ for(const f of Object.values(store.records)){
+  if(!uni86FairValid(f))continue;
+  if(f.status==='announced'&&(currentDate()>f.deadlineISO||currentDate()===f.deadlineISO&&currentMinute()>=1080))f.status='expired';
+  if(['attended','late'].includes(f.status)){const e=uni86Event(f);if(e)uni86FairTick(e);continue;}
+  if(f.status==='joined'){
+   const e=uni86Event(f);
+   if(e&&isTerminal(e.status)){
+    // R1 cannot authorize attendance; a forged terminal Calendar status must not imply it.
+    f.status=e.status==='Missed'?'missed':'cancelled';
+    if(e.status==='Attended'||e.status==='Completed')setCalendarStatus(e,'Cancelled','R1 does not provide physical Career Fair attendance');
+   }else if(e)uni86FairTick(e);
+   else f.status='cancelled';
+  }
+  if(f.status!=='joined'){const e=uni86Event(f);if(e&&!isTerminal(e.status))setCalendarStatus(e,'Cancelled','Fair no longer joined');}
+ }
+}
+// Settle announced deadlines on Calendar/time progression even if the Career Center UI is never opened.
+const uni86CalendarBeforeR1=processCalendar;
+processCalendar=function(...args){const result=uni86CalendarBeforeR1.apply(this,args);if(S?.uni?.internshipUNI8?.fair?.schemaVersion===1)uni86FairReconcile();return result;};
+function uni86FairHtml(){const t=uni86Term();if(!t)return `<section data-uni86-r1="1"><h4>Career Fair &amp; Networking</h4><p>Confirm an adult university term to discover the Career Fair. Physical attendance and professional networking require a confirmed fair and real on-campus presence.</p></section>`;
+ const result=uni86FairDiscover();if(!result.ok)return `<section data-uni86-r1="1"><h4>Career Fair &amp; Networking</h4><p>Unavailable: ${esc(result.reason)}</p></section>`;
+ uni86FairReconcile();const f=result.fair,venue=uni6Venues(f.institutionId).union;
+ const can=f.status==='announced'&&currentDate()<=f.deadlineISO&&!(currentDate()===f.deadlineISO&&currentMinute()>=1080),reason=can?uni86Conflict(t,f.dateISO,f.startMinute,f.endMinute):null;
+ return `<section data-uni86-r1="1"><h4>Career Fair &amp; Networking</h4><p>${esc(t.institutionId)} · ${esc(MAJORS[t.majorId]?.label||t.majorId)} · ${esc(t.termKey)}</p>
+ <p><b>${esc(f.status)}</b> · ${esc(f.dateISO)} ${timeLabel(f.startMinute)}–${timeLabel(f.endMinute)} · ${esc(venue.label)} (${esc(venue.id)})</p>
+ <p>RSVP deadline: ${esc(f.deadlineISO)} at 18:00. Employer desks: ${f.employers.map(x=>esc(x.name)).join(', ')}.</p>
+ ${can?`<button class="small" data-uni86-rsvp="1" ${reason?'disabled':''}>RSVP</button> <button class="small ghost" data-uni86-decline="1">Decline</button>`:''}
+ ${reason?`<p>RSVP blocked: ${esc(reason)}</p>`:''}<p>Attend on campus only after RSVP, using the physical Student Union check-in and employer-desk controls below. No job, pay, credit, skill or reference is awarded by RSVP.</p></section>`;
+}
+const uni86HtmlBeforeR1=universityHtml;
+universityHtml=function(...args){const html=uni86HtmlBeforeR1.apply(this,args);if(!S?.uni?.enrolled)return html;
+ const content=uni86FairHtml(),idx=html.lastIndexOf('</section>');return idx>=0?html.slice(0,idx)+content+html.slice(idx):html+content;
+};
+const uni86ClickBeforeR1=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni86Rsvp&&!d.uni86Decline)return uni86ClickBeforeR1(b);
+ const r=uni86Decision(d.uni86Rsvp?'rsvp':'decline');toast(r.ok?'Career Fair decision saved.':r.reason);if(r.ok){save();render();}return true;
+};
+// UNI.8.6-R2 ONLY: authentic campus commute/Student Union check-in and bounded informational networking.
+// No recommendation, readiness, employment, grades/credits or financial awards.
+const UNI86_R2_CHECK_MINUTES=7, UNI86_R2_NETWORK_MINUTES=12;
+function uni86R2AttendanceValid(f,e=uni86Event(f)){
+ if(!f||!['attended','late'].includes(f.status)||!uni86FairValid(f)||!uni86EventMatches(e,f)||!['Attending','Attended'].includes(e.status))return false;
+ const r=f.attendance;if(!r||r.schemaVersion!==1||r.source!=='uni86-r2-physical-check-in'||
+  r.id!==f.id+'|physical-check-in'||r.fairId!==f.id||r.calendarId!==f.calendarId||
+  r.institutionId!==f.institutionId||r.programId!==f.programId||r.majorId!==f.majorId||r.termKey!==f.termKey||
+  r.venueId!==f.venueId||r.dateISO!==f.dateISO||
+  !Number.isSafeInteger(r.checkInMinute)||r.checkInMinute<f.startMinute||r.checkInMinute>f.graceMinute||
+  r.timeSpentMinutes!==UNI86_R2_CHECK_MINUTES||r.lateMinutes!==r.checkInMinute-f.startMinute||
+  r.status!==(r.lateMinutes>0?'late':'attended')||f.status!==r.status||
+  typeof r.ownerKey!=='string'||!r.ownerKey||r.ownerKey!==uni86R2Owner())return false;
+ // Source-backed local action provenance: the canonical event was explicitly checked in,
+ // not merely imported as Attended without an action transition.
+ return Array.isArray(e.history)&&e.history.some(h=>h.to==='Attending'&&h.dateISO===r.dateISO&&h.minute===r.checkInMinute&&h.reason==='UNI86-R2 physical Student Union check-in');
+}
+function uni86R2Owner(){return String(S.playerGuid||S.id||[S.name,S.dob].join('|'));}
+function uni86R2NetworkValid(f,r,employer){return !!r&&!!employer&&uni86R2AttendanceValid(f)&&r.schemaVersion===1&&r.source==='uni86-r2-employer-desk'&&
+ r.id===`${f.id}|employer|${employer.employerId}`&&r.fairId===f.id&&r.employerId===employer.employerId&&r.sourceOfferId===employer.sourceOfferId&&
+ r.institutionId===f.institutionId&&r.programId===f.programId&&r.majorId===f.majorId&&r.termKey===f.termKey&&r.dateISO===f.dateISO&&
+ r.venueId===f.venueId&&r.calendarId===f.calendarId&&r.ownerKey===uni86R2Owner()&&r.timeSpentMinutes===UNI86_R2_NETWORK_MINUTES&&
+ Number.isSafeInteger(r.minute)&&r.minute>=f.startMinute&&r.minute+UNI86_R2_NETWORK_MINUTES<=f.endMinute&&r.minute>=f.attendance.checkInMinute+UNI86_R2_CHECK_MINUTES;}
+function uni86R2Gate(action,employerId=null){
+ const t=uni86Term(),f=t&&uni86FairState()?.records?.[uni86FairKey(t)],e=f&&uni86Event(f);
+ if(!t||!uni86FairValid(f,t)||!uni86EventMatches(e,f))return {ok:false,reason:'A valid current confirmed term, source fair and matching Calendar are required.'};
+ const completed=['attended','late'].includes(f.status)&&uni86R2AttendanceValid(f,e);
+ if((action==='network'&&!completed)||(action!=='network'&&f.status!=='joined'))return {ok:false,reason:'A genuine joined RSVP or verified physical check-in is required.'};
+ if(action==='network'&&e.status!=='Attended')return {ok:false,reason:'Career Fair attendance has not been confirmed in Calendar.'};
+ if(action!=='network'&&(!['Scheduled','Due'].includes(e.status)||isTerminal(e.status)))return {ok:false,reason:'The original Career Fair Calendar entry is not active.'};
+ if(currentDate()!==f.dateISO)return {ok:false,reason:'Career Fair actions are available only on the scheduled date.'};
+ const minute=currentMinute();
+ if(action==='commute'){
+  const commuteMinutes=S.housing?.type==='dorm'?8:S.housing?.type==='parents'?35:25;
+  if(minute<f.startMinute-160||minute+commuteMinutes+7>f.graceMinute)return {ok:false,reason:'Arrive within the fair day travel window before check-in closes.'};
+  if(S.location!=='Home')return {ok:false,reason:'Commute starts from Home using the university travel system.'};
+  return {ok:true,t,f,e};
+ }
+ if(!uni3AtCampus()||uni3State()?.presence?.institutionId!==f.institutionId)return {ok:false,reason:'Travel to your own university campus first.'};
+ if(action==='walk'){
+  if(minute<f.startMinute-120||minute+7>f.graceMinute)return {ok:false,reason:'Walk only within two hours of the fair, finishing by the check-in cutoff.'};
+  if(uni3State().presence.roomId===f.venueId)return {ok:false,reason:'You are already at the Student Union.'};
+  return {ok:true,t,f,e};
+ }
+ if(uni3State().presence.roomId!==f.venueId||uni6Venues(t.institutionId).union?.id!==f.venueId)return {ok:false,reason:'Walk to the exact Student Union venue before participating.'};
+ if(action==='checkin'){
+  if(minute<f.startMinute||minute>f.graceMinute||minute+UNI86_R2_CHECK_MINUTES>=f.endMinute)return {ok:false,reason:'Check-in is available from opening until the 15-minute grace cutoff.'};
+  if(f.attendance||f.networking)return {ok:false,reason:'Check-in receipt already exists or imported state is contradictory.'};
+  if(!Number.isFinite(S.health)||!Number.isFinite(S.energy)||S.health<20||S.energy<12)return {ok:false,reason:'Health or energy too low for Career Fair attendance.'};
+  const conflict=uni86Conflict(t,f.dateISO,minute,minute+UNI86_R2_CHECK_MINUTES,f.calendarId);
+  if(conflict)return {ok:false,reason:conflict};
+  return {ok:true,t,f,e};
+ }
+ if(action==='network'){
+  if(typeof employerId!=='string'||employerId.length>160)return {ok:false,reason:'Invalid employer desk.'};
+  const employer=f.employers.find(x=>x.employerId===employerId);
+  if(!employer)return {ok:false,reason:'Employer desk is not in the original fair catalog.'};
+  if(f.networking&&(!f.networking||typeof f.networking!=='object'||Array.isArray(f.networking)||Object.keys(f.networking).length>f.employers.length))return {ok:false,reason:'Invalid imported networking ledger.'};
+  if(Object.prototype.hasOwnProperty.call(f.networking||{},employerId))return {ok:false,reason:'This employer has already been visited; repeated contact is not awarded.'};
+  if(minute<f.attendance.checkInMinute+UNI86_R2_CHECK_MINUTES||minute<f.startMinute||minute+UNI86_R2_NETWORK_MINUTES>f.endMinute)return {ok:false,reason:'Insufficient active fair time for a real employer conversation.'};
+  if(S.energy<8||S.health<20)return {ok:false,reason:'Insufficient health or energy for networking.'};
+  const conflict=uni86Conflict(t,f.dateISO,minute,minute+UNI86_R2_NETWORK_MINUTES,f.calendarId);
+  if(conflict)return {ok:false,reason:conflict};
+  return {ok:true,t,f,e,employer};
+ }
+ return {ok:false,reason:'Unknown Career Fair physical action.'};
+}
+function uni86R2Travel(){const g=uni86R2Gate('commute');if(!g.ok)return g;
+ const r=uni3Travel('campus');return r.ok&&uni3AtCampus()&&uni3State().presence.institutionId===g.f.institutionId?{ok:true,minutes:r.minutes}:{ok:false,reason:r.reason||'Campus commute did not establish valid university presence.'};}
+function uni86R2Walk(){const g=uni86R2Gate('walk');if(!g.ok)return g;
+ const r=uni6CampusWalk(g.f.venueId,g.f.dateISO,g.f.startMinute,g.f.endMinute);
+ return r.ok&&uni3AtCampus()&&uni3State().presence.roomId===g.f.venueId?{ok:true,minutes:r.minutes}:{ok:false,reason:r.reason||'Student Union room was not reached.'};}
+function uni86R2CheckIn(){const g=uni86R2Gate('checkin');if(!g.ok)return g;
+ const {f,e}=g,minute=currentMinute(),late=minute>f.startMinute;
+ const r={schemaVersion:1,id:f.id+'|physical-check-in',source:'uni86-r2-physical-check-in',fairId:f.id,calendarId:f.calendarId,
+  ownerKey:uni86R2Owner(),institutionId:f.institutionId,programId:f.programId,majorId:f.majorId,termKey:f.termKey,
+  venueId:f.venueId,dateISO:f.dateISO,checkInMinute:minute,status:late?'late':'attended',lateMinutes:minute-f.startMinute,
+  timeSpentMinutes:UNI86_R2_CHECK_MINUTES};
+ // Commit before advancing time: processCalendar may cross +15 grace during check-in.
+ f.attendance=r;f.status=r.status;setCalendarStatus(e,'Attending','UNI86-R2 physical Student Union check-in');
+ advanceTime(UNI86_R2_CHECK_MINUTES,{silent:true});
+ uni86FairTick(e);S.energy=clamp(S.energy-2);
+ return uni86R2AttendanceValid(f,e)?{ok:true,receipt:r}:{ok:false,reason:'Physical receipt failed after Calendar progression.'};
+}
+function uni86R2Network(employerId){const g=uni86R2Gate('network',employerId);if(!g.ok)return g;
+ const {f,employer}=g,minute=currentMinute();const r={schemaVersion:1,id:`${f.id}|employer|${employer.employerId}`,source:'uni86-r2-employer-desk',
+  fairId:f.id,calendarId:f.calendarId,ownerKey:uni86R2Owner(),employerId:employer.employerId,sourceOfferId:employer.sourceOfferId,
+  institutionId:f.institutionId,programId:f.programId,majorId:f.majorId,termKey:f.termKey,venueId:f.venueId,
+  dateISO:f.dateISO,minute,timeSpentMinutes:UNI86_R2_NETWORK_MINUTES};
+ if(!f.networking)f.networking={};f.networking[employer.employerId]=r;
+ advanceTime(UNI86_R2_NETWORK_MINUTES,{silent:true});S.energy=clamp(S.energy-2);
+ return {ok:true,receipt:r};
+}
+function uni86R2Html(){const t=uni86Term(),f=t&&uni86FairState()?.records?.[uni86FairKey(t)];if(!f||!uni86FairValid(f,t))return '';
+ const r=f.attendance&&uni86R2AttendanceValid(f),joined=f.status==='joined',verified=r&&['attended','late'].includes(f.status);
+ const status=verified?(f.status==='late'?'Arrived late — verified attendance':'Attended — verified attendance'):esc(f.status);
+ const explain=(action,employerId)=>{const g=uni86R2Gate(action,employerId);return g.ok?'':`<small>${esc(g.reason)}</small>`;};
+ const btn=(attr,label,gate)=>{const g=uni86R2Gate(gate);return `<button class="small" data-uni86-${attr}="1" ${g.ok?'':'disabled'}>${esc(label)}</button>${g.ok?'':`<small>${esc(g.reason)}</small>`}`;};
+ const booths=(verified?f.employers:[]).map(x=>{const had=Object.prototype.hasOwnProperty.call(f.networking||{},x.employerId),g=uni86R2Gate('network',x.employerId);
+  return `<article class="uni8-offer"><b>${esc(x.name)}</b> · <small>${esc(x.employerId)}</small><p>Verified source offer ${esc(x.sourceOfferId)}</p>${had?'<p>Already visited — no duplicate contact</p>':`<button class="small" data-uni86-network="${esc(x.employerId)}" ${g.ok?'':'disabled'}>Discuss Role (12 min)</button>${g.ok?'':`<small>${esc(g.reason)}</small>`}`}</article>`;}).join('');
+ return `<section data-uni86-r2="1"><h5>Student Union — Physical Career Fair</h5><p>Status: ${status}. Physical presence and a matching Calendar are required. Check-in takes 7 minutes, each employer conversation takes 12 minutes.</p>
+ ${joined?`${btn('commute','Commute to University','commute')} ${btn('walk','Walk to Student Union (7 min)','walk')} ${btn('checkin','Check in at Career Fair (7 min)','checkin')}`:''}
+ ${verified?`<p>Physical check-in ${timeLabel(f.attendance.checkInMinute)} · ${f.status==='late'?'late':'on time'} · ${esc(f.venueId)}</p><h5>Employer Desks</h5>${booths}`:''}
+ <p>RSVP alone does not grant attendance. No jobs, internships, references, grades, credits, pay, or new People contacts are awarded.</p></section>`;
+}
+// Keep the original R1 Career Center UI, add R2 controls in the same University section only.
+const uni86HtmlBeforeR2=universityHtml;
+universityHtml=function(...args){const html=uni86HtmlBeforeR2.apply(this,args);if(!S?.uni?.enrolled)return html;
+ const panel=uni86R2Html(),at=html.lastIndexOf('</section>');return at>=0?html.slice(0,at)+panel+html.slice(at):html+panel;};
+const uni86ClickBeforeR2=uniClick;
+uniClick=function(b){const d=b?.dataset||{};
+ if(!d.uni86Commute&&!d.uni86Walk&&!d.uni86Checkin&&!d.uni86Network)return uni86ClickBeforeR2(b);
+ const result=d.uni86Commute?uni86R2Travel():d.uni86Walk?uni86R2Walk():d.uni86Checkin?uni86R2CheckIn():uni86R2Network(d.uni86Network);
+ toast(result.ok?'Career Fair action recorded.':result.reason);if(result.ok){save();render();}return true;
+};
+// UNI.8.6-R3 ONLY — verified completed-placement mentor references at an independent physical Career Center.
+// The R4 hostile-import reconciliation is NOT performed here. No academic, money or career awards.
+const UNI86_R3_WALK=7, UNI86_R3_CONSULT=20, UNI86_R3_LIMIT=24;
+function uni86R3Venue(sid){return CAMPUS[sid]&&uni3Rooms(sid).classroom?
+ {id:`${sid}-uni86-career-center`,label:'University Career Center',institutionId:sid,walk:UNI86_R3_WALK}:null;}
+function uni86R3References(){const f=S?.uni?.internshipUNI8?.fair;return f?.schemaVersion===1&&f.records&&typeof f.records==='object'&&!Array.isArray(f.records)&&f.references&&typeof f.references==='object'&&!Array.isArray(f.references)?f.references:null;}
+function uni86R3WalkId(p,date){return `uni86-walk|${p.id}|${date}`;}
+function uni86R3Walks(){const f=S?.uni?.internshipUNI8?.fair;return f?.referenceWalks&&typeof f.referenceWalks==='object'&&!Array.isArray(f.referenceWalks)?f.referenceWalks:null;}
+function uni86R3WalkValid(w,p,term,venue){return !!w&&w.schemaVersion===1&&w.source==='uni86-r3-campus-walk'&&w.id===uni86R3WalkId(p,w.dateISO)&&w.ownerKey===uni86R2Owner()&&w.placementId===p.id&&w.institutionId===venue.institutionId&&w.venueId===venue.id&&w.termKey===term.termKey&&w.walkMinutes===UNI86_R3_WALK&&Number.isSafeInteger(w.minute)&&w.minute>=540&&w.minute+UNI86_R3_WALK<=1020&&w.arrivedMinute===w.minute+UNI86_R3_WALK&&uni3ValidDay(w.dateISO)&&['arrived','used'].includes(w.status);}
+function uni86R3ShiftCalendar(p,e){
+ const id='cal-'+e.id,live=(S.calendar||[]).filter(v=>v.id===id);
+ if(live.length>1)return false;
+ if(live.length===1){const ev=live[0];return ev.type===UNI8_CAL_TYPE&&ev.sourceId===e.id&&ev.dateISO===e.dateISO&&ev.startMinute===e.startMinute&&ev.endMinute===e.endMinute&&ev.location===p.worksiteId&&ev.payload?.kind==='shift'&&ev.payload?.placementId===p.id&&ev.payload?.offerId===p.offerId&&ev.payload?.worksiteId===p.worksiteId&&ev.payload?.termKey===p.termKey&&ev.status==='Attended';}
+ // H13 saves legitimately prune completed Calendar entries to the canonical archive.
+ // Archive preserves only event id/type/date/status, not its original payload. Require
+ // original signed shift + matching attended receipt independently before trusting this.
+ const archived=(S.archive?.calendar||[]).filter(v=>v.id===id);
+ return archived.length===1&&archived[0].type===UNI8_CAL_TYPE&&archived[0].dateISO===e.dateISO&&archived[0].status==='Attended';
+}
+function uni86R3History(p){
+ const s=S?.uni?.internshipUNI8,u=S?.uni;
+ if(!p||!s||!u||p.schemaVersion!==1||p.status!=='completed'||p.id!==`uni8-place|${p.offerId}`||typeof p.termKey!=='string'||!/^\d{4}-[12]$/.test(p.termKey))return null;
+ const t=u.termEnrollments?.terms?.[p.termKey],pr=t&&UNI1_PROGRAMS[t.programId];
+ if(!t||!uni2ValidRecord(p.termKey,t,u)||!['confirmed','historical'].includes(t.status)||!pr||
+  t.termKey!==p.termKey||t.programId!==p.programId||t.institutionId!==p.institutionId||t.majorId!==p.majorId||
+  pr.institutionId!==t.institutionId||pr.majorId!==t.majorId||!CAMPUS[t.institutionId]||p.institutionId!==uni1InstitutionId(u,S))return null;
+ const o=uni8OfferList(t).find(v=>v.id===p.offerId),a=s.applications?.[p.offerId],iv=a&&s.interviews?.[a.interviewId];
+ if(!o||!a||a.schemaVersion!==1||a.id!==`uni8-app|${p.offerId}`||a.offerId!==p.offerId||p.appId!==a.id||a.status!=='accepted'||a.placementId!==p.id||
+  a.institutionId!==p.institutionId||a.programId!==p.programId||a.majorId!==p.majorId||a.termKey!==p.termKey||
+  a.interviewId!==`uni8-interview|${p.offerId}`||a.interview?.result!=='offered'||a.interview?.completed!==true||
+  !iv||iv.id!==a.interviewId||iv.appId!==a.id||iv.decision!=='offered'||!['attended','late'].includes(iv.status)||
+  iv.venueId!==o.worksiteId||iv.dateISO!==a.interview.dateISO||
+  p.employerId!==o.employerId||p.worksiteId!==o.worksiteId||p.campus!==o.campus||p.worksite!==o.worksite||
+  p.paid!==o.paid||p.payPerHour!==o.payPerHour||p.agreedWeeks!==o.durationWeeks||
+  p.mentorId!==uni8MentorId(o)||!uni8MentorValid(p.mentorId,o)||!Number.isSafeInteger(p.hours)||p.hours<0)return null;
+ if(!uni3ValidDay(a.interview.dateISO)||typeof p.signedAt!=='string'||p.signedAt<a.interview.dateISO||p.signedAt>t.termEnd)return null;
+ // Reconstruct the signed schedule from the original historical catalog and signing date,
+ // never from the present term or from the active-only payroll validator.
+ const expected=[];for(let d=addDays(p.signedAt,2);expected.length<o.durationWeeks&&d<=addDays(p.signedAt,70)&&d<=t.termEnd;d=addDays(d,1)){
+  if(parseISO(d).getUTCDay()===o.weeklyDay)expected.push({id:`uni8-shift|${o.id}|${d}`,dateISO:d,startMinute:o.startMinute,endMinute:o.endMinute,worksiteId:o.worksiteId});
+ }
+ if(expected.length<Math.min(2,o.durationWeeks)||p.endDate!==expected[expected.length-1].dateISO||
+  !p.shifts||Object.keys(p.shifts).length!==expected.length||!p.attendance||
+  Object.keys(p.attendance).length>expected.length||!Number.isSafeInteger(p.missed)||p.missed<0)return null;
+ let hours=0,attended=0,ontime=0,missed=0;
+ for(const e of expected){const sh=p.shifts[e.id],r=p.attendance[e.id],ev=(S.calendar||[]).find(x=>x.id==='cal-'+e.id);
+  if(!sh||sh.id!==e.id||sh.dateISO!==e.dateISO||sh.startMinute!==e.startMinute||sh.endMinute!==e.endMinute||sh.worksiteId!==e.worksiteId||!['attended','late','missed','cancelled'].includes(sh.status))return null;
+  if(r){if(!['attended','late'].includes(sh.status)||r.schemaVersion!==1||r.id!==e.id||r.status!==sh.status||r.placementId!==p.id||r.mentorId!==p.mentorId||r.employerId!==p.employerId||r.worksiteId!==p.worksiteId||r.termKey!==p.termKey||r.dateISO!==e.dateISO||
+    !Number.isSafeInteger(r.lateMinutes)||r.lateMinutes<0||r.lateMinutes>15||r.status!==(r.lateMinutes?'late':'attended')||r.minutes!==e.endMinute-e.startMinute-r.lateMinutes||r.minutes<30||
+    !uni86R3ShiftCalendar(p,e))return null;
+    attended++;if(r.status==='attended')ontime++;hours+=Math.floor(r.minutes/60);
+  }else{if(sh.status==='missed')missed++;else if(sh.status!=='cancelled')return null;
+    if(!ev||ev.sourceId!==e.id||ev.type!==UNI8_CAL_TYPE||!['Missed','Cancelled'].includes(ev.status))return null;
+  }
+ }
+ if(!attended||hours!==p.hours||missed!==p.missed)return null;
+ const sessions=p.mentorSessions||{};if(!sessions||typeof sessions!=='object'||Array.isArray(sessions)||Object.keys(sessions).length<1||Object.keys(sessions).length>2)return null;
+ for(const [shiftId,m] of Object.entries(sessions)){const sh=p.shifts[shiftId],r=p.attendance[shiftId];if(!sh||!r||!m||m.schemaVersion!==1||m.id!==`uni8-mentor-meet|${shiftId}`||m.placementId!==p.id||m.shiftId!==shiftId||m.mentorId!==p.mentorId||m.employerId!==p.employerId||m.worksiteId!==p.worksiteId||m.dateISO!==sh.dateISO||m.minutes!==20||m.readinessPoints!==1||!Number.isSafeInteger(m.startMinute)||m.startMinute<sh.endMinute||m.startMinute>sh.endMinute+120||m.startMinute+20>1440)return null;}
+ const review=s.evaluations?.[p.id],mentorCount=Object.keys(sessions).length,completed=attended>=Math.ceil(expected.length*.75)&&missed<=Math.floor(expected.length*.25),score=Math.max(0,Math.min(100,Math.round(attended/expected.length*65+ontime/expected.length*20+mentorCount*7))),verdict=completed?(score>=85?'commended':'completed'):'incomplete';
+ if(!completed||!review||review.schemaVersion!==1||review.id!==`uni8-review|${p.id}`||review.placementId!==p.id||review.mentorId!==p.mentorId||review.employerId!==p.employerId||review.majorId!==p.majorId||review.termKey!==p.termKey||review.worksiteId!==p.worksiteId||review.attendedShifts!==attended||review.expectedShifts!==expected.length||review.verifiedHours!==hours||review.mentorMeetings!==mentorCount||review.score!==score||review.verdict!==verdict||!['completed','commended'].includes(review.verdict)||review.academicCredits!==0||!/^\d{4}-\d\d-\d\d$/.test(review.reviewedAt)||review.reviewedAt<p.endDate||review.reviewedAt>currentDate()||p.closedAt!==review.reviewedAt)return null;
+ return {placement:p,offer:o,term:t,review,mentor:npcById(p.mentorId),hours,shifts:attended,mentorCount,shiftIds:expected.filter(x=>p.attendance[x.id]).map(x=>x.id).sort(),mentorIds:Object.keys(sessions).sort()};
+}
+function uni86R3ReferenceId(p){return `uni86-ref|${p.id}`;}
+function uni86R3ReferenceValid(r,allowPending=false){
+ if(!r||r.schemaVersion!==1||r.source!=='uni86-r3-verified-mentor'||typeof r.placementId!=='string')return false;
+ const h=uni86R3History(S?.uni?.internshipUNI8?.placements?.[r.placementId]);if(!h)return false;
+ const {placement:p,review:v,offer:o}=h,venue=uni86R3Venue(p.institutionId),term=S.uni?.termEnrollments?.terms?.[r.visitTermKey];
+ const walk=uni86R3Walks()?.[r.walkId];
+ if(!venue||!term||!['confirmed','historical'].includes(term.status)||!uni2ValidRecord(r.visitTermKey,term,S.uni)||
+  term.institutionId!==p.institutionId||term.programId!==p.programId||term.majorId!==p.majorId||
+  !uni86R3WalkValid(walk,p,term,venue)||walk.id!==r.walkId||walk.dateISO!==r.dateISO||walk.minute!==r.walkStartMinute||walk.arrivedMinute>r.minute||walk.status!==(allowPending?'arrived':'used')||
+  r.id!==uni86R3ReferenceId(p)||r.ownerKey!==uni86R2Owner()||r.mentorId!==p.mentorId||r.employerId!==p.employerId||r.institutionId!==p.institutionId||r.programId!==p.programId||r.majorId!==p.majorId||r.originalTermKey!==p.termKey||r.offerId!==o.id||r.reviewId!==v.id||r.verdict!==v.verdict||r.verifiedHours!==v.verifiedHours||r.venueId!==venue.id||r.nonCredit!==true||r.minutes!==UNI86_R3_CONSULT||r.walkMinutes!==UNI86_R3_WALK||
+  !Number.isSafeInteger(r.minute)||r.minute<540||r.minute+UNI86_R3_CONSULT>1020||!Number.isSafeInteger(r.walkStartMinute)||r.walkStartMinute+UNI86_R3_WALK>r.minute||
+  !uni3ValidDay(r.dateISO)||r.dateISO<v.reviewedAt||r.dateISO<term.opened||r.dateISO>term.termEnd||r.dateISO>currentDate()||
+  !Array.isArray(r.shiftIds)||JSON.stringify(r.shiftIds)!==JSON.stringify(h.shiftIds)||!Array.isArray(r.mentorSessionShiftIds)||JSON.stringify(r.mentorSessionShiftIds)!==JSON.stringify(h.mentorIds))return false;
+ return true;
+}
+function uni86R3Gate(action,placementId){
+ const t=uni86Term(),s=S?.uni?.internshipUNI8,venue=t&&uni86R3Venue(t.institutionId),refs=uni86R3References(),p=s?.placements?.[placementId],h=uni86R3History(p);
+ if(s&&(!s.fair||typeof s.fair!=='object'||Array.isArray(s.fair)||s.fair.schemaVersion!==1&&Object.keys(s.fair).length||s.fair.schemaVersion===1&&(!s.fair.records||typeof s.fair.records!=='object'||Array.isArray(s.fair.records))))return {ok:false,reason:'Malformed Career Fair state cannot authorize a recommendation.'};
+ if(!t||!venue||!s||S.age<18||!S.uni?.enrolled)return {ok:false,reason:'Active adult confirmed university enrollment is required (alumni/withdrawn/transferred access is unavailable).'};
+ if(!h||p.institutionId!==t.institutionId||p.programId!==t.programId||p.majorId!==t.majorId)return {ok:false,reason:'No source-verified completed placement and matching positive supervisor review for your enrolled program.'};
+ if(refs===null){if(s.fair?.references!==undefined)return {ok:false,reason:'Malformed imported reference section; unavailable until separately reconciled.'};}
+ else if(Object.prototype.hasOwnProperty.call(refs,uni86R3ReferenceId(p)))return {ok:false,reason:'Recommendation source already recorded; duplicate requests are blocked.'};
+ if(refs&&Object.keys(refs).length>=UNI86_R3_LIMIT)return {ok:false,reason:'Career Center reference history is full.'};
+ const minute=currentMinute(),date=currentDate(),weekday=parseISO(date).getUTCDay(),end=minute+(action==='walk'?UNI86_R3_WALK:UNI86_R3_CONSULT);
+ if(!uni3ValidDay(date)||weekday===0||weekday===6||minute<540||end>1020)return {ok:false,reason:'Career Center consultation is available on university weekdays 09:00–17:00.'};
+ if(S.energy<14||S.health<25)return {ok:false,reason:'Insufficient energy or health for Career Center consultation.'};
+ if(!uni3AtCampus()||S.uni?.academicSchedule?.presence?.institutionId!==venue.institutionId)return {ok:false,reason:'Commute to your own university campus using UNI.3 first.'};
+ if(action==='walk'&&S.uni.academicSchedule.presence.roomId===venue.id)return {ok:false,reason:'Already inside the verified Career Center.'};
+ if(action==='request'&&S.uni.academicSchedule.presence.roomId!==venue.id)return {ok:false,reason:'Walk into your university Career Center before requesting a recommendation.'};
+ if(action==='request'){const walks=uni86R3Walks(),w=walks?.[uni86R3WalkId(p,date)];if(!uni86R3WalkValid(w,p,t,venue)||w.status!=='arrived'||w.arrivedMinute>minute)return {ok:false,reason:'A genuine dated university Career Center walk receipt is required.'};}
+ if(action==='walk'&&s.fair?.referenceWalks!==undefined&&!uni86R3Walks())return {ok:false,reason:'Malformed Career Center walk history.'};
+ if(action==='walk'&&Object.keys(uni86R3Walks()||{}).length>=UNI86_R3_LIMIT)return {ok:false,reason:'Career Center walk history limit reached.'};
+ if(action==='walk'&&uni86R3Walks()?.[uni86R3WalkId(p,date)])return {ok:false,reason:'Already walked to Career Center for this placement today.'};
+ if(!['walk','request'].includes(action))return {ok:false,reason:'Unknown Career Center action.'};
+ const conflict=uni86Conflict(t,date,minute,end);if(conflict)return {ok:false,reason:'Another university or Calendar obligation conflicts: '+conflict};
+ return {ok:true,term:t,venue,history:h,date,minute};
+}
+function uni86R3Walk(placementId){const g=uni86R3Gate('walk',placementId);if(!g.ok)return g;
+ advanceTime(UNI86_R3_WALK,{silent:true});if(!uni86Term()||!uni3AtCampus()||uni3State().presence.institutionId!==g.venue.institutionId)return {ok:false,reason:'Campus presence or enrollment changed during the walk.'};
+ uni3State().presence.roomId=g.venue.id;
+ const receipt={schemaVersion:1,id:uni86R3WalkId(g.history.placement,g.date),source:'uni86-r3-campus-walk',ownerKey:uni86R2Owner(),placementId:g.history.placement.id,institutionId:g.venue.institutionId,venueId:g.venue.id,termKey:g.term.termKey,dateISO:g.date,minute:g.minute,arrivedMinute:g.minute+UNI86_R3_WALK,walkMinutes:UNI86_R3_WALK,status:'arrived'};
+ if(S.uni.internshipUNI8.fair.schemaVersion!==1)S.uni.internshipUNI8.fair={schemaVersion:1,records:{}};
+ if(!S.uni.internshipUNI8.fair.referenceWalks)S.uni.internshipUNI8.fair.referenceWalks={};
+ S.uni.internshipUNI8.fair.referenceWalks[receipt.id]=receipt;
+ // Walking is physical but not a recommendation and does not create reference evidence.
+ return {ok:true,minutes:UNI86_R3_WALK,roomId:g.venue.id};
+}
+function uni86R3Request(placementId){const g=uni86R3Gate('request',placementId);if(!g.ok)return g;
+ const {history:h,term:t,venue,date,minute}=g,p=h.placement,s=S.uni.internshipUNI8;
+ const walk=uni86R3Walks()?.[uni86R3WalkId(p,date)];
+ // Preflight all invariants before any state mutation. R3 has one atomic reference receipt,
+ // not a separately persisted partially completed visit.
+ if(s.fair?.references!==undefined&&!uni86R3References())return {ok:false,reason:'Malformed imported reference ledger.'};
+ if(s.fair?.references===undefined&&(!s.fair||s.fair.schemaVersion!==1||!s.fair.records||Array.isArray(s.fair.records)))return {ok:false,reason:'Invalid Career Fair state; reference cannot be recorded.'};
+ const record={schemaVersion:1,id:uni86R3ReferenceId(p),source:'uni86-r3-verified-mentor',ownerKey:uni86R2Owner(),placementId:p.id,offerId:p.offerId,originalTermKey:p.termKey,mentorId:p.mentorId,employerId:p.employerId,institutionId:p.institutionId,programId:p.programId,majorId:p.majorId,reviewId:h.review.id,verdict:h.review.verdict,verifiedHours:h.hours,shiftIds:h.shiftIds,mentorSessionShiftIds:h.mentorIds,venueId:venue.id,visitTermKey:t.termKey,dateISO:date,minute,walkId:walk.id,walkStartMinute:walk.minute,walkMinutes:UNI86_R3_WALK,minutes:UNI86_R3_CONSULT,nonCredit:true};
+ if(!uni86R3ReferenceValid(record,true))return {ok:false,reason:'Historical review and physical consultation source could not be validated.'};
+ // Advance only after source validation; avoid calendar rollover at closing.
+ advanceTime(UNI86_R3_CONSULT,{silent:true});
+ if(!uni86Term()||!uni3AtCampus()||uni3State().presence.roomId!==venue.id||currentDate()!==date||!uni86R3History(p))return {ok:false,reason:'Consultation was interrupted; no recommendation awarded.'};
+ if(!s.fair.references)s.fair.references={};
+ if(Object.prototype.hasOwnProperty.call(s.fair.references,record.id))return {ok:false,reason:'Reference already present.'};
+ s.fair.references[record.id]=record;walk.status='used';S.energy=clamp(S.energy-3);
+ return {ok:true,receipt:record};
+}
+function uni86R3CareerReadiness(){
+ // PURE: do not invoke the state initializer, reconciler or any setter.
+ const t=uni8ConfirmedTerm(),st=S?.uni?.internshipUNI8,placements=Object.values(st?.placements||{}).slice(0,UNI86_R3_LIMIT),completed=placements.map(uni86R3History).filter(Boolean),refs=uni86R3References()||{},validReferences=Object.values(refs).slice(0,UNI86_R3_LIMIT).filter(r=>uni86R3ReferenceValid(r));
+ const fairRecords=Object.values(st?.fair?.records||{}).slice(0,UNI86_R3_LIMIT),networking=[];
+ for(const f of fairRecords){if(!uni86R2AttendanceValid(f))continue;for(const employer of f.employers||[])if(uni86R2NetworkValid(f,f.networking?.[employer.employerId],employer))networking.push({fairId:f.id,employerId:employer.employerId});}
+ const hours=completed.reduce((n,h)=>n+h.hours,0),score=Math.min(100,Math.min(50,completed.length*22)+Math.min(20,Math.floor(hours/10))+Math.min(15,validReferences.length*15)+Math.min(15,networking.length*5));
+ return {degreeGate:'pending-UNI9-verification',institutionId:t?.institutionId||null,programId:t?.programId||null,majorId:t?.majorId||null,skills:t&&MAJORS[t.majorId]?.skill?{[MAJORS[t.majorId].skill]:S.skills?.[MAJORS[t.majorId].skill]??null}:{},verifiedPlacements:completed.map(h=>({placementId:h.placement.id,employerId:h.placement.employerId,mentorName:h.mentor.fullName,verdict:h.review.verdict,hours:h.hours,reviewId:h.review.id})),verifiedHours:hours,verifiedNetworking:networking,validReferences:validReferences.map(r=>({id:r.id,placementId:r.placementId,mentorId:r.mentorId,employerId:r.employerId,reviewId:r.reviewId,dateISO:r.dateISO})),unverifiedCount:placements.length-completed.length,tier:score>=70?'Developing professional profile':score>=35?'Building experience':'Early exploration',score,missing:{verifiedCompletedPlacement:completed.length===0,mentorReference:validReferences.length===0,networking:networking.length===0},facultyStatus:'Faculty recommendation unavailable — verified academic evidence or consultation required',jobMatching:'Deferred until UNI.9 verified degree audit'};
+}
+function uni86R3Html(){const summary=uni86R3CareerReadiness(),t=uni86Term(),st=S?.uni?.internshipUNI8;
+ const rows=Object.values(st?.placements||{}).slice(0,UNI86_R3_LIMIT).map(p=>{const h=uni86R3History(p);if(!h)return '';
+  const ref=uni86R3References()?.[uni86R3ReferenceId(p)],valid=ref&&uni86R3ReferenceValid(ref),walk=uni86R3Gate('walk',p.id),req=uni86R3Gate('request',p.id);
+  return `<article class="uni8-offer"><b>${esc(h.mentor.fullName)}</b> · ${esc(h.offer.employer)} · ${esc(h.review.verdict)}<p>${esc(h.offer.title)} · ${h.hours} verified hours · ${esc(p.institutionId)} · final review ${esc(h.review.reviewedAt)}</p>${valid?'<p>Verified recommendation earned — once-only</p>':ref?'<p>Unverifiable imported record — unavailable pending R4 audit</p>':`<button class="small" data-uni86-r3-walk="${esc(p.id)}" ${walk.ok?'':'disabled'}>Walk to Career Center (7 min)</button> <button class="small" data-uni86-r3-request="${esc(p.id)}" ${req.ok?'':'disabled'}>Request Supervisor Recommendation (20 min)</button><small>${esc(req.ok?'In-person consultation available':req.reason)}</small>`}</article>`;
+ }).join('');
+ const g=t&&uni86R3Venue(t.institutionId);
+ return `<section data-uni86-r3="1"><h4>Career Center — Mentor Recommendations</h4><p>Independent of the Career Fair: verified completed internships can receive one in-person mentor recommendation after final review, even in a subsequent enrolled term.</p>${g?`<p>Physical location: ${esc(g.label)} · ${esc(g.id)} · Weekdays 09:00–17:00.</p>`:'<p>Confirm an adult university term for Career Center access.</p>'}${t?`<button class="small" data-uni86-r3-commute="1" ${S.location==='Home'?'':'disabled'}>Commute to University</button>`:''}${rows||'<p>No source-verifiable positive final internship reviews yet.</p>'}<h4>Career Readiness &amp; References</h4><p>${esc(summary.tier)} · source-backed ${summary.score}/100 · ${summary.verifiedPlacements.length} completed placements · ${summary.verifiedHours} verified hours · ${summary.validReferences.length} mentor references · ${summary.verifiedNetworking.length} real networking receipts</p><p>Faculty recommendation unavailable — verified academic evidence or consultation required. Degree verification pending UNI.9; full-time job matching deferred. Statistics shown are game statistics, not certified qualifications.</p></section>`;
+}
+const uni86R3HtmlBefore=universityHtml;
+universityHtml=function(...args){const html=uni86R3HtmlBefore.apply(this,args);if(!S?.uni?.enrolled)return html;const at=html.lastIndexOf('</section>'),panel=uni86R3Html();return at>=0?html.slice(0,at)+panel+html.slice(at):html+panel;};
+const uni86R3ClickBefore=uniClick;
+uniClick=function(b){const d=b?.dataset||{};if(!d.uni86R3Commute&&!d.uni86R3Walk&&!d.uni86R3Request)return uni86R3ClickBefore(b);
+ const result=d.uni86R3Commute?uni3Travel('campus'):d.uni86R3Walk?uni86R3Walk(d.uni86R3Walk):uni86R3Request(d.uni86R3Request);
+ toast(result.ok?'University Career Center action recorded.':result.reason);if(result.ok){save();render();}return true;};
+// UNI.8.6-R4 ONLY: bounded, per-record hostile-save migration reconciliation.
+// Neither successful verification nor quarantine awards experience, pay, credits or jobs.
+const UNI86_R4_LIMIT=96, UNI86_R4_KEY_LIMIT=256, UNI86_R4_BYTES=8192;
+const uni86R4Own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+function uni86R4Map(o){return !!o&&typeof o==='object'&&!Array.isArray(o)&&Object.prototype.toString.call(o)==='[object Object]';}
+function uni86R4StrictMap(o){return uni86R4Map(o)&&(Object.getPrototypeOf(o)===Object.prototype||Object.getPrototypeOf(o)===null);}
+function uni86R4SafeKey(k){return typeof k==='string'&&k.length>0&&k.length<=UNI86_R4_KEY_LIMIT&&!['__proto__','prototype','constructor'].includes(k)&&!/[\u0000-\u001f\u007f]/.test(k);}
+function uni86R4Finite(o){
+ // Bounded traversal: do not deep-copy enormous hostile input or follow cyclic objects.
+ let count=0;const seen=new Set();function visit(v,depth){if(++count>350||depth>9)return false;if(typeof v==='number')return Number.isFinite(v)&&Math.abs(v)<1e12;
+  if(typeof v==='string')return v.length<=1024;if(v===null||typeof v==='boolean')return true;
+  if(typeof v!=='object'||seen.has(v))return false;seen.add(v);
+  if(Array.isArray(v))return v.length<=96&&v.every(x=>visit(x,depth+1));
+  if(!uni86R4StrictMap(v))return false;const keys=Object.keys(v);return keys.length<=72&&keys.every(k=>uni86R4SafeKey(k)&&visit(v[k],depth+1));
+ }return visit(o,0);
+}
+function uni86R4RecordShape(k,r,kind){
+ if(!uni86R4SafeKey(k)||!uni86R4Finite(r)||!uni86R4Map(r))return false;
+ if(r.schemaVersion!==1||r.id!==k||typeof r.placementId!=='string'||!uni86R4SafeKey(r.placementId))return false;
+ if(kind==='references')return k==='uni86-ref|'+r.placementId&&r.source==='uni86-r3-verified-mentor'&&r.nonCredit===true&&r.minutes===20&&r.walkMinutes===7&&Array.isArray(r.shiftIds)&&Array.isArray(r.mentorSessionShiftIds)&&r.shiftIds.length<=32&&r.mentorSessionShiftIds.length<=2;
+ return r.source==='uni86-r3-campus-walk'&&r.id===`uni86-walk|${r.placementId}|${r.dateISO}`&&r.walkMinutes===7&&Number.isSafeInteger(r.minute)&&r.minute>=540&&r.arrivedMinute===r.minute+7&&['arrived','used'].includes(r.status);
+}
+function uni86R4CalendarState(p){
+ if(!uni86R4Map(p?.attendance)||!uni86R4Map(p?.shifts))return 'invalid';
+ let missing=false;const seen=new Set();
+ for(const [id,r] of Object.entries(p.attendance)){
+  if(!uni86R4SafeKey(id)||!r||!uni86R4Map(r)||!uni86R4Map(p.shifts[id]))return 'invalid';
+  const cal='cal-'+id;if(seen.has(cal))return 'invalid';seen.add(cal);
+  const live=(Array.isArray(S.calendar)?S.calendar:[]).filter(x=>x?.id===cal);
+  const archive=(Array.isArray(S.archive?.calendar)?S.archive.calendar:[]).filter(x=>x?.id===cal);
+  if(live.length>1||archive.length>1)return 'invalid';
+  // A present contradictory event is evidence of falsification, never historical uncertainty.
+  if(live.length){if(!uni86R3ShiftCalendar(p,p.shifts[id]))return 'invalid';}
+  else if(archive.length){if(!uni86R3ShiftCalendar(p,p.shifts[id]))return 'invalid';}
+  else missing=true;
+ }
+ return missing?'missing':'complete';
+}
+function uni86R4WithMissingCalendar(fn){
+ // Narrow synchronous audit-only substitution. No S edits, forged live/archive entries never pass.
+ const previous=uni86R3ShiftCalendar;
+ try{uni86R3ShiftCalendar=function(p,e){
+  const id='cal-'+e.id,live=(Array.isArray(S.calendar)?S.calendar:[]).some(x=>x?.id===id),archived=(Array.isArray(S.archive?.calendar)?S.archive.calendar:[]).some(x=>x?.id===id);
+  return live||archived?previous(p,e):true;
+ };return fn();}finally{uni86R3ShiftCalendar=previous;}
+}
+function uni86R4WalkVerdict(k,w){
+ if(!uni86R4RecordShape(k,w,'referenceWalks'))return {kind:'invalid',reason:'malformed-walk'};
+ const p=S.uni?.internshipUNI8?.placements?.[w.placementId],t=S.uni?.termEnrollments?.terms?.[w.termKey],venue=uni86R3Venue(w.institutionId);
+ if(!p||!t||!venue||p.institutionId!==w.institutionId||p.programId!==t.programId||p.majorId!==t.majorId||p.institutionId!==t.institutionId||w.ownerKey!==uni86R2Owner()||!uni2ValidRecord(w.termKey,t,S.uni)||!['confirmed','historical'].includes(t.status)||!uni86R3WalkValid(w,p,t,venue)||w.dateISO>currentDate()||w.dateISO<t.opened||w.dateISO>t.termEnd)return {kind:'invalid',reason:'invalid-visit-source'};
+ const ref=S.uni.internshipUNI8.fair?.references?.[uni86R3ReferenceId(p)];
+ if(w.status==='used'&&(!ref||ref.walkId!==w.id))return {kind:'indeterminate',reason:'missing-consultation-evidence'};
+ return {kind:'valid',reason:'source-verified'};
+}
+function uni86R4ReferenceVerdict(k,r){
+ if(!uni86R4RecordShape(k,r,'references'))return {kind:'invalid',reason:'malformed-reference'};
+ const p=S.uni?.internshipUNI8?.placements?.[r.placementId],w=S.uni?.internshipUNI8?.fair?.referenceWalks?.[r.walkId];
+ if(!p||!w||w.status!=='used'||w.placementId!==r.placementId||r.walkId!==`uni86-walk|${r.placementId}|${r.dateISO}`||!uni86R4RecordShape(r.walkId,w,'referenceWalks'))return {kind:'invalid',reason:'missing-or-forged-walk'};
+ if(!uni86R4WalkVerdict(r.walkId,w)||uni86R4WalkVerdict(r.walkId,w).kind==='invalid')return {kind:'invalid',reason:'invalid-walk-source'};
+ // R3 reference validator is intentionally authoritative on immutable non-Calendar fields.
+ if(uni86R3ReferenceValid(r))return {kind:'valid',reason:'source-verified'};
+ const cal=uni86R4CalendarState(p);
+ if(cal==='invalid')return {kind:'invalid',reason:'contradictory-calendar'};
+ if(cal==='missing'&&uni86R4WithMissingCalendar(()=>uni86R3ReferenceValid(r)))return {kind:'indeterminate',reason:'historical-calendar-pruned'};
+ return {kind:'invalid',reason:'contradictory-reference-source'};
+}
+function uni86R4Store(f,name,k,value,reason){
+ // Safe, bounded store. Preserve original JSON fields rather than a lossy summary.
+ const targetName=name==='pending'?'referencePending':'referenceQuarantine';
+ if(!uni86R4Map(f[targetName]))f[targetName]=Object.create(null);
+ const map=f[targetName],code=reason.kind+'|'+reason.reason+'|'+k;
+ if(uni86R4Own(map,code))return;
+ if(Object.keys(map).length>=UNI86_R4_LIMIT){f.referenceOverflow=Math.min(99999,(Number.isSafeInteger(f.referenceOverflow)&&f.referenceOverflow>=0?f.referenceOverflow:0)+1);return;}
+ try{const raw=JSON.stringify(value);if(raw&&raw.length<=UNI86_R4_BYTES)map[code]={schemaVersion:1,collection:reason.collection,originalKey:k,reason:reason.reason,classification:reason.kind,raw};
+  else map[code]={schemaVersion:1,collection:reason.collection,originalKey:k,reason:'oversize-record',classification:reason.kind,originalRetained:false};
+ }catch(e){map[code]={schemaVersion:1,collection:reason.collection,originalKey:k,reason:'non-serializable',classification:reason.kind,originalRetained:false};}
+}
+function uni86R4Reconcile(){
+ const f=S?.uni?.internshipUNI8?.fair;
+ if(!uni86R4Map(f)||f.schemaVersion!==1)return {valid:0,invalid:0,indeterminate:0,skipped:true};
+ let valid=0,invalid=0,indeterminate=0;
+ // Move only individual bad rows. Canonical candidates from actual placements are prioritized
+ // so flooding a hostile map with forged first entries cannot hide a genuine sibling.
+ for(const collection of ['referenceWalks','references']){
+  const map=f[collection];if(map===undefined)continue;
+  if(!uni86R4Map(map)){
+   // Do not overwrite a malformed parent or any separately existing fair records.
+   if(!uni86R4Map(f.referenceContainerWarnings))f.referenceContainerWarnings=Object.create(null);
+   f.referenceContainerWarnings[collection]='unsupported-container';continue;
+  }
+  const all=Object.keys(map),pl=S.uni.internshipUNI8.placements||{};
+  const priority=all.filter(k=>uni86R4SafeKey(k)&&Object.keys(pl).some(id=>collection==='references'?k==='uni86-ref|'+id:k.startsWith('uni86-walk|'+id+'|'))).sort();
+  const rest=all.filter(k=>!priority.includes(k)).sort();
+  for(const k of priority.concat(rest)){
+   const r=map[k];let verdict;
+   try{verdict=collection==='references'?uni86R4ReferenceVerdict(k,r):uni86R4WalkVerdict(k,r);}catch(error){verdict={kind:'invalid',reason:'validation-exception'};}
+   if(verdict.kind==='valid'){valid++;continue;}
+   if(verdict.kind==='indeterminate')indeterminate++;else invalid++;
+   uni86R4Store(f,verdict.kind==='indeterminate'?'pending':'invalid',k,r,{...verdict,collection});
+   delete map[k];
+  }
+ }
+ return {valid,invalid,indeterminate};
+}
+// Preserve exact live-state bytes on rejected file imports. H13.4 restores the old
+// pointer/autosave and screen; rendering that screen can update `S.current` as a
+// harmless daily-context side effect. R4 restores the original snapshot as well.
+const uni86R4PreviousLoadCandidate=h134LoadCandidate;
+h134LoadCandidate=function(candidate,label){
+ const prior=S;let snapshot=null;
+ try{if(prior)snapshot=JSON.stringify(prior);}catch(error){snapshot=null;}
+ const outcome=uni86R4PreviousLoadCandidate(candidate,label);
+ if(outcome!==true&&prior&&S===prior&&snapshot!==null){
+  try{S=JSON.parse(snapshot);}catch(error){S=prior;}
+ }
+ return outcome;
+};
+const uni86R4PriorMigrate=migrate;
+migrate=function(...args){const result=uni86R4PriorMigrate.apply(this,args);if(S?.uni?.internshipUNI8)uni86R4Reconcile();return result;};
+const uni86R4PriorHtml=universityHtml;
+universityHtml=function(...args){const html=uni86R4PriorHtml.apply(this,args),f=S?.uni?.internshipUNI8?.fair;
+ if(!uni86R4Map(f))return html;
+ const pending=uni86R4Map(f.referencePending)?Object.keys(f.referencePending).length:0,invalid=uni86R4Map(f.referenceQuarantine)?Object.keys(f.referenceQuarantine).length:0;
+ const warnings=uni86R4Map(f.referenceContainerWarnings)?Object.keys(f.referenceContainerWarnings).length:0,overflow=Number.isSafeInteger(f.referenceOverflow)?f.referenceOverflow:0;
+ if(!pending&&!invalid&&!warnings&&!overflow)return html;
+ const note=`<p data-uni86-r4-security="1">Reference import security: ${invalid} individually quarantined; ${pending} pending historical verification; ${warnings} unsupported section(s); ${overflow} excess hostile rows isolated without retained payload. Pending records are preserved but not counted as verified references. No awards were issued.</p>`;
+ const at=html.lastIndexOf('</section>');return at<0?html+note:html.slice(0,at)+note+html.slice(at);
+};
+// UNI.8.7-U1: presentation-only Career Center navigation. Never creates awards or receipts.
+// Existing UNI.8.2–8.6 markup and uniClick data attributes remain the single source of actions.
+const UNI87_TABS=[
+ ['all','All sections',null],
+ ['overview','Overview',null],
+ ['opportunities','Opportunities','data-uni8-opportunities'],
+ ['applications','Applications & Interviews','data-uni8-applications'],
+ ['placement','Placement & Shifts','data-uni8-contracts'],
+ ['earnings','Earnings & Reviews','data-uni8-payreview'],
+ ['fairs','Career Fairs','data-uni86-r1'],
+ ['networking','Fair Attendance & Networking','data-uni86-r2'],
+ ['references','Recommendations & Readiness','data-uni86-r3']
+];
+let uni87SelectedTab='all';
+try{const stored=sessionStorage.getItem('lifeSimUNI87CareerTab');if(UNI87_TABS.some(x=>x[0]===stored))uni87SelectedTab=stored;}catch(error){}
+function uni87SelectTab(value){if(!UNI87_TABS.some(x=>x[0]===value))value='all';uni87SelectedTab=value;
+ try{sessionStorage.setItem('lifeSimUNI87CareerTab',value);}catch(error){}return uni87SelectedTab;
+}
+function uni87RecordMap(x){return x&&typeof x==='object'&&!Array.isArray(x)?x:null;}
+function uni87OverviewHtml(){
+ const t=uni8ConfirmedTerm(),s=uni87RecordMap(S?.uni?.internshipUNI8),a=uni87RecordMap(s?.applications),p=uni87RecordMap(s?.placements),ev=uni87RecordMap(s?.evaluations),pay=uni87RecordMap(s?.payroll);
+ const refs=uni86R3References(),ready=uni86R3CareerReadiness(),f=uni87RecordMap(s?.fair),pending=uni87RecordMap(f?.referencePending),q=uni87RecordMap(f?.referenceQuarantine);
+ const applications=Object.values(a||{}).filter(x=>x&&typeof x==='object').slice(0,30),placements=Object.values(p||{}).filter(x=>x&&typeof x==='object').slice(0,30);
+ const recent=applications.slice(-4).map(x=>`<li>${esc(String(x.offerId||'Unlinked offer'))} — recorded ${esc(String(x.status||'unknown'))} (not an award)</li>`).join('');
+ const status=placements.slice(-3).map(x=>{
+  let source=null;try{source=uni86R3History(x);}catch(error){}
+  return `<li>${esc(String(x.offerId||'Unlinked placement'))} — recorded ${esc(String(x.status||'unknown'))}; ${source?source.hours+' source-verified hours':'historical evidence not fully verified'} · ${x.paid===false?'Unpaid':x.paid===true?'Paid contract — see earnings receipts':'Pay type unverified'}</li>`;
+ }).join('');
+ let fair='not recorded';try{const cur=t&&uni86FairKey(t),r=cur&&uni87RecordMap(f?.records)?.[cur];if(r)fair=String(r.status||'unknown');}catch(error){}
+ const blocked=t?'':'<p>Internships require an adult enrolled student, confirmed university term, program, major and eligible course registration. K–12 and child characters cannot start these actions.</p>';
+ const safe=(value)=>esc(String(value??'not confirmed'));
+ return `<section class="uni87-overview" data-uni87-overview="1" ${(uni87SelectedTab==='overview')?'':'hidden'}><h4>University Career Center — Overview</h4>
+ <p>Institution: ${safe(t?.institutionId)} · Program: ${safe(t?.programId)} · Major: ${safe(t?.majorId)} · Term: ${safe(t?.termKey)}</p>${blocked}
+ <p>Recorded applications: ${applications.length} · Placements: ${placements.length} · Source-verified completed: ${ready.verifiedPlacements.length} · Verified hours: ${ready.verifiedHours}</p>
+ <p>Career Fair: ${safe(fair)} · Verified recommendations: ${ready.validReferences.length} · Reference pending: ${Object.keys(pending||{}).length} · Quarantined: ${Object.keys(q||{}).length}</p>
+ <p>Payroll records: ${Object.keys(pay||{}).length} (not a wallet balance) · Final-review entries: ${Object.keys(ev||{}).length}. See Earnings & Reviews for actual signed income; unpaid internships never pay wages.</p>
+ ${recent?`<h5>Recent applications (recorded status)</h5><ul>${recent}</ul>`:''}${status?`<h5>Placement history</h5><ul>${status}</ul>`:''}
+ <p>Next step: ${t?'Open Opportunities or Applications to follow the source-gated actions. Physical check-in, employer shifts and mentor visits require real travel.':'Confirm a legitimate university term first.'}</p>
+ <p>Readiness is advisory, not a job offer. Degree validation: ${safe(ready.degreeGate)}. No automatic salary, credit, grade, degree or aid is granted.</p></section>`;
+}
+function uni87ComposeHtml(html){
+ if(!S?.uni?.enrolled||typeof html!=='string'||!html.includes('data-uni8-opportunities="1"'))return html;
+ const active=UNI87_TABS.some(x=>x[0]===uni87SelectedTab)?uni87SelectedTab:'all';
+ const nav=`<nav class="uni87-nav" data-uni87-nav="1" aria-label="University Career Center sections"><h3>Career Center</h3><div class="uni87-tablist" role="group" aria-label="Career Center sections">${UNI87_TABS.map(([id,label])=>`<button type="button" class="small ${active===id?'uni87-active':''}" data-uni87-tab="${id}" aria-pressed="${active===id}">${esc(label)}</button>`).join('')}</div><p class="uni87-subtitle">Internship progress, employer events, verified earnings and source-backed references. Selecting a section never executes an action.</p></nav>`;
+ // Decorate each existing section opening tag once; never slice or reparse its nested closing tags.
+ let result=html;
+ for(const [id,,attr] of UNI87_TABS){if(!attr)continue;
+  const re=new RegExp('<section(?=[^>]*\\b'+attr+'="1")[^>]*>','i');
+  result=result.replace(re,tag=>tag.slice(0,-1)+` data-uni87-panel="${id}" ${active===id||active==='all'?'':'hidden'}>`);
+ }
+ const anchor=/<section(?=[^>]*\bdata-uni8-opportunities="1")[^>]*>/i;
+ result=result.replace(anchor,tag=>nav+uni87OverviewHtml()+tag);
+ return result;
+}
+const uni87BeforeHtml=universityHtml;
+universityHtml=function(...args){return uni87ComposeHtml(uni87BeforeHtml.apply(this,args));};
+const uni87BeforeClick=uniClick;
+uniClick=function(b){const target=b?.dataset?.uni87Tab;
+ if(target!==undefined){uni87SelectTab(target);render();const next=document.querySelector('#panel-host [data-uni87-tab="'+uni87SelectedTab+'"]');if(next)next.focus();return true;}
+ return uni87BeforeClick(b);
+};
+// UNI.8.7-U2-C1 — ISOLATED, READ-ONLY pre-normalization internship evidence triage.
+// NOT installed into migrate/import/load until separately authorized C2.
+// This source is intentionally never executed by a regular gameplay/render code path.
+const UNI87_U2_C1_LIMITS=Object.freeze({maxInternshipBytes:4194304,maxDepth:14,maxNodes:32000,maxMapKeys:256,maxTotalRows:2048,maxString:8192,maxArray:4096,maxKey:256,maxSingleEvidenceBytes:65536,maxDiagnostics:2048});
+function uni87U2Plain(v){if(v===null||typeof v!=='object'||Array.isArray(v))return false;const p=Object.getPrototypeOf(v);return p===Object.prototype||p===null;}
+function uni87U2SafeKey(k){return typeof k==='string'&&k.length<=UNI87_U2_C1_LIMITS.maxKey&&k!=='__proto__'&&k!=='prototype'&&k!=='constructor'&&!/[\x00-\x1f\x7f]/.test(k);}
+function uni87U2Inspect(root){
+ const b=UNI87_U2_C1_LIMITS,seen=new Set(),todo=[[root,0]],result={ok:true,reason:'OK',bytes:0,nodes:0};
+ while(todo.length){const [v,depth]=todo.pop();if(++result.nodes>b.maxNodes)return {ok:false,reason:'NODE_LIMIT'};
+  if(depth>b.maxDepth)return {ok:false,reason:'DEPTH_LIMIT'};
+  if(v===null||typeof v==='boolean')continue;
+  if(typeof v==='number'){if(!Number.isFinite(v))return {ok:false,reason:'NONFINITE_NUMBER'};result.bytes+=24;continue;}
+  if(typeof v==='string'){if(v.length>b.maxString)return {ok:false,reason:'STRING_LIMIT'};result.bytes+=v.length*2;continue;}
+  if(typeof v!=='object')return {ok:false,reason:'UNSAFE_TYPE'};
+  if(seen.has(v))return {ok:false,reason:'CYCLE_OR_ALIAS'};seen.add(v);
+  if(!Array.isArray(v)&&!uni87U2Plain(v))return {ok:false,reason:'UNSAFE_PROTOTYPE'};
+  const names=Reflect.ownKeys(v);if(names.length>(Array.isArray(v)?b.maxArray:b.maxMapKeys))return {ok:false,reason:'MAP_OR_ARRAY_LIMIT'};
+  for(const k of names){if(typeof k!=='string'||(!Array.isArray(v)&&!uni87U2SafeKey(k)))return {ok:false,reason:'UNSAFE_KEY'};
+   const d=Object.getOwnPropertyDescriptor(v,k);if(!d||!Object.prototype.hasOwnProperty.call(d,'value'))return {ok:false,reason:'ACCESSOR'};
+   if(k==='length'&&Array.isArray(v))continue;
+   if(Array.isArray(v)&&!/^(?:0|[1-9]\d*)$/.test(k))return {ok:false,reason:'ARRAY_EXTRA_KEY'};
+   result.bytes+=k.length*2+8;todo.push([d.value,depth+1]);
+  }
+  if(result.bytes>b.maxInternshipBytes)return {ok:false,reason:'BYTES_LIMIT'};
+ }
+ return result;
+}
+function uni87U2Date(d){if(typeof d!=='string'||!/^\d{4}-\d\d-\d\d$/.test(d))return false;const y=+d.slice(0,4),m=+d.slice(5,7),n=+d.slice(8);return y>=1990&&y<=2200&&new Date(Date.UTC(y,m-1,n)).toISOString().slice(0,10)===d;}
+function uni87U2Map(x){return uni87U2Plain(x)&&Object.keys(x).every(uni87U2SafeKey);}
+function uni87U2ProofCalendar(ctx,id,date,source,kind,location,window){
+ const live=Array.isArray(ctx.calendar)?ctx.calendar.filter(e=>e&&e.id==='cal-'+id):[],archive=Array.isArray(ctx.archiveCalendar)?ctx.archiveCalendar.filter(e=>e&&e.id==='cal-'+id):[];
+ if(live.length>1||archive.length>1)return 'INVALID';
+ if(live.length){const e=live[0];if(e.type!=='universityInternshipUNI8'||e.sourceId!==source||e.dateISO!==date||e.location!==location||e.payload?.kind!==kind||window&&(e.startMinute!==window.startMinute||e.endMinute!==window.endMinute))return 'INVALID';return e.status==='Attended'?'VALID':'INDETERMINATE';}
+ if(archive.length){const e=archive[0];if(e.type!=='universityInternshipUNI8'||e.dateISO!==date||e.status!=='Attended')return 'INVALID';return 'VALID';}
+ return 'INDETERMINATE';
+}
+function uni87U2Triage(candidate,context={}){
+ const b=UNI87_U2_C1_LIMITS,plan={schemaVersion:1,source:'uni87-u2-c1-isolated-triage',rejectWholeCandidate:false,reason:'OK',root:'INERT',records:{cv:{},applications:{},interviews:{},placements:{},shifts:{},attendance:{},mentorSessions:{},evaluations:{},payroll:{}},mapIssues:[],quarantine:[],pending:[],stats:{VALID:0,INVALID:0,INDETERMINATE:0},limits:b};
+ const reject=reason=>{plan.rejectWholeCandidate=true;plan.reason=reason;return plan;};
+ try{
+  if(!uni87U2Plain(candidate))return reject('MALFORMED_LIFE');
+  const u=candidate.uni;if(!u||!Object.prototype.hasOwnProperty.call(u,'internshipUNI8')||u.internshipUNI8===undefined||u.internshipUNI8===null)return plan;
+  const st=u.internshipUNI8;
+  const check=uni87U2Inspect(st);if(!check.ok)return reject(check.reason);
+  if(!uni87U2Plain(st))return reject('MALFORMED_INTERNSHIP_ROOT');
+  if(st.schemaVersion!==1){plan.root='INDETERMINATE';return reject('UNSUPPORTED_ROOT_SCHEMA');}
+  plan.root='VALID';
+  const groups=['applications','interviews','placements','evaluations','payroll'],maps={};
+  for(const g of groups){const x=st[g];if(x===undefined||x===null){maps[g]={};continue;}
+   if(!uni87U2Map(x)){plan.mapIssues.push({group:g,status:'INVALID',reason:'MALFORMED_CHILD_MAP'});maps[g]={};continue;}maps[g]=x;
+  }
+  if(st.fair!==undefined&&st.fair!==null&&!uni87U2Plain(st.fair))return reject('UNSAFE_FAIR_MAP');
+  const termMap=uni87U2Plain(context.verifiedTerms)?context.verifiedTerms:{};
+  const offers=Object.create(null),knownTerms=Object.keys(termMap);
+  if(knownTerms.length>24)return reject('TERM_CONTEXT_LIMIT');
+  for(const key of knownTerms){const t=termMap[key];if(!uni87U2SafeKey(key)||!uni87U2Plain(t)||t.termKey!==key||!/^[0-9]{4}-[12]$/.test(key))return reject('TERM_CONTEXT_UNSAFE');
+   if(!UNI1_PROGRAMS[t.programId]||UNI1_PROGRAMS[t.programId].institutionId!==t.institutionId||UNI1_PROGRAMS[t.programId].majorId!==t.majorId)return reject('TERM_CONTEXT_CONFLICT');
+   for(const o of uni8OfferList(t))offers[o.id]=o;
+  }
+  const ctx={calendar:Array.isArray(context.calendar)?context.calendar:[],archiveCalendar:Array.isArray(context.archiveCalendar)?context.archiveCalendar:[]};
+  const supervisor=Object.create(null);
+  if(Array.isArray(context.supervisors)&&context.supervisors.length<=256)for(const n of context.supervisors)if(n&&typeof n.id==='string'&&uni87U2SafeKey(n.id))supervisor[n.id]=n;
+  let rows=0;
+  function emit(g,key,verdict,reason,original){
+   if(++rows>b.maxTotalRows){reject('ROW_LIMIT');return;}
+   const item={status:verdict,reason,key:String(key),path:g==='cv'?'cv':g+'['+JSON.stringify(key)+']'};
+   plan.records[g][key]=item;plan.stats[verdict]++;
+   if(verdict!=='VALID'){
+    // Retain a bounded independent JSON copy only; no source record is mutated.
+    let raw;try{raw=JSON.stringify(original);}catch(e){reject('UNSAFE_EVIDENCE');return;}
+    if(raw===undefined||raw.length>b.maxSingleEvidenceBytes){reject('EVIDENCE_LIMIT');return;}
+    const dest=verdict==='INVALID'?plan.quarantine:plan.pending;
+    if(dest.length>=b.maxDiagnostics){reject('DIAGNOSTIC_LIMIT');return;}
+    dest.push({group:g,key:String(key),reason,original:JSON.parse(raw)});
+   }
+  }
+  const valid=(g,k,r,reason='SOURCE_MATCH')=>emit(g,k,'VALID',reason,r);
+  const invalid=(g,k,r,reason)=>emit(g,k,'INVALID',reason,r);
+  const pending=(g,k,r,reason='HISTORICAL_SOURCE_UNAVAILABLE')=>emit(g,k,'INDETERMINATE',reason,r);
+  const owner=typeof context.ownerName==='string'?context.ownerName:null;
+  const term=(key)=>typeof key==='string'&&Object.prototype.hasOwnProperty.call(termMap,key)?termMap[key]:null;
+  const known=(offerId)=>typeof offerId==='string'&&Object.prototype.hasOwnProperty.call(offers,offerId)?offers[offerId]:null;
+  const common=(r,o)=>r&&r.institutionId===o.institutionId&&r.programId===o.programId&&r.majorId===o.majorId&&r.termKey===o.termKey;
+  const safeDate=r=>uni87U2Date(r);
+  // A current-term CV cannot authenticate an old missing UNI.4 academic source by itself.
+  const cv=st.cv;
+  if(cv!==undefined&&cv!==null){const k=typeof cv.id==='string'?cv.id:'unknown';
+   if(!uni87U2Plain(cv)||cv.schemaVersion!==1||typeof cv.id!=='string'||cv.id!==`uni8-cv|${cv.institutionId}|${cv.programId}|${cv.termKey}`||cv.minutes!==30||!safeDate(cv.dateISO)||!uni87U2Map(cv.skills)||Object.values(cv.skills).some(n=>!Number.isFinite(n)||n<0||n>100))invalid('cv',k,cv,'CV_SOURCE_CONFLICT');
+   else if(!term(cv.termKey))pending('cv',k,cv,'CV_TERM_UNVERIFIED');
+   else if(!common(cv,term(cv.termKey))||cv.dateISO<term(cv.termKey).opened||cv.dateISO>term(cv.termKey).termEnd)invalid('cv',k,cv,'CV_TERM_CONFLICT');
+   else if(cv.verifiedTermGpa!==null&&cv.verifiedTermGpa!==undefined&&(!Number.isFinite(cv.verifiedTermGpa)||cv.verifiedTermGpa<0||cv.verifiedTermGpa>4))invalid('cv',k,cv,'CV_GPA_OUT_OF_RANGE');
+   else if(cv.verifiedTermGpa!==null&&cv.verifiedTermGpa!==undefined&&context.verifiedAcademic?.[cv.verifiedAcademicTerm]?.termGpa!==cv.verifiedTermGpa)pending('cv',k,cv,'CV_ACADEMIC_PROOF_ABSENT');
+   else valid('cv',k,cv);
+  }
+  for(const [key,a] of Object.entries(maps.applications)){
+   const o=known(key);
+   if(!uni87U2Plain(a)||a.schemaVersion!==1||a.id!==`uni8-app|${key}`||a.offerId!==key||!uni87U2Date(a.dateISO)||!['rejected','expired','interview-scheduled','offered','accepted'].includes(a.status))invalid('applications',key,a,'APPLICATION_SHAPE_OR_ID');
+   else if(!o)pending('applications',key,a,'HISTORICAL_OFFER_NOT_VERIFIED');
+   else if(!common(a,o)||a.cvId!==`uni8-cv|${o.institutionId}|${o.programId}|${o.termKey}`||a.dateISO>o.deadline||a.decisionHash!==(owner===null?a.decisionHash:uni5Hash(`${key}|${owner}|${a.cvId}`)%100))invalid('applications',key,a,'APPLICATION_SOURCE_CONFLICT');
+   else if(owner===null||!cv||cv.id!==a.cvId)pending('applications',key,a,'CV_OR_OWNER_SOURCE_UNAVAILABLE');
+   else if((a.status==='accepted'||a.status==='offered')&&(!a.interview||a.interview.result!=='offered'||a.interview.completed!==true))invalid('applications',key,a,'UNSUPPORTED_OFFER');
+   else valid('applications',key,a);
+  }
+  for(const [key,iv] of Object.entries(maps.interviews)){
+   const a=Object.values(maps.applications).find(v=>v&&v.interviewId===key),o=a&&known(a.offerId);
+   if(!uni87U2Plain(iv)||iv.id!==key||!key.startsWith('uni8-interview|')||!safeDate(iv.dateISO)||!['late','attended'].includes(iv.status)||!['offered','rejected'].includes(iv.decision)||!Number.isSafeInteger(iv.score)||iv.score<0||iv.score>100)invalid('interviews',key,iv,'INTERVIEW_SHAPE_OR_ID');
+   else if(!a||!o)pending('interviews',key,iv,'APPLICATION_OR_OFFER_ABSENT');
+   else if(key!==`uni8-interview|${a.offerId}`||iv.appId!==a.id||iv.venueId!==o.worksiteId||iv.dateISO!==a.interview?.dateISO||iv.decision!==a.interview?.result||iv.score!==a.interview?.outcomeScore)invalid('interviews',key,iv,'INTERVIEW_SOURCE_CONFLICT');
+   else{const c=uni87U2ProofCalendar(ctx,key,iv.dateISO,a.id,'interview',o.worksiteId,a.interview);if(c==='INVALID')invalid('interviews',key,iv,'INTERVIEW_CALENDAR_CONFLICT');else if(c==='INDETERMINATE')pending('interviews',key,iv);else valid('interviews',key,iv);}
+  }
+  for(const [key,p] of Object.entries(maps.placements)){
+   const o=p&&known(p.offerId),a=o&&maps.applications[p.offerId],iv=a&&maps.interviews[a.interviewId];
+   if(!uni87U2Plain(p)||p.schemaVersion!==1||p.id!==key||key!==`uni8-place|${p.offerId}`||!safeDate(p.signedAt)||!safeDate(p.endDate)||!['active','completed','incomplete','quit'].includes(p.status)||!uni87U2Map(p.shifts)||!uni87U2Map(p.attendance)||p.mentorSessions!==undefined&&!uni87U2Map(p.mentorSessions))invalid('placements',key,p,'PLACEMENT_SHAPE_OR_ID');
+   else if(!o)pending('placements',key,p,'HISTORICAL_OFFER_NOT_VERIFIED');
+   else if(!common(p,o)||p.appId!==`uni8-app|${p.offerId}`||p.employerId!==o.employerId||p.worksiteId!==o.worksiteId||p.paid!==o.paid||p.payPerHour!==o.payPerHour||p.mentorId!==uni8MentorId(o)||p.agreedWeeks!==o.durationWeeks||p.campus!==o.campus)invalid('placements',key,p,'PLACEMENT_OFFER_CONFLICT');
+   else if(!a||!iv||a.status!=='accepted'||a.placementId!==key||iv.decision!=='offered')pending('placements',key,p,'SIGNED_APPLICATION_EVIDENCE_ABSENT');
+   else if(!supervisor[p.mentorId]||supervisor[p.mentorId].professionalRole!=='internshipSupervisorUNI8'||supervisor[p.mentorId].internshipSupervisorUNI8?.employerId!==o.employerId)pending('placements',key,p,'CANONICAL_MENTOR_PROOF_ABSENT');
+   else valid('placements',key,p);
+   if(!uni87U2Map(p?.shifts))continue;
+   // Reconstruct the original signed schedule from the historical offer and term.
+   // Never use live uni8ShiftPlan(): it consults the *current* term.
+   const canonicalShiftIds=new Set();
+   const originalTerm=o&&term(o.termKey);
+   if(o&&originalTerm&&uni87U2Date(p.signedAt)){
+    for(let d=addDays(p.signedAt,2),n=0;d<=addDays(p.signedAt,70)&&d<=originalTerm.termEnd&&n<o.durationWeeks;d=addDays(d,1)){
+     if(new Date(d+'T00:00:00Z').getUTCDay()===o.weeklyDay){canonicalShiftIds.add(`uni8-shift|${o.id}|${d}`);n++;}
+    }
+   }
+   for(const [sk,sh] of Object.entries(p.shifts)){
+    if(!uni87U2Plain(sh)||sk!==`uni8-shift|${p.offerId}|${sh.dateISO}`||sh.id!==sk||!safeDate(sh.dateISO)||sh.startMinute!==o?.startMinute||sh.endMinute!==o?.endMinute||sh.worksiteId!==p.worksiteId||!canonicalShiftIds.has(sk)||!['scheduled','attended','late','missed','cancelled'].includes(sh.status))invalid('shifts',sk,sh,'SHIFT_SCHEDULE_CONFLICT');
+    else if(plan.records.placements[key]?.status!=='VALID')pending('shifts',sk,sh,'PARENT_SOURCE_UNVERIFIED');
+    else valid('shifts',sk,sh);
+   }
+   if(!uni87U2Map(p.attendance))continue;
+   for(const [ak,at] of Object.entries(p.attendance)){
+    const sh=p.shifts[ak],minutes=sh&&sh.endMinute-sh.startMinute-at?.lateMinutes;
+    if(!uni87U2Plain(at)||!sh||at.id!==ak||at.placementId!==key||at.mentorId!==p.mentorId||at.employerId!==p.employerId||at.worksiteId!==p.worksiteId||at.termKey!==p.termKey||at.dateISO!==sh.dateISO||!['attended','late'].includes(at.status)||at.status!==sh.status||!Number.isSafeInteger(at.lateMinutes)||at.lateMinutes<0||at.lateMinutes>15||at.minutes!==minutes||at.minutes<30)invalid('attendance',ak,at,'ATTENDANCE_RECEIPT_CONFLICT');
+    else {const c=uni87U2ProofCalendar(ctx,ak,sh.dateISO,ak,'shift',p.worksiteId,sh);if(c==='INVALID')invalid('attendance',ak,at,'ATTENDANCE_CALENDAR_CONFLICT');else if(c==='INDETERMINATE')pending('attendance',ak,at);else valid('attendance',ak,at);}
+   }
+   if(!uni87U2Map(p.mentorSessions||{}))continue;
+   for(const [mk,ms] of Object.entries(p.mentorSessions||{})){
+    const at=p.attendance[mk];
+    if(!uni87U2Plain(ms)||ms.schemaVersion!==1||ms.id!==`uni8-mentor-meet|${mk}`||ms.shiftId!==mk||ms.placementId!==key||ms.mentorId!==p.mentorId||ms.employerId!==p.employerId||ms.worksiteId!==p.worksiteId||ms.minutes!==20||!at||ms.dateISO!==at.dateISO||!Number.isSafeInteger(ms.startMinute)||ms.startMinute<(p.shifts[mk]?.endMinute??1440)||ms.startMinute>(p.shifts[mk]?.endMinute??0)+120)invalid('mentorSessions',mk,ms,'MENTOR_SESSION_CONFLICT');
+    else if(plan.records.attendance[mk]?.status!=='VALID')pending('mentorSessions',mk,ms);else valid('mentorSessions',mk,ms);
+   }
+  }
+  for(const [key,e] of Object.entries(maps.evaluations)){
+   const p=maps.placements[key],att=p&&Object.values(p.attendance||{}),sh=p&&Object.values(p.shifts||{}),ms=p&&Object.values(p.mentorSessions||{});
+   if(!uni87U2Plain(e)||e.schemaVersion!==1||e.id!==`uni8-review|${key}`||e.placementId!==key||e.academicCredits!==0||!['incomplete','completed','commended'].includes(e.verdict)||!uni87U2Date(e.reviewedAt)||!Number.isSafeInteger(e.score)||e.score<0||e.score>100)invalid('evaluations',key,e,'EVALUATION_SHAPE_OR_CREDIT');
+   else if(!p||!sh?.length||!att?.length)pending('evaluations',key,e,'WORK_HISTORY_ABSENT');
+   else if(e.mentorId!==p.mentorId||e.employerId!==p.employerId||e.majorId!==p.majorId||e.termKey!==p.termKey||e.verifiedHours!==p.hours||e.attendedShifts!==att.length||e.expectedShifts!==sh.length||e.mentorMeetings!==(ms?.length||0)||e.reviewedAt<p.endDate||e.verifiedHours!==att.reduce((n,r)=>n+Math.floor(r.minutes/60),0)||e.score!==Math.max(0,Math.min(100,Math.round(att.length/sh.length*65+att.filter(r=>r.status==='attended').length/sh.length*20+(ms?.length||0)*7)))||e.verdict!==(att.length>=Math.ceil(sh.length*.75)&&p.missed<=Math.floor(sh.length*.25)?(e.score>=85?'commended':'completed'):'incomplete'))invalid('evaluations',key,e,'EVALUATION_WORK_MISMATCH');
+   else if(att.some(v=>plan.records.attendance[v.id]?.status!=='VALID')||ms.some(v=>plan.records.mentorSessions[v.shiftId]?.status!=='VALID'))pending('evaluations',key,e,'WORK_EVIDENCE_PENDING');
+   else valid('evaluations',key,e);
+  }
+  for(const [key,r] of Object.entries(maps.payroll)){
+   const p=Object.values(maps.placements).find(x=>x?.attendance&&Object.prototype.hasOwnProperty.call(x.attendance,r?.shiftId)),at=p?.attendance?.[r?.shiftId];
+   if(!uni87U2Plain(r)||r.schemaVersion!==1||r.id!==key||key!==`uni8-pay|${r.shiftId}`||r.source!=='real-uni8-shift'||!['paid','unpaid'].includes(r.status)||!Number.isSafeInteger(r.amount)||r.amount<0||!Number.isSafeInteger(r.rate)||r.rate<0||!Number.isSafeInteger(r.workMinutes)||r.workMinutes<0)invalid('payroll',key,r,'PAYROLL_SHAPE_OR_SOURCE');
+   else if(!p||!at)pending('payroll',key,r,'SIGNED_ATTENDANCE_ABSENT');
+   else if(r.placementId!==p.id||r.employerId!==p.employerId||r.mentorId!==p.mentorId||r.termKey!==p.termKey||r.dateISO!==at.dateISO||r.rate!==p.payPerHour||r.workMinutes!==at.minutes||r.amount!==(p.paid?Math.round(at.minutes*p.payPerHour/60):0)||r.status!==(p.paid?'paid':'unpaid')||at.paid!==true)invalid('payroll',key,r,'PAYROLL_AMOUNT_OR_IDENTITY_CONFLICT');
+   else if(plan.records.attendance[r.shiftId]?.status!=='VALID')pending('payroll',key,r,'SHIFT_SOURCE_PENDING');
+   else valid('payroll',key,r);
+  }
+  return plan;
+ }catch(e){return reject('UNTRUSTED_INPUT_EXCEPTION');}
+}
+// UNI.8.7-U2-C2: H13.4 import/load integration for the isolated C1 classifier.
+// This is not a second recommendation verifier or financial settlement engine.
+// Pending and invalid UNI.8.2–8.5 rows are never available to the live authorities.
+const UNI87_U2_C2_GROUPS=['cv','applications','interviews','placements','shifts','attendance','mentorSessions','evaluations','payroll'];
+let uni87U2C2Transaction=null;
+let uni87U2C2LastOrder=[];
+// Pure code-catalog/UNI.2 schema check: unlike uni2ValidRecord(), this uses
+// the candidate life explicitly and never invokes a mutating UNI.2 initializer.
+function uni87U2C2TermSource(candidate){
+ const u=candidate?.uni,terms=u?.termEnrollments?.terms;
+ if(terms===undefined||terms===null)return true;
+ if(!uni87U2Plain(terms)||Object.keys(terms).length>24)return false;
+ const sid=uni1InstitutionId(u,candidate);
+ for(const [key,t] of Object.entries(terms)){
+  if(!uni87U2SafeKey(key)||!uni87U2Plain(t)||t.schema!==2||t.termKey!==key||!/^[0-9]{4}-[12]$/.test(key)||t.institutionId!==sid||!['draft','confirmed','withdrawn','historical','missed'].includes(t.status)||t.academicYear!==+key.slice(0,4)||t.semester!==+key.slice(-1)||!Number.isInteger(t.year)||t.year<1||t.year>10)return false;
+  const program=t.programId&&UNI1_PROGRAMS[t.programId];
+  if(t.programId!==null&&(!program||program.institutionId!==sid||program.majorId!==t.majorId))return false;
+  if(!Array.isArray(t.courseIds)||!Array.isArray(t.attemptedCourseIds)||!Array.isArray(t.withdrawnCourseIds)||!Array.isArray(t.history)||t.courseIds.length>6||t.history.length>150||!t.finance||!['pending','settled','legacy-unverified'].includes(t.finance.status))return false;
+  for(const list of [t.courseIds,t.attemptedCourseIds,t.withdrawnCourseIds])if(list.length>80||list.length!==new Set(list).size||list.some(id=>!program||!program.requiredCourseIds.includes(id)))return false;
+  if((t.status==='confirmed'||t.status==='withdrawn'||t.status==='historical')&&t.courseIds.some(id=>!t.attemptedCourseIds.includes(id)))return false;
+ }
+ return true;
+}
+
+function uni87U2C2Context(candidate){
+ const u=candidate?.uni,terms=u?.termEnrollments?.terms;
+ return {
+  verifiedTerms:uni87U2Plain(terms)?terms:{},
+  ownerName:typeof candidate?.name==='string'?candidate.name:null,
+  calendar:Array.isArray(candidate?.calendar)?candidate.calendar:[],
+  archiveCalendar:Array.isArray(candidate?.archive?.calendar)?candidate.archive.calendar:[],
+  supervisors:Array.isArray(candidate?.npcs)?candidate.npcs.filter(n=>n&&typeof n.id==='string'&&n.id.startsWith('uni8-mentor|')).slice(0,257):[],
+  verifiedAcademic:Object.create(null)
+ };
+}
+function uni87U2C2Check(candidate){
+ const validity=h134ImportEnvelope(candidate);
+ if(!validity.ok)return {ok:false,reason:'INVALID_LIFE_ENVELOPE',plan:null};
+ const st=candidate?.uni?.internshipUNI8;
+ if(st===undefined||st===null)return {ok:true,reason:'INERT',plan:null};
+ if(!uni87U2C2TermSource(candidate))return {ok:false,reason:'INVALID_TERM_SOURCE',plan:null};
+ const plan=uni87U2Triage(candidate,uni87U2C2Context(candidate));
+ if(plan.rejectWholeCandidate){
+  // C3 CATEGORY 05: isolated C1 keeps rejecting unknown schemas by default.
+  // A structurally bounded future JSON root can instead be preserved LOSSLESSLY
+  // as inert pending evidence. No future-owned source may reach uni8State or R4.
+  if(plan.reason==='UNSUPPORTED_ROOT_SCHEMA'&&Number.isSafeInteger(st.schemaVersion)&&st.schemaVersion>1){
+   let raw,original;
+   try{raw=JSON.stringify(st);if(!raw||raw.length>UNI87_U2_C1_LIMITS.maxSingleEvidenceBytes)return {ok:false,reason:'FUTURE_EVIDENCE_LIMIT',plan};original=JSON.parse(raw);}
+   catch(error){return {ok:false,reason:'FUTURE_EVIDENCE_UNSAFE',plan};}
+   if(!uni87U2Plain(original)||original.schemaVersion!==st.schemaVersion)return {ok:false,reason:'FUTURE_EVIDENCE_CHANGED',plan};
+   const pendingPlan={schemaVersion:1,root:'FUTURE_PENDING',reason:'UNSUPPORTED_FUTURE_SCHEMA',futureRoot:original};
+   return {ok:true,reason:'FUTURE_ROOT_PENDING',plan:pendingPlan};
+  }
+  return {ok:false,reason:plan.reason,plan};
+ }
+ // Malformed containers cannot be safely reconstructed by the old UNI8 initializer.
+ // Reject the entire candidate rather than erase independently legitimate siblings.
+ if(plan.mapIssues.length)return {ok:false,reason:'UNSUPPORTED_INTERNSHIP_CONTAINER',plan};
+ if(!uni87U2Plain(st.fair)&&st.fair!==undefined&&st.fair!==null)return {ok:false,reason:'UNSAFE_FAIR_MAP',plan};
+ if(st.integrityUNI87U2!==undefined){
+  const old=uni87U2Inspect(st.integrityUNI87U2);
+  if(!old.ok)return {ok:false,reason:'INVALID_PREVIOUS_DIAGNOSTICS',plan};
+ }
+ return {ok:true,reason:'SOURCE_TRIAGED',plan};
+}
+function uni87U2C2Apply(plan){
+ if(!plan||plan.root==='INERT'||plan.root==='FUTURE_PENDING'||!S?.uni?.internshipUNI8)return;
+ const st=S.uni.internshipUNI8;
+ if(st.schemaVersion!==1)throw new Error('UNI87_U2_UNSUPPORTED_SCHEMA');
+ // C1's row-wise verdicts are necessary but not sufficient: a source-valid
+ // child MUST be restricted when its independently authenticated parent is not.
+ // This is a conservative non-rewarding dependency closure, not new evidence.
+ function restrict(group,key,original){
+  const row=plan.records[group]?.[key];
+  if(!row||row.status!=='VALID')return;
+  row.status='INDETERMINATE';row.reason='UPSTREAM_SOURCE_UNVERIFIED';
+  plan.stats.VALID--;plan.stats.INDETERMINATE++;
+  let raw;try{raw=JSON.stringify(original);}catch(error){throw Error('UNI87_U2_UNSAFE_DEPENDENCY');}
+  if(!raw||raw.length>UNI87_U2_C1_LIMITS.maxSingleEvidenceBytes)throw Error('UNI87_U2_UNSAFE_DEPENDENCY');
+  plan.pending.push({group,key,reason:row.reason,original:JSON.parse(raw)});
+  if(plan.pending.length+plan.quarantine.length>UNI87_U2_C1_LIMITS.maxDiagnostics)throw Error('UNI87_U2_DIAGNOSTIC_LIMIT');
+ }
+ const cvOk=Object.values(plan.records.cv).every(row=>row.status==='VALID');
+ for(const [id,a] of Object.entries(st.applications||{}))if(!cvOk)restrict('applications',id,a);
+ for(const [id,iv] of Object.entries(st.interviews||{})){
+  const a=Object.values(st.applications||{}).find(x=>x?.interviewId===id);
+  if(!a||plan.records.applications[a.offerId]?.status!=='VALID')restrict('interviews',id,iv);
+ }
+ for(const [id,p] of Object.entries(st.placements||{})){
+  if(!uni87U2Plain(p))continue;
+  const a=st.applications?.[p.offerId];
+  if(!a||plan.records.applications[p.offerId]?.status!=='VALID'||plan.records.interviews[a.interviewId]?.status!=='VALID')restrict('placements',id,p);
+  const placed=plan.records.placements[id]?.status==='VALID';
+  for(const [sid,shift] of Object.entries(p.shifts||{}))if(!placed)restrict('shifts',sid,shift);
+  for(const [sid,at] of Object.entries(p.attendance||{}))if(!placed||plan.records.shifts[sid]?.status!=='VALID')restrict('attendance',sid,at);
+  for(const [sid,meet] of Object.entries(p.mentorSessions||{}))if(!placed||plan.records.attendance[sid]?.status!=='VALID')restrict('mentorSessions',sid,meet);
+  if(!placed||Object.values(p.attendance||{}).some(at=>plan.records.attendance[at.id]?.status!=='VALID')||Object.entries(p.mentorSessions||{}).some(([sid])=>plan.records.mentorSessions[sid]?.status!=='VALID'))restrict('evaluations',id,st.evaluations?.[id]);
+ }
+ for(const [id,receipt] of Object.entries(st.payroll||{}))if(plan.records.attendance[receipt?.shiftId]?.status!=='VALID')restrict('payroll',id,receipt);
+ const removal=UNI87_U2_C2_GROUPS.some(g=>Object.values(plan.records[g]).some(x=>x.status!=='VALID'));
+ if(!removal)return;
+ const payload={schemaVersion:1,source:'uni87-u2-c2-import-only',pending:[],quarantine:[]};
+ // Preserve bounded ORIGINAL safe evidence. No diagnostics are treated as source truth.
+ for(const dest of ['pending','quarantine'])for(const item of plan[dest])payload[dest].push(item);
+ // Preserve a separately verified R4 historic reference as R4 pending when support
+ // becomes unavailable after legitimate Calendar pruning. R4 alone classifies it.
+ const f=st.fair;
+ if(uni87U2Plain(f)&&uni87U2Plain(f.references)){
+  const toRemove=new Set();
+  for(const [key,row] of Object.entries(plan.records.placements))if(row.status!=='VALID')toRemove.add(key);
+  for(const [key,row] of Object.entries(plan.records.attendance))if(row.status!=='VALID'){
+   for(const [id,p] of Object.entries(st.placements||{}))if(p&&p.attendance&&Object.prototype.hasOwnProperty.call(p.attendance,key))toRemove.add(id);
+  }
+  for(const [key,ref] of Object.entries(f.references))if(toRemove.has(ref?.placementId)){
+   let verdict;try{verdict=uni86R4ReferenceVerdict(key,ref);}catch(error){verdict={kind:'invalid',reason:'source-exception'};}
+   if(verdict?.kind==='indeterminate'){
+    uni86R4Store(f,'pending',key,ref,{...verdict,collection:'references'});
+    delete f.references[key];
+   }
+  }
+ }
+ // Remove only independently non-VALID rows from active gameplay indexes.
+ // Genuine siblings remain the exact original object references and fields.
+ for(const g of ['cv','applications','interviews','placements','evaluations','payroll']){
+  const rows=plan.records[g];
+  for(const [id,entry] of Object.entries(rows))if(entry.status!=='VALID'){
+   if(g==='cv')st.cv=null;
+   else if(uni87U2Plain(st[g]))delete st[g][id];
+  }
+ }
+ for(const [group,field] of [['shifts','shifts'],['attendance','attendance'],['mentorSessions','mentorSessions']]){
+  for(const [id,entry] of Object.entries(plan.records[group]))if(entry.status!=='VALID'){
+   for(const p of Object.values(st.placements||{}))if(uni87U2Plain(p)&&uni87U2Plain(p[field])&&Object.prototype.hasOwnProperty.call(p[field],id))delete p[field][id];
+  }
+ }
+ // Preserve previous diagnostics from a processed save; they are historical notes
+ // only, never eligibility or a trusted marker to skip fresh source checks.
+ const prior=st.integrityUNI87U2;
+ if(uni87U2Plain(prior)&&prior.schemaVersion===1&&Array.isArray(prior.pending)&&Array.isArray(prior.quarantine)){
+  const unique=(items)=>{const out=[],seen=new Set();for(const x of items){const k=JSON.stringify([x.group,x.key,x.reason]);if(seen.has(k))continue;seen.add(k);out.push(x);}return out;};
+  payload.pending=unique(prior.pending.concat(payload.pending));
+  payload.quarantine=unique(prior.quarantine.concat(payload.quarantine));
+  if(payload.pending.length+payload.quarantine.length>UNI87_U2_C1_LIMITS.maxDiagnostics)throw new Error('UNI87_U2_DIAGNOSTIC_LIMIT');
+ }
+ st.integrityUNI87U2=payload;
+}
+// Outer migration runs the pre-normalization stage before all prior migration,
+// including the R4 wrapper; the transaction token only applies to this candidate.
+const uni87U2C2PreviousMigrate=migrate;
+migrate=function(...args){
+ const tx=uni87U2C2Transaction;
+ if(tx&&tx.candidate===S&&!tx.applied){
+  tx.applied=true;
+  tx.order.push('isolate-before-legacy-migrate');
+  uni87U2C2Apply(tx.plan);
+ }
+ const result=uni87U2C2PreviousMigrate.apply(this,args);
+ if(tx&&tx.candidate===S)tx.order.push('legacy-migrate-and-R4-complete');
+ return result;
+};
+// Install *after* R4's loadCandidate wrapper so rejected preflight never switches
+// S or invokes the earlier H13.4 commit. H13.4/R4 retain rollback ownership.
+const uni87U2C2PreviousLoadCandidate=h134LoadCandidate;
+h134LoadCandidate=function(candidate,label){
+ const check=uni87U2C2Check(candidate);
+ if(!check.ok){toast('Internship save import blocked: unsupported or contradictory source container. Previous life retained.');return false;}
+ // Stage a wholly independent compatible life before H13.4 switches live S.
+ // Do not mutate the untrusted input object; a failed downstream save uses
+ // the pre-existing H13.4/R4 rollback. Original future bytes remain pending.
+ let safeCandidate=candidate;
+ if(check.plan?.root==='FUTURE_PENDING'){
+  try{
+   safeCandidate=JSON.parse(JSON.stringify(candidate));
+   const future=check.plan.futureRoot;
+   safeCandidate.uni.internshipUNI8={schemaVersion:1,cv:null,applications:{},interviews:{},placements:{},evaluations:{},payroll:{},fair:{},quarantine:[],presence:null,
+    integrityUNI87U2:{schemaVersion:1,source:'uni87-u2-c3-unsupported-future-pending',pending:[{group:'root',key:'internshipUNI8',reason:'UNSUPPORTED_FUTURE_SCHEMA',schemaVersion:future.schemaVersion,original:future}],quarantine:[]}};
+  }catch(error){toast('Internship save import blocked: future evidence could not be preserved safely.');return false;}
+ }
+ const earlier=uni87U2C2Transaction;
+ const transaction={candidate:safeCandidate,plan:check.plan,applied:false,order:['preflight-before-state-switch']};
+ uni87U2C2Transaction=transaction;
+ try{return uni87U2C2PreviousLoadCandidate.apply(this,[safeCandidate,label]);}
+ finally{uni87U2C2LastOrder=transaction.order.slice();uni87U2C2Transaction=earlier;}
+};
 
 // ---------- UI helpers ----------
 function pendingOpen(){return S.pendingDecisions.filter(x=>!x.resolved)}
@@ -18146,6 +21713,10 @@ chips('personality',D.personalities,selectedP);chips('talents',D.talents,selecte
 
 // Safe test hook used by QC. It does not alter normal gameplay unless called explicitly.
 window.__LIFE_SIM_TEST__={
+ importFailedText:()=>importSaveFile({text:()=>Promise.reject(new Error("U2 QA read failure"))}),
+ tryLoadLast:()=>loadLast(),
+ importText:(text)=>importSaveFile({text:()=>Promise.resolve(text)}),
+ readinessPure:()=>uni86R3CareerReadiness(),
  getState:()=>S?JSON.parse(JSON.stringify(S)):null,
  setAge:(age)=>{if(!S)return;age=Math.max(0,Math.min(100,Number(age)||0));S.age=age;const b=parseISO(S.dob);b.setUTCFullYear(b.getUTCFullYear()+age);S.clock.dateISO=isoDate(b);S.clock.minute=480;addStagePeople();progressSchoolForAge();ensurePhoneApps();reconcileState('test');render();save()},
  setNeed:(k,v)=>{if(S&&k in S.needs){S.needs[k]=clamp(v);render()}},
@@ -18177,7 +21748,7 @@ window.__LIFE_SIM_TEST__={
  eventChoice:(id,choice)=>resolveEventChoice(id,choice),
  reconcile:()=>{reconcileState('test');render();save()},
  todayWarnings:()=>todayWarnings(),
- call:(name,...args)=>{const f={h126BaseGate,h126PersonGate,h126InviteGate,h126Invite,h126ShareGate,h126Share,h126SocialHtml,h126AttendMeal,h125FoodRoom,h125Gate,cafeteriaLunch4C3,eatPackedLunch4C3,h125Drink,vendingSnack4C3,h125FoodHtml,setPlayerLocation4C1,h124Record,h124PackGate,packLunchH124,unpackLunchH124,itemReservedForLunchH12,h124CarryOnTravel,h124ReturnFromSchool,h124LunchMeal,migrateLunchboxH124,homeLunchboxHtmlH124,foodCaregiverGateH123,foodHomeHtmlH123,foodInventoryUnitsH123,foodCookingStateH122,foodCookingGateH122,foodIngredientPlanH122,cookRecipeH122,preferredRecipeH122,H12_RECIPES,nursePhysicalGateH114,nurseMedicalSessionH114,nurseReturnGateH114,nurseEmergencyH114,hallPassRouteGateH113,hallPassMoveH113,hallPassRestroomGateH113,hallPassRecoveryH113,hallPassReturnH113,schoolClassSession4C2,schoolLiveRoomsH103,hallPassRuntimeH11,hallPassValidH11,hallPassReconcileH11,hallPassActiveH11,hallPassRequestGateH11,hallPassRequestH11,hallPassCancelH11,migrateHallPassH11,h105RoomTargets,h105RouteGate,h105OpenRoomEducation,h105ReturnToMap,h105CampusEligible,schoolRoomActionsH104,schoolRoomActionGateH104,schoolRoomActionH104,schoolRoomActionHtmlH104,schoolVisitorContextH104,schoolVisitorAreasHtmlH104,schoolTimetableRoomsH103,schoolLiveRoomsH103,schoolPeriodRoomH103,schoolLocateRoomH103,schoolCampusMapHtmlH102,schoolRoomMoveH102,schoolRoomMoveGateH102,schoolRoomsH10,schoolRoomByIdH10,schoolRoomGraphH10,schoolRoomRouteH10,schoolRoomTravelMinutesH10,schoolRoomForSubjectH10,schoolRoomRuntimeH10,currentSchoolRoomH10,setSchoolRoomH10,schoolRoomAccessH10,migrateSchoolRoomsH10,reconcileSchoolRoomH10,h9State,migrateSchoolPublicH9,h9Policy,h9CalendarTick,h9PublicEvent,h9KnownSchools,h9Listings,h9Pass,h9Gate,h9Register,h9Ticket,h9TravelGate,h9CheckIn,h9ActualPresence,h9GuestInvite,h9VisitorTicket,h9VisitorArrive,h9Moment,h9CheckOut,h9Cancel,h9Tick,h9PublicHtml,h8OpenPersonSlots,h8CalendarTickById,h8CalendarTick,h8UpdateCalendar,h8State,migrateNightCallsH8,h8SlotKey,h8TimeValid,h8NpcAvailability,h8CallSlotGate,h8Propose,h8JoinGate,h8Join,h8Tick,h8Cancel,h8CallPanel,h8PlayerPermissionNeeded,canSneak,sneakOut,callAvailability3C2,bedtimeCommunicationGate3C3,openCallsModal3C2,matchmakeModal,createMatchOffer3B4,matchCandidateInfo3B4,openMatchOffer3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,migrateRomance3B4,matchmakerEligible3B4,matchmakingCooldownActive3B4,noteMatchmakingPlan3B4,h7State,h7Edge,h7LinkedCandidates,h7ChooseLink,h7Candidate,h7MeetingGate,h7Meet,npcInitiative,migrateWorldEncountersH6,h6State,h6Venue,h6OpportunityRate,h6CandidatePool,h6PickCandidate,h6MaybeNotice,h6MaybeFollowUp,h6NpcOpportunity,h6EventChoice,doChore,sleepThroughNight,allowancePA5Roll,allowancePA5Request,allowancePA5State,allowancePA5Eligible,allowancePA5Bounds,allowancePA5Tick,allowancePA5Answer,allowancePA5Negotiate,allowancePA5Discuss,promPA4Choose,promPA4KitState,promPA4NoMakeup,promPA4Gate,promPA4Selected,promPA4HairMinutes,promPA4MakeupUnits,promPA3Winners,promPA3Record,promPA3Gate,promPA3Action,promPA3Partner,promPA3Html,promPA3FollowupGate,promPA3Followup,chatAdd,replyChat,migrateRomanceH5,romanceH5MeetGate:(id,mode)=>romanceH5MeetGate(personById(id),mode),romanceH5Activity:(id,key)=>romanceH5Activity(personById(id),key),applyRelationshipOutcomeH5,migrateLoveH4,romanceDisplayLabelH4:(id)=>romanceDisplayLabelH4(personById(id)),romanceCommitmentLabelH4:(id)=>romanceCommitmentLabelH4(personById(id)),romanceStageConversationH4:(id,k)=>romanceStageConversationH4(personById(id),k),romanceMenu:(id)=>romanceMenu(id),ensureLove:(id)=>ensureLove(personById(id)),schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,occasionGiftDeliveryGate6C8,occasionUiClick6C7,occasionSection6C7,occasionNotify6C7,occasionVisible6C7,occasionSocialAction6C6,occasionSocialGate6C6,occasionHolidayAction6C6,occasionMeaningfulSocial6C6,occasionReconcileConsequences6C6,occasionSurpriseHomeVisit6C5,occasionSurpriseHomeActor6C5,occasionReconcileSurprise6C5,occasionDiscoverSurprise6C5,occasionSurpriseRecord6C5,occasionSurpriseOtherPartyGate6C5,occasionPlanSurprise6C5,occasionNpcSurpriseCandidates6C5,occasionNpcInitiative6C5,occasionSurpriseEventGate6C5,occasionCancelSurprise6C5,occasionResolveSurprise6C5,occasionGuestLedger6C4,occasionGuestGate6C4,occasionInvite6C4,occasionAttendanceGate6C4,occasionConfirmAttendance6C4,occasionGiftLedger6C3,occasionGiftGate6C3,occasionSelectGift6C3,occasionWrapGift6C3,occasionGiveGift6C3,occasionPlan6C2,occasionPlanningGate6C2,occasionPrepare6C2,occasionState6C1,migrateOccasions6C1,reconcileOccasions6C1,occasionDefinitionCatalog6C1,occasionRecords6C1,occasionRecord6C1,occasionPreparationGate6C1,occasionTransition6C1,occasionId6C1,occasionAnnualDate6C1,vacationTick,promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
+ call:(name,...args)=>{const f={uni87U2C2TermSource,uni87U2C2LastOrder:()=>uni87U2C2LastOrder,uni87U2C2Check,uni87U2C2Context,uni87U2Triage,uni87U2Inspect,uni87U2ProofCalendar,uni87U2Plain,UNI87_U2_C1_LIMITS,uni87SelectTab,uni87ComposeHtml,uni87OverviewHtml,uni86R4Reconcile,uni86R4WalkVerdict,uni86R4ReferenceVerdict,uni86R4CalendarState,uni86R4WithMissingCalendar,migrate,h134LoadCandidate,importSaveFile,render,ageUp,nextDay,loadLast,loadRaw,save,uni6ClubsHtml,uni3AtCampus,uni86R3ShiftCalendar,uni86R3Venue,uni86R3References,uni86R3History,uni86R3ReferenceId,uni86R3ReferenceValid,uni86R3Gate,uni86R3Walk,uni86R3Request,uni86R3CareerReadiness,uni86R3Html,uni86R2Travel,uni86R2Walk,uni86R2CheckIn,uni86R2Network,uni86R2AttendanceValid,uni86R2NetworkValid,uni86R2Gate,uni86R2Html,uni86FairKey,uni86FairState,uni86Term,uni86Employers,uni86Conflict,uni86FairValid,uni86FairDiscover,uni86Decision,uni86FairTick,uni86FairReconcile,uni86FairHtml,uni86Event,uni86EventMatches,uni8PaySource,uni8PostPay,uni8CollectPay,uni8MentorSession,uni8FinalReview,uni8PerformanceHtml,uni8ConfirmedTerm,uni8OfferList,uni8OfferById,uni8Eligibility,uni8OpportunitiesHtml,uni8State,uni8CV,uni8InterviewSlot,uni8Apply,uni8Application,uni8InterviewTravel,uni8AttendInterview,uni8InterviewTick,uni8ApplicationsHtml,uni8Placement,uni8ActivePlacement,uni8MentorId,uni8MentorValid,uni8CreateMentor,uni8ShiftPlan,uni8AcceptOffer,uni8Shift,uni8WorksiteTravel,uni8AttendShift,uni8ReturnHome,uni8QuitPlacement,uni8PlacementCalendarTick,uni8PlacementHtml,uni7CreateDeadline,uni7FinanceCalendarTick,uni7RecordValid,uni7IntegrityCheck,uni7FinanceHtml,uni7BilledAmount,uni7AddCourse,uni7EligibleNewTerm,uni7LoanUsed,uni7Coverage,uni7Transaction,uni7InvoiceId,uni7Data,uni7Evidence,uni7AwardEligibility,uni7ApplyAward,uni7ReviewScholarship,uni7Quote,uni6ClubContact,uni6GroupInvite,uni6GroupAttend,uni6GroupValid,uni6PruneHistory,uni6IntegrityMigrate,uni6ValidateReceiptCalendar,uni6TermRecord,uni6Election,uni6ElectionWindow,uni6ElectionCandidates,uni6LeadershipApply,uni6CampaignPlan,uni6CampaignAttend,uni6LeadershipVote,uni6ResolveElection,uni6LeadershipDutyPlan,uni6LeadershipDutyAttend,uni6LeadershipWalk,uni6LeadershipHtml,uni6LeadershipEligibility,uni6LeadershipTick,uni6NpcInviteTick,uni6InviteRespond,uni6PeerPerson,uni6StudentFree,uni6InviteCreate,uni6InviteSlot,uni6InviteValid,uni6InviteWalk,uni6InviteAttend,uni6InviteTick,uni6SocialHtml,uni6EventReconcile,uni6EventRSVP,uni6EventAttend,uni6EventWalk,uni6EventValid,uni6EventBlueprint,uni6CalendarOtherTick,uni6CalendarTick,uni6ClubJoin,uni6ClubLeave,uni6ClubReconcile,uni6ClubCurrent,uni6ClubWalk,uni6ClubAttend,uni6ClubSessions,uni6Venues,uni6SupportConflict,uni6CampusWalk,uni6State,uni6Term,uni6SyncPeers,uni6Classmates,uni6NearClass,uni6PeerBusy,uni6PeerAction,uni6PeopleHtml,uni6ValidStudent,uni5IntegrityMigrate,uni5ReceiptValid,uni5ModernEvidence,uni5StandingEvaluate,uni5StandingReconcile,uni5ChooseRecoveryPlan,uni5BookFollowup,uni5AdviserReceipt,uni5StandingHtml,uni5TutorEligible,uni5TutorTutor,uni5TutoringHtml,uni5Slots,uni5Book,uni5Cancel,uni5OfficeTravel,uni5SupportReceipt,uni5CalendarTick,uni5AppointmentsHtml,uni5ValidAppointment,uni5MeetingConflict,uni5State,uni5Bind,uni5Current,uni5CurrentFaculty,uni5Adviser,uni5FacultyHtml,uni5Migrate,uni5Professional,uni5ActorValid,uni4DateValid,uni4MedicalExcuse,uni4State,uni4Ensure,uni4Action,uni4Sync,uni4Migrate,uni4FinalizeTerm,uni4HasModernTerm,uni4ReconcileCredits,uni4CalendarTick,uni4ExamTravel,uni4GradeEvidence,uni4Html,advanceTime,processCalendar,uni3State,uni3Term,uni3ValidDay,uni3Rooms,uni3Sync,uni3Current,uni3Upcoming,uni3Travel,uni3Attend,uni3Excuse,uni3Lookup,uni3CalendarTick,uni3Migrate,uni3Html,uniYearTick,uni2AllowsLegacyGpa,uni2OpenTerm,uni2Calendar,uni2Data,uni2Guard,uni2EnsureTerm,uni2Register,uni2CourseGate,uni2LoadLabel,uni2Render,uni2Migrate,uni2CloseTerm,uni2Settle,uni2MajorChangeAllowed,uni1AuditCatalog,uni1RouteEligibility,uni1EntryEligibility,uni1TransferEligibility,uni1CourseEligibility,uni1ProgramFor,uni1Readiness,uni1BindCurrent:()=>uni1BindProgram(S),uni1DegreeYears,uni1ProgramHtml,uni1DegreeForInstitution,h126BaseGate,h126PersonGate,h126InviteGate,h126Invite,h126ShareGate,h126Share,h126SocialHtml,h126AttendMeal,h125FoodRoom,h125Gate,cafeteriaLunch4C3,eatPackedLunch4C3,h125Drink,vendingSnack4C3,h125FoodHtml,setPlayerLocation4C1,h124Record,h124PackGate,packLunchH124,unpackLunchH124,itemReservedForLunchH12,h124CarryOnTravel,h124ReturnFromSchool,h124LunchMeal,migrateLunchboxH124,homeLunchboxHtmlH124,foodCaregiverGateH123,foodHomeHtmlH123,foodInventoryUnitsH123,foodCookingStateH122,foodCookingGateH122,foodIngredientPlanH122,cookRecipeH122,preferredRecipeH122,H12_RECIPES,nursePhysicalGateH114,nurseMedicalSessionH114,nurseReturnGateH114,nurseEmergencyH114,hallPassRouteGateH113,hallPassMoveH113,hallPassRestroomGateH113,hallPassRecoveryH113,hallPassReturnH113,schoolClassSession4C2,schoolLiveRoomsH103,hallPassRuntimeH11,hallPassValidH11,hallPassReconcileH11,hallPassActiveH11,hallPassRequestGateH11,hallPassRequestH11,hallPassCancelH11,migrateHallPassH11,h105RoomTargets,h105RouteGate,h105OpenRoomEducation,h105ReturnToMap,h105CampusEligible,schoolRoomActionsH104,schoolRoomActionGateH104,schoolRoomActionH104,schoolRoomActionHtmlH104,schoolVisitorContextH104,schoolVisitorAreasHtmlH104,schoolTimetableRoomsH103,schoolLiveRoomsH103,schoolPeriodRoomH103,schoolLocateRoomH103,schoolCampusMapHtmlH102,schoolRoomMoveH102,schoolRoomMoveGateH102,schoolRoomsH10,schoolRoomByIdH10,schoolRoomGraphH10,schoolRoomRouteH10,schoolRoomTravelMinutesH10,schoolRoomForSubjectH10,schoolRoomRuntimeH10,currentSchoolRoomH10,setSchoolRoomH10,schoolRoomAccessH10,migrateSchoolRoomsH10,reconcileSchoolRoomH10,h9State,migrateSchoolPublicH9,h9Policy,h9CalendarTick,h9PublicEvent,h9KnownSchools,h9Listings,h9Pass,h9Gate,h9Register,h9Ticket,h9TravelGate,h9CheckIn,h9ActualPresence,h9GuestInvite,h9VisitorTicket,h9VisitorArrive,h9Moment,h9CheckOut,h9Cancel,h9Tick,h9PublicHtml,h8OpenPersonSlots,h8CalendarTickById,h8CalendarTick,h8UpdateCalendar,h8State,migrateNightCallsH8,h8SlotKey,h8TimeValid,h8NpcAvailability,h8CallSlotGate,h8Propose,h8JoinGate,h8Join,h8Tick,h8Cancel,h8CallPanel,h8PlayerPermissionNeeded,canSneak,sneakOut,callAvailability3C2,bedtimeCommunicationGate3C3,openCallsModal3C2,matchmakeModal,createMatchOffer3B4,matchCandidateInfo3B4,openMatchOffer3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,migrateRomance3B4,matchmakerEligible3B4,matchmakingCooldownActive3B4,noteMatchmakingPlan3B4,h7State,h7Edge,h7LinkedCandidates,h7ChooseLink,h7Candidate,h7MeetingGate,h7Meet,npcInitiative,migrateWorldEncountersH6,h6State,h6Venue,h6OpportunityRate,h6CandidatePool,h6PickCandidate,h6MaybeNotice,h6MaybeFollowUp,h6NpcOpportunity,h6EventChoice,doChore,sleepThroughNight,allowancePA5Roll,allowancePA5Request,allowancePA5State,allowancePA5Eligible,allowancePA5Bounds,allowancePA5Tick,allowancePA5Answer,allowancePA5Negotiate,allowancePA5Discuss,promPA4Choose,promPA4KitState,promPA4NoMakeup,promPA4Gate,promPA4Selected,promPA4HairMinutes,promPA4MakeupUnits,promPA3Winners,promPA3Record,promPA3Gate,promPA3Action,promPA3Partner,promPA3Html,promPA3FollowupGate,promPA3Followup,chatAdd,replyChat,migrateRomanceH5,romanceH5MeetGate:(id,mode)=>romanceH5MeetGate(personById(id),mode),romanceH5Activity:(id,key)=>romanceH5Activity(personById(id),key),applyRelationshipOutcomeH5,migrateLoveH4,romanceDisplayLabelH4:(id)=>romanceDisplayLabelH4(personById(id)),romanceCommitmentLabelH4:(id)=>romanceCommitmentLabelH4(personById(id)),romanceStageConversationH4:(id,k)=>romanceStageConversationH4(personById(id),k),romanceMenu:(id)=>romanceMenu(id),ensureLove:(id)=>ensureLove(personById(id)),schoolGuestCancelH3,locationSchoolId4C1,schoolGuestHostMomentH3,schoolGuestHostMomentsHtmlH3,promCourtSchoolPeer6A4:(id)=>promCourtSchoolPeer6A4(npcById(id),S.school.prom),schoolGuestStateH3,schoolGuestSchoolH3,schoolGuestAskSchoolH3,schoolGuestApplyH3,schoolGuestTicketH3,schoolGuestRegistrationH3,schoolGuestRosterH3,schoolGuestArriveH3,schoolGuestHostEventH3,schoolGuestExternalInvitationH3,schoolGuestInviteDecisionH3,schoolGuestApproveExternalH3,schoolGuestTicketExternalH3,schoolGuestEntryH3,schoolGuestActivityH3,schoolGuestLeaveH3,schoolGuestReconcileH3,schoolGuestInvitationHtmlH3,schoolGuestPolicyH3,promH2SchoolStatus,promH2TicketAction,promH2TicketPrice,promH2ReconcileTicket,promH2RSVP,promNightRoster6B1,migrateRomance3B1,migrateCanonicalIdentityH1,isEstablishedPartner,relationshipStatus,partnerBoundaryH1,romanceCompatibility,isFamilyPerson,friendTier,siblingLabel,ensureSiblingBirthOrderH1,siblingBabyArrives,promRomancePossible6A3,romanceAffection3B3,occasionReleaseFuzz6C8,occasionGiftDeliveryGate6C8,occasionUiClick6C7,occasionSection6C7,occasionNotify6C7,occasionVisible6C7,occasionSocialAction6C6,occasionSocialGate6C6,occasionHolidayAction6C6,occasionMeaningfulSocial6C6,occasionReconcileConsequences6C6,occasionSurpriseHomeVisit6C5,occasionSurpriseHomeActor6C5,occasionReconcileSurprise6C5,occasionDiscoverSurprise6C5,occasionSurpriseRecord6C5,occasionSurpriseOtherPartyGate6C5,occasionPlanSurprise6C5,occasionNpcSurpriseCandidates6C5,occasionNpcInitiative6C5,occasionSurpriseEventGate6C5,occasionCancelSurprise6C5,occasionResolveSurprise6C5,occasionGuestLedger6C4,occasionGuestGate6C4,occasionInvite6C4,occasionAttendanceGate6C4,occasionConfirmAttendance6C4,occasionGiftLedger6C3,occasionGiftGate6C3,occasionSelectGift6C3,occasionWrapGift6C3,occasionGiveGift6C3,occasionPlan6C2,occasionPlanningGate6C2,occasionPrepare6C2,occasionState6C1,migrateOccasions6C1,reconcileOccasions6C1,occasionDefinitionCatalog6C1,occasionRecords6C1,occasionRecord6C1,occasionPreparationGate6C1,occasionTransition6C1,occasionId6C1,occasionAnnualDate6C1,vacationTick,promNightFuzz6B7,promAfterRecord6B6,ensurePromAfter6B6,promFarewellGate6B6,promFarewell6B6,finalizePromAfter6B6,promHomeResponseGate6B6,promHomeResponse6B6,promAfterHtml6B6,promMomentsConsentSeed6B4:(id)=>hashOf(`${S.school.prom.foundation6A1.eventId}|dance|${id}`)%100,promMomentsRecord6B4,ensurePromMoments6B4,promMomentsGate6B4,promMomentsAction6B4,promMomentsDanceConsent6B4,promArrivalRecord6B3,promArrivalGate6B3,promArrivalAbsence6B3,promArrivalCompanion6B3,initializePromArrival6B3,reconcilePromArrival6B3,promArrivalGreet6B3,promArrivalHtml6B3,buyWithOwnMoney,catalogItem,promReadyWindow6B2,promReadyRecord6B2,ensurePromReady6B2,promWearableOptions6B2,promOutfitChoice6B2,promOutfitQuality6B2,promMakeupKit6B2,promMakeupSelf6B2,promHelperCandidates6B2,promHelperQuality6B2,promMakeupHelper6B2,promHair6B2,promReadySummary6B2,enterPromNight6B1,leavePromNight6B1,missPromNight6B1,reconcilePromNight6B1,promNightRoster6B1,promNightEntryGate6B1,promNightRecord6B1,ensurePromNight6B1,promNightWindow6B1,promNightAvailable6B1,promFuzzEpisode6A7,promRegionalMatrix6A7:()=>{const output=[],original=calendarProfile().region;try{for(const region of Object.keys(SCHOOL_CAL)){S.calendarProfile.region=region;for(const year of [2029,2037,2042,2043]){const date=promDateFor(year),a=academicYear(year),info=academicInfo(date);let days=0;for(let t=-16;t<=-3;t++)if(isSchoolDay(addDays(date,t)))days++;output.push({region,year,date,days,sem2:info.phase==='sem2',break:!!breakOn(date,info),day:parseISO(date).getUTCDay(),within:date>=a.sem2Start&&date<=a.end});}}}finally{S.calendarProfile.region=original;}return output;},promRegistrationDecision6A1,personById,promDateStudent6A3,promDateWindow6A3,promDateCanAsk6A3,promDateAsk6A3,promDateAskTarget6A3,promDateCommit6A3,promDateStatus6A3,promDateReconcile6A3,promCancelDate6A3,promDatePlan6A3,promFollowUp6A3,handlePromInvite,ensurePromCommittee6A2,closePromCommittee6A2,reconcilePromCommittee6A2,promCommitteeApplicationOpen6A2,applyPromCommittee6A2,declinePromCommittee6A2,promCommitteeApproved6A2,promCommitteeSessionGate6A2,promCommitteeWork6A2,promCommitteeProposal6A2,promCommitteeHtml6A2,promCommitteeClick6A2,migrateMicrobusiness5D6,microbusinessActiveSession5D6,microbusinessStartBusiness5D6,microbusinessStartSession5D6,microbusinessResumeLegacy5D6,microbusinessSessionHtml5D6,microbusinessFinishSession5D6,microbusinessClick5D6,microbusinessTypes5D1,ensureMicrobusiness5D1,migrateMicrobusiness5D1,microbusinessEligibility5D1,microbusinessPermission5D1,microbusinessCreateSession5D1,microbusinessSession5D1,microbusinessTransition5D1,microbusinessRegisterBatch5D1,microbusinessCommit5D1,microbusinessBatchProduct5D2,microbusinessValidateYardItem5D2,microbusinessSetPrice5D2,microbusinessPrepareBatch5D2,microbusinessFinishStock5D2,microbusinessTrafficLimit5D3,microbusinessNextCustomer5D3,microbusinessRespond5D3,microbusinessResolveComplaint5D3,microbusinessState5D4,migrateMicrobusiness5D4,microbusinessReputation5D4,microbusinessNeighborCandidates5D4,microbusinessAttachCustomer5D4,microbusinessCustomerSettlement5D4,migrateMicrobusiness5D5,microbusinessState5D5,microbusinessMarketContext5D5,microbusinessFamilyHelp5D5,microbusinessCreateOrder5D5,microbusinessOrder5D5,microbusinessFulfillOrder5D5,microbusinessCancelOrder5D5,microbusinessOrderCalendarTick5D5,microbusinessSaleEvidence5D5,bizSell:(id,h,m)=>bizSell(bizList().find(b=>b.id===id),h,m),removeItem,seasonalGearPreview5C45,seasonalItemDetail5C45,seasonalKitSummaryHtml5C45,seasonalInventoryDetailsHtml5C45,applySeasonalGearBenefits5C45,migrateSeasonalIntegration5C45,acquireSeasonalRental5C44,finishSeasonalRental5C44,seasonalRentalStatus5C44,seasonalRepairQuote5C44,repairSeasonalGear5C44,replaceSeasonalGear5C44,migrateSeasonalItems5C41,registerSeasonalItemMetadata5C41,seasonalItemMetadata5C41,seasonalEquipmentRequirements5C41,seasonalWearItem5C43,applySeasonalEquipmentUse5C43,consumeSeasonalSupply5C43,seasonalOwnedItemView5C41,migrateOutdoorIntegration5C35,outdoorUiSlot5C35,outdoorPanel5C35,settleOutdoorReservation5C35,outdoorExperience5C34,outdoorMeetingProvenance5C34,outdoorParticipants5C33,validateOutdoorAttendance5C33,outdoorInvitationCooldown5C33,outdoorInvitationStamp5C33,validateOutdoorInvitation5C33,migrateOutdoorSocial5C33,outdoorInterval5C32,outdoorScheduleConflict5C32,outdoorWeather5C32,outdoorEquipment5C32,outdoorExecutionGate5C32,executeOutdoor5C32,migrateSeasonalActivities5C31,seasonalOutdoorDefinition5C31,seasonalParticipantContext5C31,legitimateCampingSupervisor5C31,campingSupervisionEligibility5C31,campingOvernightPermissionEligibility5C31,seasonalOutdoorPlanGate5C31,seasonalOutdoorExecutionValidation5C31,migrateSeasonalActivities5C2,ensureSeasonalState5C2,registerSeasonalCatalog5C2,seasonalActivityOptions5C2,seasonalGearAccess5C2,acquireSeasonalRental5C2,useSunscreen5C2,sunExposureRisk5C2,seasonalSafetyGate5C2,migrateSeasonalActivities5C1,ensureSeasonalState5C1,seasonalActivities5C1,seasonalActivityDefinition5C1,seasonForDate5C1,seasonalTravelTags5C1,seasonalSeasonGate5C1,seasonalLocationGate5C1,seasonalScheduleConflict5C1,seasonalActivityEligibility5C1,seasonalParticipantGate5C1,seasonalRsvp5C1,requestSeasonalPermission5C1,seasonalPlanById5C1,createSeasonalPlan5C1,performSeasonalActivity5C1,attendSeasonalPlan5C1,createSeasonalNpcInvitation5C1,migratePrograms5B4,summerJobDefinition5B4,summerJobOffer5B4,discoverSummerJobs5B4,summerJobApplicationScore5B4,summerJobApplicationGate5B4,applySummerJob5B4,summerJobRecord5B4,activeSummerJob5B4,ensureSummerWorkplacePeople5B4,summerJobShiftRecord5B4,paySummerJobShift5B4,attendSummerJobShift5B4,missSummerJobShift5B4,completeSummerJob5B4,summerJobsDaily5B4,summerJobSummary5B4,summerJobsHtml5B4,migratePrograms5B3,ensureAcademicPrograms5B3,academicSubjects5B3,academicProgramDefinition5B3,academicProgramTemplateId5B3,academicTrack5B3,academicSchedule5B3,academicProgramOffer5B3,activeAcademicPrograms5B3,summerAcademicSubjects5B3,academicProgramCount5B3,academicProgramGate5B3,enrollAcademicProgram5B3,academicProgramApplySession5B3,academicProgramPeerContext5B3,academicPeerRomanceEligibility5B3,academicProgramOfferSummary5B3,academicProgramsHtml5B3,migratePrograms5B2,ensureProgramRuntime5B2,canonicalProgramRecord5B2,normalizeProgramEnrollment5B2,ensureProgramInstructor5B2,programTryoutRequired5B2,programTryoutState5B2,programTryoutScore5B2,attemptProgramTryout5B2,programEnrollmentGate5B1,programSessionRecord5B2,programSessionProgress5B2,programAttendanceApply5B2,markProgramSession5B2,ensureProgramParticipants5B2,programCompletionReady5B2,programStatusSummary5B2,attendProgram,programMissed,finishProgram,migratePrograms5B1,ensureProgramFoundation5B1,programDefinitions5B1,programDefinition5B1,programMode5B1,schoolBreakState5B1,programOffer5B1,discoverProgramOffers5B1,programScheduleConflicts5B1,programPermissionContext5B1,programPermissionScore5B1,requestProgramPermission5B1,programEnrollmentByProgramId5B1,enrollFormalProgram5B1,programCalendarEvents5B1,programsHtml,migrateWorkbooks5A4,ensureWorkbookIntegration5A4,workbookSubjectLearning5A4,workbookRecentSession5A4,workbookExamSupport5A4,workbookCompetitionSupport5A4,recordWorkbookStudyIntegration5A4,workbookTeacherRecommendationCandidate5A4,workbookTeacherRecommendationGate5A4,requestWorkbookTeacherRecommendation5A4,workbookRecommendation5A4,requestWorkbookSupport5A4,advancedStudySelectedSubject5A4,advancedStudyPanel5A4,migrateWorkbooks5A3,ensureWorkbookSessions5A3,advancedStudySessionToday5A3,advancedStudyUsedToday5A3,workbookSessionDuration5A3,advancedStudyLocationGate5A3,advancedStudyScheduleGate5A3,advancedStudyContextFactor5A3,advancedStudyProgressGain5A3,advancedStudyNarrative5A3,advancedStudySessionGate5A3,performAdvancedStudy5A3,advancedStudyButtonReason5A3,migrateWorkbooks5A2,ensureWorkbookLearning5A2,workbookLearningRecord5A2,workbookProgress5A2,workbookCompleted5A2,workbookPrerequisite5A2,workbookGradeState5A2,workbookEligibility5A2,workbookLevelDifficulty5A2,workbookDisplayState5A2,workbookCompletionHistory5A2,recordWorkbookCompletion5A2,advanceWorkbookProgress5A2,workbookStudyCandidate5A2,workbookStudyReason5A2,registerWorkbookCatalog5A1,migrateWorkbooks5A1,workbookDefinitions5A1,workbookDefinition5A1,workbookKey5A1,workbookOwned5A1,ownedWorkbooks5A1,currentWorkbookGrade5A1,workbookShopVisible5A1,workbookStudyCandidate5A1,advancedExerciseWorkbook5A1,workbookOwnershipReason5A1,workbookShopHtml5A1,legacyWorkbookInfo5A1,migrateSchoolEventCalendar4D4,reconcileSchoolEventCalendar4D4,publishAnnualSchoolEvents4D4,schoolEventCountdown4D4,activeSchoolEvents4D4,recentSchoolEventOutcomes4D4,schoolEventNotificationStatus4D4,cleanupLegacySchoolNotices4D4,archiveSchoolEvent4D4,schoolEventsHtml4D4,migrateSchoolEventParticipation4D3,reconcileSchoolEventParticipation4D3,normalizeSchoolEventParticipation4D3,schoolEventCampusAccess4D3,eventPreparationOptions4D3,eventPreparationLocationGate4D3,eventPrepQuality4D3,eventPrepSessionsToday4D3,prepareSchoolEvent4D3,buildOpponentField4D3,eventResultFactors4D3,resolveSchoolEventResult4D3,attendSchoolEvent4D3,resolveSchoolEventAttendance4D3,schoolEventActiveCard4D3,schoolEventsHtml4D2,schoolEventStatusLabel4D2,migrateSchoolEventDiscovery4D2,reconcileSchoolEventDiscovery4D2,normalizeSchoolEventDiscovery4D2,registrationWindow4D2,eventEligibility4D2,announceSchoolEvent4D2,registerSchoolEvent4D2,declineSchoolEvent4D2,markRegistrationMissed4D2,withdrawSchoolEvent4D2,markSchoolEventOut4D2,findSchoolEvent4D2,migrateSchoolEvents4D1,reconcileSchoolEvents4D1,normalizeSchoolEvent4D1,stableSchoolEventId4D1,schoolEventById4D1,schoolEventsForSchool4D1,canTransitionSchoolEvent4D1,transitionSchoolEvent4D1,schoolAfterRuntime4C4,schoolSemesterStart4C4,schoolInstructionDayIndex4C4,homeworkLoadPolicy4C4,nextHomeworkDue4C4,homeworkStudyContext4C4,timedSchoolConflict4C4,afterSchoolActivityGate4C4,nextAfterSchoolObligation4C4,familyDinnerWindow4C4,familyDinnerRecord4C4,reconcileFamilyDinner4C4,familyMeal,reconcileAfterSchool4C4,migrateSchoolAfter4C4,schoolAfterSchoolHtml4C4,schoolFacilitiesRuntime4C3,schoolFacilityDay4C3,schoolLunchPeriod4C3,schoolShortBreak4C3,schoolFacilityContext4C3,eligiblePackedLunchCaregivers4C3,preparePackedLunch4C3,cafeteriaLunch4C3,eatPackedLunch4C3,vendingSnack4C3,schoolRestroom4C3,schoolWashHands4C3,shortSchoolRest4C3,schoolSocialCandidates4C3,schoolLunchSocial4C3,schoolDeviceUseGate4C3,schoolFacilityActionGate4C3,resolveMissedLunch4C3,reconcileSchoolFacilities4C3,migrateSchoolFacilities4C3,schoolFacilitiesHtml4C3,canSeeNurse,migrateSchoolClasses4C2,reconcileSchoolClasses4C2,schoolClassSession4C2,teacherOfficeSubjects4C2,teacherAvailability4C2,askTeacher4C2,recordSchoolArrival4C2,attendanceState4C2,genuineSchoolIllness4C2,callInSickSchool4C2,schoolClassContextHtml4C2,migrateSchoolDay4C1,reconcileSchoolDay4C1,schoolDayState4C1,schoolHours4C1,schoolTravelEligibility4C1,goToSchool4C1,goHomeFromSchool4C1,playerAtSchool4C1,schoolLocationActionGate4C1,migrateSchoolRecognition4B4,reconcileSchoolRecognition4B4,recognitionState4B4,teacherOpinion4B4,teacherCoachOpinion4B4,currentSchoolRoles4B4,schoolRepresentativeOrganization4B4,ambassadorAssessment4B4,requestAmbassadorConsideration4B4,valedictorianEligibility4B4,promOrganizationEligibility4B4,schoolRolePermissions4B4,roleDutyAvailable4B4,performSchoolRoleDuty4B4,publicSchoolLeadershipForPerson4B4:(id)=>publicSchoolLeadershipForPerson4B4(personById(id)),schoolRecognitionHtml4B4,migrateClubLeadership4B3,reconcileClubLeadership4B3,clubOrganization4B3,syncClubOrganization4B3,leadershipRoleSequence4B3,primaryLeadershipRole4B3,nextLeadershipRole4B3,playerLeadershipEligibility4B3,openLeadershipSelection4B3,resolveLeadershipSelectionById4B3,activeLeadershipSelection4B3,vacateSchoolLeadership4B3,clubLeadershipSummary4B3,clubLeadershipActions4B3,leadershipState4B3,migrateSchoolElections4B2,beginSchoolElection4B2,supportCandidate4B2,decideElectionById4B2:(id)=>decideElection((S.elections||[]).find(x=>x.id===id)),activeCanonicalElection4B2,classOrganization4B2,councilOrganization4B2,playerEligibility4B2,electionPublicStanding4B2,migrateSchoolOrganizations4B1,reconcileSchoolRoles4B1,ensureCurrentSchoolOrganizations4B1,schoolOrganizationState4B1,schoolOrganizationsFor4B1,schoolOrganizationById4B1,organizationId4B1,ensureOrganization4B1,assignSchoolRole4B1,closeSchoolRole4B1,currentRoleHolders4B1,activeRolesForHolder4B1,graduateHighSchool,migrateSchoolSocial4A4,personMeetingProvenance4A4:(id)=>personMeetingProvenance4A4(personById(id)),recordMeetingProvenance4A4:(id,o)=>recordMeetingProvenance4A4(personById(id),o||{}),recordMeetingFromEvent4A4,personCurrentSchoolInfo4A4:(id)=>personCurrentSchoolInfo4A4(personById(id)),schoolRelationNow4A4:(id)=>schoolRelationNow4A4(personById(id)),schoolKnownToPlayer4A4:(id)=>schoolKnownToPlayer4A4(personById(id)),howYouKnowThem4A4:(id)=>howYouKnowThem4A4(personById(id)),eventSchoolId4A4:(id)=>eventSchoolId4A4(schoolEventById4A4(id)),migrateNpcSchools4A3,npcSchoolSummary4A3,currentSchoolForPerson4A3:(id)=>currentSchoolForPerson4A3(id),sameSchool4A3,sameGrade4A3,sameClass4A3,schoolHistoryForPerson4A3,studentsAtSchool4A3,setNpcSchoolIdentity4A3:(id,sid,o)=>setNpcSchoolIdentity4A3(npcById(id),sid,o||{}),ensureNpcSchoolForRole4A3:(id,r)=>ensureNpcSchoolForRole4A3(npcById(id),r),generateNpc4A3:(age,sid,grade,cls)=>{const n=generateHousehold({kids:1,childAge:age,schoolId:sid||null,schoolGrade:grade||null,schoolClass:cls||null})[0];return n?.id||null},migratePlayerSchool4A2,playerCurrentSchoolId4A2,currentSchoolForPlayer4A2,playerSchoolEnrollments4A2,activePlayerSchoolEnrollment4A2,transferPlayerSchool4A2,resolvePlayerSchoolId4A2:(sc,st)=>resolvePlayerSchoolId4A2(sc,st),schoolRegistryValidity4A1,schoolRegistry4A1:(stage)=>schoolRegistry(stage),schoolIdsForStage,schoolById4A1:(id)=>schoolById(id),schoolStage4A1:(id)=>schoolStage(id),schoolDisplayName4A1:(id)=>schoolDisplayName(id),schoolIdFromLegacyName,migrateSchoolWorld4A1,createSchoolEvent4A1:(ev)=>createCalendarEvent(ev),migrateCommunication3C4,groupChatEligibility3C4,groupChatRecord3C4:(id,o)=>groupChatRecord3C4(id,o||{}),groupChatAdd3C4,visibleGroupMessages3C4,unreadGroup3C4,openGroupThread3C4,sendGroupMessage3C4,maybeGroupMessage3C4:(id,o)=>maybeGroupMessage3C4(id,o||{}),blockContact3C4,unblockContact3C4,removeContact3C4,setContactStatus3C4,communicationKnowledgeCanMention3C4,communication3C4Daily,scheduleRomanticCommunication3C4,migrateCommunication3C3,watchLocationSnapshot3C3,watchLocationSharingActive3C3,watchContactApprovalEligibility3C3:(id)=>watchContactApprovalEligibility3C3(personById(id)),requestWatchContactApproval3C3,smartwatchPanel3C3,familyMessageKind3C3:(id)=>familyMessageKind3C3(personById(id)),bedtimeCommunicationGate3C3:(id,ch,d)=>bedtimeCommunicationGate3C3(personById(id),ch,d),communication3C3Daily,curfewCallCheck,migrateCommunication3C2,unreadDirect3C2,missedCalls3C2,visibleCallLog3C2,chatAdd,openThread,outgoingCall3C2,openCallsModal3C2,logMissedCall3C2:(id,w,n,d)=>logMissedCall(personById(id),w,n,d),birthdayReplyOptions3C2:()=>CHAT_KINDS.bdayWish.opts,incomingMessage3C2:(id,k)=>incomingMessage(personById(id),k),communicationDeviceAccess3C1,contactRecord3C1:(id)=>contactRecord3C1(id),communicationEligibility3C1:(id,ch)=>communicationEligibility3C1(id,ch),canDirectCommunicate3C1:(id,ch)=>canDirectCommunicate3C1(id,ch),contactExchangeEligibility3C1:(id)=>contactExchangeEligibility3C1(id),exchangeContact3C1,addContact3C1:(id,o)=>addContact3C1(id,o||{}),ensureFamilyContacts3C1,migrateCommunication3C1,maybeNpcContactExchange3C1,communication3C1EventChoice:(eid,id)=>communication3C1EventChoice(S.events.find(e=>e.id===eid),id),communicationContacts3C1:(ch)=>communicationContacts3C1(ch).map(p=>p.id),visibleChatMessages3C1,decisionAuthorityRelation:()=>decisionAuthorityPerson()?.relation||null,decisionAuthorities:()=>decisionAuthorities().map(p=>p.id),decisionMakerLabel,recordDecision,normalizeDecisionLedger,decisionReusableById:(id)=>decisionReusable((S.decisionLedger||[]).find(r=>r.id===id)),peopleCategory:(id)=>peopleCategory(personById(id)),familyOverviewHtml,loveLifeHtml,familyRelationLabel:(id)=>familyRelationLabel(personById(id)),familyByRelation:(r)=>familyByRelation(r)?.id||null,isFamilyPerson:(id)=>isFamilyPerson(personById(id)),migrateRelations,devState,migrateDev,recordTraitEvidence,recordTalentEvidence,evStats,evaluateTraits,evaluateTalents,recognizeTalent,recognizeTrait,devWeeklyTick,devStatusHtml,traitBoost,devContestResult:(id,sc)=>devContestResult(S.school.contests.find(c=>c.id===id),sc),matchmakerEligible3B4:(id)=>matchmakerEligible3B4(personById(id)),createMatchOffer3B4:(id,src)=>createMatchOffer3B4(personById(id),src||'player'),matchCandidateInfo3B4,respondMatchOffer3B4,romanceNpcMatchmakingInitiative3B4,romanceProspects3B4:()=>romanceProspects3B4().map(p=>p.id),candidatePersonEligible3B4:(id)=>candidatePersonEligible3B4(personById(id)),migrateRomance3B4,relationshipDescriptor:(id)=>relationshipDescriptor(personById(id)),romanceStageLabel3B3:(id)=>romanceStageLabel3B3(personById(id)),romanceAffectionResponse3B3:(id,a)=>romanceAffectionResponse3B3(personById(id),a),romanceAffection3B3:(id,a)=>romanceAffection3B3(personById(id),a),romanceConfess3B3:(id)=>romanceConfess3B3(personById(id)),officialEligibility3B3:(id)=>officialEligibility3B3(personById(id)),romanceOfficialConversation3B3:(id,i)=>romanceOfficialConversation3B3(personById(id),i||'player'),commitOfficial3B3:(id,o)=>commitOfficial3B3(personById(id),o||{}),romanceNpcRelationshipInitiative3B3,romance3B3EventChoice,romancePartnerInteraction3B3:(id,k)=>romancePartnerInteraction3B3(personById(id),k),adultIntimacy3B3:(id)=>adultIntimacy3B3(personById(id)),endRelationship3B3:(id,r,o)=>endRelationship(personById(id),r,o||{}),reconcileEligibility3B3:(id)=>reconcileEligibility3B3(personById(id)),reconcileRequest3B3:(id)=>reconcileRequest3B3(personById(id)),romanceSneakOption3B3:(id,m)=>romanceSneakOption3B3(personById(id),m),migrateRomance3B3,romanceDateActivities:(id)=>dateActivitiesFor(personById(id)),romanceCalendarConflict,romanceDateSlots:(id,d,a)=>romanceDateSlots(personById(id),d,{id:a,...ROMANCE_DATE_ACTIVITIES[a]}),romanceDateResponse:(id,a,d,m)=>romanceDateResponse(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m),makeRomanceDatePlan:(id,a,d,m,o)=>makeRomanceDatePlan(personById(id),{id:a,...ROMANCE_DATE_ACTIVITIES[a]},d,m,o||{}),createNpcDateInvitation3B2:(id,o)=>createNpcDateInvitation3B2(personById(id),o||{}),prepareRomanceDate3B2,finishRomanceDate3B2:(id,t)=>{const p=personById(id),pl=[...(S.plans||[])].find(x=>x.romantic&&x.personId===id&&['Accepted','Attending'].includes(x.status));if(!p||!pl)return false;finishRomanceDate3B2({data:{planId:pl.id}},p,t||'Good date');return true},handleRomanceDateInvite3B2:(eid,id)=>handleRomanceDateInvite3B2(S.events.find(e=>e.id===eid),id),migrateRomance3B2,ensureLove:(id)=>ensureLove(personById(id)),setNpcRomanticInterest:(id,st)=>setNpcRomanticInterest(personById(id),st),romanceCompatibility:(id)=>romanceCompatibility(personById(id)),romanceKnownAvailability:(id)=>romanceKnownAvailability(personById(id)),migrateRomance3B1,relStatusKnown:(id)=>relStatusKnown(personById(id)),npcRelStatus:(id)=>npcRelStatus(personById(id)),knownTraits:(id)=>knownTraits(personById(id)),goalsKnown:(id)=>goalsKnown(personById(id)),askFuture,availabilityNow:(id)=>availabilityNow(personById(id)),observeBusy:(id)=>observeBusy(personById(id)),parentsKnown:(id)=>parentsKnown(personById(id)),upcomingTopics,shareTopic,threadTick,threadOutcomeOf:(pid,tid)=>threadOutcome((personById(pid).convThreads||[]).find(x=>x.id===tid)),thread,threadStep,friendshipTier:(id)=>friendshipTier(personById(id)),friendTier:(id)=>friendTier(personById(id)),friendNetworkTick,reconnect,activeFriendCount:()=>activeFriends().length,migrateFriendTiers,profileHtml:(id)=>profileHtml(personById(id)),openProfile,addPersonMilestone:(id,t,x)=>addPersonMilestone(personById(id),t,x),milestonesHtml:(id)=>milestonesHtml(personById(id)),closenessLabel,peopleCardCompact:(id)=>peopleCardCompact(personById(id)),tierTick,familyGrowthTick,announceBaby,siblingBabyArrives,babyEligible,siblingRequestTick,houseRulesMiniHtml,childrenAtHome,generateFamily,inHousehold:(id)=>inHousehold(personById(id)),householdMembers,householdCaregivers,householdCaregiver,migrateFamily,familyTreeHtml,siblingLabel:(id)=>siblingLabel(personById(id)),repairActorlessEvents,actorMissing:(id)=>actorMissing(S.events.find(e=>e.id===id)),npcBirthdayInvite:(id)=>npcBirthdayInvite(personById(id)),birthdayTick,maybeRandomEvent,eligibleEventDefs,queueEvent,birthdayCelebrationOptions,ownBirthdayChoice:(id)=>ownBirthdayChoice(id),birthdayFriends,classifyEvent:(t)=>classifyEvent({type:t}),moodBaseline,repHtml,moodFactors,wellbeingDaily,troubleLabel,happinessLabel,addRep,moodHtml,illnessMorningEffects,healthAction,visitCare,careCost,coverageTier,attendFollowUp,morningSickDecision,askStayHome,healthFollowUp,visitNurse,nurseRest,returnToClass,nurseCallCaregiver,finishSickDay,sickAskMedicine,canSeeNurse,nurseState,useMedicineItem:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it&&useMedicineItem(it,catalogItem(it.key))},medicineItemsFor,medicineUses:(id)=>{const it=S.inventoryItems.find(x=>x.id===id);return it?medicineUsesLeft(it):null},applyMedicine,medicineHelps,reliefActive,startIllness,progressIllness,recoverIllness,calculateIllnessRisk,tryStartIllness,healthDailyTick,illnessFocusFactor,sickRest,sickDrink,sickLightMeal,sickTellParent,careOptions,looksLabel,smartLabel,ensurePlayerTraits,healthPanel73,concentration,fastForward,ffContinue,ffPauseChoice,ffTargets,routine,routineDay,autopilotDay,publishAnnualEvents,eventLifecycleTick,withdrawContest,contestAction,inviteAllowed:(id)=>inviteAllowed(personById(id)),inviteTypeAllowed,eventsDaily,scheduleFollowUp,termPhase,isSchoolTermActive,isSchoolBreak,isSummerBreak,breakName,livesWithParents,currentHouseholdId,canPerformAction,teacherAvailable,isAtSchool,isAtHome,exploreSchoolEvent,doChore,generateHomework,personIdentity:(id)=>personIdentity(personById(id)),identityLine:(id)=>identityLine(personById(id)),askLoveLife,npcInterestedInPlayer:(id)=>npcInterestedInPlayer(personById(id)),playerGender,npcsCompatible:(a,b)=>npcsCompatible(npcById(a),npcById(b)),nameGender,identityTick,declareMajor,majorBonus,majorFitsJob,finishUniversity,openBrochure,campusWorkout,greekParty,campusDaily,mySchool,syncDormRent,uniById,inviteMeta:(id)=>inviteMeta(S.events.find(e=>e.id===id)),toggleRomance,formGroups,planGroupOuting,rankAward,honorsTitle,writeScholarshipEssay,applyScholarship,scholarshipDecision,scholarshipProfile,graduationHonors,closeUniSemester,applyUniAward,joinCampusClub,renewScholarship,aidFor:(id)=>aidFor(UNIS.find(x=>x.id===id)),startCareer:(id)=>startCareer(D.jobs.adult.find(a=>a.id===id)),goToWork,callInSick,takeLeave,requestPromotion,requestRaise,payday,workDaily,fireJob,ensureWorkday,isCareer,moveTo,housingMonthly,classRank,seniorTimeline,uniTick,addToList,writeEssay,applyTo,sendDecisions,applyLoan,enroll,funding:(id)=>funding(UNIS.find(x=>x.id===id)),uniStudy,uniYearTick,universityHtml,startBusiness,workBusiness,restock,toggleBusiness,retireBusiness,listYardItem,bizList,bizDaily,loveTriangleCheck:(id)=>loveTriangleCheck(personById(id)),setLoveStage:(id,st)=>setLoveStage(personById(id),st),addLove:(id,n)=>addLove(personById(id),n),nextLoveStep:(id)=>nextLoveStep(personById(id)),loveStep,makeNpcCouple:(a,b)=>makeNpcCouple(npcById(a),npcById(b)),breakNpcCouple:(id,r)=>breakNpcCouple(npcCouples().find(c=>c.id===id),r),npcCoupleTick,matchmake,romanceMenu,personHistoryHtml:(id)=>personHistoryHtml(personById(id)),independenceHtml,familyExtrasHtml,coupleOf,needsPermission,enrollProgram,attendProgram,programAvailable,casualPractice,bake,wrapItem,leaveAdmirer,familyOuting,proposeVacation,decideVacation,tripDaily,vacationTick,onTrip,curfewMinute,notifyParents,summerWindow,openPlanModal,npcPlanResponse:(id,...a)=>npcPlanResponse(personById(id),...a),freeBlocks,friendTier:(id)=>friendTier(personById(id)),tierTick,birthdayTick,wishBirthday,playerBirthdayExtras,ensureBirthdays,incomingMessage:(id,k)=>incomingMessage(personById(id),k),replyChat,openThread,incomingCall:(id,w)=>incomingCall(personById(id),w),lieCheck,planGroupOuting,makePlanRecord,maybeGradeOneWatch,videoCallFamily,classConfiscation,scheduleMessages,knxDaily,setWeather,rollWeather,declareClosure,closureReason,askStayHome,canAskStayHome,fastForward,ffTarget,schoolHomeTick,absenceEscalation,morningDelay,conferenceOutcome,weatherMorningCheck,examScoreOf:(id)=>examScore(S.exams.find(e=>e.id===id)),studySubject,extraExercise,practiceSkill,addRep,moodFactors,concentration,traitBoost,hobbyAction,clubAction,meetNewPeople,semesterLabel,academicMarkers,neighborPromCandidates,academicInfo:(d)=>academicInfo(d),romanceAction:(id,k)=>romanceAction(personById(id),k),startDate,sceneChoice,askToProm,promPrep,setPromPlan,attendProm,ensureProm,promTick,npcAsksToProm:(id)=>npcAsksToProm(personById(id)),neighborhoodTick,sneakOut,giveInventoryItem,maybeRival,groupTick,npcAgencyTick,eligibleRomance:(id)=>eligibleRomance(personById(id)),ensureRomanceProfile:(id)=>ensureRomanceProfile(personById(id)),makePlan,attendPlan,cancelPlan,npcInvitesPlayer:(id)=>npcInvitesPlayer(personById(id)),practiceForTryout,attendTryout,signUpForActivity,campaignAction,startElection,decideElection:(id)=>decideElection(S.elections.find(e=>e.id===id)),generateHousehold,npcStatusAt:(id,d,m)=>npcStatusAt(personById(id),d,m),ensureRoster,retryTryout,joinRecreational,personAction,exploreSchoolActivity,answerMaybe,schoolIdentities,skipToDismissal,classAction,lunchAction,leaveSchoolEarly,doHolidayActivity,holidaysOn,upcomingHolidays,lunarNewYearDate,easterDate,agendaFor,performItemUse,eatPortion,drinkFromContainer,refillContainer,toggleWear,repairItem,chargeDevice,useInventoryItem,drainActivePhone,giveInventoryItem,itemDailyTick,addItem,addExamRecord,activateClub,registerContest,ensureSchoolDayObligation,nextSchoolDay,isSchoolDay,queueEvent,closeChoiceModal,setKindergartenPreference,exploreSchoolActivity,exploreSchoolEvent,generateHomework,contestAction,decideActivity,promCourtRequest6A4,promCourtCast6A4,promCourtNight6A4,promCourtRecord6A4,promCourtTally6A4,promCourtFreezeNominations6A4,promCourtPlayerEligible6A4,promSocialCampaign6A5,promSocialRival6A5,promSocialRecord6A5,promSocialCampaignGate6A5,promSocialRivalGate6A5,reconcilePromSocial6A5,promSocialKnownPeer6A5,promCourtEnsurePeers6A4,promCeremonyRecord6B5,ensurePromCeremony6B5,promCeremonyGate6B5,promCeremonyPresent6B5,promPhotoTake6B5,promCeremonyHtml6B5,addNeighborPerson}[name];if(!f)throw new Error('Unknown test function '+name);const r=f(...args);render();save();return r===undefined?null:JSON.parse(JSON.stringify(r))}
 };
 
 if(new URLSearchParams(location.search).get('smoke')==='1')setTimeout(()=>{try{$('c-name').value='Smoke Test';initializeNewLife();document.body.dataset.smoke=(!$('game').classList.contains('hidden')&&S)?'pass':'fail'}catch(e){console.error(e);document.body.dataset.smoke='fail';document.body.dataset.smokeError=e.message}},30);
